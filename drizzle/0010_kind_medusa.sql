@@ -1,0 +1,1 @@
+ALTER TABLE "ai_personas" ADD COLUMN "audio_mode_enabled" boolean DEFAULT false NOT NULL;

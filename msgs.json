@@ -1,0 +1,82 @@
+[
+  {
+    "id": "fb4b9e4f-0e35-4ade-a7d5-a5dc766972df",
+    "sentAt": "2026-04-20T12:09:17.000Z",
+    "status": "sent",
+    "senderType": "AGENT",
+    "provider": "ACFE15058C723C4919165791288550BD",
+    "content": "Tô bem graças a Deus"
+  },
+  {
+    "id": "734bc6be-9800-44a8-984e-a8eb9c20b0c4",
+    "sentAt": "2026-04-20T12:07:39.000Z",
+    "status": "sent",
+    "senderType": "AGENT",
+    "provider": "AC25263AD6FB1C53CCF6136345279995",
+    "content": "Não dá bola pras mensagens varada"
+  },
+  {
+    "id": "8bcc6803-ef17-46ee-99d4-facb08c2c567",
+    "sentAt": "2026-04-20T10:54:04.000Z",
+    "status": "sent",
+    "senderType": "AGENT",
+    "provider": "2A8DE8B3D70D4215A02E",
+    "content": "Bom dia"
+  },
+  {
+    "id": "95921267-028c-4e85-84bb-f326655abe4b",
+    "sentAt": "2026-04-20T10:54:02.000Z",
+    "status": "delivered",
+    "senderType": "AGENT",
+    "provider": "2AB8BEB42E27AFAFD668",
+    "content": "Ta ok"
+  },
+  {
+    "id": "66a1688e-4721-4fea-9d4e-617db1bd2c53",
+    "sentAt": "2026-04-20T10:44:22.000Z",
+    "status": "read",
+    "senderType": "AGENT",
+    "provider": "AC2342E9DC0BE651B67D190FA824D868",
+    "content": "🎨 Sticker"
+  },
+  {
+    "id": "f5fa7aa7-3ab6-4298-a25d-eed39027fb1a",
+    "sentAt": "2026-04-20T10:43:44.000Z",
+    "status": "read",
+    "senderType": "AGENT",
+    "provider": "2AF413836EA5561AAF3B",
+    "content": "🎵 Áudio (Erro na transcrição)"
+  },
+  {
+    "id": "ed8fbbfd-e735-4f87-95f6-f674025c9e1c",
+    "sentAt": "2026-04-20T10:42:16.000Z",
+    "status": "read",
+    "senderType": "AGENT",
+    "provider": "2A076EED7B97CCB31FB3",
+    "content": "Blz"
+  },
+  {
+    "id": "ce48dc05-d6a4-48cf-9eed-68c6287c8c72",
+    "sentAt": "2026-04-20T10:41:56.000Z",
+    "status": "delivered",
+    "senderType": "AGENT",
+    "provider": "AC7CC86AA892285C200755AD5B99A6D1",
+    "content": "Digo é nada"
+  },
+  {
+    "id": "10c2e733-0794-48ac-b65c-b043273a8b5b",
+    "sentAt": "2026-04-20T10:41:42.000Z",
+    "status": "delivered",
+    "senderType": "AGENT",
+    "provider": "ACD76E8637120F45C57E57AAD9055EC4",
+    "content": "📹 Vídeo"
+  },
+  {
+    "id": "4e6fb279-ddd5-4cff-a727-b3688d3ed9f5",
+    "sentAt": "2026-04-20T10:35:33.000Z",
+    "status": "read",
+    "senderType": "AGENT",
+    "provider": "2A2B394187C87A987351",
+    "content": "🎵 Áudio (Erro na transcrição)"
+  }
+]

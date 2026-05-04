@@ -1,0 +1,67 @@
+﻿{
+  "id": "81e71cd3-725b-44c7-a14b-35226d2e1682",
+  "name": "bigfone_edn_8176",
+  "display_name": "bigfone_edn_8176",
+  "meta_template_id": "2701580130201625",
+  "waba_id": "1126122359328176",
+  "category": "MARKETING",
+  "language": "en",
+  "parameter_format": "POSITIONAL",
+  "status": "APPROVED",
+  "rejected_reason": null,
+  "components": [
+    {
+      "type": "HEADER",
+      "format": "VIDEO",
+      "example": {
+        "header_handle": [
+          "https://scontent.whatsapp.net/v/t61.29466-34/592344996_2701580133534958_7560294986325171057_n.mp4?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=RScZSZHBU4oQ7kNvwEq17BD&_nc_oc=AdmBKEC0bpXNdRxEwvkBgVe7dpbvOM3VN_jHMFVEswFDRkeG_Qviesgjek5dCGWCjpg&_nc_zt=28&_nc_ht=scontent.whatsapp.net&edm=AH51TzQEAAAA&_nc_gid=vPDl5ejkJJdZtYCfM_3b5g&_nc_tpa=Q5bMBQEuIJZdcbVMtnOcFfPN44cf-Gj17Cb8hPP3McbpsQYzXPpfNaSc6FerQ4V6P0hDmfwrNX3EfJon3Q&oh=01_Q5Aa3wFUy7apgbRx3qEXsEfpwJe70AlYWV6Y-0qoJouNC5utlQ&oe=69D29D32"
+        ]
+      }
+    },
+    {
+      "text": "Opa, {{1}}, voc├¬ participou do Big Fone Foga├ºa? Estamos com uma a├º├úo especial para quem demonstrou interesse no Encontro de Neg├│cios.\n\nO *Ant├┤nio Foga├ºa e Pablo Mar├ºal* gravaram esse v├¡deo com um convite para voc├¬ e temos uma condi├º├úo espec├¡fica liberada nessa a├º├úo.\n\nVoc├¬ conseguiu?",
+      "type": "BODY",
+      "example": {
+        "body_text": [
+          [
+            "Diego"
+          ]
+        ]
+      }
+    },
+    {
+      "text": "N├║mero Reservado de Ant├┤nio Foga├ºa e Pablo Mar├ºal",
+      "type": "FOOTER"
+    },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        {
+          "text": "Resgatar Oferta",
+          "type": "QUICK_REPLY"
+        },
+        {
+          "text": "Tirar D├║vidas",
+          "type": "QUICK_REPLY"
+        },
+        {
+          "text": "BLOQUEAR ESSA MENSAGENS",
+          "type": "QUICK_REPLY"
+        }
+      ]
+    }
+  ],
+  "message_send_ttl_seconds": null,
+  "company_id": "7cb4773e-1fab-4699-b35d-c70d9f8d9149",
+  "connection_id": "81994284-e8f0-4a2b-b17b-a9440a0d563a",
+  "created_by": null,
+  "created_at": "2026-03-06T23:05:58.845Z",
+  "updated_at": "2026-03-06T23:24:14.904Z",
+  "submitted_at": null,
+  "approved_at": null,
+  "sent_count": 0,
+  "last_used_at": null,
+  "is_active": true,
+  "allow_category_change": true
+}

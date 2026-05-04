@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "node scripts/start-railway.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+
+[env]
+TZ = "America/Sao_Paulo"

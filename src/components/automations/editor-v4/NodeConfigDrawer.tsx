@@ -1,0 +1,132 @@
+'use client';
+
+import React, { useEffect, useRef } from 'react';
+import { X, Settings2 } from 'lucide-react';
+import type { Node } from '@xyflow/react';
+import { NodeConfigPanel } from '../NodeConfigPanel';
+import type { NodeTestOutput } from '@/hooks/useNodeTestOutputs';
+
+interface NodeConfigDrawerProps {
+    node: Node | null;
+    onClose: () => void;
+    onUpdateData: (nodeId: string, data: Record<string, any>) => void;
+    testOutput?: NodeTestOutput;
+    isTestingNode?: boolean;
+    onTestNode?: () => void;
+    allTestOutputs?: Record<string, NodeTestOutput>;
+    isListening?: boolean;
+    onListen?: () => void;
+    onCancelListen?: () => void;
+}
+
+const NODE_TYPE_LABELS: Record<string, string> = {
+    trigger: 'Gatilho',
+    send_message: 'Enviar Mensagem',
+    send_image: 'Enviar Imagem',
+    send_audio: 'Enviar Áudio',
+    send_document: 'Enviar Documento',
+    send_video: 'Enviar Vídeo',
+    send_template: 'Enviar Template',
+    ask_question: 'Fazer Pergunta',
+    capture_info: 'Capturar Dado',
+    wait_response: 'Aguardar Resposta',
+    condition: 'Condição (Se)',
+    filter: 'Filtro',
+    router: 'Roteador',
+    delay: 'Atraso',
+    crm_move: 'Mover Kanban',
+    bot_toggle: 'Controlar Robô',
+    stop_bot: 'Parar Robô',
+    loop_restart: 'Reiniciar Loop',
+    ai_agent: 'Agente IA',
+    intent_router: 'Classificador IA',
+    follow_up_ai: 'Follow-Up IA',
+    send_ai_response: 'Resposta IA',
+    http_request: 'HTTP Request',
+    code: 'Executar Código',
+    edit_fields: 'Editar Campos',
+    lookup_lead: 'Buscar Lead',
+    add_note: 'Adicionar Nota',
+    assign_user: 'Atribuir Lead',
+    add_tag: 'Adicionar Tag',
+};
+
+export function NodeConfigDrawer({
+    node,
+    onClose,
+    onUpdateData,
+    testOutput,
+    isTestingNode,
+    onTestNode,
+    allTestOutputs,
+    isListening,
+    onListen,
+    onCancelListen,
+}: NodeConfigDrawerProps) {
+    const drawerRef = useRef<HTMLDivElement>(null);
+
+    // Fechar com ESC
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [onClose]);
+
+    const isOpen = !!node;
+    const nodeType = node?.type || '';
+    const nodeLabel = (node?.data as any)?.label || NODE_TYPE_LABELS[nodeType] || nodeType;
+
+    return (
+        <>
+            {/* Drawer */}
+            <div
+                ref={drawerRef}
+                className={[
+                    'fixed top-0 right-0 h-full w-[380px] bg-zinc-50 border-l border-zinc-200',
+                    'shadow-[-4px_0_20px_rgba(0,0,0,0.08)] z-30 flex flex-col',
+                    'transition-transform duration-300 ease-out',
+                    isOpen ? 'translate-x-0' : 'translate-x-full',
+                ].join(' ')}
+            >
+                {/* Header */}
+                <div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-200 bg-white shrink-0">
+                    <div className="w-7 h-7 flex items-center justify-center bg-zinc-100 rounded-lg">
+                        <Settings2 className="w-3.5 h-3.5 text-zinc-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">{nodeType}</p>
+                        <p className="text-[13px] font-semibold text-zinc-900 truncate">{nodeLabel}</p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                        title="Fechar (ESC)"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* Conteúdo — reutiliza o NodeConfigPanel existente */}
+                <div className="flex-1 overflow-y-auto">
+                    {node && (
+                        <div className="p-4">
+                            <NodeConfigPanel
+                                node={node}
+                                onUpdateData={onUpdateData}
+                                testOutput={testOutput}
+                                isTestingNode={isTestingNode}
+                                onTestNode={onTestNode}
+                                allTestOutputs={allTestOutputs}
+                                isListening={isListening}
+                                onListen={onListen}
+                                onCancelListen={onCancelListen}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}

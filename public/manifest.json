@@ -1,0 +1,71 @@
+{
+  "name": "Master IA Oficial",
+  "short_name": "Master IA",
+  "description": "Sistema completo de análise de reuniões em tempo real com WhatsApp dual (Baileys + Meta Cloud API), IA e Kanban",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot1.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "Ver dashboard principal"
+    },
+    {
+      "name": "Conversas",
+      "url": "/atendimentos",
+      "description": "Gerenciar atendimentos"
+    },
+    {
+      "name": "Analytics",
+      "url": "/analytics",
+      "description": "Ver métricas e relatórios"
+    },
+    {
+      "name": "Campanhas",
+      "url": "/campaigns",
+      "description": "Gerenciar campanhas"
+    }
+  ],
+  "share_target": {
+    "action": "/atendimentos",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

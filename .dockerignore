@@ -1,0 +1,70 @@
+# Exclude unnecessary files from Replit deployment
+# This significantly reduces the deployment image size
+
+# Node modules cache
+node_modules/.cache
+
+# Next.js build cache
+.next/cache
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+tests
+coverage
+testsprite_tests
+
+# Development files
+*.md
+!README.md
+docs
+
+# Build artifacts that aren't needed
+.next/static/chunks/*.map
+tsconfig.tsbuildinfo
+
+# Backup files
+backups
+*.bak
+*.backup
+
+# WhatsApp sessions (handled by external storage)
+whatsapp_sessions
+
+# Reports and debug files
+reports
+debug-*.log
+FORENSIC_*.json
+FORENSIC_*.md
+PLANO_*.md
+
+# Temporary files
+tmp
+temp
+.tmp
+.cache
+
+# Coverage
+coverage
+
+# Example and documentation assets
+attached_assets

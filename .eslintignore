@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+dist
+build
+coverage
+public
+scripts/**/generated/**
+scripts/**/*.ts
+**/*.d.ts
+**/*.min.js

@@ -1,0 +1,115 @@
+# Ignore these files/directories during Replit deployment
+# This helps reduce the deployment image size below 8 GiB limit
+
+# === Git ===
+.git
+.gitignore
+.gitattributes
+
+# === Build caches ===
+node_modules/.cache
+.next/cache
+.cache
+
+# === Session data (runtime-only, handled by external storage) ===
+whatsapp_sessions
+
+# === Test artifacts ===
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/
+tests
+testsprite_tests
+coverage
+
+# === Logs ===
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+debug-*.log
+
+# === Documentation (not needed at runtime) ===
+docs
+*.md
+!README.md
+
+# === IDE and editor ===
+.vscode
+.idea
+*.swp
+*.swo
+
+# === Debug/diagnostic artifacts in root ===
+FORENSIC_*.json
+FORENSIC_*.md
+PLANO_*.md
+debug_out.txt
+diag_results.txt
+health_output.txt
+output.txt
+activation_result.txt
+check_webhook_log.txt
+diego_debug.txt
+
+# === Loose scripts in root (not needed in deploy) ===
+activate-connection.ts
+check-connection-status.ts
+check-connections.ts
+check-status.ts
+create-test-user.ts
+force-unlock.ts
+list-connections.ts
+
+# === Report/evidence files ===
+*-report.json
+*_report.json
+*_results.json
+evidence*.json
+*_check.json
+*_debug.txt
+*_list.txt
+all-companies-sessions-report.json
+all_comps.txt
+app_ids_list.txt
+baileys_sessions_report.json
+connections_all.json
+comps_list.txt
+cons_debug.txt
+conns_check.txt
+deep_diag_results.json
+
+# === Legacy/misc ===
+_legacy
+attached_assets
+docker-compose.yml
+f
+afas
+next.config.b64
+
+# === Backups ===
+backups
+*.bak
+*.backup
+
+# === Temporary files ===
+tmp
+temp
+.tmp
+
+# === Scripts (not needed in production runtime) ===
+scripts
+
+# === Source maps ===
+*.map
+
+# === TypeScript build info ===
+tsconfig.tsbuildinfo
+
+# === Dev config ===
+commitlint.config.cjs
+
+# === Generated/test images ===
+generated-icon.png

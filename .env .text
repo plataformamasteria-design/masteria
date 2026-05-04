@@ -1,0 +1,120 @@
+# ==========================================
+#  ACTIVE & REQUIRED (Used in Code)
+# ==========================================
+
+# --- Database (Neon Postgres - Remote Replit Production) ---
+# UPDATED: Matching the active Broad Truth endpoint
+DATABASE_URL="postgresql://neondb_owner:npg_3A4aphDSoLUZ@ep-broad-truth-afj172ni.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require"
+PGDATABASE="neondb"
+PGHOST="ep-broad-truth-afj172ni.c-2.us-west-2.aws.neon.tech"
+PGPORT="5432"
+PGUSER="neondb_owner"
+PGPASSWORD="npg_3A4aphDSoLUZ"
+DB_DEBUG="false"
+APIKEY_USER_DB_NEON_MASTER="napi_qhs3h0lyj9a65vnr0022hwsam8xg7t0c03eb1tj6zdyayqteogoljgqboac3245h"
+
+# --- Authentication & Security ---
+NEXTAUTH_URL="https://masteria.app"
+NEXTAUTH_SECRET="30deb8584fac7192d1c44d8c2831ea02"
+SESSION_SECRET="EndDyuB09CUOrvQoU6ZEOEYxBbKyQN8LqfjOhFd2l8yhoiQlN4GZhIJ6vfOC9MAHRBIvOXwZ9d2IMlT1DRCpyA=="
+ENCRYPTION_KEY="pt?AFZHD}e4E<d2!R:~?WqLL}*Z>j3&rm"
+JWT_SECRET_KEY_CALL="HkRs$M[gS'>z#14bJ)ZSpA;CJ'&F6Go+"
+JWT_SECRET="iOdPPb274SkrJX5hoZeDTE_sQta16E-2RdmPkcAtErd6WqfNP_h-qY5KuqVrts-pTMmHSFuRmkm4HaVWpOEH4A"
+JWT_SECRET_KEY="qx7IJLuC9bkofHNMwl3cSGW/n/jLnCrzqiTtsFK/be+U3JZtSY8xJa0M+qRXT01X"
+
+# --- Google / Gemini (EXCLUSIVE PROVIDER) ---
+# Key 1: AIzaSyC887cnakGlTFG5FZbO8yc6B_PqY1CL7D8 (Primary from Replit Secret: google_api_key_agents1)
+# Key 2: AIzaSyBP3KNLi4kafgI1tJxAJlMyR7Vg7zCK4M8 (Secondary from Replit Secret: google_api_key_agents2)
+
+# Mapping Replit Lowercase Secrets to Code Uppercase Variables
+google_api_key_agents1="AIzaSyC887cnakGlTFG5FZbO8yc6B_PqY1CL7D8"
+google_api_key_agents2="AIzaSyBP3KNLi4kafgI1tJxAJlMyR7Vg7zCK4M8"
+
+GOOGLE_GEMINI_AGENTS1="AIzaSyC887cnakGlTFG5FZbO8yc6B_PqY1CL7D8"
+GOOGLE_GEMINI_AGENTS2="AIzaSyBP3KNLi4kafgI1tJxAJlMyR7Vg7zCK4M8"
+
+# Mapeamento Global (usando Key 1 como padrão)
+GOOGLE_API_KEY="AIzaSyC887cnakGlTFG5FZbO8yc6B_PqY1CL7D8"
+GOOGLE_API_KEY_CALL="AIzaSyASlLMUXkB08AbrmADz8MfWjzEzccBMeL0"
+GOOGLE_API_KEY_SECONDARY="AIzaSyBP3KNLi4kafgI1tJxAJlMyR7Vg7zCK4M8"
+gemini_25_agent_google_chat="AIzaSyC887cnakGlTFG5FZbO8yc6B_PqY1CL7D8"
+GOOGLE_GEMINI_AGENTS1_AUDIO="AIzaSyC887cnakGlTFG5FZbO8yc6B_PqY1CL7D8"
+
+# --- OpenAI / OpenRouter (REMOVED/DISABLED) ---
+OPENAI_API_KEY=""
+openai_apikey_gpt_padrao="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"
+openai_agentes_proj_M0hXybXJ_send_gmail="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"
+OPENROUTERS_API_KEY="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"
+openrouters_free_model_agents=""
+
+# --- Meta / Facebook / Instagram ---
+FACEBOOK_CLIENT_ID="733445277925306"
+FACEBOOK_CLIENT_SECRET="c1960ea4eddaead035d64a72208e0502"
+FACEBOOK_API_VERSION="v23.0"
+META_PHONE_NUMBER_ID="391262387407327"
+META_VERIFY_TOKEN="zapmaster_verify_2024"
+
+# --- App URLs ---
+NEXT_PUBLIC_BASE_URL="https://62863c59-d08b-44f5-a414-d7529041de1a-00-16zuyl87dp7m9.kirk.replit.dev/"
+NEXT_PUBLIC_APP_URL="https://masteria.app"
+NEXT_PUBLIC_CUSTOM_DOMAIN="masteria.app"
+REPLIT_DEV_DOMAIN="62863c59-d08b-44f5-a414-d7529041de1a-00-16zuyl87dp7m9.kirk.replit.dev"
+PORT="5000"
+NODE_ENV="development"
+
+# --- External Services ---
+RESEND_API_KEY="re_gy3k2hnf_LMEN24bdW3w7X6EMPR5MjKHZ"
+RETELL_API_KEY="key_f2cfbba3b9c96a52ecc83296fc7d"
+RETELL_WORKSPACE_ID="org_JY55cp5S9pRJjrV"
+TWILIO_PHONE_NUMBER="+553299108007"
+TWILIO_ACCOUNT_SID="AC801c22459d806d9f2107f255e95ac476"
+TWILIO_AUTH_TOKEN="b0b2466cf01177a1152ae338f8556085"
+TWILIO_API_KEY="SKa55f97ec46ae4f399102fb5f9c2b649"
+TWILIO_API_SECRET="SKca5597ec86ae4f399102f5bf95c2b649"
+VAPI_PHONE_NUMBER="+17752889379"
+VAPI_WEBHOOK_SECRET="vapi_wh_2025_7x9KmP2nQ4rL8sT6vB3cF5jH1wN0yZ"
+
+# --- ElevenLabs (Creator Tier - 129k credits) ---
+# Todas as 3 chaves pertencem à mesma conta Creator (123,484 créditos disponíveis)
+# Estratégia de failover: se uma chave falhar, o sistema tenta a próxima
+
+# Chave 1 (Principal)
+ELEVENLABS_API_KEY="478e0eb000cf41a319aded16c363e0ada165d258cc93640e115a723c07a34e4f"
+elevenlabs_audio_voz_agent_apikey="478e0eb000cf41a319aded16c363e0ada165d258cc93640e115a723c07a34e4f"
+
+# Chave 2 (Failover)
+ELEVENLABS_API_KEY_SECONDARY="bd06a8bea9d2200f4f982df98d8f49253f1ea2c318c6d98222603e8ffa8fac11"
+elevenlabs_audio_voz_agent_apikey_2="bd06a8bea9d2200f4f982df98d8f49253f1ea2c318c6d98222603e8ffa8fac11"
+
+# Chave 3 (Failover Final)
+ELEVENLABS_API_KEY_TERTIARY="cc6518881747162a5cd456580f00645659bd9bb34fb6d9b14564cfb3eaa921b4"
+elevenlabs_audio_voz_agent_apikey_3="cc6518881747162a5cd456580f00645659bd9bb34fb6d9b14564cfb3eaa921b4"
+GITHUB_PERSONAL_ACCESS_TOKEN="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"
+GITHUB_PERSONAL_ACCESS_TOKEN_NOVO="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"
+full_GITHUB_PERSONAL_ACCESS_TOKEN="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"
+
+# --- Object Storage ---
+DEFAULT_OBJECT_STORAGE_BUCKET_ID="replit-objstore-5c7db24d-3f1a-48f3-a419-34323e1b5779"
+PRIVATE_OBJECT_DIR="/replit-objstore-5c7db24d-3f1a-48f3-a419-34323e1b5779/zapmaster"
+PUBLIC_OBJECT_SEARCH_PATHS="/replit-objstore-5c7db24d-3f1a-48f3-a419-34323e1b5779/zapmaster"
+
+# --- Feature Flags ---
+ENABLE_BULLMQ_QUEUE="true"
+ENABLE_ALERT_MONITORING="true"
+BAILEYS_SESSIONS_ENABLED="true"
+
+# --- Baileys Microservice Bridge ---
+# URL of the standalone Baileys microservice (update after Railway deploy)
+BAILEYS_SERVICE_URL="https://baileysservice-production.up.railway.app"
+# API Key for inter-service authentication (must match BAILEYS_SERVICE_API_KEY in baileys-service)
+BAILEYS_SERVICE_API_KEY="baileys-bridge-secret-key-change-me"
+
+# --- Redis (Upstash) ---
+UPSTASH_REDIS_REST_URL="https://exotic-lemur-55800.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="Adn4AAIncDEwZmNmYTQ1OGY4NjY0OTQ5YjFmZjIxMDdjZmVlNDJmZnAxNTU4MDA"
+REDIS_URL="rediss://default:Adn4AAIncDEwZmNmYTQ1OGY4NjY0OTQ5YjFmZjIxMDdjZmVlNDJmZnAxNTU4MDA@exotic-lemur-55800.upstash.io:6379"
+
+# Otimização de Build
+SKIP_LINT=true
+SKIP_TYPECHECK=true
+SKIP_REDIS_CHECK=true

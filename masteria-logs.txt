@@ -1,0 +1,500 @@
+[2026-04-23T21:00:00.227Z] [INFO] [CadenceScheduler] Step processor completed {"processed":0}
+🧹 [GC] Freed 4.74MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+[Session] Token missing in cookies. Available cookies: 
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[Session] Token missing in cookies. Available cookies: 
+  - Delayed: 0
+  - Completed: 0
+  - waiting: 0
+  - Failed: 0
+📊 [WebhookQueue] BullMQ Metrics Report:
+  - waiting-children: 0
+  - Total in Queue: 0
+  - Waiting: 0
+  - Active: 0
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (41ms)
+  - delayed: 0
+📊 [WebhookQueue] Job Counts:
+  - active: 0
+  - failed: 0
+  - completed: 0
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+  - paused: 0
+  - prioritized: 0
+[2026-04-23T21:00:12.164Z] [INFO] Processing follow-up queue {"pendingCount":3,"now":"2026-04-23T21:00:12.100Z"}
+[2026-04-23T21:00:12.476Z] [WARN] No active connection for follow-up {"followupId":"3d9bcbd0-91b0-4e3d-b56b-5fe1c2f80910"}
+[2026-04-23T21:00:12.600Z] [WARN] No active connection for follow-up {"followupId":"36a53a4d-65fc-4f2c-bdec-766d3ab217b9"}
+[2026-04-23T21:00:12.725Z] [WARN] No active connection for follow-up {"followupId":"d91b8247-4443-49b3-8e4e-19e80197e47c"}
+[2026-04-23T21:00:12.725Z] [INFO] Follow-up queue processing complete {"processed":0,"total":3}
+🧹 [GC] Freed 1.87MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (223ms)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[Socket Verifier Debug] Secret Length: 32, Prefix: HkR...
+Client connected: 5ujhfBIimWVjCEMvAAAF Company: a3591171-a146-4ed1-b49f-d0708cb7cdbd
+Socket 5ujhfBIimWVjCEMvAAAF joined room: company:a3591171-a146-4ed1-b49f-d0708cb7cdbd
+ ⚠ Unsupported metadata viewport is configured in metadata export in /contacts. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /contacts. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Client disconnected: 5ujhfBIimWVjCEMvAAAF
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+📊 [Memory Stats] RSS: 434.94MB | Heap: 253.28/266.90MB (94.90%) | External: 58.03MB
+🧹 [GC] Freed 4.47MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+[Session] Token missing in cookies. Available cookies: 
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+📊 [WebhookQueue] BullMQ Metrics Report:
+  - Waiting: 0
+  - Active: 0
+  - Delayed: 0
+  - Completed: 0
+  - Failed: 0
+  - Total in Queue: 0
+🔄 [SessionMonitor] Running scheduled session check...
+2026-04-23T21:01:09.576967602Z [INFO] [SessionMonitor] Iniciando ciclo de verificação de sessões... time=1776978069573 pid=18 hostname="07b13053bf8b"
+📊 [WebhookQueue] Job Counts:
+  - active: 0
+  - completed: 0
+  - delayed: 0
+  - failed: 0
+  - paused: 0
+  - prioritized: 0
+  - waiting: 0
+  - waiting-children: 0
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (267ms)
+2026-04-23T21:01:10.234247191Z [INFO] [SessionMonitor] Encontradas 2 sessões ativas mas desconectadas. time=1776978069805 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234251334Z [INFO] [SessionMonitor] Tentando recuperar sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019 (7cb4773e-1fab-4699-b35d-c70d9f8d9149)... time=1776978069805 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234256742Z [INFO] [SessionMonitor] Sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019 encontrada no microserviço. Status atual: none time=1776978069831 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234262963Z [INFO] [SessionMonitor] Tentando recuperar sessão b71ac304-5aa9-4ef2-8a41-6806db4e4904 (4c68abbe-d87e-41ea-9dc5-e812c48e0f79)... time=1776978069979 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234271997Z [INFO] [SessionMonitor] Falha ao recuperar sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019: No auth found. Scan QR code. (Status: needs_qr) time=1776978069936 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234276019Z [INFO] [SessionMonitor] DB atualizado para 'qr' para sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019 time=1776978069978 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234282235Z [INFO] [SessionMonitor] Sessão b71ac304-5aa9-4ef2-8a41-6806db4e4904 encontrada no microserviço. Status atual: none time=1776978069996 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234288484Z [INFO] [SessionMonitor] Falha ao recuperar sessão b71ac304-5aa9-4ef2-8a41-6806db4e4904: No auth found. Scan QR code. (Status: needs_qr) time=1776978070093 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.234293343Z [INFO] [SessionMonitor] DB atualizado para 'qr' para sessão b71ac304-5aa9-4ef2-8a41-6806db4e4904 time=1776978070133 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:01:10.235905755Z [INFO] [SessionMonitor] Ciclo de verificação finalizado. time=1776978070133 pid=18 hostname="07b13053bf8b"
+🏓 [Neon Keep-Alive] Ping successful (19ms)
+[2026-04-23T21:01:12.166Z] [INFO] Processing follow-up queue {"pendingCount":3,"now":"2026-04-23T21:01:12.100Z"}
+[2026-04-23T21:01:12.290Z] [WARN] No active connection for follow-up {"followupId":"3d9bcbd0-91b0-4e3d-b56b-5fe1c2f80910"}
+[2026-04-23T21:01:12.414Z] [WARN] No active connection for follow-up {"followupId":"36a53a4d-65fc-4f2c-bdec-766d3ab217b9"}
+[2026-04-23T21:01:12.535Z] [WARN] No active connection for follow-up {"followupId":"d91b8247-4443-49b3-8e4e-19e80197e47c"}
+[2026-04-23T21:01:12.535Z] [INFO] Follow-up queue processing complete {"processed":0,"total":3}
+🧹 [GC] Freed 1.81MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+ ⚠ Unsupported metadata viewport is configured in metadata export in /campanhas. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /campanhas. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /lists. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /lists. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (222ms)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /equipes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /equipes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[Socket Verifier Debug] Secret Length: 32, Prefix: HkR...
+Client connected: 1heFv1bjQtaoXXnNAAAH Company: a3591171-a146-4ed1-b49f-d0708cb7cdbd
+Socket 1heFv1bjQtaoXXnNAAAH joined room: company:a3591171-a146-4ed1-b49f-d0708cb7cdbd
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Client disconnected: 1heFv1bjQtaoXXnNAAAH
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+🧹 [GC] Freed 6.01MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[Session] Token missing in cookies. Available cookies: 
+[Session] Token missing in cookies. Available cookies: 
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+📊 [WebhookQueue] BullMQ Metrics Report:
+  - Waiting: 0
+  - Active: 0
+  - Delayed: 0
+  - Completed: 0
+  - Failed: 0
+  - Total in Queue: 0
+📊 [WebhookQueue] Job Counts:
+  - active: 0
+  - completed: 0
+  - delayed: 0
+  - failed: 0
+  - paused: 0
+  - prioritized: 0
+  - waiting: 0
+  - waiting-children: 0
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (225ms)
+[2026-04-23T21:02:12.164Z] [INFO] Processing follow-up queue {"pendingCount":3,"now":"2026-04-23T21:02:12.100Z"}
+[2026-04-23T21:02:12.500Z] [WARN] No active connection for follow-up {"followupId":"3d9bcbd0-91b0-4e3d-b56b-5fe1c2f80910"}
+[2026-04-23T21:02:12.624Z] [WARN] No active connection for follow-up {"followupId":"36a53a4d-65fc-4f2c-bdec-766d3ab217b9"}
+[2026-04-23T21:02:12.746Z] [WARN] No active connection for follow-up {"followupId":"d91b8247-4443-49b3-8e4e-19e80197e47c"}
+[2026-04-23T21:02:12.746Z] [INFO] Follow-up queue processing complete {"processed":0,"total":3}
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[Socket Verifier Debug] Secret Length: 32, Prefix: HkR...
+Client connected: lDlabxF9ufa-lRhZAAAJ Company: a3591171-a146-4ed1-b49f-d0708cb7cdbd
+Socket lDlabxF9ufa-lRhZAAAJ joined room: company:a3591171-a146-4ed1-b49f-d0708cb7cdbd
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Client disconnected: lDlabxF9ufa-lRhZAAAJ
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[InitWorkerRoute] ❌ Error initializing worker: TypeError: a is not a function
+    at F (.next/server/app/api/internal/init-worker/route.js:106:1485)
+    at D (.next/server/app/api/internal/init-worker/route.js:106:278)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+🧹 [GC] Freed 41.20MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (226ms)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[Socket Verifier Debug] Secret Length: 32, Prefix: HkR...
+Client connected: FdZUWjK_zB9wOk6PAAAL Company: a3591171-a146-4ed1-b49f-d0708cb7cdbd
+Socket FdZUWjK_zB9wOk6PAAAL joined room: company:a3591171-a146-4ed1-b49f-d0708cb7cdbd
+Client disconnected: FdZUWjK_zB9wOk6PAAAL
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[InitWorkerRoute] ⚠️ Worker initialization timeout after 30s
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/organizations. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+📊 [Memory Stats] RSS: 438.15MB | Heap: 223.23/273.00MB (81.77%) | External: 58.21MB
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+🧹 [GC] Freed 7.32MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+[Session] Token missing in cookies. Available cookies: 
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+📊 [WebhookQueue] BullMQ Metrics Report:
+  - Waiting: 0
+  - Active: 0
+  - Delayed: 0
+  - Completed: 0
+  - Failed: 0
+  - Total in Queue: 0
+📊 [WebhookQueue] Job Counts:
+  - active: 0
+  - completed: 0
+  - delayed: 0
+  - failed: 0
+  - paused: 0
+  - prioritized: 0
+  - waiting: 0
+  - waiting-children: 0
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (226ms)
+[2026-04-23T21:03:12.165Z] [INFO] Processing follow-up queue {"pendingCount":3,"now":"2026-04-23T21:03:12.100Z"}
+ ⚠ Unsupported metadata viewport is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /conexoes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[2026-04-23T21:03:12.477Z] [WARN] No active connection for follow-up {"followupId":"3d9bcbd0-91b0-4e3d-b56b-5fe1c2f80910"}
+[2026-04-23T21:03:12.604Z] [WARN] No active connection for follow-up {"followupId":"36a53a4d-65fc-4f2c-bdec-766d3ab217b9"}
+[BaileysBridge] getSessionStatus() is synchronous and unavailable via bridge. Use getSessionStatusAsync().
+[2026-04-23T21:03:12.727Z] [WARN] No active connection for follow-up {"followupId":"d91b8247-4443-49b3-8e4e-19e80197e47c"}
+[2026-04-23T21:03:12.727Z] [INFO] Follow-up queue processing complete {"processed":0,"total":3}
+[Health Check] Meta API Error for 8276_Antônio_BM_GRUP_ED (81994284-e8f0-4a2b-b17b-a9440a0d563a): {
+  code: 190,
+  subcode: 463,
+  message: 'Error validating access token: Session has expired on Friday, 27-Mar-26 19:00:00 PDT. The current time is Thursday, 23-Apr-26 14:03:12 PDT.',
+  type: 'meta_api'
+}
+[Health Check] Meta API Error for 1033_antônio_Grupo Educacional AG12X (7bb528fd-9bcc-4bb0-b927-74c9690cdfd6): {
+  code: 190,
+  subcode: 463,
+  message: 'Error validating access token: Session has expired on Friday, 27-Mar-26 19:00:00 PDT. The current time is Thursday, 23-Apr-26 14:03:12 PDT.',
+  type: 'meta_api'
+}
+}
+[Health Check] Meta API Error for 1302_diego_ia_seller (b4bf7204-e1b6-44ba-a6a3-e895e6efbf67): {
+  code: 190,
+  subcode: 463,
+  message: 'Error validating access token: Session has expired on Thursday, 26-Mar-26 16:06:13 PDT. The current time is Thursday, 23-Apr-26 14:03:12 PDT.',
+  type: 'meta_api'
+[Health Check] Meta API Error for 1302_diego_ia_seller (b4bf7204-e1b6-44ba-a6a3-e895e6efbf67): {
+  message: 'Error validating access token: Session has expired on Friday, 27-Mar-26 19:00:00 PDT. The current time is Thursday, 23-Apr-26 14:03:13 PDT.',
+  code: 190,
+  subcode: 463,
+  message: 'Error validating access token: Session has expired on Thursday, 26-Mar-26 16:06:13 PDT. The current time is Thursday, 23-Apr-26 14:03:13 PDT.',
+  type: 'meta_api'
+  type: 'meta_api'
+}
+}
+[Health Check] Meta API Error for 8276_Antônio_BM_GRUP_ED (81994284-e8f0-4a2b-b17b-a9440a0d563a): {
+  code: 190,
+  subcode: 463,
+  message: 'Error validating access token: Session has expired on Friday, 27-Mar-26 19:00:00 PDT. The current time is Thursday, 23-Apr-26 14:03:13 PDT.',
+  type: 'meta_api'
+}
+[Health Check] Meta API Error for 1033_antônio_Grupo Educacional AG12X (7bb528fd-9bcc-4bb0-b927-74c9690cdfd6): {
+  code: 190,
+  subcode: 463,
+Falha ao obter o App Access Token: {
+  error: {
+    message: 'Error validating client secret.',
+    type: 'OAuthException',
+    code: 1,
+    fbtrace_id: 'AqDhY4uz0TpnpNIrZ05RZjY'
+  }
+}
+Erro ao verificar status do webhook para a conexão 81994284-e8f0-4a2b-b17b-a9440a0d563a: Error: Não foi possível obter o Token de Acesso do Aplicativo da Meta.
+    at l (.next/server/app/api/v1/connections/[connectionId]/webhook-status/route.js:1:9243)
+    at async m (.next/server/app/api/v1/connections/[connectionId]/webhook-status/route.js:1:10190)
+    at async k (.next/server/app/api/v1/connections/[connectionId]/webhook-status/route.js:1:5874)
+    at async g (.next/server/app/api/v1/connections/[connectionId]/webhook-status/route.js:1:6877)
+    at async x (.next/server/app/api/v1/connections/[connectionId]/webhook-status/route.js:1:7999)
+[Connection Check] API check failed for 7bb528fd-9bcc-4bb0-b927-74c9690cdfd6 (meta_api): 401 Unauthorized {"error":{"message":"Error validating access token: Session has expired on Friday, 27-Mar-26 19:00:00 PDT. The current time is Thursday, 23-Apr-26 14:03:13 PDT.","type":"OAuthException","code":190,"error_subcode":463,"fbtrace_id":"ARitOeEZDAQ-L8zXE1Kxsc8"}}
+[Connection Check] API check failed for 81994284-e8f0-4a2b-b17b-a9440a0d563a (meta_api): 401 Unauthorized {"error":{"message":"Error validating access token: Session has expired on Friday, 27-Mar-26 19:00:00 PDT. The current time is Thursday, 23-Apr-26 14:03:14 PDT.","type":"OAuthException","code":190,"error_subcode":463,"fbtrace_id":"AMJoZYabJlNGSQtjx8wyAM1"}}
+[Connection Check] API check failed for b4bf7204-e1b6-44ba-a6a3-e895e6efbf67 (meta_api): 401 Unauthorized {"error":{"message":"Error validating access token: Session has expired on Thursday, 26-Mar-26 16:06:13 PDT. The current time is Thursday, 23-Apr-26 14:03:14 PDT.","type":"OAuthException","code":190,"error_subcode":463,"fbtrace_id":"A4XrJhJyUMfUfVZqV2K7D_i"}}
+[Socket Verifier Debug] Secret Length: 32, Prefix: HkR...
+Client connected: 2SK8UO9fT8BcDi09AAAN Company: a3591171-a146-4ed1-b49f-d0708cb7cdbd
+Socket 2SK8UO9fT8BcDi09AAAN joined room: company:a3591171-a146-4ed1-b49f-d0708cb7cdbd
+🧹 [GC] Freed 6.16MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+⚠️ [Meta Webhook] Falha ao salvar log do webhook: TypeError: Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')
+    at v (.next/server/app/api/webhooks/meta/[slug]/route.js:1:7681)
+    at async k (.next/server/app/api/webhooks/meta/[slug]/route.js:1:26424)
+    at async g (.next/server/app/api/webhooks/meta/[slug]/route.js:1:27427)
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (239ms)
+⚠️ [Meta Webhook] Falha ao salvar log do webhook: TypeError: Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')
+    at v (.next/server/app/api/webhooks/meta/[slug]/route.js:1:7681)
+    at async k (.next/server/app/api/webhooks/meta/[slug]/route.js:1:26424)
+    at async g (.next/server/app/api/webhooks/meta/[slug]/route.js:1:27427)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+    at v (.next/server/app/api/webhooks/meta/[slug]/route.js:1:7681)
+    at async k (.next/server/app/api/webhooks/meta/[slug]/route.js:1:26424)
+    at async g (.next/server/app/api/webhooks/meta/[slug]/route.js:1:27427)
+⚠️ [Meta Webhook] Falha ao salvar log do webhook: TypeError: Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')
+⚠️ [Meta Webhook] Falha ao salvar log do webhook: TypeError: Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')
+    at v (.next/server/app/api/webhooks/meta/[slug]/route.js:1:7681)
+    at async k (.next/server/app/api/webhooks/meta/[slug]/route.js:1:26424)
+    at async g (.next/server/app/api/webhooks/meta/[slug]/route.js:1:27427)
+  - waiting: 0
+  - waiting-children: 0
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (228ms)
+🧹 [GC] Freed 18.37MB heap, 0.00MB external, 0.00MB total
+ ⚠ Unsupported metadata viewport is configured in metadata export in /equipes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+🔍 [DB Monitor] Pool monitoring active...
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /equipes. Please move it to viewport export instead.
+[Session] Token missing in cookies. Available cookies: 
+[Session] Token missing in cookies. Available cookies: 
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+📊 [WebhookQueue] BullMQ Metrics Report:
+  - Waiting: 0
+  - Active: 0
+  - Delayed: 0
+  - Completed: 0
+  - Failed: 0
+  - Total in Queue: 0
+📊 [WebhookQueue] Job Counts:
+  - active: 0
+  - completed: 0
+  - delayed: 0
+  - failed: 0
+  - paused: 0
+  - prioritized: 0
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[2026-04-23T21:04:12.165Z] [INFO] Processing follow-up queue {"pendingCount":3,"now":"2026-04-23T21:04:12.101Z"}
+[2026-04-23T21:04:12.473Z] [WARN] No active connection for follow-up {"followupId":"3d9bcbd0-91b0-4e3d-b56b-5fe1c2f80910"}
+ ⚠ Unsupported metadata viewport is configured in metadata export in /contacts. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /contacts. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[2026-04-23T21:04:12.601Z] [WARN] No active connection for follow-up {"followupId":"36a53a4d-65fc-4f2c-bdec-766d3ab217b9"}
+[2026-04-23T21:04:12.725Z] [WARN] No active connection for follow-up {"followupId":"d91b8247-4443-49b3-8e4e-19e80197e47c"}
+[2026-04-23T21:04:12.725Z] [INFO] Follow-up queue processing complete {"processed":0,"total":3}
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /lists. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /lists. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /tags. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /tags. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /kanban. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /kanban. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /kanban/[funnelId]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /kanban/[funnelId]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+🧹 [GC] Freed 3.63MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...
+[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (226ms)
+🧹 [GC] Freed 3.09MB heap, 0.00MB external, 0.00MB total
+🔍 [DB Monitor] Pool monitoring active...
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /dashboard. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+📊 [Memory Stats] RSS: 460.39MB | Heap: 221.26/272.25MB (81.27%) | External: 58.00MB
+  - waiting-children: 0
+  - paused: 0
+ ⚠ Unsupported metadata viewport is configured in metadata export in /atendimentos. Please move it to viewport export instead.
+  - prioritized: 0
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+🔄 [SessionMonitor] Running scheduled session check...
+  - waiting: 0
+2026-04-23T21:05:11.311097245Z [INFO] [SessionMonitor] Iniciando ciclo de verificação de sessões... time=1776978309573 pid=18 hostname="07b13053bf8b"
+📊 [WebhookQueue] Job Counts:
+[Session] Token missing in cookies. Available cookies: 
+  - completed: 0
+  - delayed: 0
+📊 [WebhookQueue] BullMQ Metrics Report:
+  - Waiting: 0
+  - Active: 0
+2026-04-23T21:05:11.312869065Z [INFO] [SessionMonitor] Encontradas 2 sessões ativas mas desconectadas. time=1776978309800 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:05:11.312873246Z [INFO] [SessionMonitor] Tentando recuperar sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019 (7cb4773e-1fab-4699-b35d-c70d9f8d9149)... time=1776978309800 pid=18 hostname="07b13053bf8b"
+ ⚠ Unsupported metadata viewport is configured in metadata export in /_not-found. Please move it to viewport export instead.
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+2026-04-23T21:05:11.312886936Z [INFO] [SessionMonitor] Sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019 encontrada no microserviço. Status atual: none time=1776978310145 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:05:11.312889620Z [INFO] [SessionMonitor] Falha ao recuperar sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019: No auth found. Scan QR code. (Status: needs_qr) time=1776978310250 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:05:11.312892331Z [INFO] [SessionMonitor] DB atualizado para 'qr' para sessão 9b5f2ea2-17ec-4957-86e9-e5fa3ea11019 time=1776978310290 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:05:11.312895077Z [INFO] [SessionMonitor] Tentando recuperar sessão b71ac304-5aa9-4ef2-8a41-6806db4e4904 (4c68abbe-d87e-41ea-9dc5-e812c48e0f79)... time=1776978310291 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:05:11.315250080Z [INFO] [SessionMonitor] Sessão b71ac304-5aa9-4ef2-8a41-6806db4e4904 encontrada no microserviço. Status atual: none time=1776978310303 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:05:11.315253099Z [INFO] [SessionMonitor] Falha ao recuperar sessão b71ac304-5aa9-4ef2-8a41-6806db4e4904: No auth found. Scan QR code. (Status: needs_qr) time=1776978310417 pid=18 hostname="07b13053bf8b"
+2026-04-23T21:05:11.315259564Z [INFO] [SessionMonitor] Ciclo de verificação finalizado. time=1776978310458 pid=18 hostname="07b13053bf8b"
+🏓 [Neon Keep-Alive] Ping successful (20ms)
+[2026-04-23T21:05:12.169Z] [INFO] Processing follow-up queue {"pendingCount":3,"now":"2026-04-23T21:05:12.101Z"}

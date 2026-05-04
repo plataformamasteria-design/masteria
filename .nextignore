@@ -1,0 +1,13 @@
+# Next.js ignore file for build optimization
+# Excludes cache and unnecessary files from build output
+
+# Build caches
+.next/cache
+node_modules/.cache
+
+# Test files - not needed in production build
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+__tests__

@@ -1,0 +1,292 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    --primary: 161 79% 39%;
+    /* #10B981 */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 220 13% 96%;
+    --secondary-foreground: 215 28% 17%;
+
+    --muted: 220 13% 96%;
+    --muted-foreground: 215 14% 47%;
+
+    --accent: 161 79% 39%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 161 79% 39%;
+
+    --radius: 0.5rem;
+
+    --chart-1: 161 79% 39%;
+    --chart-2: 120 40% 64%;
+
+    --sidebar-bg: 220 13% 97%;
+    --sidebar-border: 220 13% 91%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    /* Zinc ultra-profundo */
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 5.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 5.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 161 79% 39%;
+    /* MasterIA Accent */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 10% 9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 10% 9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 161 65% 35%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 10% 15.9%;
+    --input: 240 10% 15.9%;
+    --ring: 161 79% 39%;
+
+    --chart-1: 161 79% 39%;
+    --chart-2: 120 40% 64%;
+
+    --sidebar-bg: 240 10% 2.9%;
+    --sidebar-border: 240 10% 12.9%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border) / 0.4);
+  }
+
+  html,
+  body {
+    @apply h-full w-full overflow-hidden overscroll-none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .prose-chat p {
+    @apply my-2;
+  }
+}
+
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+/* ========================================
+   Premium Scrollbar
+   ======================================== */
+.premium-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.premium-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.premium-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.5);
+  border-radius: 100px;
+}
+
+.premium-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.8);
+}
+
+/* ========================================
+   Chat Background Pattern (subtle)
+   ======================================== */
+.chat-pattern {
+  position: relative;
+}
+
+.chat-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Light mode chat pattern */
+:root .chat-pattern-light {
+  background: linear-gradient(180deg, hsl(30 30% 96%) 0%, hsl(30 20% 93%) 100%);
+}
+
+/* Dark mode chat pattern */
+.dark .chat-pattern-light {
+  background: hsl(var(--background));
+}
+
+/* ========================================
+   Sidebar gradient separator
+   ======================================== */
+.sidebar-separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, hsl(var(--border) / 0.5) 50%, transparent 100%);
+}
+
+/* ========================================
+   Green glow effect for active items
+   ======================================== */
+.glow-primary {
+  filter: drop-shadow(0 0 6px hsl(161 79% 39% / 0.3));
+}
+
+/* ========================================
+   Message bubble tails
+   ======================================== */
+.bubble-sent {
+  border-radius: 1rem 1rem 0.25rem 1rem;
+}
+
+.bubble-received {
+  border-radius: 1rem 1rem 1rem 0.25rem;
+}
+
+/* ========================================
+   React Flow — Handle Position Fix
+   ======================================== */
+.react-flow__handle-top {
+  top: -8px !important;
+}
+
+.react-flow__handle-bottom {
+  bottom: -8px !important;
+}
+
+.react-flow__handle-left {
+  left: -8px !important;
+}
+
+.react-flow__handle-right {
+  right: -8px !important;
+}
+
+.react-flow__node {
+  overflow: visible !important;
+}
+
+/* Custom scrollbar for config panel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.5);
+  border-radius: 100px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.8);
+}
+
+/* ========================================
+   Card Glow Hover — Radial light effect
+   ======================================== */
+.card-glow-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-glow-hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      hsl(161 79% 39% / 0.06) 0%,
+      transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card-glow-hover:hover::before {
+  opacity: 1;
+}
+
+/* ========================================
+   Card 3D Hover — Perspective tilt
+   ======================================== */
+.card-3d-hover {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease-out;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.card-3d-hover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      hsl(161 79% 39% / 0.10) 0%,
+      transparent 60%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card-3d-hover:hover::before {
+  opacity: 1;
+}
+
+.card-3d-hover:hover {
+  box-shadow: 0 20px 40px -12px hsl(161 79% 39% / 0.12),
+    0 0 20px hsl(161 79% 39% / 0.06);
+}

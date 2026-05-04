@@ -1,0 +1,1 @@
+import { db } from './src/lib/db'; import { connections } from './src/lib/db/schema'; import { eq } from 'drizzle-orm'; async function run() { const c = await db.select().from(connections).where(eq(connections.id, '81994284-e8f0-4a2b-b17b-a9440a0d563a')); console.log('CONNECTION:', c); process.exit(0); } run();  
