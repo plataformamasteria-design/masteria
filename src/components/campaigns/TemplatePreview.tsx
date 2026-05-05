@@ -120,20 +120,33 @@ export function TemplatePreview({
     }
 
     if (headerComponent.format && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerComponent.format)) {
-      const hasMedia = mediaUrl || headerComponent.example?.header_handle?.[0];
+      const exampleHandle = headerComponent.example?.header_handle?.[0];
+      const exampleUrlDirect = (headerComponent.example as any)?.header_url?.[0];
+      const isExampleHandleUrl = exampleHandle?.startsWith('http');
+      const exampleUrl = exampleUrlDirect || (isExampleHandleUrl ? exampleHandle : null);
+      
+      const displayUrl = mediaUrl || exampleUrl;
+      const hasMedia = !!displayUrl || !!exampleHandle;
+
       const mediaHeightClass = compact ? 'h-32' : 'aspect-video';
       
       return (
         <div className="bg-gray-100 dark:bg-gray-800 rounded-t-2xl overflow-hidden">
           {hasMedia ? (
             <div className={`relative ${mediaHeightClass} bg-gray-200 dark:bg-gray-700 flex items-center justify-center`}>
-              {headerComponent.format === 'IMAGE' && mediaUrl && (
+              {headerComponent.format === 'IMAGE' && displayUrl && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
-                  src={mediaUrl} 
+                  src={displayUrl} 
                   alt="Preview" 
                   className="w-full h-full object-cover"
                 />
+              )}
+              {headerComponent.format === 'IMAGE' && !displayUrl && (
+                <div className="flex flex-col items-center gap-2 text-gray-600 dark:text-gray-300">
+                  <ImageIcon className={compact ? "h-8 w-8" : "h-12 w-12"} />
+                  <span className="text-sm">Imagem do modelo</span>
+                </div>
               )}
               {headerComponent.format === 'VIDEO' && (
                 <div className="flex flex-col items-center gap-2 text-gray-600 dark:text-gray-300">

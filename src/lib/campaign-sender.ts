@@ -215,12 +215,27 @@ interface ResolvedTemplate {
     bodyText: string;
     headerType: string | null;
     hasMedia: boolean;
+    mediaLink?: string | null;
+    mediaAssetId?: string | null;
 }
 
 function resolveTemplate(template: any): ResolvedTemplate {
     const bodyText = extractBodyText(template);
     const headerType = extractHeaderType(template);
-    const hasMedia = headerType ? ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) : false;
+    const hasMedia = headerType ? ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType.toUpperCase()) : false;
+
+    let mediaLink = null;
+    let mediaAssetId = null;
+    if (template.components && Array.isArray(template.components)) {
+        const headerComponent = template.components.find((c: any) => c.type === 'HEADER');
+        if (headerComponent?.example) {
+             mediaAssetId = headerComponent.example.mediaAssetId;
+             const handle = headerComponent.example.header_handle?.[0];
+             const url = headerComponent.example.header_url?.[0];
+             const resolvedUrl = url || (handle?.startsWith('http') ? handle : null);
+             mediaLink = headerComponent.example.mediaUrl || resolvedUrl;
+        }
+    }
 
     return {
         name: template.name,
@@ -228,6 +243,8 @@ function resolveTemplate(template: any): ResolvedTemplate {
         bodyText,
         headerType,
         hasMedia,
+        mediaLink,
+        mediaAssetId
     };
 }
 
@@ -402,14 +419,26 @@ async function sendViaMetaApi(
 
         const components: Record<string, unknown>[] = [];
 
-        if (resolvedTemplate.hasMedia && campaign.mediaAssetId) {
-            if (!connection.wabaId) throw new Error(`Conexão ${connection.config_name} não possui WABA ID configurado.`);
-            const { handle, asset } = await getMediaData(campaign.mediaAssetId, connection.id, connection.wabaId, campaign.companyId);
+        if (resolvedTemplate.hasMedia) {
+            const assetIdToUse = campaign.mediaAssetId || resolvedTemplate.mediaAssetId;
             const headerType = resolvedTemplate.headerType!.toLowerCase() as 'image' | 'video' | 'document';
-            const mediaObject: { id: string; filename?: string } = { id: handle };
-            if (headerType === 'document' && asset.name) {
-                mediaObject.filename = asset.name;
+            const mediaObject: { id?: string; link?: string; filename?: string } = {};
+
+            if (assetIdToUse) {
+                if (!connection.wabaId) throw new Error(`Conexão ${connection.config_name} não possui WABA ID configurado.`);
+                const { handle, asset } = await getMediaData(assetIdToUse, connection.id, connection.wabaId, campaign.companyId);
+                mediaObject.id = handle;
+                if (headerType === 'document' && asset.name) {
+                    mediaObject.filename = asset.name;
+                }
+            } else if ((resolvedTemplate as any).temporaryAssetHandle) {
+                mediaObject.id = (resolvedTemplate as any).temporaryAssetHandle;
+            } else if (resolvedTemplate.mediaLink) {
+                 mediaObject.link = resolvedTemplate.mediaLink;
+            } else {
+                 throw new Error(`A campanha usa o template ${resolvedTemplate.name} com mídia, mas não foi possível recuperar o arquivo de mídia original.`);
             }
+            
             components.push({ type: 'header', parameters: [{ type: headerType, [headerType]: mediaObject }] });
         }
 
@@ -562,8 +591,48 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
             resolvedTemplate = resolveTemplate(template);
 
             // Valida mídia para Meta API
-            if (!isBaileys && resolvedTemplate.hasMedia && !campaign.mediaAssetId) {
-                throw new Error(`Campanha ${campaign.id} exige um anexo de mídia, mas nenhum foi fornecido.`);
+            if (!isBaileys && resolvedTemplate.hasMedia) {
+                const hasMediaSource = campaign.mediaAssetId || resolvedTemplate.mediaAssetId || resolvedTemplate.mediaLink;
+                if (!hasMediaSource) {
+                    throw new Error(`Campanha ${campaign.id} exige um anexo de mídia, mas o template original não possui mídia salva e nenhuma foi fornecida.`);
+                }
+                
+                // FALLBACK LEGADO: Se não temos mediaAssetId salvos, mas temos um mediaLink da CDN do WhatsApp,
+                // a Meta bloqueia envios via link. Precisamos baixar e fazer upload na hora para a Resumable API.
+                const needsUpload = !campaign.mediaAssetId && !resolvedTemplate.mediaAssetId && 
+                                    resolvedTemplate.mediaLink && resolvedTemplate.mediaLink.includes('whatsapp.net');
+                
+                if (needsUpload) {
+                    try {
+                        if (!connection.wabaId) throw new Error("Conexão sem WABA ID configurado");
+                        const { uploadMediaToMeta } = await import('./metaMediaUpload');
+                        const { decrypt } = await import('./crypto');
+                        const accessToken = decrypt(connection.accessToken!);
+                        
+                        const mediaRes = await fetch(resolvedTemplate.mediaLink!);
+                        if (!mediaRes.ok) throw new Error("Falha HTTP " + mediaRes.status);
+                        
+                        const arrayBuffer = await mediaRes.arrayBuffer();
+                        const buffer = Buffer.from(arrayBuffer);
+                        const mimeType = mediaRes.headers.get('content-type') || 'application/octet-stream';
+                        
+                        if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Fazendo upload de mídia legado para a Resumable API...`);
+                        
+                        const handle = await uploadMediaToMeta(
+                            connection.phoneNumberId!, // Meta API usa phoneNumberId para uploadMediaToMeta
+                            accessToken,
+                            buffer,
+                            mimeType,
+                            'template_media_legado'
+                        );
+                        
+                        // Injetamos o mediaAssetId temporário para não usar o link
+                        (resolvedTemplate as any).temporaryAssetHandle = handle;
+                    } catch (uploadErr) {
+                        console.error(`[Campanha WhatsApp ${campaign.id}] Falha ao fazer upload de mídia legado:`, uploadErr);
+                        // Continua, mas o envio pode falhar com 403 depois se tentar usar o link direto
+                    }
+                }
             }
         }
         // Path B: Campanha de mensagem direta (Baileys sem template)
@@ -944,6 +1013,10 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
 
     } catch (error) {
         console.error(`Falha crítica ao enviar campanha ${campaign.id}:`, error);
+        try {
+            require('fs').writeFileSync(`CRITICAL_ERROR_${campaign.id}.txt`, (error as Error).stack || String(error));
+        } catch (fsErr) { }
+
         // SECURITY: Validar tenant ao atualizar status de falha
         await db.update(campaigns).set({ status: 'FAILED' }).where(and(
             eq(campaigns.id, campaign.id),

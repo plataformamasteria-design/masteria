@@ -165,29 +165,6 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
         getNodeOutput,
     } = useNodeTestOutputs();
 
-    // ── Carregar fluxo ────────────────────────────────────────────────────────
-    React.useEffect(() => {
-        if (flowId === 'new' || !session?.empresaId) { setIsLoadingFlow(false); return; }
-        async function load() {
-            try {
-                const flow = await getFlow(flowId, session!.empresaId as string);
-                if (flow) {
-                    setFlowName(flow.name);
-                    if (flow.visualData) {
-                        const visual = flow.visualData as any;
-                        if (Array.isArray(visual.nodes)) setNodes(visual.nodes);
-                        if (Array.isArray(visual.edges)) setEdges(visual.edges);
-                    }
-                }
-            } catch (e) {
-                console.error('[FlowEditorV4] load error', e);
-            } finally {
-                setIsLoadingFlow(false);
-            }
-        }
-        load();
-    }, [flowId, session?.empresaId]);
-
     // ── Callbacks: nodes ──────────────────────────────────────────────────────
     const enrichNodeWithCallbacks = useCallback((node: Node): Node => {
         return {
@@ -217,6 +194,29 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
             },
         };
     }, [setNodes, setEdges]);
+
+    // ── Carregar fluxo ────────────────────────────────────────────────────────
+    React.useEffect(() => {
+        if (flowId === 'new' || !session?.empresaId) { setIsLoadingFlow(false); return; }
+        async function load() {
+            try {
+                const flow = await getFlow(flowId, session!.empresaId as string);
+                if (flow) {
+                    setFlowName(flow.name);
+                    if (flow.visualData) {
+                        const visual = flow.visualData as any;
+                        if (Array.isArray(visual.nodes)) setNodes(visual.nodes.map((n: Node) => enrichNodeWithCallbacks(n)));
+                        if (Array.isArray(visual.edges)) setEdges(visual.edges);
+                    }
+                }
+            } catch (e) {
+                console.error('[FlowEditorV4] load error', e);
+            } finally {
+                setIsLoadingFlow(false);
+            }
+        }
+        load();
+    }, [flowId, session?.empresaId, enrichNodeWithCallbacks]);
 
     // ── Adicionar node (com posição e conexão opcionais) ──────────────────────
     const handleAddNode = useCallback((type: string, defaultData: Record<string, any>, flowPos?: { x: number; y: number }, sourceConnection?: { nodeId: string; handleId: string | null }) => {

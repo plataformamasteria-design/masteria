@@ -345,7 +345,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
         const needsTemplates = node.type === 'send_template';
         const needsConnections = node.type === 'send_template' || node.type === 'ai_agent' || node.type === 'ai';
         // Nodes that need tags data
-        const needsTags = ['trigger', 'condition', 'action', 'crm_move', 'filter', 'router'].includes(node.type || '');
+        const needsTags = ['trigger', 'condition', 'action', 'crm_move', 'filter', 'router', 'add_tag'].includes(node.type || '');
         // Nodes that need kanban boards
         const needsKanbans = ['crm_move', 'trigger'].includes(node.type || '');
         // Nodes that need all connections
@@ -384,7 +384,8 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
         if (needsTags) {
             fetch('/api/v1/tags')
                 .then(res => res.json())
-                .then(data => {
+                .then(response => {
+                    const data = response.data || response;
                     if (Array.isArray(data)) {
                         setCompanyTags(data.map((t: any) => ({
                             value: t.name || t.id,
@@ -579,6 +580,16 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         placeholder="Ex: oi, ajuda, preço..."
                                     />
                                 </ConfigSection>
+
+                                {d.keyword && (
+                                    <ConfigSection label="Modo de Correspondência">
+                                        <SelectField
+                                            value={d.match_mode || 'contains'}
+                                            onChange={(v) => update('match_mode', v)}
+                                            options={MATCH_MODE_OPTIONS}
+                                        />
+                                    </ConfigSection>
+                                )}
                             </>
                         )}
 
@@ -2165,9 +2176,26 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             />
                         </ConfigSection>
                         {(d.triggerType === 'keyword' || d.triggerType === 'message_received') && (
-                            <ConfigSection label="Palavra-chave (Opcional)" hint="Filtrar apenas mensagens que contenham esta palavra">
-                                <Input value={d.keyword || ''} onChange={(e) => update('keyword', e.target.value)} placeholder="Ex: quero comprar" className="rounded-xl h-11 bg-muted/50 border-border text-sm" />
-                            </ConfigSection>
+                            <>
+                                <ConfigSection label="Palavra-chave (Opcional)" hint="Filtrar apenas mensagens que contenham esta palavra">
+                                    <Input value={d.keyword || ''} onChange={(e) => update('keyword', e.target.value)} placeholder="Ex: quero comprar" className="rounded-xl h-11 bg-muted/50 border-border text-sm" />
+                                </ConfigSection>
+
+                                {d.keyword && (
+                                    <ConfigSection label="Modo de Correspondência">
+                                        <SelectField
+                                            value={d.match_mode || 'contains'}
+                                            onChange={(v) => update('match_mode', v)}
+                                            options={[
+                                                { value: 'contains', label: 'Contém' },
+                                                { value: 'exact', label: 'Exato' },
+                                                { value: 'starts_with', label: 'Começa com' },
+                                                { value: 'regex', label: 'Expressão Regular' }
+                                            ]}
+                                        />
+                                    </ConfigSection>
+                                )}
+                            </>
                         )}
                     </div>
                 );

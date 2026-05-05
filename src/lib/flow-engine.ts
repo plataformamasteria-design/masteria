@@ -265,7 +265,26 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
             if (!keyword) {
                 shouldTrigger = true;
             } else {
-                shouldTrigger = messageTextLower.includes(keywordLower);
+                switch (matchMode) {
+                    case 'exact':
+                        shouldTrigger = messageTextLower === keywordLower;
+                        break;
+                    case 'starts_with':
+                        shouldTrigger = messageTextLower.startsWith(keywordLower);
+                        break;
+                    case 'regex':
+                        try {
+                            const regex = new RegExp(keyword, 'i');
+                            shouldTrigger = regex.test(messageText);
+                        } catch {
+                            shouldTrigger = messageTextLower.includes(keywordLower);
+                        }
+                        break;
+                    case 'contains':
+                    default:
+                        shouldTrigger = messageTextLower.includes(keywordLower);
+                        break;
+                }
             }
 
             // ✅ Advanced Filters (from TriggerNodeV4)
@@ -1370,6 +1389,33 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             }
 
             return { message: 'Assign: missing configuration or failed' };
+        }
+
+        // ---- Add Tag ----
+        case 'add_tag': {
+            if (!ctx.contactId) return { message: 'Add Tag: no contact' };
+            const tagIdOrName = step.data.tagId || step.data.tag_name;
+            if (!tagIdOrName) return { message: 'Add Tag: no tag specified' };
+
+            try {
+                // Find tag by ID or name
+                const tag = await db.query.tags.findFirst({
+                    where: and(
+                        eq(tags.companyId, ctx.companyId),
+                        or(eq(tags.id, tagIdOrName), eq(tags.name, tagIdOrName))
+                    )
+                });
+                if (tag) {
+                    await db.insert(contactsToTags).values({
+                        contactId: ctx.contactId,
+                        tagId: tag.id,
+                    }).onConflictDoNothing();
+                    return { message: `Add Tag: ${tag.name}` };
+                }
+            } catch (e) {
+                console.error('[FLOW-ENGINE] Add Tag error:', e);
+            }
+            return { message: 'Add Tag: failed or not found' };
         }
 
         // ---- Bot Toggle ----

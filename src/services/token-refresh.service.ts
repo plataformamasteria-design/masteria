@@ -104,10 +104,15 @@ export class TokenRefreshService {
         );
 
         // Update token metadata
+        let newExpiresAt: Date | null = null;
+        if (debugInfo.expires_at && debugInfo.expires_at > 0) {
+            newExpiresAt = new Date(debugInfo.expires_at * 1000);
+        }
+
         await db
             .update(connections)
             .set({
-                tokenExpiresAt: new Date(debugInfo.expiresAt * 1000),
+                tokenExpiresAt: newExpiresAt,
                 tokenLastRefreshed: new Date(),
                 tokenRefreshFailedAt: null,
                 tokenRefreshError: null,

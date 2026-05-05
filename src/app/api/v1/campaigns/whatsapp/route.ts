@@ -125,7 +125,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             message: message, 
             campaignId: newCampaign.id,
             listsUsed: finalContactListIds.length,
-            listsIgnored: ignoredListsCount
+            listsIgnored: 0
         }, { status: 201 });
 
     } catch (error) {

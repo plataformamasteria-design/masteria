@@ -50,7 +50,7 @@ const contactFields = [
     { value: 'addressCity', label: 'Endereço (Cidade)' },
 ];
 
-const delayOptions = [
+const baseDelayOptions = [
     { value: 'fast', label: 'Rápido (2 a 5 segundos)', min: 2, max: 5, description: 'Indicado para números de alta reputação e bases quentes.' },
     { value: 'normal', label: 'Normal (5 a 15 segundos)', min: 5, max: 15, description: 'Equilíbrio entre velocidade e segurança.' },
     { value: 'safe', label: 'Seguro (15 a 30 segundos)', min: 15, max: 30, description: 'Mais seguro, previne bloqueios em envios longos.' },
@@ -63,20 +63,6 @@ const getSteps = (requiresMedia: boolean) => {
         { id: 'audience', title: '3. Público e Agendamento'},
         { id: 'review', title: '4. Revisão e Envio'},
     ];
-
-    if (requiresMedia) {
-        const contentIndex = baseSteps.findIndex(step => step.id === 'content');
-        if (contentIndex !== -1) {
-            baseSteps.splice(contentIndex, 0, { id: 'media', title: `${contentIndex + 1}. Anexar Mídia` });
-            for (let i = contentIndex + 1; i < baseSteps.length; i++) {
-                 const currentStep = baseSteps[i];
-                 if (currentStep) {
-                    currentStep.title = `${i + 1}. ${currentStep.title.split('. ')[1]}`;
-                 }
-            }
-        }
-    }
-    
     return baseSteps;
 };
 
@@ -140,13 +126,42 @@ export function CreateWhatsappCampaignDialog({
     const [availableLists, setAvailableLists] = useState<ContactList[]>([]);
     const [delayOption, setDelayOption] = useState<string>('normal');
     
+    const isOfficialApi = useMemo(() => {
+        return connections.find(c => c.id === selectedConnectionId)?.connectionType === 'meta_api';
+    }, [connections, selectedConnectionId]);
+
+    const delayOptions = useMemo(() => {
+        if (isOfficialApi) {
+            return [
+                { value: 'none', label: 'Sem intervalo (0 segundos) - API Oficial', min: 0, max: 0, description: 'Disparo massivo instantâneo. Exclusivo para Meta API.' },
+                ...baseDelayOptions
+            ];
+        }
+        return baseDelayOptions;
+    }, [isOfficialApi]);
+
+    useEffect(() => {
+        if (!isOfficialApi && delayOption === 'none') {
+            setDelayOption('normal');
+        }
+    }, [isOfficialApi, delayOption]);
+    
     const { toast } = useToast();
     const notify = useMemo(() => createToastNotifier(toast), [toast]);
     
-    const requiresMedia = useMemo(() => {
-        if (!selectedTemplate?.headerType) return false;
-        return ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(selectedTemplate.headerType);
+    const resolvedHeaderType = useMemo(() => {
+        if (selectedTemplate?.headerType) return selectedTemplate.headerType.toUpperCase();
+        if (Array.isArray(selectedTemplate?.components)) {
+             const header = selectedTemplate.components.find((c: any) => c.type === 'HEADER');
+             return header?.format?.toUpperCase() || null;
+        }
+        return null;
     }, [selectedTemplate]);
+
+    const requiresMedia = useMemo(() => {
+        if (!resolvedHeaderType) return false;
+        return ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(resolvedHeaderType);
+    }, [resolvedHeaderType]);
     const steps = getSteps(requiresMedia);
 
     const templateParts = useMemo(() => {
@@ -239,7 +254,6 @@ export function CreateWhatsappCampaignDialog({
         setSendNow(true);
         setVariableMappings({});
         setSelectedMedia(null);
-        setMediaHandleId(null);
         setDelayOption('normal');
     }, [connections]);
 
@@ -270,11 +284,6 @@ export function CreateWhatsappCampaignDialog({
             return;
         }
         
-        if (requiresMedia && !selectedMedia) {
-            notify.error('Mídia Obrigatória', 'Por favor, selecione um ficheiro de mídia para o cabeçalho.');
-            return;
-        }
-        
         if (contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0) {
             notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista, etiqueta, funil ou etapa.');
             return;
@@ -293,7 +302,7 @@ export function CreateWhatsappCampaignDialog({
         }
 
         try {
-            const selectedDelay = delayOptions.find(d => d.value === delayOption) || delayOptions[1];
+            const selectedDelay = delayOptions.find(d => d.value === delayOption) || baseDelayOptions.find(d => d.value === 'normal') || baseDelayOptions[1];
             
             const payload = {
                 name,
@@ -307,9 +316,8 @@ export function CreateWhatsappCampaignDialog({
                 funnelIds,
                 funnelStageIds,
                 schedule,
-                mediaAssetId: selectedMedia?.id,
-                minDelaySeconds: selectedDelay?.min || 5,
-                maxDelaySeconds: selectedDelay?.max || 15,
+                minDelaySeconds: selectedDelay?.min || 0,
+                maxDelaySeconds: selectedDelay?.max || 0,
             };
 
             const response = await fetch('/api/v1/campaigns/whatsapp', {
@@ -348,18 +356,6 @@ export function CreateWhatsappCampaignDialog({
             notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista, etiqueta, funil ou etapa.');
             return;
         }
-
-        if (currentStepConfig?.id === 'media' && requiresMedia) {
-            if (!selectedMedia) {
-                notify.error('Mídia Obrigatória', 'Por favor, selecione um ficheiro para o cabeçalho.');
-                return;
-            }
-             if (!mediaHandleId) {
-                notify.error('Mídia em Processamento', 'Aguarde o processamento da mídia com a Meta antes de avançar.');
-                return;
-            }
-        }
-
 
         if (currentStep < steps.length - 1) {
             setCurrentStep(currentStep + 1);
@@ -402,40 +398,6 @@ export function CreateWhatsappCampaignDialog({
                                 <SelectContent>{availableTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
-                    </div>
-                )
-            case 'media':
-                return (
-                     <div className="space-y-4">
-                        <Label>Anexo de Mídia ({selectedTemplate?.headerType})</Label>
-                        <MediaUploader 
-                            mediaType={selectedTemplate?.headerType as HeaderType}
-                            onMediaSelect={setSelectedMedia}
-                            selectedMedia={selectedMedia}
-                            connectionId={selectedConnectionId}
-                            onHandleGenerated={setMediaHandleId}
-                        />
-                        {mediaHandleId && (
-                           <Card className="mt-4 bg-muted/50">
-                             <CardContent className="p-3 space-y-2">
-                               <div className="flex justify-between items-center">
-                                 <Label className="font-semibold text-green-600">ID da Mídia na Meta</Label>
-                                 <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(mediaHandleId);
-                                        notify.success('Copiado!');
-                                    }}
-                                >
-                                    <Copy className="h-3 w-3 mr-2" /> Copiar
-                                </Button>
-                               </div>
-                               <p className="text-xs font-mono p-2 bg-background rounded border">{mediaHandleId}</p>
-                             </CardContent>
-                           </Card>
-                        )}
                     </div>
                 )
             case 'content':
@@ -569,27 +531,13 @@ export function CreateWhatsappCampaignDialog({
                                 <p><span className="font-semibold">Agendamento:</span> {sendNow ? 'Imediato' : `Para ${scheduleDate ? format(scheduleDate, 'dd/MM/yyyy') : 'data não definida'} às ${scheduleTime}`}</p>
                             </div>
                             
-                            {selectedMedia && (
-                                <div className="space-y-2">
-                                    <p className="font-semibold">Mídia:</p>
-                                    <div className="flex items-center gap-3 p-2 border rounded-md">
-                                        <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center shrink-0">
-                                            {selectedMedia.type === 'IMAGE' ? <Image src={selectedMedia.s3Url} alt={selectedMedia.name} width={64} height={64} className="object-cover rounded-md" /> :
-                                            selectedMedia.type === 'VIDEO' ? <VideoIcon className="h-8 w-8 text-muted-foreground" /> :
-                                            <FileText className="h-8 w-8 text-muted-foreground" />}
-                                        </div>
-                                        <p className="text-xs truncate">{selectedMedia.name}</p>
-                                    </div>
-                                </div>
-                            )}
-
                             <div className="space-y-2">
                                 <p className="font-semibold">Preview da Mensagem:</p>
                                 <TemplatePreview
                                     components={selectedTemplate?.components || []}
                                     variableMappings={variableMappings}
                                     contactFieldsMap={Object.fromEntries(contactFields.map(f => [f.value, f.label]))}
-                                    mediaUrl={selectedMedia?.s3Url}
+                                    mediaUrl={null}
                                     compact
                                 />
                             </div>
@@ -620,15 +568,15 @@ export function CreateWhatsappCampaignDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChangeWithReset}>
-            <DialogContent className="sm:max-w-3xl h-[90vh] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-4xl lg:max-w-5xl h-[90vh] flex flex-col p-6">
+                <DialogHeader className="px-2">
                     <div className="flex items-center gap-2">
                          <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8">
                             <ArrowLeft />
                         </Button>
                         <div>
-                             <DialogTitle>Criar Campanha WhatsApp</DialogTitle>
-                             <DialogDescription>{currentStepConfig?.title}</DialogDescription>
+                             <DialogTitle className="text-2xl font-bold tracking-tight">Criar Campanha WhatsApp</DialogTitle>
+                             <DialogDescription className="text-base">{currentStepConfig?.title}</DialogDescription>
                         </div>
                     </div>
                 </DialogHeader>
@@ -637,9 +585,9 @@ export function CreateWhatsappCampaignDialog({
                 ) : currentStepConfig?.id === 'review' ? (
                      renderStepContent()
                 ) : (
-                <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0 flex flex-col px-2">
                     <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-8 py-4 flex-1 min-h-0 overflow-y-auto pr-2", isMediaStep && "md:grid-cols-1")}>
-                        <div className={cn("space-y-4", isMediaStep && "md:col-span-2")}>
+                        <div className={cn("space-y-6", isMediaStep && "md:col-span-2")}>
                            {renderStepContent()}
                         </div>
                         {!isMediaStep && selectedTemplate?.components && (() => {
@@ -649,12 +597,12 @@ export function CreateWhatsappCampaignDialog({
                             }, {} as Record<string, string>);
                             
                             return (
-                                <div className="space-y-2 hidden md:flex md:flex-col overflow-auto">
+                                <div className="space-y-2 hidden md:flex md:flex-col overflow-auto bg-muted/30 p-4 rounded-xl border border-border/50">
                                     <TemplatePreview
                                         components={selectedTemplate.components as any}
                                         variableMappings={variableMappings}
                                         contactFieldsMap={contactFieldsMapping}
-                                        mediaUrl={selectedMedia?.s3Url || null}
+                                        mediaUrl={null}
                                     />
                                 </div>
                             );

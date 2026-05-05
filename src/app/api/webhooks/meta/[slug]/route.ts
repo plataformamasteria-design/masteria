@@ -144,7 +144,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             (payload.object === 'instagram' && payload.entry?.some((ent: any) =>
                 ent.id === '1573040157245762' ||
                 ent.id === '1573040197245762' ||  // WABA ID alternativo da mesma conta
-                ent.id === '1126122359328176'
+                ent.id === '1126122359328176' ||
+                ent.id === '26701812726088464'    // Henrique 0275
             )) ||
             // Verificação extra para o formato específico da Meta no teste (object: instagram mas campo field: messages dentro de entry.changes)
             payload.entry?.some((e: any) => e.changes?.some((c: any) => c.field === 'messages'))

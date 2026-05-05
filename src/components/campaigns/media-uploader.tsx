@@ -119,7 +119,8 @@ export function MediaUploader({
       }
     };
     generateHandle();
-  }, [selectedMedia, connectionId, onHandleGenerated, notify]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMedia?.id, connectionId]);
 
 
   const handleRemoveMedia = async () => {

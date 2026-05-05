@@ -1,15 +1,15 @@
 // src/lib/meta-token-manager.ts
 
 export interface TokenDebugInfo {
-    appId: string;
+    app_id: string;
     type: string;
     application: string;
-    dataAccessExpiresAt: number;
-    expiresAt: number;
-    isValid: boolean;
-    issuedAt: number;
+    data_access_expires_at: number;
+    expires_at: number;
+    is_valid: boolean;
+    issued_at: number;
     scopes: string[];
-    userId: string;
+    user_id: string;
 }
 
 export interface LongLivedTokenResponse {

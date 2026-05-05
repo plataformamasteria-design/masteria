@@ -343,18 +343,28 @@ async function handleWorkerInit(request: NextRequest) {
 
       // Start pending messages auto-responder (every 60 seconds)
       try {
-        const { pendingMessagesResponder } = require('@/services/pending-messages-responder.service');
-        pendingMessagesResponder.start();
-        console.log('[InitWorkerRoute] ✅ Pending messages auto-responder started');
+        const mod = require('@/services/pending-messages-responder.service');
+        const service = mod.pendingMessagesResponder || mod.default;
+        if (service && typeof service.start === 'function') {
+           service.start();
+           console.log('[InitWorkerRoute] ✅ Pending messages auto-responder started');
+        } else {
+           console.warn('[InitWorkerRoute] ⚠️ pendingMessagesResponder could not be loaded');
+        }
       } catch (err) {
         console.error('[InitWorkerRoute] ❌ Failed to start pending messages responder:', err);
       }
 
       // Start meeting reminder checker (every 60 seconds)
       try {
-        const { meetingReminderService } = require('@/services/meeting-reminder.service');
-        meetingReminderService.start();
-        console.log('[InitWorkerRoute] ✅ Meeting reminder service started');
+        const mod = require('@/services/meeting-reminder.service');
+        const service = mod.meetingReminderService || mod.default;
+        if (service && typeof service.start === 'function') {
+           service.start();
+           console.log('[InitWorkerRoute] ✅ Meeting reminder service started');
+        } else {
+           console.warn('[InitWorkerRoute] ⚠️ meetingReminderService could not be loaded');
+        }
       } catch (err) {
         console.error('[InitWorkerRoute] ❌ Failed to start meeting reminder service:', err);
       }

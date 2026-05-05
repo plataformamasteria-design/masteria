@@ -651,6 +651,7 @@ export default function TemplatesV2Page() {
           </div>
 
           <TemplateBuilder
+            connectionId={selectedConnectionForCreate}
             onSave={handleCreateTemplate}
             onCancel={() => {
               setShowCreateDialog(false);

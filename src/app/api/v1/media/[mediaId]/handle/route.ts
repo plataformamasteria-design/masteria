@@ -50,8 +50,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         const wabaId = connection?.wabaId;
+        const appId = connection?.appId;
         if (!wabaId) {
             return NextResponse.json({ error: 'Conexão não possui WABA ID configurado.' }, { status: 400 });
+        }
+        if (!appId) {
+            return NextResponse.json({ error: 'Conexão não possui App ID configurado. O App ID é necessário para gerar handles de aprovação.' }, { status: 400 });
         }
 
         const existingHandles = (asset.metaHandles || []) as MetaHandle[];
@@ -84,24 +88,38 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const downloadDuration = Date.now() - downloadStart;
         console.log(`[Media Handle] Leitura de arquivo concluída: ${(fileBuffer.byteLength / 1024 / 1024).toFixed(2)} MB em ${downloadDuration}ms`);
 
-        const uploadUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${connection.phoneNumberId}/media`;
+        console.log(`[Media Handle] Iniciando sessão de Resumable Upload na Meta Graph API...`);
+        const sessionUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${appId}/uploads?file_length=${fileBuffer.byteLength}&file_type=${asset.mimeType || 'application/octet-stream'}`;
+        
+        const sessionStart = Date.now();
+        const sessionResponse = await fetch(sessionUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            }
+        });
+        const sessionData = await sessionResponse.json();
+        
+        if (!sessionResponse.ok) {
+             console.error('Meta Media Session Error:', JSON.stringify(sessionData, null, 2));
+             throw new Error(sessionData.error?.message || 'Falha ao criar sessão de upload na Meta.');
+        }
 
-        const formData = new FormData();
-        formData.append('messaging_product', 'whatsapp');
-        // Usar Uint8Array para compatibilidade com o construtor nativo de Blob do Node/Nextjs
-        const fileBlob = new Blob([new Uint8Array(fileBuffer)], { type: asset.mimeType || 'application/octet-stream' });
-        formData.append('file', fileBlob, asset.name);
+        const sessionId = sessionData.id;
+        console.log(`[Media Handle] Sessão criada: ${sessionId} em ${Date.now() - sessionStart}ms`);
 
-        console.log(`[Media Handle] Iniciando upload para Meta Graph API...`);
+        console.log(`[Media Handle] Iniciando upload binário para a sessão...`);
+        const uploadUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${sessionId}`;
+        
         const uploadStart = Date.now();
         const uploadResponse = await fetch(uploadUrl, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                // NÃO defina o Content-Type aqui. A API fetch fará isso automaticamente para multipart/form-data.
+                'Authorization': `OAuth ${accessToken}`,
+                'file_offset': '0'
             },
-            body: formData,
-            signal: AbortSignal.timeout(60000) // 60s timeout para uploads pesados (vídeo)
+            body: fileBuffer,
+            signal: AbortSignal.timeout(60000)
         });
 
         const uploadData = await uploadResponse.json();
@@ -112,11 +130,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             throw new Error(uploadData.error?.message || 'Falha ao fazer upload da mídia para a Meta.');
         }
 
-        console.log(`[Media Handle] Upload concluído com sucesso em ${uploadDuration}ms. Handle: ${uploadData.id}`);
+        console.log(`[Media Handle] Upload concluído com sucesso em ${uploadDuration}ms. Handle: ${uploadData.h}`);
 
-        const handle = uploadData.id;
+        const handle = uploadData.h;
         if (!handle) {
-            throw new Error('Não foi possível obter o media handle da resposta da Meta.');
+            throw new Error('Não foi possível obter o media handle (h) da resposta da Meta.');
         }
 
         const newHandle: MetaHandle = { wabaId, handle, createdAt: new Date().toISOString() };

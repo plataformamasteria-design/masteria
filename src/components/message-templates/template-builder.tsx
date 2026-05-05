@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { MediaUploader } from '@/components/campaigns/media-uploader';
+import type { MediaAsset, HeaderType } from '@/lib/types';
 
 interface TemplateComponent {
   type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
@@ -35,6 +37,7 @@ interface TemplateBuilderProps {
   initialCategory?: string;
   initialLanguage?: string;
   initialComponents?: TemplateComponent[];
+  connectionId?: string;
   onSave: (data: {
     name: string;
     category: string;
@@ -71,12 +74,14 @@ export function TemplateBuilder({
   initialCategory = 'MARKETING',
   initialLanguage = 'pt_BR',
   initialComponents = [],
+  connectionId,
   onSave,
   onCancel,
 }: TemplateBuilderProps) {
   const [name, setName] = useState(initialName);
   const [category, setCategory] = useState(initialCategory);
   const [language, setLanguage] = useState(initialLanguage);
+  const [mediaAssets, setMediaAssets] = useState<Record<number, MediaAsset | null>>({});
   const [components, setComponents] = useState<TemplateComponent[]>(
     initialComponents.length > 0
       ? initialComponents
@@ -113,6 +118,12 @@ export function TemplateBuilder({
         if (comp.text && comp.text.length > 60) {
           newErrors[`footer_${idx}`] = 'Footer limitado a 60 caracteres';
         }
+      }
+
+      if (comp.type === 'HEADER' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(comp.format || '')) {
+         if (!comp.example?.header_handle || comp.example.header_handle.length === 0) {
+            newErrors[`header_media_${idx}`] = 'É obrigatório enviar uma mídia de exemplo para aprovação do modelo';
+         }
       }
     });
 
@@ -364,6 +375,53 @@ export function TemplateBuilder({
                       <p className="text-sm text-blue-600 mt-1">
                         Variáveis detectadas: {extractVariables(component.text || '').join(', ')}
                       </p>
+                    )}
+                  </div>
+                )}
+
+                {(component.format === 'IMAGE' || component.format === 'VIDEO' || component.format === 'DOCUMENT') && (
+                  <div className="mt-4 space-y-2">
+                    <Label className="mb-2 block">Exemplo de Mídia <span className="text-red-500">*</span></Label>
+                    <p className="text-sm text-muted-foreground mb-3">A Meta exige uma mídia de exemplo para aprovar modelos que contém cabeçalho multimídia.</p>
+                    {!connectionId ? (
+                      <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-md border border-yellow-200">
+                        Selecione uma conexão na tela anterior para poder anexar mídia.
+                      </p>
+                    ) : (
+                      <div className={errors[`header_media_${index}`] ? "border border-red-500 rounded-lg p-2" : ""}>
+                        <MediaUploader
+                          mediaType={component.format as HeaderType}
+                          selectedMedia={mediaAssets[index] || null}
+                          connectionId={connectionId}
+                          onMediaSelect={(media) => {
+                            setMediaAssets(prev => ({ ...prev, [index]: media }));
+                            const newComps = [...components];
+                            newComps[index].example = {
+                              ...newComps[index].example,
+                              mediaAssetId: media?.id,
+                              mediaUrl: media?.s3Url
+                            };
+                            setComponents(newComps);
+                          }}
+                          onHandleGenerated={(handle) => {
+                            const newComps = [...components];
+                            if (handle) {
+                              newComps[index].example = { 
+                                ...newComps[index].example, 
+                                header_handle: [handle] 
+                              };
+                            } else {
+                              if (newComps[index].example) {
+                                delete newComps[index].example!.header_handle;
+                              }
+                            }
+                            setComponents(newComps);
+                          }}
+                        />
+                        {errors[`header_media_${index}`] && (
+                           <p className="text-sm text-red-500 mt-2">{errors[`header_media_${index}`]}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
