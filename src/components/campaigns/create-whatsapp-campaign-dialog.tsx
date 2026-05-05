@@ -40,6 +40,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { TemplatePreview } from './TemplatePreview';
 import { MultiListSelector, SelectedListsSummary } from './multi-list-selector';
+import { AdvancedAudienceSelector } from './advanced-audience-selector';
 
 const contactFields = [
     { value: 'name', label: 'Nome' },
@@ -47,6 +48,12 @@ const contactFields = [
     { value: 'email', label: 'Email' },
     { value: 'addressStreet', label: 'Endereço (Rua)' },
     { value: 'addressCity', label: 'Endereço (Cidade)' },
+];
+
+const delayOptions = [
+    { value: 'fast', label: 'Rápido (2 a 5 segundos)', min: 2, max: 5, description: 'Indicado para números de alta reputação e bases quentes.' },
+    { value: 'normal', label: 'Normal (5 a 15 segundos)', min: 5, max: 15, description: 'Equilíbrio entre velocidade e segurança.' },
+    { value: 'safe', label: 'Seguro (15 a 30 segundos)', min: 15, max: 30, description: 'Mais seguro, previne bloqueios em envios longos.' },
 ];
 
 const getSteps = (requiresMedia: boolean) => {
@@ -119,6 +126,11 @@ export function CreateWhatsappCampaignDialog({
 
     const [name, setName] = useState('');
     const [contactListIds, setContactListIds] = useState<string[]>([]);
+    const [excludeListIds, setExcludeListIds] = useState<string[]>([]);
+    const [tagIds, setTagIds] = useState<string[]>([]);
+    const [excludeTagIds, setExcludeTagIds] = useState<string[]>([]);
+    const [funnelIds, setFunnelIds] = useState<string[]>([]);
+    const [funnelStageIds, setFunnelStageIds] = useState<string[]>([]);
     const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
     const [scheduleTime, setScheduleTime] = useState('09:00');
     const [sendNow, setSendNow] = useState(true);
@@ -126,6 +138,7 @@ export function CreateWhatsappCampaignDialog({
     const [selectedMedia, setSelectedMedia] = useState<MediaAsset | null>(null);
     const [mediaHandleId, setMediaHandleId] = useState<string | null>(null);
     const [availableLists, setAvailableLists] = useState<ContactList[]>([]);
+    const [delayOption, setDelayOption] = useState<string>('normal');
     
     const { toast } = useToast();
     const notify = useMemo(() => createToastNotifier(toast), [toast]);
@@ -216,12 +229,18 @@ export function CreateWhatsappCampaignDialog({
         setSelectedTemplateId('');
         setName('');
         setContactListIds([]);
+        setExcludeListIds([]);
+        setTagIds([]);
+        setExcludeTagIds([]);
+        setFunnelIds([]);
+        setFunnelStageIds([]);
         setScheduleDate(undefined);
         setScheduleTime('09:00');
         setSendNow(true);
         setVariableMappings({});
         setSelectedMedia(null);
         setMediaHandleId(null);
+        setDelayOption('normal');
     }, [connections]);
 
     const handleOpenChangeWithReset = (open: boolean) => {
@@ -256,8 +275,8 @@ export function CreateWhatsappCampaignDialog({
             return;
         }
         
-        if (contactListIds.length === 0) {
-            notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista de contatos.');
+        if (contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0) {
+            notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista, etiqueta, funil ou etapa.');
             return;
         }
 
@@ -274,14 +293,23 @@ export function CreateWhatsappCampaignDialog({
         }
 
         try {
+            const selectedDelay = delayOptions.find(d => d.value === delayOption) || delayOptions[1];
+            
             const payload = {
                 name,
                 connectionId: selectedConnectionId,
                 templateId: selectedTemplate.id,
                 variableMappings,
                 contactListIds: contactListIds,
+                excludeListIds,
+                tagIds,
+                excludeTagIds,
+                funnelIds,
+                funnelStageIds,
                 schedule,
                 mediaAssetId: selectedMedia?.id,
+                minDelaySeconds: selectedDelay?.min || 5,
+                maxDelaySeconds: selectedDelay?.max || 15,
             };
 
             const response = await fetch('/api/v1/campaigns/whatsapp', {
@@ -316,8 +344,8 @@ export function CreateWhatsappCampaignDialog({
             return;
         }
 
-        if (currentStepConfig?.id === 'audience' && contactListIds.length === 0) {
-            notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista de contatos.');
+        if (currentStepConfig?.id === 'audience' && contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0) {
+            notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista, etiqueta, funil ou etapa.');
             return;
         }
 
@@ -468,12 +496,20 @@ export function CreateWhatsappCampaignDialog({
                  return (
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <Label className="text-base font-semibold">Público (selecione uma ou mais listas)</Label>
-                            <MultiListSelector
-                                lists={availableLists}
-                                selectedIds={contactListIds}
-                                onSelectionChange={setContactListIds}
-                                maxHeight="180px"
+                            <AdvancedAudienceSelector
+                                availableLists={availableLists}
+                                contactListIds={contactListIds}
+                                setContactListIds={setContactListIds}
+                                excludeListIds={excludeListIds}
+                                setExcludeListIds={setExcludeListIds}
+                                tagIds={tagIds}
+                                setTagIds={setTagIds}
+                                excludeTagIds={excludeTagIds}
+                                setExcludeTagIds={setExcludeTagIds}
+                                funnelIds={funnelIds}
+                                setFunnelIds={setFunnelIds}
+                                funnelStageIds={funnelStageIds}
+                                setFunnelStageIds={setFunnelStageIds}
                             />
                         </div>
                         <div className="space-y-2">
@@ -496,6 +532,29 @@ export function CreateWhatsappCampaignDialog({
                                 </Popover>
                                 <Input name="scheduleTime" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full sm:w-auto" disabled={sendNow} />
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="delay-select" className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                Intervalo entre Mensagens
+                            </Label>
+                            <Select value={delayOption} onValueChange={setDelayOption}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o intervalo"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {delayOptions.map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value}>
+                                            <div className="flex flex-col">
+                                                <span>{opt.label}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                                {delayOptions.find(d => d.value === delayOption)?.description}
+                            </p>
                         </div>
                     </div>
                 );
@@ -537,7 +596,7 @@ export function CreateWhatsappCampaignDialog({
                         </div>
                         <DialogFooter className="pt-4 border-t mt-auto shrink-0">
                             <Button type="button" variant="secondary" onClick={() => setCurrentStep(steps.length - 2)} disabled={isProcessing}>Voltar</Button>
-                            <Button type="submit" disabled={isProcessing || contactListIds.length === 0} onClick={handleSubmit}>
+                            <Button type="submit" disabled={isProcessing || (contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0)} onClick={handleSubmit}>
                                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {sendNow ? (
                                     <>

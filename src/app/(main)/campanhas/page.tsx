@@ -4,7 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import { CampaignTable } from '@/components/campaigns/campaign-table';
-import { CreateCampaignDialog } from '@/components/campaigns/create-campaign-dialog';
+import { CreateWhatsappCampaignWrapper } from '@/components/campaigns/create-whatsapp-campaign-wrapper';
 import { CampaignsDashboard } from '@/components/campaigns/campaigns-dashboard';
 import { BaileysCampaignTable } from '@/components/campaigns/baileys-campaign-table';
 import { CreateBaileysCampaignDialog } from '@/components/campaigns/create-baileys-campaign-dialog';
@@ -64,12 +64,7 @@ export default function CampanhasHubPage() {
                 <TabsContent value="whatsapp-api" className="mt-6">
                     <div className="space-y-6">
                         <div className="flex justify-end gap-2">
-                            <CreateCampaignDialog>
-                                <Button>
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Criar Campanha API
-                                </Button>
-                            </CreateCampaignDialog>
+                            <CreateWhatsappCampaignWrapper />
                         </div>
                         <CampaignTable channel="WHATSAPP" />
                         <CampaignsDashboard />

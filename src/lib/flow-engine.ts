@@ -1752,7 +1752,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     message: 'AI Agent: No API key configured — skipping AI node',
                 };
             }
-            const systemPrompt = await interpolateTemplate(
+            let systemPrompt = await interpolateTemplate(
                 step.data.system_message || step.data.description || step.data.systemPrompt || '', ctx
             );
             
@@ -1765,6 +1765,37 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
             // Determine if we're in dialogue mode to use chat-based approach
             const isDialogueMode = !!step.data.dialogue_mode;
+
+            // ── Google Calendar Tool Setup ───────────────────────────────────
+            let calendarTools: object[] = [];
+            let calendarToolConfig: import('@/lib/ai-calendar-tools').CalendarToolConfig | null = null;
+
+            if (step.data.google_calendar_enabled) {
+                try {
+                    const { buildCalendarTools, buildCalendarSystemContext, checkGoogleCredential } =
+                        await import('@/lib/ai-calendar-tools');
+                    const hasCred = await checkGoogleCredential(ctx.companyId);
+                    if (hasCred) {
+                        calendarToolConfig = {
+                            companyId: ctx.companyId,
+                            createMeetLink: step.data.google_meet_enabled ?? false,
+                            durationMinutes: step.data.appointment_duration ?? 30,
+                            workingHoursStart: step.data.working_hours_start ?? 9,
+                            workingHoursEnd: step.data.working_hours_end ?? 18,
+                            calendarInstruction: step.data.calendar_instruction || '',
+                        };
+                        calendarTools = buildCalendarTools(calendarToolConfig);
+                        // Prepend calendar context to system prompt
+                        const calCtx = buildCalendarSystemContext(calendarToolConfig);
+                        systemPrompt = calCtx + (systemPrompt ? '\n\n' + systemPrompt : '');
+                        console.log('[FLOW-ENGINE] 📅 Google Calendar tools enabled for this agent');
+                    } else {
+                        console.warn('[FLOW-ENGINE] ⚠️ google_calendar_enabled=true but no active credential found');
+                    }
+                } catch (calErr) {
+                    console.error('[FLOW-ENGINE] Calendar tools setup error:', calErr);
+                }
+            }
 
             // Build webhook vars context string (used in both modes)
             let webhookContext = '';
@@ -1845,11 +1876,84 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 console.log(`[FLOW-ENGINE] 💬 Dialogue mode: ${chatHistory.length} history entries, sending new message`);
 
                 try {
-                    const completion = await openai.chat.completions.create({
+                    const completionParams: Parameters<typeof openai.chat.completions.create>[0] = {
                         model: modelName,
                         messages: chatHistory,
                         temperature,
-                    });
+                        ...(calendarTools.length > 0 && { tools: calendarTools as any, tool_choice: 'auto' as const }),
+                    };
+
+                    let completion = await openai.chat.completions.create(completionParams);
+
+                    // ── Tool-calling loop for Google Calendar ────────────────
+                    let toolIterations = 0;
+                    const maxToolIterations = step.data.max_iterations || 5;
+
+                    while (
+                        completion.choices[0]?.finish_reason === 'tool_calls' &&
+                        toolIterations < maxToolIterations
+                    ) {
+                        const toolCalls = completion.choices[0]?.message?.tool_calls || [];
+                        chatHistory.push(completion.choices[0].message);
+
+                        const { executeCalendarTool } = await import('@/lib/ai-calendar-tools');
+
+                        for (const toolCall of toolCalls) {
+                            let toolArgs: Record<string, unknown> = {};
+                            try { toolArgs = JSON.parse(toolCall.function.arguments); } catch {}
+
+                            console.log(`[FLOW-ENGINE] 🔧 Tool call: ${toolCall.function.name}`, toolArgs);
+
+                            const toolResult = await executeCalendarTool(
+                                toolCall.function.name,
+                                toolArgs,
+                                ctx.companyId,
+                                {
+                                    contactName: ctx.contactName || '',
+                                    contactEmail: ctx.contactEmail || null,
+                                    contactPhone: ctx.contactPhone,
+                                    contactId: ctx.contactId,
+                                    conversationId: ctx.variables.conversation_id as string | undefined,
+                                    config: calendarToolConfig!,
+                                }
+                            );
+
+                            console.log(`[FLOW-ENGINE] ✅ Tool result: ${toolCall.function.name}`, toolResult);
+
+                            chatHistory.push({
+                                role: 'tool' as const,
+                                tool_call_id: toolCall.id,
+                                content: JSON.stringify(toolResult.data || toolResult),
+                            });
+
+                            // Auto-send Meet link to lead after successful appointment creation
+                            if (
+                                toolCall.function.name === 'create_appointment' &&
+                                toolResult.success &&
+                                toolResult.meetLink &&
+                                step.data.google_meet_enabled
+                            ) {
+                                try {
+                                    const meetMsg = `📅 Link da sua videochamada:\n${toolResult.meetLink}`;
+                                    await sendUnifiedMessage({
+                                        provider: 'baileys',
+                                        connectionId: ctx.connectionId,
+                                        to: ctx.contactPhone || '',
+                                        message: meetMsg,
+                                    });
+                                    console.log('[FLOW-ENGINE] 📅 Meet link sent to lead');
+                                } catch (meetSendErr) {
+                                    console.warn('[FLOW-ENGINE] Failed to send Meet link:', meetSendErr);
+                                }
+                            }
+                        }
+
+                        completion = await openai.chat.completions.create({
+                            ...completionParams,
+                            messages: chatHistory,
+                        });
+                        toolIterations++;
+                    }
 
                     responseText = completion.choices[0]?.message?.content?.trim() || '';
                     if (completion.usage) {

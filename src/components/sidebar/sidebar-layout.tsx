@@ -25,16 +25,21 @@ export function SidebarLayout() {
     const userPermissions = session?.userData?.permissions as { tabs?: Record<string, boolean> } | undefined;
 
     const navItems = allNavItems.filter(item => {
-        if (!userRole || !item.roles.includes(userRole as any)) return false;
+        if (!userRole) return false;
         if (item.requireEmail && item.requireEmail !== userEmail) return false;
         
-        // Se for atendente, verifica as permissões específicas
-        if (userRole === 'atendente' && userPermissions?.tabs) {
-            const isTabEnabled = userPermissions.tabs[item.label];
-            if (isTabEnabled === false) return false;
+        // Se for atendente, a lógica de permissões sobrepõe as roles padrão
+        if (userRole === 'atendente') {
+            if (userPermissions?.tabs) {
+                const isTabEnabled = userPermissions.tabs[item.label];
+                if (isTabEnabled === true) return true;
+                if (isTabEnabled === false) return false;
+            }
+            // Se não especificado, segue a role padrão
+            return item.roles.includes(userRole as any);
         }
         
-        return true;
+        return item.roles.includes(userRole as any);
     });
 
     const [openGroups, setOpenGroups] = useState<string[]>([]);

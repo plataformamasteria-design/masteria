@@ -329,9 +329,10 @@ interface ImportContactsDialogProps {
     children?: React.ReactNode;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    initialListId?: string;
 }
 
-export function ImportContactsDialog({ onImportCompleted, children, open: externalOpen, onOpenChange }: ImportContactsDialogProps): JSX.Element {
+export function ImportContactsDialog({ onImportCompleted, children, open: externalOpen, onOpenChange, initialListId }: ImportContactsDialogProps): JSX.Element {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
   const setIsOpen = onOpenChange || setInternalOpen;
@@ -343,7 +344,7 @@ export function ImportContactsDialog({ onImportCompleted, children, open: extern
   const [progress, setProgress] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
-  const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
+  const [selectedListIds, setSelectedListIds] = useState<string[]>(initialListId ? [initialListId] : []);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { toast } = useToast();
   const notify = React.useMemo(() => createToastNotifier(toast), [toast]);
@@ -357,9 +358,9 @@ export function ImportContactsDialog({ onImportCompleted, children, open: extern
     setProgress(0);
     setTotalRows(0);
     setImportSummary(null);
-    setSelectedListIds([]);
+    setSelectedListIds(initialListId ? [initialListId] : []);
     setSelectedTagIds([]);
-  }, []);
+  }, [initialListId]);
 
   const handleOpenChange = (open: boolean): void => {
     setIsOpen(open);

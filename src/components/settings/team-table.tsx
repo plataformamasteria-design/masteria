@@ -247,7 +247,7 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
   const notify = useMemo(() => createToastNotifier(toast), [toast]);
 
   // Available tabs for agents
-  const agentTabs = allNavItems.filter(item => item.roles.includes('atendente'));
+  const agentTabs = allNavItems.filter(item => !item.requireEmail);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -257,7 +257,8 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
       
       // Default all to true if not specified
       agentTabs.forEach(tab => {
-        initTabs[tab.label] = userTabs[tab.label] !== undefined ? userTabs[tab.label] : true;
+        const naturallyHasAccess = tab.roles.includes('atendente');
+        initTabs[tab.label] = userTabs[tab.label] !== undefined ? userTabs[tab.label] : naturallyHasAccess;
       });
       
       setTabs(initTabs);

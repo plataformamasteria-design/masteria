@@ -16,7 +16,7 @@ import {
     HelpCircle, UserPlus, MessageCircle, GitBranch, Filter,
     Signpost, Clock, ArrowRightLeft, Bot, ShieldOff, RefreshCw,
     Brain, Send, MessageSquareHeart, Globe, Code2, PenLine,
-    Plus, Trash2, Zap, Settings2, Info,
+    Plus, Trash2, Zap, Settings2, Info, Loader2, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 
 // ==============================
@@ -320,6 +320,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
     const [approvedTemplates, setApprovedTemplates] = useState<any[]>([]);
     const [loadingTemplates, setLoadingTemplates] = useState(false);
     const [metaConnections, setMetaConnections] = useState<any[]>([]);
+    const [googleCalendarStatus, setGoogleCalendarStatus] = useState<{ connected: boolean; calendarName: string | null } | null>(null);
 
     // Dynamic data for node config selects
     const [companyTags, setCompanyTags] = useState<{ value: string; label: string }[]>([]);
@@ -414,6 +415,14 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                     }
                 })
                 .catch(() => { });
+        }
+        
+        // Fetch Google Calendar connection status for the Agenda tab
+        if (node.type === 'ai_agent' || node.type === 'ai') {
+            fetch('/api/v1/integrations/google/status')
+              .then(res => res.json())
+              .then((data: { connected: boolean; calendarName: string | null }) => setGoogleCalendarStatus(data))
+              .catch(() => setGoogleCalendarStatus({ connected: false, calendarName: null }));
         }
     }, [session?.empresaId, node.type]);
 
@@ -1483,6 +1492,13 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
             case 'ai_agent':
             case 'ai': {
                 const aiTab = d._config_tab || 'params';
+                const googleCalendarEnabled = d.google_calendar_enabled || false;
+                const googleMeetEnabled = d.google_meet_enabled || false;
+                const appointmentDuration = d.appointment_duration || 30;
+                const workingHoursStart = d.working_hours_start || 9;
+                const workingHoursEnd = d.working_hours_end || 18;
+                const calendarInstruction = d.calendar_instruction || '';
+                
                 return (
                     <div className="space-y-5">
                         {/* Tab Selector */}
@@ -1491,6 +1507,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 { id: 'params', label: 'Parâmetros' },
                                 { id: 'input', label: 'Input' },
                                 { id: 'config', label: 'Configurações' },
+                                { id: 'agenda', label: 'Agenda' },
                             ].map(tab => (
                                 <button
                                     key={tab.id}
@@ -1650,6 +1667,92 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     <ConfigSection label="Timeout (minutos)">
                                         <NumberField value={d.response_timeout_minutes || 5} onChange={(v) => update('response_timeout_minutes', parseInt(v) || 5)} min={1} />
                                     </ConfigSection>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* AGENDA TAB */}
+                        {aiTab === 'agenda' && (
+                            <div className="space-y-4">
+                                <InfoBanner text="Permita que o agente consulte, crie, edite e cancele eventos no Google Calendar de forma autônoma durante a conversa." color="blue" />
+                                
+                                {/* Connection Status */}
+                                {googleCalendarStatus === null ? (
+                                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground p-2">
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verificando conexão...
+                                    </div>
+                                ) : googleCalendarStatus.connected ? (
+                                    <div className="flex items-center gap-3 rounded-xl bg-emerald-50/50 px-3 py-2.5 border border-emerald-100">
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-emerald-900">Google Agenda conectada</p>
+                                            <p className="text-[10px] text-emerald-600/80">{googleCalendarStatus.calendarName || 'Agenda principal'}</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3 rounded-xl bg-amber-50/50 px-3 py-2.5 border border-amber-100">
+                                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-amber-900">Google Agenda não conectada</p>
+                                            <p className="text-[10px] text-amber-600/80">Conecte em Configurações &rarr; Integrações para usar.</p>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <ToggleSwitch 
+                                    label="🗓️ Ativar Agenda no Agente" 
+                                    checked={googleCalendarEnabled} 
+                                    onChange={(v) => update('google_calendar_enabled', v)} 
+                                    color="blue"
+                                    disabled={!googleCalendarStatus?.connected}
+                                />
+                                
+                                {googleCalendarEnabled && googleCalendarStatus?.connected && (
+                                    <div className="space-y-5 pl-3 border-l-2 border-blue-100 ml-1.5 pt-2">
+                                        <ToggleSwitch 
+                                            label="🎥 Gerar link do Google Meet ao agendar" 
+                                            checked={googleMeetEnabled} 
+                                            onChange={(v) => update('google_meet_enabled', v)} 
+                                            color="emerald" 
+                                        />
+                                        
+                                        <ConfigSection label="Duração padrão (minutos)" hint="Duração dos eventos criados pelo agente">
+                                            <NumberField 
+                                                value={appointmentDuration} 
+                                                onChange={(v) => update('appointment_duration', parseInt(v) || 30)} 
+                                                min={15} max={480} step={15} 
+                                            />
+                                        </ConfigSection>
+                                        
+                                        <ConfigSection label="Horário de Atendimento" hint="Período em que o agente pode agendar">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1">
+                                                    <NumberField 
+                                                        value={workingHoursStart} 
+                                                        onChange={(v) => update('working_hours_start', parseInt(v) || 9)} 
+                                                        min={0} max={23} 
+                                                    />
+                                                </div>
+                                                <span className="text-sm text-muted-foreground font-medium">às</span>
+                                                <div className="flex-1">
+                                                    <NumberField 
+                                                        value={workingHoursEnd} 
+                                                        onChange={(v) => update('working_hours_end', parseInt(v) || 18)} 
+                                                        min={1} max={24} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        </ConfigSection>
+                                        
+                                        <ConfigSection label="Instrução para o Agente (Opcional)" hint="Regras adicionais. Ex: 'Agende apenas à tarde.'">
+                                            <Textarea
+                                                value={calendarInstruction}
+                                                onChange={(e) => update('calendar_instruction', e.target.value)}
+                                                className="text-xs min-h-[80px] rounded-xl bg-muted/30 border-border nodrag nowheel"
+                                                placeholder="Ex: Confirme sempre o nome do paciente antes de agendar."
+                                            />
+                                        </ConfigSection>
+                                    </div>
                                 )}
                             </div>
                         )}

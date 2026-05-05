@@ -16,6 +16,7 @@ export async function GET(_request: NextRequest) {
                 email: users.email,
                 role: users.role,
                 emailVerified: users.emailVerified,
+                permissions: users.permissions,
             })
             .from(users)
             .where(eq(users.companyId, companyId))

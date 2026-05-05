@@ -1,4 +1,4 @@
-'use server';
+
 
 import { db } from '@/lib/db';
 import { conversations, messages, contacts, connections } from '@/lib/db/schema';

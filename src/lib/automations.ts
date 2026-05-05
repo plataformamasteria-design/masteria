@@ -21,8 +21,8 @@ const FlowVisualSchema = z.object({
     })).optional().default([]),
 });
 
-export async function saveFlow(id: string, name: string, companyId: string, visualData: any, steps: any[] = []) {
-    console.log('[saveFlow] Payload:', { id, name, companyId, stepsCount: steps.length });
+export async function saveFlow(id: string, name: string, companyId: string, visualData: any, steps: any = []) {
+    console.log('[saveFlow] Payload:', { id, name, companyId, stepsProvided: !!steps });
 
     if (!companyId || companyId === 'current-company') {
         throw new Error('Company ID inválido ou não fornecido.');
@@ -42,6 +42,8 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
             }).returning();
             revalidatePath('/management');
             revalidatePath('/settings');
+            revalidatePath('/automacoes');
+            revalidatePath('/automations');
             return { success: true, flow: newFlow };
         }
 
@@ -64,10 +66,12 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
 
         revalidatePath('/management');
         revalidatePath('/settings');
+        revalidatePath('/automacoes');
+        revalidatePath('/automations');
         return { success: true, flow: updatedFlow };
-    } catch (error) {
+    } catch (error: any) {
         console.error('[saveFlow Error]:', error);
-        throw error;
+        return { success: false, error: error.message || 'Erro interno ao salvar automação.' };
     }
 }
 

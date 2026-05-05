@@ -24,7 +24,11 @@ const serverPath = path.join(__dirname, '../src/server.js');
 const productionEnv = {
     ...process.env,
     NODE_ENV: 'production',
-    RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT || 'production'
+    RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT || 'production',
+    // Limita a memória Heap do V8 para ~300MB e expõe o GC globalmente.
+    // Isso é crítico em containers com limite de 500MB (Hobby Plan) 
+    // para forçar a limpeza antes de ser morto por OOM pelo Docker.
+    NODE_OPTIONS: process.env.NODE_OPTIONS || '--max-old-space-size=300 --expose-gc'
 };
 
 const child = spawn('node', [serverPath], {

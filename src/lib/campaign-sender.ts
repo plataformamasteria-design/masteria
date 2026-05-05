@@ -15,7 +15,9 @@ import {
     messageTemplates,
     conversations,
     messages,
-    voiceAgents
+    voiceAgents,
+    contactsToTags,
+    kanbanLeads
 } from '@/lib/db/schema';
 import { eq, inArray, and, sql } from 'drizzle-orm';
 import { ensureTenantAccess } from '@/lib/db/tenant-guard';
@@ -576,17 +578,78 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
         }
 
         // OTIMIZAÇÃO DE MEMÓRIA: Buscar apenas os IDs primeiro para evitar carregar milhares de objetos pesados
-        let allContactIds: string[];
+        let allContactIds: string[] = [];
 
         if (isRetryMode) {
             if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Modo de reenvio: processando ${campaign.retryContactIds!.length} contatos que falharam`);
             allContactIds = campaign.retryContactIds!;
         } else {
-            const contactIdsRows = await db
-                .select({ id: contactsToContactLists.contactId })
-                .from(contactsToContactLists)
-                .where(inArray(contactsToContactLists.listId, campaign.contactListIds!));
-            allContactIds = contactIdsRows.map(r => r.id);
+            const includedContactIds = new Set<string>();
+            const excludedContactIds = new Set<string>();
+
+            // 1. INCLUSIONS
+            // 1.1 Lists
+            if (campaign.contactListIds && campaign.contactListIds.length > 0) {
+                const listRows = await db
+                    .select({ id: contactsToContactLists.contactId })
+                    .from(contactsToContactLists)
+                    .where(inArray(contactsToContactLists.listId, campaign.contactListIds));
+                for (const row of listRows) includedContactIds.add(row.id);
+            }
+            
+            // 1.2 Tags
+            if (campaign.tagIds && campaign.tagIds.length > 0) {
+                const tagRows = await db
+                    .select({ id: contactsToTags.contactId })
+                    .from(contactsToTags)
+                    .where(inArray(contactsToTags.tagId, campaign.tagIds));
+                for (const row of tagRows) includedContactIds.add(row.id);
+            }
+            
+            // 1.3 Funnels / Stages
+            if (campaign.funnelIds && campaign.funnelIds.length > 0) {
+                const funnelRows = await db
+                    .select({ id: kanbanLeads.contactId })
+                    .from(kanbanLeads)
+                    .where(inArray(kanbanLeads.boardId, campaign.funnelIds));
+                for (const row of funnelRows) {
+                    if (row.id) includedContactIds.add(row.id);
+                }
+            }
+            if (campaign.funnelStageIds && campaign.funnelStageIds.length > 0) {
+                const stageRows = await db
+                    .select({ id: kanbanLeads.contactId })
+                    .from(kanbanLeads)
+                    .where(inArray(kanbanLeads.stageId, campaign.funnelStageIds));
+                for (const row of stageRows) {
+                    if (row.id) includedContactIds.add(row.id);
+                }
+            }
+
+            // 2. EXCLUSIONS
+            // 2.1 Exclude Lists
+            if (campaign.excludeListIds && campaign.excludeListIds.length > 0) {
+                const excludeListRows = await db
+                    .select({ id: contactsToContactLists.contactId })
+                    .from(contactsToContactLists)
+                    .where(inArray(contactsToContactLists.listId, campaign.excludeListIds));
+                for (const row of excludeListRows) excludedContactIds.add(row.id);
+            }
+            
+            // 2.2 Exclude Tags
+            if (campaign.excludeTagIds && campaign.excludeTagIds.length > 0) {
+                const excludeTagRows = await db
+                    .select({ id: contactsToTags.contactId })
+                    .from(contactsToTags)
+                    .where(inArray(contactsToTags.tagId, campaign.excludeTagIds));
+                for (const row of excludeTagRows) excludedContactIds.add(row.id);
+            }
+
+            // 3. FINAL RESOLUTION
+            for (const id of excludedContactIds) {
+                includedContactIds.delete(id);
+            }
+            allContactIds = Array.from(includedContactIds);
         }
 
         // DEDUPLICAÇÃO DE IDs: Excluir contatos que já receberam mensagem nesta campanha

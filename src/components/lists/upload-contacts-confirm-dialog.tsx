@@ -110,6 +110,7 @@ export function UploadContactsConfirmDialog({
           }
         }}
         onImportCompleted={handleUploadCompleted}
+        initialListId={_listId}
       />
     </>
   );

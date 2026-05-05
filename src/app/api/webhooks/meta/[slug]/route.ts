@@ -276,15 +276,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         });
 
         // LOG PAYLOAD FOR DEBUGGING
-        try {
-            await db.insert(require('@/lib/db/schema').webhookLogs).values({
-                companyId: company.id,
-                payload: payload,
-            });
-            console.log(`📝 [Meta Webhook] Payload salvo em webhook_logs`);
-        } catch (logErr) {
-            console.error(`⚠️ [Meta Webhook] Falha ao salvar log do webhook:`, logErr);
-        }
+        // try {
+        //     await db.insert(require('@/lib/db/schema').webhookLogs).values({
+        //         companyId: company.id,
+        //         payload: payload,
+        //     });
+        //     console.log(`📝 [Meta Webhook] Payload salvo em webhook_logs`);
+        // } catch (logErr) {
+        //     console.error(`⚠️ [Meta Webhook] Falha ao salvar log do webhook:`, logErr);
+        // }
 
         console.log(`✅ [Meta Webhook] ${_timestamp} - Webhook processado com sucesso`);
         return new NextResponse('OK', { status: 200 });

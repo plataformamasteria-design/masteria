@@ -13,6 +13,7 @@ import {
     Users, User, ChevronDown, Hash, Columns3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSession } from '@/contexts/session-context';
 import { Badge } from '../ui/badge';
 import { RelativeTime } from '../ui/relative-time';
 import { Button } from '../ui/button';
@@ -382,6 +383,11 @@ export function ConversationList({
     const [localSearch, setLocalSearch] = useState(searchTerm);
     const [sourceFilter, setSourceFilter] = useState<'all' | 'meta_api' | 'baileys' | 'instagram'>('all');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    
+    const { session } = useSession();
+    const userPermissions = session?.userData?.permissions as { viewMode?: string } | undefined;
+    const isLimitedView = session?.userData?.role === 'atendente' && userPermissions?.viewMode === 'assigned_only';
+    
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -523,8 +529,12 @@ export function ConversationList({
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="mine" className="text-[11px]">Minhas</SelectItem>
-                                            <SelectItem value="team" className="text-[11px]">Equipe</SelectItem>
-                                            <SelectItem value="all" className="text-[11px]">Todas</SelectItem>
+                                            {!isLimitedView && (
+                                                <>
+                                                    <SelectItem value="team" className="text-[11px]">Equipe</SelectItem>
+                                                    <SelectItem value="all" className="text-[11px]">Todas</SelectItem>
+                                                </>
+                                            )}
                                             <SelectItem value="resolved" className="text-[11px]">📦 Arquivadas</SelectItem>
                                         </SelectContent>
                                     </Select>

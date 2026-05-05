@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { conversations, messages, messageTemplates, connections, contacts } from '@/lib/db/schema';
+import { conversations, messages, messageTemplates, connections, contacts, users } from '@/lib/db/schema';
 import { eq, and, desc, not, sql } from 'drizzle-orm';
 import { getUserIdFromSession, getCompanyIdFromSession } from '@/app/actions';
 import { revalidatePath } from 'next/cache';
@@ -125,6 +125,19 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
 export async function fetchInitialConversations() {
     try {
         const companyId = await getCompanyIdFromSession();
+        const userId = await getUserIdFromSession();
+
+        const [user] = await db.select({ role: users.role, permissions: users.permissions }).from(users).where(eq(users.id, userId));
+        const isLimited = user?.role === 'atendente' && (user.permissions as any)?.viewMode === 'assigned_only';
+
+        const conditions = [
+            eq(conversations.companyId, companyId),
+            not(eq(conversations.status, 'archived'))
+        ];
+
+        if (isLimited) {
+            conditions.push(eq(conversations.assignedTo, userId));
+        }
 
         const companyConversations = await db.select({
             id: conversations.id,
@@ -197,10 +210,7 @@ export async function fetchInitialConversations() {
             .from(conversations)
             .innerJoin(contacts, eq(conversations.contactId, contacts.id))
             .leftJoin(connections, eq(conversations.connectionId, connections.id))
-            .where(and(
-                eq(conversations.companyId, companyId),
-                not(eq(conversations.status, 'archived'))
-            ))
+            .where(and(...conditions))
             .orderBy(desc(conversations.lastMessageAt))
             .limit(50);
 

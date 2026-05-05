@@ -36,7 +36,8 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Separator } from '../ui/separator';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription } from '../ui/alert';
-import { MultiListSelector, SelectedListsSummary } from './multi-list-selector';
+import { SelectedListsSummary } from './multi-list-selector';
+import { AdvancedAudienceSelector } from './advanced-audience-selector';
 
 const contactFields = [
     { value: 'name', label: 'Nome' },
@@ -75,6 +76,11 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
     const [messageText, setMessageText] = useState('');
     const [messageError, setMessageError] = useState('');
     const [contactListIds, setContactListIds] = useState<string[]>([]);
+    const [excludeListIds, setExcludeListIds] = useState<string[]>([]);
+    const [tagIds, setTagIds] = useState<string[]>([]);
+    const [excludeTagIds, setExcludeTagIds] = useState<string[]>([]);
+    const [funnelIds, setFunnelIds] = useState<string[]>([]);
+    const [funnelStageIds, setFunnelStageIds] = useState<string[]>([]);
     const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
     const [scheduleTime, setScheduleTime] = useState('09:00');
     const [sendNow, setSendNow] = useState(true);
@@ -201,6 +207,11 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
         setMessageText('');
         setMessageError('');
         setContactListIds([]);
+        setExcludeListIds([]);
+        setTagIds([]);
+        setExcludeTagIds([]);
+        setFunnelIds([]);
+        setFunnelStageIds([]);
         setScheduleDate(undefined);
         setScheduleTime('09:00');
         setSendNow(true);
@@ -289,9 +300,9 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
             return;
         }
         
-        if (contactListIds.length === 0) {
+        if (contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0) {
             if (typeof notify?.error === 'function') {
-                notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista de contatos.');
+                notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista, etiqueta, funil ou etapa.');
             }
             return;
         }
@@ -324,6 +335,11 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                 messageText,
                 variableMappings,
                 contactListIds,
+                excludeListIds,
+                tagIds,
+                excludeTagIds,
+                funnelIds,
+                funnelStageIds,
                 schedule,
                 minDelaySeconds: selectedDelay?.minDelay || 11,
                 maxDelaySeconds: selectedDelay?.maxDelay || 33,
@@ -378,9 +394,9 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
             }
         }
 
-        if (currentStepConfig?.id === 'audience' && contactListIds.length === 0) {
+        if (currentStepConfig?.id === 'audience' && contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0) {
             if (typeof notify?.error === 'function') {
-                notify.error('Público Obrigatório', 'Selecione pelo menos uma lista de contatos.');
+                notify.error('Público Obrigatório', 'Selecione pelo menos uma lista, etiqueta, funil ou etapa.');
             }
             return;
         }
@@ -584,12 +600,20 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                         )}
 
                         <div className="space-y-2">
-                            <Label className="text-base font-semibold">Público (selecione uma ou mais listas) *</Label>
-                            <MultiListSelector
-                                lists={availableLists}
-                                selectedIds={contactListIds}
-                                onSelectionChange={setContactListIds}
-                                maxHeight="180px"
+                            <AdvancedAudienceSelector
+                                availableLists={availableLists}
+                                contactListIds={contactListIds}
+                                setContactListIds={setContactListIds}
+                                excludeListIds={excludeListIds}
+                                setExcludeListIds={setExcludeListIds}
+                                tagIds={tagIds}
+                                setTagIds={setTagIds}
+                                excludeTagIds={excludeTagIds}
+                                setExcludeTagIds={setExcludeTagIds}
+                                funnelIds={funnelIds}
+                                setFunnelIds={setFunnelIds}
+                                funnelStageIds={funnelStageIds}
+                                setFunnelStageIds={setFunnelStageIds}
                             />
                         </div>
 

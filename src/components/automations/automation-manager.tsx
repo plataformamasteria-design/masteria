@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { AutomationList } from './automation-list';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronLeft, Loader2 } from 'lucide-react';
+import { Plus, ChevronLeft, Loader2, Upload } from 'lucide-react';
 import { MetaIntegrationPopup } from './meta-integration-popup';
+import { useSession } from '@/contexts/session-context';
+import { saveFlow } from '@/lib/automations';
+import { toast } from 'sonner';
 
 // Lazy-load do editor V4 para evitar conflitos de bundle
 const FlowEditorV4 = dynamic(
@@ -29,6 +33,59 @@ import { EditorErrorBoundary } from './EditorErrorBoundary';
 
 export function AutomationManager() {
     const [editingFlowId, setEditingFlowId] = useState<string | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { session } = useSession();
+    const router = useRouter();
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                setIsImporting(true);
+                const data = JSON.parse(ev.target?.result as string);
+                
+                if (data._format !== "master-ia-automation-v2") {
+                    toast.error("Formato de arquivo inválido. O arquivo não é uma automação exportada válida.");
+                    return;
+                }
+
+                if (!session?.empresaId) {
+                    toast.error("Sessão inválida para importação.");
+                    return;
+                }
+
+                const importedName = `${data.name} (Importado)`;
+                const result = await saveFlow('new', importedName, session.empresaId, data.visualData, data.executionLogic || []);
+                
+                if (!result.success) {
+                    toast.error(result.error || 'Erro ao importar automação no servidor.');
+                    return;
+                }
+
+                toast.success('Automação importada com sucesso!');
+                setRefreshTrigger(prev => prev + 1);
+                router.refresh(); // Força atualização do Server Component Cache
+            } catch (err) {
+                console.error("Erro ao importar automação:", err);
+                toast.error('Erro ao ler o arquivo JSON. Verifique se ele não está corrompido.');
+            } finally {
+                setIsImporting(false);
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
 
     if (editingFlowId) {
         return (
@@ -56,6 +113,25 @@ export function AutomationManager() {
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                     <MetaIntegrationPopup />
+                    
+                    <input 
+                        type="file" 
+                        accept=".json" 
+                        className="hidden" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                    />
+                    
+                    <Button 
+                        variant="outline" 
+                        onClick={handleImportClick} 
+                        className="gap-2"
+                        disabled={isImporting}
+                    >
+                        {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        Importar
+                    </Button>
+
                     <Button onClick={() => setEditingFlowId('new')} className="gap-2">
                         <Plus className="h-4 w-4" />
                         Nova Automação
@@ -63,7 +139,7 @@ export function AutomationManager() {
                 </div>
             </div>
 
-            <AutomationList onEdit={setEditingFlowId} />
+            <AutomationList onEdit={setEditingFlowId} refreshTrigger={refreshTrigger} />
         </div>
     );
 }

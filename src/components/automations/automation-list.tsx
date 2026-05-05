@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Pencil, Trash2, Loader2, Check, X, Search, Filter, Copy, MoreHorizontal } from 'lucide-react';
+import { Play, Pause, Pencil, Trash2, Loader2, Check, X, Search, Filter, Copy, MoreHorizontal, Download } from 'lucide-react';
 import { listFlows, deleteFlow, renameFlow, cloneFlow, toggleFlowStatus } from '@/lib/automations';
 import { useSession } from '@/contexts/session-context';
 import { toast } from 'sonner';
@@ -16,9 +16,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface AutomationListProps {
   onEdit: (id: string) => void;
+  refreshTrigger?: number;
 }
 
-export function AutomationList({ onEdit }: AutomationListProps) {
+export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) {
   const { session, loading: sessionLoading } = useSession();
   const [flows, setFlows] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +49,7 @@ export function AutomationList({ onEdit }: AutomationListProps) {
       }
     }
     load();
-  }, [session?.empresaId, sessionLoading]);
+  }, [session?.empresaId, sessionLoading, refreshTrigger]);
 
   const handleDelete = async (id: string) => {
     if (!session?.empresaId) return;
@@ -111,6 +112,34 @@ export function AutomationList({ onEdit }: AutomationListProps) {
       // Reverter
       setFlows(flows.map(f => f.id === id ? { ...f, isActive: currentStatus } : f));
       toast.error('Erro ao alterar status.');
+    }
+  };
+
+  const handleExport = (flow: any) => {
+    try {
+      const exportData = {
+        _format: "master-ia-automation-v2",
+        name: flow.name,
+        visualData: flow.visualData,
+        executionLogic: flow.executionLogic,
+        exported_at: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = flow.name.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+      a.download = `automacao-${safeName}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Automação exportada com sucesso!');
+    } catch (err) {
+      console.error('Erro ao exportar:', err);
+      toast.error('Erro ao exportar automação.');
     }
   };
 
@@ -253,6 +282,16 @@ export function AutomationList({ onEdit }: AutomationListProps) {
                   title="Clonar Automação"
                 >
                   <Copy className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                  onClick={() => handleExport(flow)}
+                  title="Exportar Automação"
+                >
+                  <Download className="h-4 w-4" />
                 </Button>
 
                 <AlertDialog>

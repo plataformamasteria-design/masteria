@@ -18,10 +18,20 @@ const baileysCampaignSchema = z.object({
   connectionId: z.string().uuid('Selecione uma conexão válida'),
   messageText: z.string().min(1, 'Mensagem é obrigatória').max(4096, 'Mensagem muito longa (máx 4096 caracteres)'),
   variableMappings: z.record(variableMappingSchema),
-  contactListIds: z.array(z.string()).min(1, 'Selecione pelo menos uma lista.'),
+  contactListIds: z.array(z.string()).optional().default([]),
+  excludeListIds: z.array(z.string()).optional().default([]),
+  tagIds: z.array(z.string()).optional().default([]),
+  excludeTagIds: z.array(z.string()).optional().default([]),
+  funnelIds: z.array(z.string()).optional().default([]),
+  funnelStageIds: z.array(z.string()).optional().default([]),
   schedule: z.string().datetime({ offset: true }).nullable().optional(),
   minDelaySeconds: z.number().min(5).max(600).optional().default(11),
   maxDelaySeconds: z.number().min(10).max(900).optional().default(33),
+}).refine(data => {
+  return data.contactListIds.length > 0 || data.tagIds.length > 0 || data.funnelIds.length > 0 || data.funnelStageIds.length > 0;
+}, {
+  message: "Selecione pelo menos uma lista, etiqueta, funil ou etapa para a campanha.",
+  path: ["contactListIds"]
 });
 
 
@@ -38,7 +48,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return NextResponse.json({ error: 'Dados inválidos.', details: parsed.error.flatten() }, { status: 400 });
         }
 
-        const { contactListIds, schedule, messageText, minDelaySeconds, maxDelaySeconds, ...campaignData } = parsed.data;
+        const { 
+            contactListIds, excludeListIds, tagIds, excludeTagIds, funnelIds, funnelStageIds,
+            schedule, messageText, minDelaySeconds, maxDelaySeconds, ...campaignData 
+        } = parsed.data;
         const isScheduled = !!schedule;
         
         const variableMappingsWithDelay = {
@@ -70,47 +83,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             }, { status: 400 });
         }
 
-        // VALIDAÇÃO 2: Verificar ownership das listas
-        const ownedLists = await db
-            .select({ id: contactLists.id })
-            .from(contactLists)
-            .where(and(
-                eq(contactLists.companyId, companyId),
-                inArray(contactLists.id, contactListIds)
-            ));
-        
-        if (ownedLists.length !== contactListIds.length) {
-            return NextResponse.json({ 
-                error: 'Lista(s) inválida(s)', 
-                description: 'Uma ou mais listas selecionadas não existem ou não pertencem à sua empresa.' 
-            }, { status: 403 });
-        }
-        
-        // VALIDAÇÃO 3: Buscar quais listas têm contatos
-        const listsWithContacts = await db
-            .select({ 
-                listId: contactsToContactLists.listId,
-                contactCount: sql<number>`COUNT(DISTINCT ${contactsToContactLists.contactId})`.as('contact_count')
-            })
-            .from(contactsToContactLists)
-            .where(inArray(contactsToContactLists.listId, contactListIds))
-            .groupBy(contactsToContactLists.listId);
-        
-        // Filtrar apenas listas que têm contatos (ignorar listas vazias)
-        const validListIds = listsWithContacts
-            .filter(l => Number(l.contactCount) > 0)
-            .map(l => l.listId);
-        
-        // Garantir que pelo menos uma lista tenha contatos
-        if (validListIds.length === 0) {
-            return NextResponse.json({ 
-                error: 'Nenhum contato disponível', 
-                description: 'Todas as listas selecionadas estão vazias. Adicione contatos a pelo menos uma lista antes de criar a campanha.' 
-            }, { status: 400 });
-        }
-        
-        // Usar apenas as listas válidas (com contatos) para a campanha
-        const finalContactListIds = validListIds;
+        // VALIDAÇÃO 2: (Removida a validação forte de listas vazias para permitir campanhas por Tags e Funil que serão resolvidas no Worker)
+        // O Worker fará a busca final da intersecção de leads.
+        const finalContactListIds = contactListIds;
 
         // Criar campanha (sem templateId para Baileys)
         const [newCampaign] = await db.insert(campaigns).values({
@@ -124,6 +99,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             message: messageText,
             scheduledAt: schedule ? new Date(schedule) : null,
             contactListIds: finalContactListIds,
+            excludeListIds,
+            tagIds,
+            excludeTagIds,
+            funnelIds,
+            funnelStageIds,
         }).returning();
 
         if (!newCampaign) {
@@ -135,14 +115,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             await redis.lpush(WHATSAPP_CAMPAIGN_QUEUE, newCampaign.id);
         }
 
-        const ignoredListsCount = contactListIds.length - finalContactListIds.length;
         let message = isScheduled 
             ? `Campanha "${newCampaign.name}" agendada com sucesso.`
             : `Campanha "${newCampaign.name}" adicionada à fila para envio.`;
-        
-        if (ignoredListsCount > 0) {
-            message += ` (${ignoredListsCount} lista${ignoredListsCount !== 1 ? 's' : ''} vazia${ignoredListsCount !== 1 ? 's' : ''} ignorada${ignoredListsCount !== 1 ? 's' : ''})`;
-        }
 
         return NextResponse.json({ 
             success: true, 
