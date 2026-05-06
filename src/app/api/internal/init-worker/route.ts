@@ -288,24 +288,14 @@ async function handleWorkerInit(request: NextRequest) {
   }
 
   try {
-    // ✅ Dynamic import of Node.js code - GUARANTEED server-side
-    // eslint-disable-next-line global-require
-    const { initializeCampaignTriggerWorker } = require('@/workers/campaign-trigger.worker');
-    // eslint-disable-next-line global-require
-    const { initializeAutomationTimeoutWorker } = require('@/workers/automation-timeout.worker');
-    // eslint-disable-next-line global-require
-    const { baileysBridge: sessionManager } = require('@/lib/baileys-bridge-client');
-
-    // Initialize Baileys WS Listener for real-time events
+    // 1. Initialize Baileys WS Listener FIRST
     try {
-      const { initBaileysWSListener } = require('@/lib/baileys-ws-listener');
+      const { initBaileysWSListener } = await import('@/lib/baileys-ws-listener');
       initBaileysWSListener();
       console.log('[InitWorkerRoute] ✅ Baileys WS listener initialized');
     } catch (wsErr) {
       console.error('[InitWorkerRoute] ⚠️ Baileys WS listener failed:', wsErr);
     }
-
-    console.log('[InitWorkerRoute] 🚀 Initializing campaign trigger worker...');
 
     // Fire-and-forget with timeout
     const timeoutPromise = new Promise<boolean>((resolve) => {
@@ -315,23 +305,40 @@ async function handleWorkerInit(request: NextRequest) {
       }, 30000);
     });
 
-    const success = await Promise.race([
-      initializeCampaignTriggerWorker(),
-      timeoutPromise
-    ]);
+    let success = true;
 
-    await Promise.race([
-      initializeAutomationTimeoutWorker(),
-      timeoutPromise
-    ]);
+    // 2. Initialize Campaign Trigger Worker
+    try {
+      console.log('[InitWorkerRoute] 🚀 Initializing campaign trigger worker...');
+      const { initializeCampaignTriggerWorker } = await import('@/workers/campaign-trigger.worker');
+      const workerResult = await Promise.race([
+        initializeCampaignTriggerWorker(),
+        timeoutPromise
+      ]);
+      if (!workerResult) success = false;
+    } catch (err) {
+      console.error('[InitWorkerRoute] ❌ Failed to start campaign trigger worker:', err);
+    }
+
+    // 3. Initialize Automation Timeout Worker
+    try {
+      console.log('[InitWorkerRoute] 🚀 Initializing automation timeout worker...');
+      const { initializeAutomationTimeoutWorker } = await import('@/workers/automation-timeout.worker');
+      await Promise.race([
+        initializeAutomationTimeoutWorker(),
+        timeoutPromise
+      ]);
+    } catch (err) {
+      console.error('[InitWorkerRoute] ❌ Failed to start automation timeout worker:', err);
+    }
 
     workerInitialized = true;
 
     // Auto-resume WhatsApp sessions via microservice
-    // Using setImmediate to not block the response
     setImmediate(async () => {
       try {
         console.log('[InitWorkerRoute] 🚀 Triggering WhatsApp Auto-Resume via Bridge...');
+        const { baileysBridge: sessionManager } = await import('@/lib/baileys-bridge-client');
         const result = await sessionManager.resumeAllSessions();
         console.log(`[InitWorkerRoute] ✅ WhatsApp Auto-Resume finished: ${result.success} resumed, ${result.failed} failed`);
       } catch (error) {
@@ -343,7 +350,7 @@ async function handleWorkerInit(request: NextRequest) {
 
       // Start pending messages auto-responder (every 60 seconds)
       try {
-        const mod = require('@/services/pending-messages-responder.service');
+        const mod = await import('@/services/pending-messages-responder.service');
         const service = mod.pendingMessagesResponder || mod.default;
         if (service && typeof service.start === 'function') {
            service.start();
@@ -357,7 +364,7 @@ async function handleWorkerInit(request: NextRequest) {
 
       // Start meeting reminder checker (every 60 seconds)
       try {
-        const mod = require('@/services/meeting-reminder.service');
+        const mod = await import('@/services/meeting-reminder.service');
         const service = mod.meetingReminderService || mod.default;
         if (service && typeof service.start === 'function') {
            service.start();

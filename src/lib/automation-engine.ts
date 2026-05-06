@@ -2438,7 +2438,17 @@ export async function processIncomingMessageTrigger(
         console.log(`[Automation Engine] 🔍 DIAGNÓSTICO - Empresa: ${companyId}, Conversa: ${conversationId}, aiActive: ${conversation.aiActive}, connectionId: ${conversation.connectionId}, senderType: ${message.senderType}, contentType: ${message.contentType}`);
 
         // ✅ GATILHO: Criar lead se for nova conversa
-        if (isNewConversation) {
+        let isNewConv = isNewConversation;
+        if (!isNewConv) {
+            const messageCountResult = await db.select({ count: sql`count(*)` }).from(messages).where(eq(messages.conversationId, conversationId));
+            const countStr = messageCountResult[0]?.count;
+            const count = countStr ? parseInt(String(countStr), 10) : 0;
+            if (count <= 1) {
+                isNewConv = true;
+            }
+        }
+
+        if (isNewConv) {
             await logAutomation('INFO', `Nova conversa detectada. Verificando criação de lead...`, logContext);
             const personaId = conversation.connection?.assignedPersonaId || conversation.assignedPersonaId || null;
             const connId = conversation.connectionId || null;

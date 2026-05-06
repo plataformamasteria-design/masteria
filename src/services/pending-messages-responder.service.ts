@@ -140,7 +140,6 @@ class PendingMessagesResponder {
                 JOIN connections conn ON conn.id = c.connection_id
                 JOIN messages m ON m.conversation_id = c.id
                 WHERE c.ai_active = true
-                AND conn.assigned_persona_id IS NOT NULL
                 AND m.sender_type = 'CONTACT'
                 AND m.sent_at >= NOW() - INTERVAL '24 hours'
                 AND m.sent_at <= NOW() - INTERVAL '45 seconds'
