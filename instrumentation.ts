@@ -55,6 +55,53 @@ export async function register() {
       } catch (error) {
         console.error('[Instrumentation] ❌ Failed to resume WhatsApp sessions:', error);
       }
+
+      // Start Automation Timeout Worker
+      try {
+        const { initializeAutomationTimeoutWorker } = await import('./src/workers/automation-timeout.worker');
+        console.log('[Instrumentation] Initializing AutomationTimeoutWorker...');
+        await initializeAutomationTimeoutWorker();
+        console.log('[Instrumentation] ✅ AutomationTimeoutWorker initialized');
+      } catch (error) {
+        console.error('[Instrumentation] ❌ Failed to initialize AutomationTimeoutWorker:', error);
+      }
+
+      // Start periodic unattended leads monitor (every 5 minutes)
+      try {
+        const { startUnattendedLeadsMonitor } = await import('./src/services/unattended-leads.service');
+        startUnattendedLeadsMonitor();
+        console.log('[Instrumentation] ✅ UnattendedLeadsMonitor started');
+      } catch (error) {
+        console.error('[Instrumentation] ❌ Failed to start UnattendedLeadsMonitor:', error);
+      }
+
+      // Start pending messages auto-responder (every 60 seconds)
+      try {
+        const mod = await import('./src/services/pending-messages-responder.service');
+        const service = mod.pendingMessagesResponder || mod.default;
+        if (service && typeof service.start === 'function') {
+           service.start();
+           console.log('[Instrumentation] ✅ Pending messages auto-responder started');
+        } else {
+           console.warn('[Instrumentation] ⚠️ pendingMessagesResponder could not be loaded');
+        }
+      } catch (err) {
+        console.error('[Instrumentation] ❌ Failed to start pending messages responder:', err);
+      }
+
+      // Start meeting reminder checker (every 60 seconds)
+      try {
+        const mod = await import('./src/services/meeting-reminder.service');
+        const service = mod.meetingReminderService || mod.default;
+        if (service && typeof service.start === 'function') {
+           service.start();
+           console.log('[Instrumentation] ✅ Meeting reminder service started');
+        } else {
+           console.warn('[Instrumentation] ⚠️ meetingReminderService could not be loaded');
+        }
+      } catch (err) {
+        console.error('[Instrumentation] ❌ Failed to start meeting reminder service:', err);
+      }
     });
   }
 }
