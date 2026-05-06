@@ -273,7 +273,7 @@ async function handleWorkerInit(request: NextRequest) {
     // Ainda iniciar serviços que NÃO dependem de Redis
     setImmediate(async () => {
       try {
-        const { initBaileysWSListener } = require('@/lib/baileys-ws-listener');
+        const { initBaileysWSListener } = await import('@/lib/baileys-ws-listener');
         initBaileysWSListener();
         console.log('[InitWorkerRoute] ✅ Baileys WS listener initialized (no-Redis mode)');
       } catch (err) {
@@ -289,16 +289,13 @@ async function handleWorkerInit(request: NextRequest) {
 
   try {
     // ✅ Dynamic import of Node.js code - GUARANTEED server-side
-    // eslint-disable-next-line global-require
-    const { initializeCampaignTriggerWorker } = require('@/workers/campaign-trigger.worker');
-    // eslint-disable-next-line global-require
-    const { initializeAutomationTimeoutWorker } = require('@/workers/automation-timeout.worker');
-    // eslint-disable-next-line global-require
-    const { baileysBridge: sessionManager } = require('@/lib/baileys-bridge-client');
+    const { initializeCampaignTriggerWorker } = await import('@/workers/campaign-trigger.worker');
+    const { initializeAutomationTimeoutWorker } = await import('@/workers/automation-timeout.worker');
+    const { baileysBridge: sessionManager } = await import('@/lib/baileys-bridge-client');
 
     // Initialize Baileys WS Listener for real-time events
     try {
-      const { initBaileysWSListener } = require('@/lib/baileys-ws-listener');
+      const { initBaileysWSListener } = await import('@/lib/baileys-ws-listener');
       initBaileysWSListener();
       console.log('[InitWorkerRoute] ✅ Baileys WS listener initialized');
     } catch (wsErr) {
@@ -343,7 +340,7 @@ async function handleWorkerInit(request: NextRequest) {
 
       // Start pending messages auto-responder (every 60 seconds)
       try {
-        const mod = require('@/services/pending-messages-responder.service');
+        const mod = await import('@/services/pending-messages-responder.service');
         const service = mod.pendingMessagesResponder || mod.default;
         if (service && typeof service.start === 'function') {
            service.start();
@@ -357,7 +354,7 @@ async function handleWorkerInit(request: NextRequest) {
 
       // Start meeting reminder checker (every 60 seconds)
       try {
-        const mod = require('@/services/meeting-reminder.service');
+        const mod = await import('@/services/meeting-reminder.service');
         const service = mod.meetingReminderService || mod.default;
         if (service && typeof service.start === 'function') {
            service.start();
