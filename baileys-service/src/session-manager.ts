@@ -15,6 +15,7 @@ import { Pool } from 'pg';
 import { logger } from './utils/logger';
 import { baileysLogger } from './utils/logger';
 import { classifyChat } from './utils/chat-classifier';
+import { config } from './config';
 import { usePostgresAuthState, clearAuthState, hasAuthState } from './auth-state-postgres';
 import {
   emitSessionCreated,
@@ -341,7 +342,7 @@ export class SessionManager {
 
         // Emit to Next.js for automation trigger
         if (!fromMe && !classification.shouldBlockAI) {
-          emitIncomingMessage(companyId, {
+          const payload = {
             connectionId,
             contactPhone: phoneNumber,
             contactName,
@@ -356,6 +357,18 @@ export class SessionManager {
               messageTimestamp: typeof msg.messageTimestamp === 'number' ? msg.messageTimestamp : undefined,
               remoteJid,
             },
+          };
+          
+          // 1. Manter emissão de Socket.io (para legados, se houver)
+          emitIncomingMessage(companyId, payload);
+
+          // 2. Disparar Webhook HTTP garantido para a rota no Next.js
+          fetch(config.webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyId, data: payload }),
+          }).catch(err => {
+            logger.error({ err: err.message, webhookUrl: config.webhookUrl }, '❌ Failed to send Webhook to Next.js');
           });
         }
       } catch (err) {
@@ -679,8 +692,8 @@ export class SessionManager {
     if (existing.rows.length > 0) {
       const convId = existing.rows[0].id;
       await this.db.query(
-        `UPDATE conversations SET last_message_at = NOW(), archived_at = NULL WHERE id = $1`,
-        [convId]
+        `UPDATE conversations SET last_message_at = NOW(), archived_at = NULL, connection_id = $2 WHERE id = $1`,
+        [convId, connectionId]
       );
       return convId;
     }
