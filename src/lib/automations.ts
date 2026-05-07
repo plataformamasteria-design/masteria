@@ -32,12 +32,21 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
         // Zod Integrity Validation
         const parsedVisualData = FlowVisualSchema.parse(visualData);
 
+        let triggerType = 'message_received';
+        let triggerConfig = null;
+        if (steps && steps.length > 0 && steps[0].type === 'trigger') {
+            triggerType = steps[0].data?.triggerType || 'message_received';
+            triggerConfig = steps[0].data || null;
+        }
+
         if (id === 'new') {
             const [newFlow] = await db.insert(automationFlows).values({
                 name,
                 companyId,
                 visualData,
                 executionLogic: steps,
+                triggerType,
+                triggerConfig,
                 isActive: true,
             }).returning();
             revalidatePath('/management');
@@ -52,6 +61,8 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
                 name,
                 visualData,
                 executionLogic: steps,
+                triggerType,
+                triggerConfig,
                 updatedAt: new Date()
             })
             .where(and(

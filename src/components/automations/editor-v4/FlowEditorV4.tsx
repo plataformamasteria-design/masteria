@@ -326,7 +326,43 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
             }))));
             const cleanEdges = JSON.parse(JSON.stringify(edges));
             const visualData = { nodes: cleanNodes, edges: cleanEdges };
-            const result = await saveFlow(flowId, flowName, session.empresaId as string, visualData, []);
+            
+            // Extrair lógica simplificada para o motor de execução
+            const steps = cleanNodes.map((node: any) => ({
+                id: node.id,
+                type: node.type,
+                data: node.data,
+                nextSteps: cleanEdges.filter((e: any) => e.source === node.id).map((e: any) => e.target),
+                connections: cleanEdges.filter((e: any) => e.source === node.id).map((e: any) => ({
+                    target: e.target,
+                    sourceHandle: e.sourceHandle
+                }))
+            }));
+
+            // Bypass Next.js Server Action RPC issues with dynamic(ssr:false)
+            const response = await fetch('/api/internal/automations/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: flowId,
+                    name: flowName,
+                    companyId: session.empresaId,
+                    visualData,
+                    steps
+                })
+            });
+            
+            let result;
+            try {
+                result = await response.json();
+            } catch (err) {
+                throw new Error('Falha de conexão com o servidor.');
+            }
+            
+            if (!response.ok || !result || result.success === false) {
+                throw new Error(result?.error || 'Erro desconhecido ao salvar o fluxo no backend.');
+            }
+
             toast.success('Fluxo publicado com sucesso!');
             onSaveProp?.((result?.id || result?.flow?.id || flowId) as string, flowName);
         } catch (e: any) {

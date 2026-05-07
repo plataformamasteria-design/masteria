@@ -8,6 +8,7 @@ export const config = {
   apiKey: process.env.API_KEY || '',
   debug: process.env.DEBUG === 'true',
   logLevel: process.env.LOG_LEVEL || 'info',
+  webhookUrl: process.env.MASTER_IA_WEBHOOK_URL || 'http://localhost:3000/api/v1/webhooks/baileys',
 } as const;
 
 // Validation

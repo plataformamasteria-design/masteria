@@ -681,13 +681,35 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
 
     const contact = execution.contact;
 
-    // Get active connection for messaging
-    const connection = await db.query.connections.findFirst({
-        where: and(
-            eq(connections.companyId, execution.companyId),
-            eq(connections.isActive, true)
-        )
-    });
+    // Get the correct connection for this contact's active conversation
+    // ✅ FIX: Previously picked ANY active connection — could return Meta API when
+    // the message came via Baileys, causing silent send failures.
+    let connection: typeof connections.$inferSelect | undefined = undefined;
+    if (execution.contactId) {
+        const activeConv = await db.query.conversations.findFirst({
+            where: and(
+                eq(conversations.contactId, execution.contactId),
+                eq(conversations.companyId, execution.companyId),
+            ),
+            orderBy: desc(conversations.lastMessageAt),
+        });
+        if (activeConv?.connectionId) {
+            connection = await db.query.connections.findFirst({
+                where: eq(connections.id, activeConv.connectionId)
+            }) ?? undefined;
+            console.log(`[FLOW-ENGINE] 🔗 Resolved connection from conversation: ${activeConv.connectionId} (type: ${connection?.connectionType})`);
+        }
+    }
+    // Fallback: any active connection for the company (schedule triggers, etc.)
+    if (!connection) {
+        connection = await db.query.connections.findFirst({
+            where: and(
+                eq(connections.companyId, execution.companyId),
+                eq(connections.isActive, true)
+            )
+        }) ?? undefined;
+        console.log(`[FLOW-ENGINE] 🔗 Fallback connection: ${connection?.id} (type: ${connection?.connectionType})`);
+    }
 
     // Build execution context
     // Derive provider from connectionType (no 'provider' column exists)
@@ -698,6 +720,15 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
         derivedProvider = 'baileys';
     }
 
+    let realContactTags: string[] = [];
+    if (execution.contactId) {
+        const contactTagsQuery = await db.select({ tagName: tags.name })
+            .from(contactsToTags)
+            .innerJoin(tags, eq(contactsToTags.tagId, tags.id))
+            .where(eq(contactsToTags.contactId, execution.contactId));
+        realContactTags = contactTagsQuery.map(t => t.tagName);
+    }
+
     const ctx: ExecutionContext = {
         executionId,
         companyId: execution.companyId,
@@ -705,7 +736,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
         contactPhone: contact?.phone || '',
         contactName: contact?.name || 'Cliente',
         contactEmail: contact?.email || '',
-        contactTags: (contact?.tags as string[]) || [],
+        contactTags: realContactTags,
         contactNotes: (contact as any)?.notes || '',
         variables: (execution.variables as any)?.vars || {},
         connectionId: connection?.id || 'default',
@@ -1410,6 +1441,9 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         contactId: ctx.contactId,
                         tagId: tag.id,
                     }).onConflictDoNothing();
+                    if (!ctx.contactTags.includes(tag.name)) {
+                        ctx.contactTags.push(tag.name);
+                    }
                     return { message: `Add Tag: ${tag.name}` };
                 }
             } catch (e) {
@@ -1803,9 +1837,12 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             );
             
             const openai = new OpenAI({ apiKey: OPENAI_KEY });
-            // Força um modelo padrão OpenAI confiável se o frontend ainda enviar "gemini"
+            // Força um modelo padrão OpenAI confiável apenas se o frontend enviar modelo do Gemini (pois o backend não tem suporte nativo ainda)
             let modelName = step.data.model || 'gpt-4o-mini';
-            if (modelName.includes('gemini') || modelName.includes('gpt-4:')) modelName = 'gpt-4o-mini';
+            if (modelName.includes('gemini')) modelName = 'gpt-4o-mini';
+            
+            // Corrige o ID do modelo "ChatGPT 4.1" que foi adicionado na UI para o ID real da OpenAI
+            if (modelName === 'chatgpt-4.1') modelName = 'gpt-4o';
             
             const temperature = typeof step.data.temperature === 'number' ? step.data.temperature : 0.7;
 
@@ -2130,28 +2167,21 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 if (!aiConnectionId && aiConversation?.connectionId) {
                     aiConnectionId = aiConversation.connectionId;
                 }
-                if (!aiConnectionId) {
-                    try {
-                        const metaConn = await db.query.connections.findFirst({
-                            where: and(
-                                eq(connections.companyId, ctx.companyId),
-                                eq(connections.isActive, true),
-                                or(
-                                    sql`${connections.connectionType} = 'meta_api'`,
-                                    sql`${connections.connectionType} = 'apicloud'`
-                                )
-                            )
-                        });
-                        if (metaConn) aiConnectionId = metaConn.id;
-                    } catch (e) {
-                        console.warn('[FLOW-ENGINE] meta_api connection lookup failed:', e);
-                    }
-                }
                 if (!aiConnectionId) aiConnectionId = ctx.connectionId;
 
-                // Determinar provider (mesmo pattern do chat.ts)
-                const connType = aiConversation?.connection?.connectionType || '';
-                const aiProvider = connType === 'baileys' ? 'baileys' : 'apicloud';
+                // Determinar provider real buscando a conexão resolvida
+                let aiProvider = 'apicloud';
+                try {
+                    const resolvedConn = await db.query.connections.findFirst({
+                        where: eq(connections.id, aiConnectionId)
+                    });
+                    if (resolvedConn?.connectionType === 'baileys') {
+                        aiProvider = 'baileys';
+                    }
+                } catch (e) {
+                    console.warn('[FLOW-ENGINE] Failed to resolve connection type for ai_agent, falling back to ctx.provider:', e);
+                    aiProvider = ctx.provider || 'apicloud';
+                }
 
                 console.log(`[FLOW - ENGINE] 🤖 AI sending via ${aiProvider} connection = ${aiConnectionId} to = ${ctx.contactPhone} `);
 
@@ -2401,9 +2431,21 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 ? responseText.split('⌁⌁⌁').map(p => p.trim()).filter(Boolean)
                 : [responseText];
 
-            const aiConnectionId = step.data.connection_id || aiConversation?.connectionId || ctx.connectionId;
-            const connType = aiConversation?.connection?.connectionType || '';
-            const aiProvider = connType === 'baileys' ? 'baileys' : 'apicloud';
+            let aiConnectionId = step.data.connection_id || aiConversation?.connectionId || ctx.connectionId;
+
+            // Determinar provider real buscando a conexão resolvida
+            let aiProvider = 'apicloud';
+            try {
+                const resolvedConn = await db.query.connections.findFirst({
+                    where: eq(connections.id, aiConnectionId)
+                });
+                if (resolvedConn?.connectionType === 'baileys') {
+                    aiProvider = 'baileys';
+                }
+            } catch (e) {
+                console.warn('[FLOW-ENGINE] Failed to resolve connection type for follow_up_ai, falling back to ctx.provider:', e);
+                aiProvider = ctx.provider || 'apicloud';
+            }
 
             for (let i = 0; i < parts.length; i++) {
                 if (i > 0) await new Promise(r => setTimeout(r, 2000));

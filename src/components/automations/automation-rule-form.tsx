@@ -146,7 +146,7 @@ const renderActionValueInput = (
                             <SelectContent>
                                 {connections
                                     .filter(c => actionType === 'send_message_apicloud'
-                                        ? c.connectionType === 'meta'
+                                        ? c.connectionType === 'meta_api'
                                         : c.connectionType === 'baileys')
                                     .map(c => <SelectItem key={c.id} value={c.id}>{c.config_name}</SelectItem>)
                                 }

@@ -117,8 +117,7 @@ export const systemSettings = pgTable('system_settings', {
 });
 
 export const companyCredentials = pgTable('company_credentials', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
-  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  companyId: text('company_id').primaryKey().notNull().references(() => companies.id, { onDelete: 'cascade' }),
   openaiApiKey: text('openai_api_key'),
   geminiApiKey: text('gemini_api_key'),
   elevenlabsApiKey: text('elevenlabs_api_key'),

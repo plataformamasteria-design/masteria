@@ -90,7 +90,7 @@ class PendingMessagesResponder {
                             WHERE contact_id = (
                                 SELECT contact_id FROM conversations WHERE id = ${msg.conversation_id as string} LIMIT 1
                             )
-                            AND status IN ('paused', 'running')
+                            AND status = 'running'
                             LIMIT 1
                         `);
                         const hasActiveFlow = Array.isArray(activeFlowCheck)

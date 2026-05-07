@@ -1667,7 +1667,7 @@ async function callExternalAIAgent(
                         await db.update(messages).set({ status: 'failed' }).where(eq(messages.id, insertedMsg.id));
                         throw e;
                     }
-                    await sleep(resourceRegex.test(part) ? 2000 : 1500);
+                    await sleep(resourceRegex.test(part) ? 800 : 500);
                 }
             }
         }
@@ -1680,7 +1680,7 @@ async function callExternalAIAgent(
             // ✅ FIX: Deduplica recursos extraídos
             const uniquePaymentResources = [...new Set(extractedPaymentResources.map((r: string) => r.trim()))];
             await logAutomation('INFO', `🔒 Enviando ${uniquePaymentResources.length} PIX/Links OBRIGATORIAMENTE por texto (Modo Áudio)...`, logContextBase);
-            await sleep(audioSentSuccessfully ? 1500 : 500); // Delay maior se áudio foi enviado primeiro
+            await sleep(audioSentSuccessfully ? 800 : 300); // Delay maior se áudio foi enviado primeiro
 
             for (const resource of uniquePaymentResources) {
                 const [insertedResourceMsg] = await db.insert(messages).values({
@@ -1710,7 +1710,7 @@ async function callExternalAIAgent(
                     await db.update(messages).set({ status: 'failed' }).where(eq(messages.id, insertedResourceMsg.id));
                     await logAutomation('ERROR', `❌ Falha ao enviar PIX/Link: ${(resourceError as Error).message}`, logContextBase);
                 }
-                await sleep(1000);
+                await sleep(500);
             }
         }
 
@@ -2469,9 +2469,9 @@ export async function processIncomingMessageTrigger(
         }
 
         // 🛑 DEBOUNCE / AGGREGAÇÃO DE MENSAGENS
-        // Otimizado: 2 segundos para texto, 5 para áudio. Evita timeouts e falhas de resposta.
+        // Otimizado: 1 segundo para texto, 3 para áudio. Agiliza resposta sem perder contexto.
         const isAudio = message.contentType === 'AUDIO' || message.contentType === 'VOICE';
-        const DEBOUNCE_TIME_MS = isAudio ? 5000 : 2000;
+        const DEBOUNCE_TIME_MS = isAudio ? 3000 : 1000;
 
         console.log(`[Automation Engine] ⏳ Iniciando debounce de ${DEBOUNCE_TIME_MS}ms para mensagem ${messageId} (Tipo: ${isAudio ? 'AUDIO' : 'TEXTO'})...`);
         await sleep(DEBOUNCE_TIME_MS);

@@ -250,22 +250,10 @@ export function initBaileysWSListener(): void {
                 }).catch(err => console.error('[BaileysWS] Erro ao buscar companyId para emit:', err));
             }
 
-            // ✅ STEP 2: Trigger automation engine (non-blocking)
-            if (!data.isFromMe) {
-                console.log(`[BaileysWS] 🤖 Triggering automation for message ${data.savedMessageId}`);
-                // 🔧 BUG FIX: Uso de import() assíncrono para resolver 'a is not a function' Circular Dependency Error do Webpack
-                import('@/lib/automation-engine').then(({ processIncomingMessageTrigger }) => {
-                    processIncomingMessageTrigger(data.conversationId, data.savedMessageId, false)
-                        .then(() => {
-                            console.log(`[BaileysWS] ✅ Automation triggered for message ${data.savedMessageId}`);
-                        })
-                        .catch(err => {
-                            console.error(`[BaileysWS] ❌ Automation error for message ${data.savedMessageId}:`, err);
-                        });
-                }).catch(err => {
-                    console.error('[BaileysWS] ❌ Falha ao importar dinamicamente automation-engine:', err);
-                });
-            }
+            // ✅ STEP 2: Trigger automation engine
+            // O microsserviço Go (whatsmeow-service) agora emite o Webhook HTTP POST
+            // diretamente, garantindo estabilidade e tempo de resposta igual ao da API do Meta.
+            // O listener WS fica responsável EXCLUSIVAMENTE por eventos Realtime (UI).
 
             // ✅ STEP 3: Process media in background if present
             if (data.mediaUrl && data.savedMessageId) {

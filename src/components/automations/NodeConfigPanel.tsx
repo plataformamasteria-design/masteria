@@ -285,6 +285,7 @@ const AI_MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
         { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
     ],
     openai: [
+        { value: 'chatgpt-4.1', label: 'ChatGPT 4.1' },
         { value: 'o1', label: 'O1' },
         { value: 'o1-mini', label: 'O1 Mini' },
         { value: 'o3-mini', label: 'O3 Mini' },
@@ -375,7 +376,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 .then(res => res.json())
                 .then(data => {
                     if (Array.isArray(data)) {
-                        setMetaConnections(data.filter((c: any) => c.connectionType === 'meta_api'));
+                        setMetaConnections(data.filter((c: any) => ['meta_api', 'baileys'].includes(c.connectionType)));
                     }
                 })
                 .catch(() => { });
