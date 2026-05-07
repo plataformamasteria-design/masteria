@@ -1,7 +1,7 @@
 import type { Connection as BaseConnection } from '@/lib/types';
 
 export type ConnectionStatus = 'Conectado' | 'Falha na Conexão' | 'Não Verificado';
-export type WebhookStatus = 'CONFIGURADO' | 'DIVERGENTE' | 'NAO_CONFIGURADO' | 'VERIFICANDO' | 'ERRO';
+export type WebhookStatus = 'CONFIGURADO' | 'DIVERGENTE' | 'NAO_CONFIGURADO' | 'VERIFICANDO' | 'ERRO' | 'N/A';
 export type HealthStatus = 'healthy' | 'expiring_soon' | 'expired' | 'error' | 'inactive';
 export type HmacHealthStatus = 'healthy' | 'warning' | 'error' | 'no_data' | 'loading';
 
