@@ -292,12 +292,12 @@ export class SessionManager {
     for (const msg of messages) {
       if (!msg.message) continue;
 
-      // For append (history), only process recent messages (< 5 min)
+      // For append (history), only process recent messages (< 1 hour) to avoid huge sync floods
       if (type === 'append') {
         const msgTime = typeof msg.messageTimestamp === 'number'
           ? msg.messageTimestamp * 1000
           : (msg.messageTimestamp?.low || 0) * 1000;
-        if (!msgTime || Date.now() - msgTime > 300000) continue;
+        if (!msgTime || Date.now() - msgTime > 3600000) continue;
       }
 
       const remoteJid = msg.key.remoteJid || '';
@@ -500,7 +500,7 @@ export class SessionManager {
 
     const result = await this.db.query(
       `SELECT id, company_id FROM connections 
-       WHERE status = 'connected' AND connection_type = 'baileys'`
+       WHERE status IN ('connected', 'connecting', 'qr') AND connection_type = 'baileys'`
     );
 
     logger.info({ count: result.rows.length }, 'Found sessions to resume');
