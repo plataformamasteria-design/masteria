@@ -21,7 +21,7 @@ export default function ConexoesHubPage() {
         <div className="space-y-6">
             <PageHeader
                 title="Conexões"
-                description="Gerencie suas conexões de WhatsApp Business e sessões WhatsMeow."
+                description="Gerencie suas conexões de WhatsApp Business e sessões do WhatsApp (Evolution API)."
                 icon={Plug}
             />
 
@@ -34,7 +34,7 @@ export default function ConexoesHubPage() {
                         </TabsTrigger>
                         <TabsTrigger value="baileys" className="flex items-center gap-2 px-4 py-2">
                             <QrCode className="h-4 w-4 shrink-0" />
-                            <span>Sessões WhatsMeow</span>
+                            <span>Sessões (Evolution API)</span>
                         </TabsTrigger>
                     </TabsList>
                 </div>

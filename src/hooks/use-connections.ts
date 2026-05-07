@@ -36,8 +36,8 @@ export function useConnections() {
         const conn = connectionsRef.current.find(c => c.id === connectionId);
         const connectionType = conn?.connectionType || '';
 
-        // Skip for Baileys and WhatsMeow
-        if (connectionType === 'baileys' || connectionType === 'whatsmeow') {
+        // Skip for Baileys, WhatsMeow, and Evolution
+        if (connectionType === 'baileys' || connectionType === 'whatsmeow' || connectionType === 'evolution') {
             setConnections(prev => prev.map(c => c.id === connectionId ? { ...c, webhookStatus: 'N/A' } : c));
             return;
         }
@@ -103,8 +103,8 @@ export function useConnections() {
                         tokenExpiresIn: healthData.tokenExpiresIn,
                         lastHealthCheck: new Date(healthData.lastChecked)
                     };
-                    // For Baileys: derive connectionStatus from health (no Meta API involved)
-                    if (conn.connectionType === 'baileys') {
+                    // For Baileys/Evolution: derive connectionStatus from health (no Meta API involved)
+                    if (conn.connectionType === 'baileys' || conn.connectionType === 'evolution') {
                         updated.connectionStatus = healthData.status === 'healthy' ? 'Conectado' : 'Falha na Conexão';
                         updated.webhookStatus = 'N/A';
                     }
@@ -120,8 +120,8 @@ export function useConnections() {
     const refreshSingleConnection = useCallback(async (connectionId: string) => {
         const conn = connectionsRef.current.find(c => c.id === connectionId);
 
-        // Baileys: use health API instead of Meta Graph API check
-        if (conn?.connectionType === 'baileys') {
+        // Baileys/Evolution: use health API instead of Meta Graph API check
+        if (conn?.connectionType === 'baileys' || conn?.connectionType === 'evolution') {
             try {
                 const res = await fetch(`/api/v1/connections/health?force=true`);
                 if (res.ok) {

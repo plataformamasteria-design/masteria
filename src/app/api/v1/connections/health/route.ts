@@ -6,7 +6,7 @@ import { connections } from '@/lib/db/schema';
 import { eq, or, inArray, isNull, and } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { decrypt } from '@/lib/crypto';
-import { baileysBridge as sessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 
 const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v20.0';
 const CONNECTION_TIMEOUT_MS = 5000;
@@ -77,38 +77,29 @@ async function checkConnectionHealth(connection: ConnectionData, force: boolean 
 
   try {
     // ✅ CORREÇÃO: Verificar status real das sessões Baileys
-    if (connection.connectionType === 'baileys' || connection.connectionType === 'apicloud' || connection.connectionType === 'meta_api') {
+    if (connection.connectionType === 'baileys' || connection.connectionType === 'evolution' || connection.connectionType === 'apicloud' || connection.connectionType === 'meta_api') {
       // Para conexões Meta (apicloud/meta_api), se isActive for true e tivermos accessToken, 
       // verificamos a saúde via API. Se não, seguimos a lógica padrão.
       if ((connection.connectionType === 'apicloud' || connection.connectionType === 'meta_api') && connection.isActive && connection.accessToken) {
         // Continue para a verificação de token abaixo
-      } else if (connection.connectionType === 'baileys') {
-        // Use async method to query the Baileys microservice for real status
+      } else if (connection.connectionType === 'baileys' || connection.connectionType === 'evolution') {
+        // Use async method to query the Evolution API for real status
         let runtimeStatus: string | null = null;
         try {
-          const statusData = await sessionManager.getSessionStatusAsync(connection.id);
-          runtimeStatus = statusData?.status || null;
+          const statusData = await evolutionApiService.getConnectionState(connection.id);
+          runtimeStatus = statusData?.instance?.state || null;
         } catch (err) {
-          console.warn(`[Health Check] Could not reach Baileys service for ${connection.id}:`, err);
+          console.warn(`[Health Check] Could not reach Evolution API for ${connection.id}:`, err);
           runtimeStatus = null;
         }
 
-        // Mapear status Baileys para status de health
-        if (runtimeStatus === 'connected') {
+        // Mapear status Evolution para status de health
+        if (runtimeStatus === 'open') {
           health.status = 'healthy';
-        } else if (runtimeStatus === 'failed') {
-          health.status = 'error';
-          health.errorMessage = 'Falha na conexão WhatsApp';
-        } else if (runtimeStatus === 'disconnected' || runtimeStatus === 'none' || runtimeStatus === null) {
-          // Verificar se tem credenciais salvas (pode reconectar)
-          const hasAuth = await sessionManager.hasFilesystemAuth(connection.id);
-          if (hasAuth) {
-            health.status = 'inactive'; // Tem credenciais mas não está conectado
-          } else {
-            health.status = 'error'; // Sem credenciais, precisa reconectar
-            health.errorMessage = 'Sessão desconectada - reconecte para continuar';
-          }
-        } else if (runtimeStatus === 'connecting' || runtimeStatus === 'qr') {
+        } else if (runtimeStatus === 'close' || runtimeStatus === 'none' || runtimeStatus === null) {
+          health.status = 'error'; // Sem credenciais, precisa reconectar
+          health.errorMessage = 'Sessão desconectada - reconecte para continuar';
+        } else if (runtimeStatus === 'connecting') {
           health.status = 'healthy'; // Está tentando conectar, consideramos saudável
         } else {
           health.status = 'inactive';
@@ -231,7 +222,7 @@ export async function GET(request: NextRequest) {
         and(
           eq(connections.companyId, companyId),
           or(
-            inArray(connections.connectionType, ['meta_api', 'instagram', 'instagram_direct', 'baileys']),
+            inArray(connections.connectionType, ['meta_api', 'instagram', 'instagram_direct', 'baileys', 'evolution']),
             isNull(connections.connectionType)
           )
         )

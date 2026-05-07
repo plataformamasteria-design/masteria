@@ -139,7 +139,7 @@ export function ConnectionsManager() {
                 ) : (
                     /* MAIN TABLE VIEW */
                     <ConnectionsTable
-                        connections={connections}
+                        connections={connections.filter(c => c.connectionType !== 'baileys' && c.connectionType !== 'evolution')}
                         isSyncingWebhook={isSyncingWebhook}
                         onToggleActive={handleToggleActive}
                         onSyncWebhook={handleSyncWebhook}
