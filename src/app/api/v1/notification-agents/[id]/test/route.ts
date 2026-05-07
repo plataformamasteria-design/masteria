@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { notificationAgents, notificationLogs } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
-import { baileysBridge as baileysSessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 
 
 // Force dynamic rendering for this API route
@@ -48,14 +48,23 @@ export async function POST(
     }
 
     const connectionId = agent.connectionId;
-    const sessionData = baileysSessionManager['sessions'].get(connectionId);
+    let sessionData: any;
+    let isConnected = false;
+    try {
+        sessionData = await evolutionApiService.getConnectionState(connectionId);
+        if (sessionData?.instance?.state === 'open') {
+            isConnected = true;
+        }
+    } catch (e) {
+        // Ignored
+    }
 
-    if (!sessionData || sessionData.status !== 'connected') {
+    if (!isConnected) {
       return NextResponse.json(
         {
           error: 'Sessão WhatsApp não conectada',
           code: 'SESSION_OFFLINE',
-          details: { status: sessionData?.status || 'not_found' }
+          details: { status: sessionData?.instance?.state || 'not_found' }
         },
         { status: 503 }
       );
@@ -76,11 +85,12 @@ export async function POST(
     const results = await Promise.all(
       activeGroups.map(async (group) => {
         try {
-          const messageId = await baileysSessionManager.sendMessage(
+          const result = await evolutionApiService.sendMessage(
             connectionId,
             group.groupJid,
-            { text: message }
+            message
           );
+          const messageId = result?.key?.id;
 
           await db.insert(notificationLogs).values({
             agentId,

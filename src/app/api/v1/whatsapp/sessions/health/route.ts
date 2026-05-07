@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { baileysBridge as sessionManager } from '@/lib/baileys-bridge-client';
+
 import { getMediaUploadQueueStats } from '@/services/media-upload-queue.service';
 import { sessionCreationBreaker, mediaUploadBreaker, databaseBreaker } from '@/utils/circuit-breaker';
 import { db } from '@/lib/db';
@@ -87,11 +87,10 @@ export async function GET() {
       };
     }
 
-    // ✅ FASE 3.3: Verificar Sessões Ativas
-    const activeSessions = sessionManager.getActiveSessionsCount?.() || 0;
+    // ✅ FASE 3.3: Verificar Sessões Ativas (Evolution)
     health.checks.sessions = {
-      status: activeSessions > 0 ? 'healthy' : 'no_sessions',
-      activeCount: activeSessions,
+      status: 'managed_externally',
+      activeCount: 'unknown',
     };
 
     // Determinar status final

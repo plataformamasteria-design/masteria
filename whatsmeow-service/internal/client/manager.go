@@ -516,8 +516,22 @@ func (sm *SessionManager) SendMessage(connectionID, to string, content interface
 		return "", fmt.Errorf("sessão não encontrada")
 	}
 
-	if session.Client == nil || !session.Client.IsConnected() {
+	if session.Client == nil || !session.Client.IsLoggedIn() {
 		return "", fmt.Errorf("sessão não conectada")
+	}
+
+	// Wait up to 5 seconds if temporarily disconnected (WhatsMeow will auto-reconnect)
+	if !session.Client.IsConnected() {
+		log.Warn().Str("connectionId", connectionID).Msg("Client momentarily disconnected, waiting up to 5s before sending...")
+		for i := 0; i < 10; i++ {
+			time.Sleep(500 * time.Millisecond)
+			if session.Client.IsConnected() {
+				break
+			}
+		}
+		if !session.Client.IsConnected() {
+			log.Warn().Str("connectionId", connectionID).Msg("Proceeding to send despite websocket disconnection. Whatsmeow internal queue may handle it.")
+		}
 	}
 
 	log.Info().

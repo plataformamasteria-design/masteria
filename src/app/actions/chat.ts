@@ -411,36 +411,5 @@ export async function switchConnectionAction(conversationIdRaw: string, newConne
 // ==============================
 
 export async function syncBaileysHistoryAction(conversationIdRaw: string) {
-    try {
-        const { conversationId } = SyncHistorySchema.parse({ conversationId: conversationIdRaw });
-        const companyId = await getCompanyIdFromSession();
-
-        const conversation = await db.query.conversations.findFirst({
-            where: and(
-                eq(conversations.id, conversationId),
-                eq(conversations.companyId, companyId)
-            ),
-            with: {
-                contact: true,
-                connection: true
-            }
-        });
-
-        if (!conversation || !conversation.contact || !conversation.connection) {
-            throw new Error("Conversa, contato ou conexão não encontrados.");
-        }
-
-        if (conversation.connection.connectionType !== 'baileys') {
-            throw new Error("Sincronização disponível apenas para conexões nativas Baileys.");
-        }
-
-        const { baileysBridge } = await import('@/lib/baileys-bridge-client');
-
-        await baileysBridge.syncHistory(conversation.connection.id, conversation.contact.phone);
-
-        return { success: true };
-    } catch (error: unknown) {
-        console.error("SyncHistory Error:", error);
-        return { success: false, error: error instanceof Error ? error.message : "Erro." };
-    }
+    return { success: false, error: "A sincronização de histórico foi descontinuada na nova arquitetura (Evolution API)." };
 }

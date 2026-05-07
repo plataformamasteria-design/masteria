@@ -73,10 +73,20 @@ export function QRCodeModal({ sessionId, sessionName, isOpen, onClose }: QRCodeM
           const data = JSON.parse(event.data);
 
           if (data.qr) {
-            const qrDataUrl = await QRCode.toDataURL(data.qr, {
-              width: 300,
-              margin: 2,
-            });
+            let qrDataUrl = data.qr;
+            
+            // Se não for uma imagem base64 (for apenas o texto do pareamento), converta para QR
+            if (typeof data.qr === 'string' && !data.qr.startsWith('data:image')) {
+                qrDataUrl = await QRCode.toDataURL(data.qr, {
+                  width: 300,
+                  margin: 2,
+                });
+            }
+            // Se data.qr for um objeto com a chave base64
+            else if (typeof data.qr === 'object' && data.qr.base64) {
+                qrDataUrl = data.qr.base64;
+            }
+
             setQrCode(qrDataUrl);
             setStatus('qr');
             setError(null);

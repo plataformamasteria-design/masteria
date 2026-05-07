@@ -428,7 +428,11 @@ export function ConversationList({
         let filtered = conversations;
 
         if (sourceFilter !== 'all') {
-            filtered = filtered.filter(c => c.connectionType === sourceFilter);
+            if (sourceFilter === 'baileys') {
+                filtered = filtered.filter(c => ['baileys', 'evolution'].includes(c.connectionType || ''));
+            } else {
+                filtered = filtered.filter(c => c.connectionType === sourceFilter);
+            }
         }
 
         return filtered;

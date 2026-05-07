@@ -6,7 +6,7 @@ import { conversations, messages, contacts, templates, connections, messageReact
 import { eq, and, desc, inArray, lt } from 'drizzle-orm';
 import { getCompanyIdFromSession, getUserIdFromSession } from '@/app/actions';
 import { sendWhatsappTemplateMessage, sendWhatsappTextMessage } from '@/lib/facebookApiService';
-import { baileysBridge as sessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 import { z } from 'zod';
 import { subHours } from 'date-fns';
 import type { MetaApiMessageResponse } from '@/lib/types';
@@ -211,11 +211,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             }
 
             if (connection.connectionType === 'baileys') {
-                providerMessageId = await sessionManager.sendMessage(conversation.connectionId, contact.phone, {
-                    text: parsedBody.data.text
-                });
+                const result = await evolutionApiService.sendMessage(
+                    conversation.connectionId, 
+                    contact.phone, 
+                    parsedBody.data.text
+                );
+                providerMessageId = result?.key?.id;
                 if (!providerMessageId) {
-                    return NextResponse.json({ error: 'Falha ao enviar mensagem - sessão não conectada.' }, { status: 500 });
+                    return NextResponse.json({ error: 'Falha ao enviar mensagem - instância não conectada ou erro na Evolution API.' }, { status: 500 });
                 }
             } else if (connection.connectionType === 'meta_api') {
                 sentMessageResponse = await sendWhatsappTextMessage({

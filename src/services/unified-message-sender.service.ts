@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { connections, messageTemplates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendWhatsappTextMessage, sendWhatsappTemplateMessage, sendInstagramMessage, sendWhatsappMediaMessage } from '@/lib/facebookApiService';
-import { baileysBridge as sessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 import { convertMp3ToOgg, getAudioDurationInSeconds } from '@/services/audio-converter.service';
 import { formatJid } from '@/lib/utils/whatsapp';
 
@@ -226,90 +226,76 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
       }
 
     } else if (provider === 'baileys') {
-      // Send via Baileys
+      // Send via Evolution API (Replacing Baileys)
       try {
         const phoneJid = formatJid(to);
+        const number = phoneJid?.split('@')[0]; // Evolution uses just the number
+
+        if (!number) {
+           console.error(`[UNIFIED-SENDER] ❌ Invalid number formatting for ${to}`);
+           return { success: false, error: 'Número inválido' };
+        }
 
         // ✅ Handle Media Message
         if ((mediaUrl || mediaBuffer) && mediaType) {
-          let mediaContent: any = {};
+          
+          let durationSeconds: number | undefined;
+          let finalBuffer = mediaBuffer;
 
-          if (mediaType === 'audio') {
-            // Send as PTT (Voice Note)
-            // Check extension to set correct mimetype
-            const isWav = mediaUrl?.endsWith('.wav');
-            const mimetype = isWav ? 'audio/wav' : 'audio/ogg; codecs=opus';
-
-            // ✅ FIX: Static Noise Issue (Chiado) for Baileys
-            let durationSeconds: number | undefined;
-
-            if (mediaBuffer) {
+          if (mediaType === 'audio' && finalBuffer) {
               try {
-                console.log('[UNIFIED-SENDER] 🎵 [Baileys] Converting audio buffer to OGG Opus...');
-                // Note: IF input is already OGG, ffmpeg handles it gracefully
-                mediaBuffer = await convertMp3ToOgg(mediaBuffer);
-                console.log(`[UNIFIED-SENDER] ✅ [Baileys] Conversion complete. Size: ${mediaBuffer.length}`);
-
-                // ✅ FIX: Calculate duration for correct display (0:00 issue)
-                console.log('[UNIFIED-SENDER] ⏱️ [Baileys] Calculating audio duration...');
-                durationSeconds = await getAudioDurationInSeconds(mediaBuffer);
-                console.log(`[UNIFIED-SENDER] ✅ [Baileys] Audio Duration: ${durationSeconds}s`);
-
+                console.log('[UNIFIED-SENDER] 🎵 [Evolution] Converting audio buffer to OGG Opus...');
+                finalBuffer = await convertMp3ToOgg(finalBuffer);
+                console.log(`[UNIFIED-SENDER] ✅ [Evolution] Conversion complete. Size: ${finalBuffer.length}`);
               } catch (err) {
-                console.error('[UNIFIED-SENDER] ⚠️ [Baileys] Audio conversion/duration failed:', err);
+                console.error('[UNIFIED-SENDER] ⚠️ [Evolution] Audio conversion failed:', err);
               }
-            }
-
-            mediaContent = {
-              audio: mediaBuffer || { url: mediaUrl }, // ✅ Prefer Buffer if available
-              mimetype: mimetype,
-              ptt: true,
-              seconds: durationSeconds // ✅ Inject Duration
-            };
-          } else if (mediaType === 'image') {
-            mediaContent = {
-              image: mediaBuffer || { url: mediaUrl },
-              caption: message || ''
-            };
-          } else if (mediaType === 'video') {
-            mediaContent = {
-              video: mediaBuffer || { url: mediaUrl },
-              caption: message || ''
-            };
-          } else if (mediaType === 'document') {
-            mediaContent = {
-              document: mediaBuffer || { url: mediaUrl },
-              caption: message || '',
-              mimetype: 'application/pdf', // Default, maybe improve later
-              fileName: mediaUrl?.split('/').pop() || 'document.pdf'
-            };
           }
 
-          if (Object.keys(mediaContent).length > 0) {
-            const mediaMessageId = await sessionManager.sendMessage(connectionId, phoneJid, mediaContent);
-            if (!mediaMessageId) {
-              console.error(`[UNIFIED-SENDER] ❌ Baileys media sendMessage returned null for ${connectionId}`);
-              return { success: false, error: 'Sessão Baileys não conectada para envio de mídia.' };
-            }
-            console.log(`[UNIFIED-SENDER] ✅ Media (${mediaType}) sent via Baileys to ${to} — messageId: ${mediaMessageId}`);
-            return { success: true, messageId: mediaMessageId };
+          // Evolution API requires a URL or base64 string
+          const getMimeType = (type: string, url?: string) => {
+              if (type === 'audio') return url?.endsWith('.wav') ? 'audio/wav' : 'audio/ogg; codecs=opus';
+              if (type === 'image') return 'image/jpeg';
+              if (type === 'video') return 'video/mp4';
+              if (type === 'document') return 'application/pdf';
+              return 'application/octet-stream';
+          };
+          const mediaBase64 = finalBuffer ? `data:${getMimeType(mediaType, mediaUrl)};base64,${finalBuffer.toString('base64')}` : mediaUrl!;
+
+          const result = await evolutionApiService.sendMedia(
+             connectionId,
+             number,
+             mediaType,
+             mediaBase64,
+             message || '',
+             mediaType === 'document' ? (mediaUrl?.split('/').pop() || 'document.pdf') : undefined
+          );
+
+          if (!result?.key?.id) {
+             console.error(`[UNIFIED-SENDER] ❌ Evolution media send returned no ID for ${connectionId}`);
+             return { success: false, error: 'Falha ao enviar mídia pela Evolution API.' };
           }
+
+          console.log(`[UNIFIED-SENDER] ✅ Media (${mediaType}) sent via Evolution API to ${to} — messageId: ${result.key.id}`);
+          return { success: true, messageId: result.key.id };
         }
 
         if (!message) {
-          console.warn(`[UNIFIED-SENDER] No message for Baileys to ${to}, skipping`);
+          console.warn(`[UNIFIED-SENDER] No message for Evolution API to ${to}, skipping`);
           return { success: false, error: 'Nenhuma mensagem fornecida' };
         }
 
-        const realMessageId = await sessionManager.sendMessage(connectionId, phoneJid, message);
-        if (!realMessageId) {
-          console.error(`[UNIFIED-SENDER] ❌ Baileys sendMessage returned null for ${connectionId} — session may not be connected`);
-          return { success: false, error: 'Sessão Baileys não está conectada ou houve erro no envio.' };
+        const result = await evolutionApiService.sendMessage(connectionId, number, message);
+        
+        if (!result?.key?.id) {
+          console.error(`[UNIFIED-SENDER] ❌ Evolution sendMessage returned no ID for ${connectionId} — session may not be connected`);
+          return { success: false, error: 'Instância não está conectada ou houve erro no envio.' };
         }
-        console.log(`[UNIFIED-SENDER] ✅ Message sent via Baileys to ${to} — messageId: ${realMessageId}`);
-        return { success: true, messageId: realMessageId };
+        
+        console.log(`[UNIFIED-SENDER] ✅ Message sent via Evolution API to ${to} — messageId: ${result.key.id}`);
+        return { success: true, messageId: result.key.id };
       } catch (error) {
-        console.error(`[UNIFIED-SENDER] ❌ Failed to send via Baileys:`, error);
+        console.error(`[UNIFIED-SENDER] ❌ Failed to send via Evolution API:`, error);
         return { success: false, error: (error as Error).message };
       }
     }

@@ -138,8 +138,6 @@ server.listen(port, hostname, () => {
           console.error('[Server] Failed to initialize workers:', e);
         }
 
-        // ✅ v2: Retry Baileys bridge init with exponential backoff
-        await initBaileysWithRetry(5, 3000);
       });
     } else {
       console.log('[Server] Instrumentation active, workers initialized via instrumentation.ts');
@@ -150,35 +148,4 @@ server.listen(port, hostname, () => {
   });
 });
 
-// ✅ Baileys Bridge initialization with retry and exponential backoff
-async function initBaileysWithRetry(maxRetries: number, baseDelay: number): Promise<void> {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const { baileysBridge } = await import('./lib/baileys-bridge-client');
-      const { initBaileysWSListener } = await import('./lib/baileys-ws-listener');
 
-      // Check if microservice is reachable before proceeding
-      const isHealthy = await baileysBridge.healthCheck();
-      if (!isHealthy && attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt - 1);
-        console.warn(`[Server] Baileys microservice not ready (attempt ${attempt}/${maxRetries}). Retrying in ${delay / 1000}s...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-
-      // Connect WS listener to Baileys microservice
-      // ✅ The listener now auto-resumes sessions on connect, so no need for manual resumeAllSessions here
-      initBaileysWSListener();
-      console.log('[Server] ✅ Baileys WS listener initialized successfully');
-      return;
-    } catch (e) {
-      const delay = baseDelay * Math.pow(2, attempt - 1);
-      console.error(`[Server] Failed to initialize Baileys bridge (attempt ${attempt}/${maxRetries}):`, e);
-      if (attempt < maxRetries) {
-        console.log(`[Server] Retrying in ${delay / 1000}s...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-  console.error('[Server] ❌ All Baileys bridge init attempts failed. The WS monitor will keep retrying in background.');
-}

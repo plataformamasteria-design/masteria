@@ -674,31 +674,8 @@ async function processIncomingMessage(
             if (updatedContact) contact = updatedContact;
         }
 
-        // BACKGROUND SYNC: Try to fetch profile picture via Baileys Bridge
-        // We don't await this to keep the webhook response fast
-        if (contact && !contact.avatarUrl) {
-            const contactId = contact.id;
-            const contactPhone = contact.phone;
-            const contactName = contact.name || 'Unknown'; // Capture name for logging
-            (async () => {
-                try {
-                    const { baileysBridge: sessionManager } = await import('@/lib/baileys-bridge-client');
-                    const ppUrl = await sessionManager.getProfilePicture(contactPhone);
-                    if (ppUrl) {
-                        // Validar que o contato pertence à empresa antes de atualizar
-                        await db.update(contacts)
-                            .set({ avatarUrl: ppUrl })
-                            .where(and(
-                                eq(contacts.id, contactId),
-                                eq(contacts.companyId, companyId)
-                            ));
-                        console.log(`🖼️ [Meta Webhook] Profile picture synced for ${contactName}`);
-                    }
-                } catch (err) {
-                    // Ignore errors in background sync
-                }
-            })();
-        }
+        // BACKGROUND SYNC: Try to fetch profile picture via Baileys Bridge was removed.
+        // Meta API does not provide profile pictures by default.
 
         if (!contact) throw new Error("Falha ao criar ou encontrar o contato.");
 

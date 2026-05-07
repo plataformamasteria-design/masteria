@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { baileysBridge as sessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 import { db } from '@/lib/db';
 import { connections, messages, conversations } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -39,46 +39,33 @@ export async function POST(
       );
     }
 
-    const sessionResult = await sessionManager.ensureSession(id, companyId);
+    let statusData: any;
+    let isConnected = false;
+    try {
+        statusData = await evolutionApiService.getConnectionState(id);
+        if (statusData?.instance?.state === 'open') {
+            isConnected = true;
+        }
+    } catch (e) {
+        console.log(`[API] Session ${id} state error:`, e);
+    }
 
-    if (!sessionResult.success) {
-      console.log(`[API] Session ${id} not ready: ${sessionResult.message}`);
-
-      if (sessionResult.status === 'needs_qr') {
-        return NextResponse.json(
-          {
-            error: 'Session requires QR code reconnection',
-            status: sessionResult.status,
-            message: sessionResult.message
-          },
-          { status: 409 }
-        );
-      }
-
-      if (sessionResult.status === 'qr' || sessionResult.status === 'connecting') {
-        return NextResponse.json(
-          {
-            error: 'Session is connecting, please wait...',
-            status: sessionResult.status,
-            message: sessionResult.message
-          },
-          { status: 409 }
-        );
-      }
-
+    if (!isConnected) {
       return NextResponse.json(
-        { error: sessionResult.message, status: sessionResult.status },
-        { status: 500 }
+        {
+          error: 'Session is not connected',
+          status: statusData?.instance?.state || 'disconnected',
+        },
+        { status: 409 }
       );
     }
 
-    const messageId = await sessionManager.sendMessage(id, to, {
-      text,
-    });
+    const result = await evolutionApiService.sendMessage(id, to, text);
+    const messageId = result?.key?.id;
 
     if (!messageId) {
       return NextResponse.json(
-        { error: 'Failed to send message - session not connected' },
+        { error: 'Failed to send message - error on Evolution API' },
         { status: 500 }
       );
     }

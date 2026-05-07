@@ -24,7 +24,7 @@ import { ensureTenantAccess } from '@/lib/db/tenant-guard';
 import { decrypt } from './crypto';
 import { sendWhatsappTemplateMessage } from './facebookApiService';
 import type { MediaAsset as MediaAssetType, MetaApiMessageResponse, MetaHandle } from './types';
-import { baileysBridge as baileysSessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 import { NotificationService } from '@/lib/notifications/notification-service';
 import { UserNotificationsService } from './notifications/user-notifications.service';
 import { webhookDispatcher } from '@/services/webhook-dispatcher.service';
@@ -260,8 +260,8 @@ interface CampaignMessageResult {
     error?: string;
 }
 
-// Sub-função: Enviar via Baileys
-async function sendViaBaileys(
+// Sub-função: Enviar via Evolution API
+async function sendViaEvolution(
     connectionId: string,
     contact: typeof contacts.$inferSelect,
     resolvedTemplate: ResolvedTemplate,
@@ -269,59 +269,27 @@ async function sendViaBaileys(
     companyId: string,
     skipValidation: boolean = false
 ): Promise<CampaignMessageResult> {
-    // Verificar status da sessão via bridge e tentar restaurar se necessário
-    let sessionStatusData = await baileysSessionManager.getSessionStatusAsync(connectionId);
-    let sessionStatus = sessionStatusData?.status || null;
-    console.log(`[Campaign-Baileys] Preparando envio | ConnectionID: ${connectionId} | Status: ${sessionStatus || 'NOT_FOUND'} | Contato: ${contact.phone}`);
-
-    // Se sessão não existir, tentar restaurar automaticamente
-    if (!sessionStatus) {
-        console.log(`[Campaign-Baileys] ⚡ Tentando restaurar sessão ${connectionId}...`);
-        try {
-            // Validar que a conexão pertence à empresa da campanha
-            const connectionData = await ensureTenantAccess(connectionId, connections, companyId);
-            if (connectionData && connectionData.companyId) {
-                await baileysSessionManager.createSession(connectionId, connectionData.companyId);
-                // Aguardar até 10 segundos para conexão
-                for (let i = 0; i < 20; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    sessionStatusData = await baileysSessionManager.getSessionStatusAsync(connectionId);
-                    sessionStatus = sessionStatusData?.status || null;
-                    if (sessionStatus === 'connected') {
-                        if (DEBUG) console.log(`[Campaign-Baileys] ✅ Sessão restaurada com sucesso | ConnectionID: ${connectionId}`);
-                        break;
-                    }
-                }
-            }
-        } catch (error) {
-            console.error(`[Campaign-Baileys] ❌ Falha ao restaurar sessão: ${(error as Error).message}`);
-        }
-        sessionStatusData = await baileysSessionManager.getSessionStatusAsync(connectionId);
-        sessionStatus = sessionStatusData?.status || null;
+    // Verificar status da sessão
+    let sessionStatusData: any;
+    let sessionStatus: string | null = null;
+    
+    try {
+        sessionStatusData = await evolutionApiService.getConnectionState(connectionId);
+        sessionStatus = sessionStatusData?.instance?.state || null;
+    } catch (e) {
+        sessionStatus = null;
     }
+    
+    console.log(`[Campaign-Evolution] Preparando envio | ConnectionID: ${connectionId} | Status: ${sessionStatus || 'NOT_FOUND'} | Contato: ${contact.phone}`);
 
-    if (!sessionStatus || sessionStatus !== 'connected') {
-        const errorMsg = sessionStatus ? `Sessão ${sessionStatus} - não está conectada` : 'Sessão não encontrada no SessionManager';
-        console.error(`[Campaign-Baileys] ERRO: ${errorMsg} | ConnectionID: ${connectionId}`);
+    if (sessionStatus !== 'open') {
+        const errorMsg = sessionStatus ? `Sessão ${sessionStatus} - não está conectada` : 'Sessão não encontrada no Evolution API';
+        console.error(`[Campaign-Evolution] ERRO: ${errorMsg} | ConnectionID: ${connectionId}`);
         return {
             success: false,
             contactId: contact.id,
             error: errorMsg,
         };
-    }
-
-    // VALIDAÇÃO DE NÚMERO WHATSAPP (socket.onWhatsApp) - Pula se skipValidation=true
-    if (!skipValidation) {
-        const validation = await baileysSessionManager.validateWhatsAppNumber(connectionId, contact.phone);
-        if (!validation.exists) {
-            console.log(`[Campaign-Baileys] ⚠️ Número inválido/inexistente: ${contact.phone} | Motivo: ${validation.error}`);
-            return {
-                success: false,
-                contactId: contact.id,
-                error: validation.error || 'Número não registrado no WhatsApp',
-            };
-        }
-        if (DEBUG) console.log(`[Campaign-Baileys] ✅ Número validado: ${contact.phone}`);
     }
 
     // Substitui variáveis no body text
@@ -349,35 +317,37 @@ async function sendViaBaileys(
         messageText = messageText.replace(placeholder, text);
     }
 
-    console.log(`[Campaign-Baileys] Texto final da mensagem: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
+    console.log(`[Campaign-Evolution] Texto final da mensagem: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
 
     try {
         // Envolve com retry logic para erros transientes
-        const messageId = await withRetry(async () => {
-            return await baileysSessionManager.sendMessage(
+        const result = await withRetry(async () => {
+            return await evolutionApiService.sendMessage(
                 connectionId,
                 contact.phone,
-                { text: messageText }
+                messageText
             );
         });
 
+        const messageId = result?.key?.id;
+
         if (messageId) {
-            if (DEBUG) console.log(`[Campaign-Baileys] ✅ Mensagem enviada com sucesso | Contato: ${contact.phone} | MessageID: ${messageId}`);
+            if (DEBUG) console.log(`[Campaign-Evolution] ✅ Mensagem enviada com sucesso | Contato: ${contact.phone} | MessageID: ${messageId}`);
             return {
                 success: true,
                 contactId: contact.id,
                 providerMessageId: messageId,
             };
         } else {
-            console.error(`[Campaign-Baileys] ❌ Baileys retornou null | Contato: ${contact.phone} | ConnectionID: ${connectionId}`);
+            console.error(`[Campaign-Evolution] ❌ Evolution retornou null | Contato: ${contact.phone} | ConnectionID: ${connectionId}`);
             return {
                 success: false,
                 contactId: contact.id,
-                error: 'Baileys retornou null - sessão pode ter caído durante o envio',
+                error: 'Evolution retornou erro - sessão pode ter caído durante o envio',
             };
         }
     } catch (error) {
-        console.error(`[Campaign-Baileys] ❌ Exceção ao enviar | Contato: ${contact.phone} | Erro: ${(error as Error).message}`);
+        console.error(`[Campaign-Evolution] ❌ Exceção ao enviar | Contato: ${contact.phone} | Erro: ${(error as Error).message}`);
         return {
             success: false,
             contactId: contact.id,
@@ -492,7 +462,7 @@ async function sendCampaignMessage(
     }
 
     if (isBaileys) {
-        return sendViaBaileys(connection.id, contact, resolvedTemplate, variableMappings, campaign.companyId);
+        return sendViaEvolution(connection.id, contact, resolvedTemplate, variableMappings, campaign.companyId);
     } else {
         return sendViaMetaApi(connection, contact, resolvedTemplate, variableMappings, campaign);
     }

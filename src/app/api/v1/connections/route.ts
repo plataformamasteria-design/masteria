@@ -9,7 +9,7 @@ import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
 import { encrypt } from '@/lib/crypto';
 import { apiCache } from '@/lib/api-cache';
 import { getCompanyIdFromSession } from '@/app/actions';
-import { baileysBridge as sessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 
 const connectionSchema = z.object({
     configName: z.string().min(1, 'Nome da conexão é obrigatório'),
@@ -63,18 +63,22 @@ export async function GET(_request: NextRequest) {
             .orderBy(desc(connections.createdAt));
 
         // Retorna os dados, mas o token permanece encriptado
-        const connectionsWithRealtimeStatus = companyConnections.map(conn => {
-            if (conn.connectionType === 'baileys') {
-                const status = sessionManager.getSessionStatus(conn.id);
-                // Map Baileys status to ConnectionStatus
-                // 'connected' -> 'Conectado'
-                // others -> use existing or map accordingly
+        const connectionsWithRealtimeStatus = await Promise.all(companyConnections.map(async conn => {
+            if (conn.connectionType === 'baileys' || conn.connectionType === 'evolution') {
+                let statusData: any;
+                let status: string | null = null;
+                try {
+                    statusData = await evolutionApiService.getConnectionState(conn.id);
+                    status = statusData?.instance?.state || null;
+                } catch (e) {
+                    status = null;
+                }
 
                 let mappedStatus = conn.isActive ? 'Não Verificado' : 'Falha na Conexão';
 
-                if (status === 'connected') {
+                if (status === 'open') {
                     mappedStatus = 'Conectado';
-                } else if (status === 'failed' || status === 'disconnected') {
+                } else if (status === 'close' || status === 'disconnected') {
                     mappedStatus = 'Falha na Conexão';
                 }
 
@@ -87,7 +91,7 @@ export async function GET(_request: NextRequest) {
                 };
             }
             return conn;
-        });
+        }));
 
         return NextResponse.json(connectionsWithRealtimeStatus, {
             headers: {

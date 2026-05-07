@@ -4,9 +4,12 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -379,7 +382,7 @@ func (h *EventHandler) processIncomingMessage(
 
 	// Emit to MasterIA via Socket.IO (only for incoming messages)
 	if !fromMe {
-		h.Emitter.EmitIncomingMessage(companyID, models.IncomingMessagePayload{
+		payload := models.IncomingMessagePayload{
 			ConnectionID:   connectionID,
 			ContactPhone:   phoneNumber,
 			ContactName:    contactName,
@@ -395,7 +398,53 @@ func (h *EventHandler) processIncomingMessage(
 				"messageTimestamp": evt.Info.Timestamp.Unix(),
 				"remoteJid":       remoteJid,
 			},
-		})
+		}
+
+		// 1. Emite via WebSocket (UI updates)
+		h.Emitter.EmitIncomingMessage(companyID, payload)
+
+		// 2. Dispara o Webhook HTTP (Automação - sem perdas)
+		go h.sendHTTPWebhook(payload)
+	}
+}
+
+// sendHTTPWebhook envia o payload para o Next.js de forma síncrona/confiável.
+func (h *EventHandler) sendHTTPWebhook(payload models.IncomingMessagePayload) {
+	webhookURL := os.Getenv("WEBHOOK_URL")
+	if webhookURL == "" {
+		nextAppURL := os.Getenv("NEXT_APP_URL")
+		if nextAppURL == "" {
+			nextAppURL = "http://localhost:3000"
+		}
+		webhookURL = nextAppURL + "/api/v1/webhooks/baileys"
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal webhook payload")
+		return
+	}
+
+	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create webhook request")
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send HTTP webhook")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Warn().Int("status", resp.StatusCode).Msg("Webhook returned non-2xx status")
+	} else {
+		log.Info().Str("conversationId", payload.ConversationID).Msg("✅ HTTP Webhook sent successfully")
 	}
 }
 

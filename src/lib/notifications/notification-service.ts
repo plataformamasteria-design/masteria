@@ -8,7 +8,7 @@ import {
   conversations
 } from '@/lib/db/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
-import { baileysBridge as baileysSessionManager } from '@/lib/baileys-bridge-client';
+import { evolutionApiService } from '@/services/evolution-api.service';
 
 interface NotificationStats {
   agendamentos: number;
@@ -241,12 +241,14 @@ export class NotificationService {
     };
 
     try {
-      // Enviar mensagem via session manager
-      const messageId = await baileysSessionManager.sendMessage(
+      // Enviar mensagem via Evolution API
+      const result = await evolutionApiService.sendMessage(
         connectionId,
         groupJid,
-        { text: message }
+        message
       );
+      
+      const messageId = result?.key?.id;
 
       if (!messageId) {
         throw new Error(`Falha ao enviar mensagem para grupo ${groupJid}`);

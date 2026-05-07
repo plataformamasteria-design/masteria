@@ -273,11 +273,9 @@ async function handleWorkerInit(request: NextRequest) {
     // Ainda iniciar serviços que NÃO dependem de Redis
     setImmediate(async () => {
       try {
-        const { initBaileysWSListener } = require('@/lib/baileys-ws-listener');
-        initBaileysWSListener();
-        console.log('[InitWorkerRoute] ✅ Baileys WS listener initialized (no-Redis mode)');
+        console.log('[InitWorkerRoute] ✅ Workers skipped, no-Redis mode active.');
       } catch (err) {
-        console.error('[InitWorkerRoute] ⚠️ Baileys WS listener failed:', err);
+        console.error('[InitWorkerRoute] ⚠️ Initialization error:', err);
       }
     });
 
@@ -288,14 +286,6 @@ async function handleWorkerInit(request: NextRequest) {
   }
 
   try {
-    // 1. Initialize Baileys WS Listener FIRST
-    try {
-      const { initBaileysWSListener } = await import('@/lib/baileys-ws-listener');
-      initBaileysWSListener();
-      console.log('[InitWorkerRoute] ✅ Baileys WS listener initialized');
-    } catch (wsErr) {
-      console.error('[InitWorkerRoute] ⚠️ Baileys WS listener failed:', wsErr);
-    }
 
     // Fire-and-forget with timeout
     const timeoutPromise = new Promise<boolean>((resolve) => {
@@ -334,17 +324,7 @@ async function handleWorkerInit(request: NextRequest) {
 
     workerInitialized = true;
 
-    // Auto-resume WhatsApp sessions via microservice
     setImmediate(async () => {
-      try {
-        console.log('[InitWorkerRoute] 🚀 Triggering WhatsApp Auto-Resume via Bridge...');
-        const { baileysBridge: sessionManager } = await import('@/lib/baileys-bridge-client');
-        const result = await sessionManager.resumeAllSessions();
-        console.log(`[InitWorkerRoute] ✅ WhatsApp Auto-Resume finished: ${result.success} resumed, ${result.failed} failed`);
-      } catch (error) {
-        console.error('[InitWorkerRoute] ❌ WhatsApp Auto-Resume failed:', error);
-      }
-
       // Start periodic unattended leads monitor (every 5 minutes)
       startUnattendedLeadsMonitor();
 

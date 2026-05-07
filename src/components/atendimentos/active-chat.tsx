@@ -334,14 +334,14 @@ export function ActiveChat({
                 onClick={() => setShowConnectionDropdown(prev => !prev)}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 mr-1",
-                  (conversation as any)?.connectionType === 'baileys'
+                  ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '')
                     ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15'
                     : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15'
                 )}
               >
                 <Wifi className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">
-                  {(conversation as any)?.connectionType === 'baileys' ? 'Baileys' : 'API'}
+                  {['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API'}
                 </span>
                 <ChevronDown className={cn(
                   "h-3 w-3 transition-transform duration-300",
@@ -356,7 +356,7 @@ export function ActiveChat({
                   </div>
                   {availableConnections.map((conn) => {
                     const isActive = conn.id === conversation?.connectionId;
-                    const isBaileys = conn.connectionType === 'baileys';
+                    const isBaileys = ['baileys', 'evolution'].includes(conn.connectionType);
                     return (
                       <button
                         key={conn.id}
@@ -467,7 +467,7 @@ export function ActiveChat({
           )}
 
           {/* Sync History Button - Only for Baileys */}
-          {onSyncHistory && (conversation as any)?.connectionType === 'baileys' && (
+          {onSyncHistory && ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

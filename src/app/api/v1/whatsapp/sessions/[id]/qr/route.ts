@@ -3,19 +3,13 @@ import { getCompanyIdFromSession } from '@/app/actions';
 import { db } from '@/lib/db';
 import { connections } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { evolutionApiService } from '@/services/evolution-api.service';
 
 export const dynamic = 'force-dynamic';
 
-const BAILEYS_SERVICE_URL = process.env.BAILEYS_SERVICE_URL || 'http://localhost:3001';
-const BAILEYS_SERVICE_API_KEY = process.env.BAILEYS_SERVICE_API_KEY || '';
-
 /**
- * QR Code SSE Proxy
- * Proxies the SSE stream from the Baileys microservice to the browser.
- * 
- * The actual Baileys sessions live in a separate microservice on Railway,
- * so we can't access local EventEmitters. Instead, we proxy the
- * microservice's /qr/stream SSE endpoint.
+ * QR Code SSE Proxy (Evolution API)
+ * Emulates the SSE stream expected by the UI by polling Evolution API
  */
 export async function GET(
   request: NextRequest,
@@ -23,8 +17,6 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    console.log('[QR SSE Proxy] Starting QR stream for session:', id);
-
     const companyId = await getCompanyIdFromSession();
 
     // Validate connection belongs to user's company
@@ -36,62 +28,66 @@ export async function GET(
     });
 
     if (!connection) {
-      console.error('[QR SSE Proxy] Connection not found. Session ID:', id, 'Company ID:', companyId);
       return new Response(JSON.stringify({ error: 'Session not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Ensure the session is created/resumed in the microservice
-    try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (BAILEYS_SERVICE_API_KEY) {
-        headers['x-api-key'] = BAILEYS_SERVICE_API_KEY;
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendEvent = (data: any) => {
+          try {
+             controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`));
+          } catch(e) {}
+        };
+
+        try {
+          // Send initial connecting event
+          sendEvent({ status: 'connecting' });
+
+          let pollingAttempts = 0;
+          const maxAttempts = 100; // 5 minutes (3s * 100)
+
+          while (pollingAttempts < maxAttempts) {
+            if (request.signal.aborted) break;
+            
+            try {
+              // 1. Check connection state
+              const stateData = await evolutionApiService.getConnectionState(id);
+              const state = stateData?.instance?.state;
+
+              if (state === 'open') {
+                sendEvent({ status: 'connected' });
+                break;
+              }
+
+              // 2. Fetch QR Code
+              const connData = await evolutionApiService.getConnectionData(id);
+              
+              if (connData?.qrcode || connData?.base64) {
+                 sendEvent({ qr: connData.qrcode || connData.base64 });
+              }
+            } catch (err) {
+              console.warn('[QR Stream] Warning polling Evolution API:', err);
+              // Ignore temporary errors and keep polling
+            }
+
+            pollingAttempts++;
+            await new Promise(r => setTimeout(r, 3000));
+          }
+        } catch (error) {
+          console.error('[QR Stream] Stream error:', error);
+          sendEvent({ status: 'error', message: 'Falha ao obter QR Code' });
+        } finally {
+          try {
+             controller.close();
+          } catch(e) {}
+        }
       }
-
-      const createRes = await fetch(`${BAILEYS_SERVICE_URL}/api/sessions/${id}/create`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ companyId }),
-        signal: AbortSignal.timeout(15000),
-      });
-
-      if (!createRes.ok) {
-        const err = await createRes.json().catch(() => ({}));
-        console.warn('[QR SSE Proxy] Create session warning:', err);
-        // Non-fatal: session might already exist
-      }
-    } catch (createError) {
-      console.warn('[QR SSE Proxy] Create session failed (non-fatal):', createError);
-    }
-
-    // Proxy the SSE stream from the Baileys microservice
-    const sseHeaders: Record<string, string> = {};
-    if (BAILEYS_SERVICE_API_KEY) {
-      sseHeaders['x-api-key'] = BAILEYS_SERVICE_API_KEY;
-    }
-
-    const upstreamUrl = `${BAILEYS_SERVICE_URL}/api/sessions/${id}/qr/stream`;
-    console.log('[QR SSE Proxy] Connecting to upstream SSE:', upstreamUrl);
-
-    const upstreamRes = await fetch(upstreamUrl, {
-      headers: sseHeaders,
-      signal: request.signal,
     });
 
-    if (!upstreamRes.ok || !upstreamRes.body) {
-      console.error('[QR SSE Proxy] Upstream SSE failed:', upstreamRes.status);
-      return new Response(
-        JSON.stringify({ error: 'Failed to connect to Baileys service' }),
-        { status: 503, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Transparently proxy the SSE stream from microservice to client
-    return new Response(upstreamRes.body, {
+    return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
@@ -100,10 +96,11 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('[QR SSE Proxy] Error:', error);
+    console.error('[QR Stream] Fatal Error:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 }
+

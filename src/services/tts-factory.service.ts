@@ -32,5 +32,5 @@ export async function generateSpeech(text: string, options: TTSOptions): Promise
 
     // Fallback / Default to Gemini
     // Gemini service uses 'voiceName' which maps to our 'voiceId' here
-    return generateGeminiAudio(text, voiceId, companyId);
+    return generateGeminiAudio(text, voiceId);
 }

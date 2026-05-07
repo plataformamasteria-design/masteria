@@ -21,7 +21,7 @@ export interface SessionData {
 export interface CreateSessionData {
   companyId: string;
   name: string;
-  connectionType: 'baileys' | 'meta_api';
+  connectionType: 'baileys' | 'meta_api' | 'evolution';
   // ✅ SIMPLIFICAÇÃO: environment é opcional e não mais usado para sessões Baileys
   // Mantido para compatibilidade com Meta API se necessário
   environment?: 'production' | 'development';
@@ -44,7 +44,7 @@ export class SessionRepository {
    */
   async findByCompany(
     companyId: string,
-    connectionType: 'baileys' | 'meta_api' = 'baileys'
+    connectionType: 'baileys' | 'meta_api' | 'evolution' = 'baileys'
   ): Promise<SessionData[]> {
     const sessions = await db
       .select({

@@ -143,9 +143,15 @@ export async function POST(req: NextRequest) {
             }).returning();
             conversation = newConv;
         } else {
-            // Atualizar lastMessageAt da conversa
+            // Atualizar lastMessageAt da conversa e connectionId se estiver faltando
+            const updatePayload: any = { lastMessageAt: new Date() };
+            if (!conversation.connectionId) {
+                updatePayload.connectionId = connection.id;
+                conversation.connectionId = connection.id;
+            }
+            
             await db.update(conversations)
-                .set({ lastMessageAt: new Date() })
+                .set(updatePayload)
                 .where(eq(conversations.id, conversation.id));
         }
 
