@@ -716,7 +716,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
     let derivedProvider = 'baileys';
     if (connection?.connectionType === 'meta_api' || connection?.connectionType === 'apicloud') {
         derivedProvider = 'apicloud';
-    } else if (connection?.connectionType === 'baileys') {
+    } else if (['baileys', 'evolution'].includes(connection?.connectionType || '')) {
         derivedProvider = 'baileys';
     }
 
@@ -2175,7 +2175,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     const resolvedConn = await db.query.connections.findFirst({
                         where: eq(connections.id, aiConnectionId)
                     });
-                    if (resolvedConn?.connectionType === 'baileys') {
+                    if (['baileys', 'evolution'].includes(resolvedConn?.connectionType || '')) {
                         aiProvider = 'baileys';
                     }
                 } catch (e) {
@@ -2439,7 +2439,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 const resolvedConn = await db.query.connections.findFirst({
                     where: eq(connections.id, aiConnectionId)
                 });
-                if (resolvedConn?.connectionType === 'baileys') {
+                if (['baileys', 'evolution'].includes(resolvedConn?.connectionType || '')) {
                     aiProvider = 'baileys';
                 }
             } catch (e) {
