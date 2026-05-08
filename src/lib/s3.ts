@@ -243,16 +243,14 @@ function getStorageAdapter(): StorageAdapter {
     if (storageAdapter) return storageAdapter;
 
     try {
-        if (isReplit()) {
-            // ✅ CRITICAL FIX: Use Neon (DB-backed) storage on Replit for PERSISTENCE
-            // LocalStorageAdapter writes to public/uploads/ which is CLEARED on every deploy!
-            // NeonStorageAdapter stores files in PostgreSQL which persists across deploys.
-            // WARNING: Neon has 512MB limit. For high-volume media, configure AWS S3.
-            console.log('[Storage] 🔒 Using Neon DB Storage (Persistent) for Replit');
-            storageAdapter = new NeonStorageAdapter();
-        } else {
+        const hasAws = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_S3_BUCKET_NAME);
+        
+        if (hasAws) {
             console.log('[Storage] Using AWS S3 Storage');
             storageAdapter = new S3Adapter();
+        } else {
+            console.log('[Storage] 🔒 Using Neon DB Storage (Persistent)');
+            storageAdapter = new NeonStorageAdapter();
         }
     } catch (error: any) {
         console.warn(`[Storage] ⚠️ Failed to initialize primary adapter: ${error.message}. Falling back to LocalStorage (NON-PERSISTENT!).`);

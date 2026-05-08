@@ -13,6 +13,7 @@ import { uploadFileToS3 } from '@/lib/s3';
 import { v4 as uuidv4 } from 'uuid';
 import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 import { resumeFlowForContact } from '@/lib/flow-engine';
+import { emitToCompany } from '@/lib/socket';
 
 // GET /api/webhooks/meta/[slug] - Used for Facebook Webhook Verification
 
@@ -500,24 +501,22 @@ async function processIncomingMessage(
         const aiActive = triggerAiActive;
 
         // Emitir eventos realtime IMEDIATAMENTE após o commit do DB
-        import('@/lib/socket').then(({ emitToCompany }) => {
-            // Fast-path: chat:new-message com payload completo
-            // O frontend faz append direto sem precisar refetch
-            emitToCompany(coId, 'chat:new-message', {
-                conversationId: convId,
-                messageId: msgId,
-                content: msgText,
-                contentType: triggerContentType || 'TEXT',
-                isFromMe: false, // Mensagem de contato incoming
-                senderType: 'CONTACT',
-                mediaUrl: null, // Mídia ainda em upload async — será atualizada via chat:message-updated
-                timestamp: new Date().toISOString(),
-                contactName: triggerContactName,
-                contactPhone: triggerContactPhone,
-            });
-            // Slow-path backup: força re-render da lista completa
-            emitToCompany(coId, 'inbox:update', { timestamp: Date.now() });
-        }).catch(err => console.error('[META-WEBHOOK] Erro ao emitir eventos realtime:', err));
+        // Fast-path: chat:new-message com payload completo
+        // O frontend faz append direto sem precisar refetch
+        emitToCompany(coId, 'chat:new-message', {
+            conversationId: convId,
+            messageId: msgId,
+            content: msgText,
+            contentType: triggerContentType || 'TEXT',
+            isFromMe: false, // Mensagem de contato incoming
+            senderType: 'CONTACT',
+            mediaUrl: null, // Mídia ainda em upload async — será atualizada via chat:message-updated
+            timestamp: new Date().toISOString(),
+            contactName: triggerContactName,
+            contactPhone: triggerContactPhone,
+        });
+        // Slow-path backup: força re-render da lista completa
+        emitToCompany(coId, 'inbox:update', { timestamp: Date.now() });
 
         setTimeout(async () => {
             // 1. Primeiro: tentar retomar execução pausada (diálogo IA)
@@ -591,6 +590,9 @@ async function uploadMediaToS3(
             .where(eq(messages.id, messageId));
 
         console.log(`[META-WEBHOOK] ✅ Mensagem ${messageId} atualizada com media URL`);
+        
+        // Notify frontend that media is ready
+        emitToCompany(companyId, 'chat:message-updated', { messageId, mediaUrl: permanentMediaUrl });
 
     } catch (error) {
         console.error(`[META-WEBHOOK] ❌ Erro ao processar mídia ${messageType} (${mediaId}):`, error);
