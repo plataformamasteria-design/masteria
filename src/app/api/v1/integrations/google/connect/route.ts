@@ -13,13 +13,23 @@ export const dynamic = 'force-dynamic';
  * Get the correct base URL for redirects.
  */
 function getBaseUrl(request: NextRequest): string {
-    if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-    const forwardedHost = request.headers.get('x-forwarded-host');
-    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
-    if (forwardedHost) return `${forwardedProto}://${forwardedHost}`;
-    const host = request.headers.get('host');
-    if (host && !host.startsWith('0.0.0.0') && !host.startsWith('localhost')) return `https://${host}`;
-    return request.nextUrl.origin;
+    let url = process.env.NEXT_PUBLIC_APP_URL || '';
+    url = url.replace(/['"]/g, '').trim();
+    if (!url) {
+        const forwardedHost = request.headers.get('x-forwarded-host');
+        const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+        if (forwardedHost) {
+            url = `${forwardedProto}://${forwardedHost}`;
+        } else {
+            const host = request.headers.get('host');
+            if (host && !host.startsWith('0.0.0.0') && !host.startsWith('localhost')) {
+                url = `https://${host}`;
+            } else {
+                url = request.nextUrl.origin;
+            }
+        }
+    }
+    return url.replace(/\/+$/, '');
 }
 
 export async function GET(request: NextRequest) {

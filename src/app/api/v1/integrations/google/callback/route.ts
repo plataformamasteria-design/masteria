@@ -16,23 +16,23 @@ export const dynamic = 'force-dynamic';
  * Uses NEXT_PUBLIC_APP_URL or reconstructs from request headers.
  */
 function getBaseUrl(request: NextRequest): string {
-    // Priority 1: Explicit app URL from env
-    if (process.env.NEXT_PUBLIC_APP_URL) {
-        return process.env.NEXT_PUBLIC_APP_URL;
+    let url = process.env.NEXT_PUBLIC_APP_URL || '';
+    url = url.replace(/['"]/g, '').trim();
+    if (!url) {
+        const forwardedHost = request.headers.get('x-forwarded-host');
+        const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+        if (forwardedHost) {
+            url = `${forwardedProto}://${forwardedHost}`;
+        } else {
+            const host = request.headers.get('host');
+            if (host && !host.startsWith('0.0.0.0') && !host.startsWith('localhost')) {
+                url = `https://${host}`;
+            } else {
+                url = request.nextUrl.origin;
+            }
+        }
     }
-    // Priority 2: Forwarded host header (behind proxy/Replit)
-    const forwardedHost = request.headers.get('x-forwarded-host');
-    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
-    if (forwardedHost) {
-        return `${forwardedProto}://${forwardedHost}`;
-    }
-    // Priority 3: Host header
-    const host = request.headers.get('host');
-    if (host && !host.startsWith('0.0.0.0') && !host.startsWith('localhost')) {
-        return `https://${host}`;
-    }
-    // Fallback
-    return request.url;
+    return url.replace(/\/+$/, '');
 }
 
 export async function GET(request: NextRequest) {
