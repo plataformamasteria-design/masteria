@@ -45,8 +45,21 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
             }
         }
 
-        if (id === 'new') {
+        let isNew = id === 'new';
+
+        if (!isNew) {
+            const existingFlow = await db.query.automationFlows.findFirst({
+                where: and(eq(automationFlows.id, id), eq(automationFlows.companyId, companyId))
+            });
+            if (!existingFlow) {
+                isNew = true;
+            }
+        }
+
+        if (isNew) {
+            const flowIdToInsert = id === 'new' ? undefined : id;
             const [newFlow] = await db.insert(automationFlows).values({
+                ...(flowIdToInsert ? { id: flowIdToInsert } : {}),
                 name,
                 companyId,
                 visualData,

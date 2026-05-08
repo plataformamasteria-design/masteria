@@ -366,8 +366,8 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
             toast.success('Fluxo publicado com sucesso!');
             onSaveProp?.((result?.id || result?.flow?.id || flowId) as string, flowName);
         } catch (e: any) {
-            console.error('[FlowEditorV4] save error', e);
-            toast.error('Erro ao salvar', { description: e.message });
+            console.error('[FlowEditorV4] save error:', e.message || e, e.stack);
+            toast.error('Erro ao salvar', { description: e.message || 'Falha desconhecida.' });
         } finally {
             setIsSaving(false);
         }
