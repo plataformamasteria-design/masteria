@@ -363,11 +363,6 @@ export function CreateWhatsappCampaignDialog({
             return;
         }
 
-        if (currentStepConfig?.id === 'media' && !selectedMedia) {
-            notify.error('Mídia Obrigatória', 'Por favor, faça o upload ou selecione um arquivo de mídia para este modelo.');
-            return;
-        }
-
         if (currentStepConfig?.id === 'audience' && contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0) {
             notify.error('Público Obrigatório', 'Por favor, selecione pelo menos uma lista, etiqueta, funil ou etapa.');
             return;
@@ -473,11 +468,11 @@ export function CreateWhatsappCampaignDialog({
             case 'media':
                 return (
                     <div className="space-y-4">
-                        <Label>Mídia do Cabeçalho</Label>
-                        <p className="text-sm text-muted-foreground">
-                            Este modelo exige um arquivo de mídia (imagem, vídeo ou documento) no cabeçalho.
-                            Faça o upload do arquivo atualizado que será enviado na campanha.
-                        </p>
+                        <Label>Mídia do Cabeçalho (Opcional)</Label>
+                        <div className="text-sm text-muted-foreground space-y-2">
+                            <p>Este modelo inclui uma mídia no cabeçalho. O sistema tentará usar automaticamente a mídia original aprovada.</p>
+                            <p><strong>Atenção:</strong> Se o modelo foi importado do Gerenciador da Meta há muito tempo, o link original pode ter expirado (Erro 403). Nesse caso, faça o upload do arquivo novamente abaixo para garantir o envio.</p>
+                        </div>
                         <MediaUploader
                             onUploadSuccess={(asset) => setSelectedMedia(asset)}
                             onUploadError={(error) => notify.error('Erro de Upload', error.message)}
