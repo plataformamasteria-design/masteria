@@ -22,6 +22,7 @@ import {
 import { eq, inArray, and, sql } from 'drizzle-orm';
 import { ensureTenantAccess } from '@/lib/db/tenant-guard';
 import { decrypt } from './crypto';
+import { uploadMediaToMeta } from './metaMediaUpload';
 import { sendWhatsappTemplateMessage } from './facebookApiService';
 import type { MediaAsset as MediaAssetType, MetaApiMessageResponse, MetaHandle } from './types';
 import { evolutionApiService } from '@/services/evolution-api.service';
@@ -582,8 +583,6 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                 if (needsUpload) {
                     try {
                         if (!connection.wabaId) throw new Error("Conexão sem WABA ID configurado");
-                        const { uploadMediaToMeta } = await import('./metaMediaUpload');
-                        const { decrypt } = await import('./crypto');
                         const accessToken = decrypt(connection.accessToken!);
                         
                         const mediaRes = await fetch(resolvedTemplate.mediaLink!);
