@@ -34,9 +34,15 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
 
         let triggerType = 'message_received';
         let triggerConfig = null;
+        let webhookToken = null;
+        let scheduleConfig = null;
         if (steps && steps.length > 0 && steps[0].type === 'trigger') {
             triggerType = steps[0].data?.triggerType || 'message_received';
             triggerConfig = steps[0].data || null;
+            if (triggerConfig) {
+                webhookToken = triggerConfig.webhook_token || null;
+                scheduleConfig = triggerConfig.schedule_config || null;
+            }
         }
 
         if (id === 'new') {
@@ -46,7 +52,8 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
                 visualData,
                 executionLogic: steps,
                 triggerType,
-                triggerConfig,
+                webhookToken,
+                scheduleConfig,
                 isActive: true,
             }).returning();
             revalidatePath('/management');
@@ -62,7 +69,8 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
                 visualData,
                 executionLogic: steps,
                 triggerType,
-                triggerConfig,
+                webhookToken,
+                scheduleConfig,
                 updatedAt: new Date()
             })
             .where(and(

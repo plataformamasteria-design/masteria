@@ -911,34 +911,14 @@ REGRAS CRÍTICAS:
       const triggerNode = nodes.find(n => n.type === "trigger");
       const config = triggerNode?.data?.config as any || {};
 
-      const mappedNodes = nodes.map((n) => {
-        return {
-          id: n.id,
-          nodeType: n.type || "action",
-          positionX: Math.round(n.position?.x || 0),
-          positionY: Math.round(n.position?.y || 0),
-          config: n.data?.config || {},
-          label: (n.data?.label as string) || "",
-        };
-      });
-
-      const mappedEdges = edges.map((e) => ({
-        id: e.id,
-        sourceNodeId: e.source,
-        targetNodeId: e.target,
-        sourceHandleId: e.sourceHandle || null,
-        conditionLabel: typeof e.label === 'string' ? e.label : null,
-        conditionValue: (e.data as any)?.conditionValue || null,
-      }));
-
       await saveAutomationGraph(
         automationId,
-        automationName || "Automação",
-        config.trigger_type || "stage_entry",
-        config.webhook_token || null,
-        config.schedule_config || null,
-        mappedNodes,
-        mappedEdges
+        {
+          name: automationName || "Automação",
+          triggerConfig: config,
+          nodes: nodes,
+          edges: edges
+        }
       );
 
       toast({ title: "Fluxo salvo com sucesso!" });
