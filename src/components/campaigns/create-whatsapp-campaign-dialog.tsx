@@ -60,10 +60,20 @@ const getSteps = (requiresMedia: boolean) => {
     const baseSteps = [
         { id: 'info', title: '1. Informações Básicas'},
         { id: 'content', title: '2. Conteúdo da Mensagem'},
-        { id: 'audience', title: '3. Público e Agendamento'},
-        { id: 'review', title: '4. Revisão e Envio'},
     ];
-    return baseSteps;
+    
+    if (requiresMedia) {
+        baseSteps.push({ id: 'media', title: 'Mídia da Mensagem' });
+    }
+    
+    baseSteps.push({ id: 'audience', title: 'Público e Agendamento'});
+    baseSteps.push({ id: 'review', title: 'Revisão e Envio'});
+    
+    // Auto-number the steps
+    return baseSteps.map((step, index) => {
+        const titleWithoutNumber = step.title.replace(/^\d+\.\s*/, '');
+        return { ...step, title: `${index + 1}. ${titleWithoutNumber}` };
+    });
 };
 
 type VariableMapping = {
@@ -318,6 +328,7 @@ export function CreateWhatsappCampaignDialog({
                 schedule,
                 minDelaySeconds: selectedDelay?.min || 0,
                 maxDelaySeconds: selectedDelay?.max || 0,
+                mediaAssetId: selectedMedia?.id || undefined,
             };
 
             const response = await fetch('/api/v1/campaigns/whatsapp', {
@@ -349,6 +360,11 @@ export function CreateWhatsappCampaignDialog({
 
         if (currentStepConfig?.id === 'info' && !selectedTemplate) {
             notify.error('Seleção Obrigatória', 'Por favor, selecione um modelo para continuar.');
+            return;
+        }
+
+        if (currentStepConfig?.id === 'media' && !selectedMedia) {
+            notify.error('Mídia Obrigatória', 'Por favor, faça o upload ou selecione um arquivo de mídia para este modelo.');
             return;
         }
 
@@ -454,6 +470,23 @@ export function CreateWhatsappCampaignDialog({
                         </div>
                     </div>
                 )
+            case 'media':
+                return (
+                    <div className="space-y-4">
+                        <Label>Mídia do Cabeçalho</Label>
+                        <p className="text-sm text-muted-foreground">
+                            Este modelo exige um arquivo de mídia (imagem, vídeo ou documento) no cabeçalho.
+                            Faça o upload do arquivo atualizado que será enviado na campanha.
+                        </p>
+                        <MediaUploader
+                            onUploadSuccess={(asset) => setSelectedMedia(asset)}
+                            onUploadError={(error) => notify.error('Erro de Upload', error.message)}
+                            defaultAsset={selectedMedia || undefined}
+                            acceptedTypes={resolvedHeaderType?.toLowerCase() as 'image' | 'video' | 'document' | undefined}
+                            companyId={connections.find(c => c.id === selectedConnectionId)?.companyId || ''}
+                        />
+                    </div>
+                );
             case 'audience':
                  return (
                     <div className="space-y-6">
