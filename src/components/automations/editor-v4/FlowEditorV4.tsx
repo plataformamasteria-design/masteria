@@ -353,10 +353,13 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
             });
             
             let result;
+            let rawText = '';
             try {
-                result = await response.json();
+                rawText = await response.text();
+                result = JSON.parse(rawText);
             } catch (err) {
-                throw new Error('Falha de conexão com o servidor.');
+                console.error('[FlowEditorV4] Server returned non-JSON. Status:', response.status, 'Body:', rawText.substring(0, 500));
+                throw new Error(`Falha de conexão com o servidor (Status ${response.status}). Verifique o console.`);
             }
             
             if (!response.ok || !result || result.success === false) {
