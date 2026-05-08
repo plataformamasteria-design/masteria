@@ -9,6 +9,19 @@ import { googleCalendarService } from '@/services/google-calendar.service';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Get the correct base URL for redirects.
+ */
+function getBaseUrl(request: NextRequest): string {
+    if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+    if (forwardedHost) return `${forwardedProto}://${forwardedHost}`;
+    const host = request.headers.get('host');
+    if (host && !host.startsWith('0.0.0.0') && !host.startsWith('localhost')) return `https://${host}`;
+    return request.nextUrl.origin;
+}
+
 export async function GET(request: NextRequest) {
     try {
         const session = await getUserSession();
@@ -20,6 +33,9 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        const baseUrl = getBaseUrl(request);
+        const redirectUri = `${baseUrl}/api/v1/integrations/google/callback`;
+
         // Create state with companyId and userId for callback
         const state = Buffer.from(JSON.stringify({
             companyId: session.user.companyId,
@@ -27,7 +43,7 @@ export async function GET(request: NextRequest) {
             timestamp: Date.now(),
         })).toString('base64');
 
-        const authUrl = googleCalendarService.getAuthUrl(state);
+        const authUrl = googleCalendarService.getAuthUrl(state, redirectUri);
 
         return NextResponse.json({ authUrl });
     } catch (error) {

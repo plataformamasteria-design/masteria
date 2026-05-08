@@ -76,7 +76,8 @@ export async function GET(request: NextRequest) {
         }
 
         // Exchange code for tokens
-        const tokens = await googleCalendarService.getTokensFromCode(code);
+        const redirectUri = `${baseUrl}/api/v1/integrations/google/callback`;
+        const tokens = await googleCalendarService.getTokensFromCode(code, redirectUri);
 
         if (!tokens.accessToken || !tokens.refreshToken) {
             return NextResponse.redirect(

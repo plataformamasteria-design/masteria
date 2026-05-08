@@ -37,8 +37,9 @@ export class GoogleCalendarService {
     /**
      * Generate OAuth authorization URL
      */
-    getAuthUrl(state: string): string {
-        return this.oauth2Client.generateAuthUrl({
+    getAuthUrl(state: string, redirectUri?: string): string {
+        const client = redirectUri ? new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, redirectUri) : this.oauth2Client;
+        return client.generateAuthUrl({
             access_type: 'offline',
             scope: SCOPES,
             state,
@@ -49,12 +50,13 @@ export class GoogleCalendarService {
     /**
      * Exchange authorization code for tokens
      */
-    async getTokensFromCode(code: string): Promise<{
+    async getTokensFromCode(code: string, redirectUri?: string): Promise<{
         accessToken: string;
         refreshToken: string;
         expiry: Date | null;
     }> {
-        const { tokens } = await this.oauth2Client.getToken(code);
+        const client = redirectUri ? new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, redirectUri) : this.oauth2Client;
+        const { tokens } = await client.getToken(code);
 
         return {
             accessToken: tokens.access_token || '',
