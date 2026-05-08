@@ -434,10 +434,17 @@ async function sendViaMetaApi(
         };
 
     } catch (error) {
+        let errorMessage = (error as Error).message;
+        
+        // Intercepta erro 403 de mídia expirada da Meta (código 131053)
+        if (errorMessage.includes('131053') && errorMessage.includes('403')) {
+            errorMessage = "❌ A imagem/mídia original do template expirou na Meta (Erro 403). Você PRECISA recriar a campanha e anexar o arquivo manualmente no passo 'Mídia da Mensagem' para conseguir enviar.";
+        }
+
         return {
             success: false,
             contactId: contact.id,
-            error: (error as Error).message,
+            error: errorMessage,
         };
     }
 }
