@@ -1,0 +1,219 @@
+import { memo, useState, useEffect } from "react";
+import { Handle, Position, NodeProps } from "@xyflow/react";
+import { Filter, Plus, X, GripVertical } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { NodeStatsBar } from "./NodeStatsBar";
+import { NodeOutputPanel } from "./NodeOutputPanel";
+import { NodeHeader } from "./NodeHeader";
+
+interface FilterCondition {
+  field: string;
+  operator: string;
+  value: string;
+}
+
+const OPERATORS = [
+  { value: "equals", label: "é igual a" },
+  { value: "not_equals", label: "não é igual a" },
+  { value: "contains", label: "contém" },
+  { value: "not_contains", label: "não contém" },
+  { value: "starts_with", label: "começa com" },
+  { value: "ends_with", label: "termina com" },
+  { value: "is_empty", label: "está vazio" },
+  { value: "is_not_empty", label: "não está vazio" },
+  { value: "greater_than", label: "maior que" },
+  { value: "less_than", label: "menor que" },
+  { value: "regex", label: "regex" },
+];
+
+const NO_VALUE_OPERATORS = ["is_empty", "is_not_empty"];
+
+function FilterNodeComponent({ id, data }: NodeProps) {
+  const config = (data as any)?.config || {};
+  const customLabel = (data as any)?.label || "";
+  const [conditions, setConditions] = useState<FilterCondition[]>(
+    config.conditions?.length ? config.conditions : [{ field: "", operator: "equals", value: "" }]
+  );
+  const [matchMode, setMatchMode] = useState<string>(config.match_mode || "all");
+
+  useEffect(() => {
+    if (config.conditions?.length) setConditions(config.conditions);
+  }, [JSON.stringify(config.conditions)]);
+  useEffect(() => {
+    if (config.match_mode) setMatchMode(config.match_mode);
+  }, [config.match_mode]);
+
+  const update = (conds: FilterCondition[], mode?: string) => {
+    (data as any)?.onChange?.(id, {
+      config: { ...(data as any)?.config, conditions: conds, match_mode: mode || matchMode },
+    });
+  };
+
+  const updateCondition = (i: number, field: keyof FilterCondition, val: string) => {
+    const next = [...conditions];
+    next[i] = { ...next[i], [field]: val };
+    setConditions(next);
+    update(next);
+  };
+
+  const addCondition = () => {
+    const next = [...conditions, { field: "", operator: "equals", value: "" }];
+    setConditions(next);
+    update(next);
+  };
+
+  const removeCondition = (i: number) => {
+    const next = conditions.filter((_, idx) => idx !== i);
+    setConditions(next);
+    update(next);
+  };
+
+  const handleDrop = (i: number, e: React.DragEvent) => {
+    e.preventDefault();
+    const outputData = e.dataTransfer.getData("application/x-node-output");
+    if (outputData) {
+      try {
+        const parsed = JSON.parse(outputData);
+        updateCondition(i, "field", parsed.ref);
+        return;
+      } catch {}
+    }
+    const text = e.dataTransfer.getData("text/plain");
+    if (text) updateCondition(i, "field", text);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl shadow-lg min-w-[320px] overflow-hidden group">
+      <Handle type="target" position={Position.Top} className="!w-3 !h-3 !bg-cyan-500 !border-2 !border-background" />
+      <NodeHeader
+        nodeId={id}
+        icon={<Filter className="h-4 w-4 text-cyan-500" />}
+        defaultLabel="Filtro"
+        customLabel={customLabel}
+        colorClass="bg-cyan-500/10"
+        textColorClass="text-cyan-500"
+        onExecute={() => (data as any)?.onExecute?.(id)}
+        isExecuting={(data as any)?.isExecuting}
+        onDuplicate={() => (data as any)?.onDuplicate?.(id)}
+        onDelete={() => (data as any)?.onDelete?.(id)}
+        onRename={(l) => (data as any)?.onRename?.(id, l)}
+      />
+
+      <div className="px-4 py-3 space-y-3">
+        {/* Match mode */}
+        {conditions.length > 1 && (
+          <div className="flex items-center gap-2">
+            <Label className="text-[10px] text-muted-foreground whitespace-nowrap">Combinar</Label>
+            <Select value={matchMode} onValueChange={(v) => { setMatchMode(v); update(conditions, v); }}>
+              <SelectTrigger className="h-7 text-xs nodrag"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas (AND)</SelectItem>
+                <SelectItem value="any">Qualquer (OR)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <Label className="text-[10px] text-muted-foreground font-semibold uppercase">Condições</Label>
+
+        <div className="space-y-2">
+          {conditions.map((cond, i) => (
+            <div key={i} className="space-y-1 rounded-lg border border-border/50 bg-muted/20 p-2">
+              {/* Field with drop support */}
+              <div className="flex items-center gap-1">
+                <Input
+                  value={cond.field}
+                  onChange={(e) => updateCondition(i, "field", e.target.value)}
+                  placeholder="Campo ou {{ referência }}"
+                  className="h-7 text-xs nodrag font-mono flex-1"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDrop(i, e)}
+                />
+                {conditions.length > 1 && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeCondition(i)}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+              {/* Operator + Value */}
+              <div className="flex items-center gap-1">
+                <Select value={cond.operator} onValueChange={(v) => updateCondition(i, "operator", v)}>
+                  <SelectTrigger className="h-7 text-[10px] nodrag flex-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {OPERATORS.map((op) => (
+                      <SelectItem key={op.value} value={op.value} className="text-xs">{op.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!NO_VALUE_OPERATORS.includes(cond.operator) && (
+                  <Input
+                    value={cond.value}
+                    onChange={(e) => updateCondition(i, "value", e.target.value)}
+                    placeholder="Valor"
+                    className="h-7 text-xs nodrag flex-1"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const outputData = e.dataTransfer.getData("application/x-node-output");
+                      if (outputData) {
+                        try {
+                          const parsed = JSON.parse(outputData);
+                          updateCondition(i, "value", parsed.ref);
+                          return;
+                        } catch {}
+                      }
+                      const text = e.dataTransfer.getData("text/plain");
+                      if (text) updateCondition(i, "value", text);
+                    }}
+                  />
+                )}
+              </div>
+              {/* Show variable preview */}
+              {cond.field.match(/\{\{.+\}\}/) && (
+                <div className="flex items-center gap-1 px-0.5">
+                  <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-violet-500/10 text-violet-600 truncate">
+                    {cond.field.replace(/\{\{\s*|\s*\}\}/g, "").split(".$json.")[0]}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 w-full" onClick={addCondition}>
+          <Plus className="h-3 w-3" /> Adicionar condição
+        </Button>
+      </div>
+
+      <NodeStatsBar stats={(data as any)?.stats} />
+      <NodeOutputPanel
+        nodeId={id}
+        nodeLabel={customLabel || "Filtro"}
+        output={(data as any)?.nodeOutput}
+        error={(data as any)?.nodeError}
+        isPinned={(data as any)?.isPinned || false}
+        isExecuting={(data as any)?.isExecuting || false}
+        onExecute={() => (data as any)?.onExecute?.(id)}
+        onPin={() => (data as any)?.onPinOutput?.(id)}
+        onUnpin={() => (data as any)?.onUnpinOutput?.(id)}
+      />
+
+      {/* Two outputs: Pass / Block */}
+      <div className="flex justify-between px-6 pb-3">
+        <div className="flex flex-col items-center">
+          <span className="text-[9px] text-emerald-500 font-medium">Passou</span>
+          <Handle type="source" position={Position.Bottom} id="pass" className="!w-3 !h-3 !bg-emerald-500 !border-2 !border-background !relative !transform-none !left-auto !right-auto" />
+        </div>
+        <div className="flex flex-col items-center">
+          <span className="text-[9px] text-red-500 font-medium">Bloqueado</span>
+          <Handle type="source" position={Position.Bottom} id="block" className="!w-3 !h-3 !bg-red-500 !border-2 !border-background !relative !transform-none !left-auto !right-auto" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const FilterNode = memo(FilterNodeComponent);

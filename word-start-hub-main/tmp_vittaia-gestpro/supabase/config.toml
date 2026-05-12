@@ -1,0 +1,106 @@
+project_id = "jrxpjzgifyzhvwjfpofz"
+
+[functions.ai-performance-analyzer]
+verify_jwt = false
+
+[functions.ai-sales-intelligence]
+verify_jwt = false
+
+[functions.delete-organization]
+verify_jwt = false
+
+[functions.automation-executor]
+verify_jwt = false
+
+[functions.automation-delay-resume]
+verify_jwt = false
+
+[functions.meta-oauth-callback]
+verify_jwt = false
+
+[functions.meta-webhook-receiver]
+verify_jwt = false
+
+[functions.meta-send-message]
+verify_jwt = false
+
+[functions.google-business-api]
+verify_jwt = false
+
+[functions.email-api]
+verify_jwt = false
+
+[functions.public-booking-api]
+verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+[functions.subscription-api]
+verify_jwt = false
+
+[functions.automation-webhook-trigger]
+verify_jwt = false
+
+[functions.ai-agent-execute]
+verify_jwt = false
+
+[functions.ghl-oauth-callback]
+verify_jwt = false
+
+[functions.ghl-sync]
+verify_jwt = false
+
+[functions.ghl-webhook-receiver]
+verify_jwt = false
+
+[functions.marketing-api]
+verify_jwt = false
+[functions.ghl-token-refresh]
+verify_jwt = false
+
+[functions.marketing-oauth]
+verify_jwt = false
+[functions.test-query]
+enabled = true
+verify_jwt = true
+import_map = "./functions/test-query/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/test-query/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/test-query/*.html" ]
+
+[functions.twilio-voip-token]
+enabled = true
+verify_jwt = true
+import_map = "./functions/twilio-voip-token/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/twilio-voip-token/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/twilio-voip-token/*.html" ]
+
+[functions.twilio-webhook-receiver]
+enabled = true
+verify_jwt = true
+import_map = "./functions/twilio-webhook-receiver/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/twilio-webhook-receiver/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/twilio-webhook-receiver/*.html" ]
+
+[functions.twilio-voice-webhook]
+enabled = true
+verify_jwt = true
+import_map = "./functions/twilio-voice-webhook/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/twilio-voice-webhook/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/twilio-voice-webhook/*.html" ]

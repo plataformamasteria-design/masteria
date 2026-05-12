@@ -1,0 +1,23 @@
+[
+  {
+    "campaign": "A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03",
+    "total_leads": 184,
+    "engajados": 184,
+    "agendamentos": 182,
+    "fechamentos": 5
+  },
+  {
+    "campaign": "B - [T] [Q] [ENGAJ] [MSGS] - Botox  08/04",
+    "total_leads": 44,
+    "engajados": 44,
+    "agendamentos": 13,
+    "fechamentos": 1
+  },
+  {
+    "campaign": "B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03",
+    "total_leads": 36,
+    "engajados": 36,
+    "agendamentos": 35,
+    "fechamentos": 2
+  }
+]

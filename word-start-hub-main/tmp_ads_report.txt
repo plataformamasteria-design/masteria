@@ -1,0 +1,53 @@
+## 7.1 Detalhamento de Conversão (Tráfego Pago / Anúncios)
+
+- **Total de Leads de Anúncios:** 264
+- **Taxa de Agendamento:** 87.1% (230 agendamentos)
+- **Taxa de Pagamento / PIX:** 3.0% (8 fechamentos)
+- **Eficiência Funcional (Agendamento → Pagamento):** 3.5%
+
+### Lista Detalhada de Pagamentos (Pix/Fechamentos Reais)
+Especificação nominal de quem comprou originado de anúncios pagos:
+
+- **Lead:** `Camila ` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03 | **Interações:** 37
+- **Lead:** `Terapeuta Helena santos ` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03 | **Interações:** 43
+- **Lead:** `🙏 ` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox  08/0 | **Interações:** 28
+- **Lead:** `🥀 ` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03 | **Interações:** 11
+- **Lead:** `Cris ` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03 | **Interações:** 48
+- **Lead:** `Fernanda Mendes ` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03 | **Interações:** 6
+- **Lead:** `Augusto ` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03 | **Interações:** 48
+- **Lead:** `𝒜𝓁𝒾𝓃𝑒 𝒮𝒶𝓎𝒹 ` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03 | **Interações:** 56
+
+### Amostra de Agendamentos (Tráfego Pago)
+Abaixo os leads com forte intenção de agendamento que vieram de campanhas e qual foi a campanha originária (limitado a 30 leads para fins de visualização):
+
+- **Lead:** `Tieta` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Marilda Silva Martins` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox  08/0
+- **Lead:** `Ana Maria` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Mércia Ferreira` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Graciana Rosado` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox  08/0
+- **Lead:** `Dalva` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Mulher Feliz🙏` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Cândida Maiffre` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Maria Machado` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `cleonice Santos😍` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox  08/0
+- **Lead:** `Rosimeire Mendes 🌵🌻💛` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Fátima Lima` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Daiane Gadelha` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Lila` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Maria de Lurdes Reis da C` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Priscila Lê Mê Fê` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Sylvia Barreto` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Rita Bahiana` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Claudia Regina💋💞` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Suzana Estrela ` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Cleonice@exagensfashion` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox  08/0
+- **Lead:** `Resiliência 🙏` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Lucia maria behrens` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Mari Passos` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Graça Moura` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Angell Tourinho` | **Campanha:** B - [T] [Q] [ENGAJ] [MSGS] - Botox  08/0
+- **Lead:** `Jucelia` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Nilza ❤️🙏Deus é Fiel 🙏` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `CARLOS GILMAR RIBEIRO` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- **Lead:** `Iza santos` | **Campanha:** A - [T] [F] [ENGAJ] [MSGS] - Botox 30/03
+- *(...e mais 200 leads agendados ocultados por limite de espaço visual do relatório)*

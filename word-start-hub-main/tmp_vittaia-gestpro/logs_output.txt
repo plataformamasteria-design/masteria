@@ -1,0 +1,1 @@
+﻿{"result":[{"event_message":"GET | 200 | https://jrxpjzgifyzhvwjfpofz.supabase.co/rest/v1/global_config?select=key%2Cvalue&key=in.%28evolution_api_url%2Cevolution_api_key%2Cevolution_webhook_url%29 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.73.0)","id":"bab67a76-975e-420d-9c2f-fd992223ca8d"}],"error":null}

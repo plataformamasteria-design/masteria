@@ -1,0 +1,908 @@
+{
+  "_format": "vitta-automation-system-blueprint-v1",
+  "_description": "Complete blueprint for recreating the Automation Flow Builder system with all nodes, database schema, edge functions, and UI design patterns",
+  "_generated_at": "2026-03-17",
+
+  "tech_stack": {
+    "frontend": {
+      "framework": "React 18 + TypeScript + Vite",
+      "flow_editor": "@xyflow/react (React Flow) v12",
+      "auto_layout": "@dagrejs/dagre v2",
+      "styling": "Tailwind CSS + shadcn/ui",
+      "state_management": "React hooks (useState, useCallback, useRef)",
+      "routing": "react-router-dom v6",
+      "backend": "Supabase (PostgreSQL + Edge Functions + Realtime)",
+      "icons": "lucide-react"
+    },
+    "dependencies": [
+      "@xyflow/react@^12.10.1",
+      "@dagrejs/dagre@^2.0.4",
+      "@supabase/supabase-js@^2.94.1",
+      "lucide-react@^0.462.0",
+      "react-router-dom@^6.30.1",
+      "date-fns@^3.6.0",
+      "sonner@^1.7.4"
+    ]
+  },
+
+  "database_schema": {
+    "tables": {
+      "automations": {
+        "description": "Main automation records",
+        "columns": {
+          "id": "uuid PK default gen_random_uuid()",
+          "name": "text NOT NULL",
+          "description": "text NULL",
+          "status": "text DEFAULT 'draft' -- draft | active | paused",
+          "trigger_type": "text DEFAULT 'stage_entry' -- stage_entry | message_received | tag_added | manual | webhook | scheduled",
+          "funnel_id": "uuid NULL FK -> funnels(id)",
+          "trigger_stage_id": "uuid NULL FK -> funnel_stages(id)",
+          "webhook_token": "text NULL -- unique token for webhook triggers",
+          "schedule_config": "jsonb NULL -- { interval: number, unit: 'seconds'|'minutes'|'hours'|'days' }",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "created_by": "uuid NULL FK -> profiles(id)",
+          "created_at": "timestamptz DEFAULT now()",
+          "updated_at": "timestamptz DEFAULT now()"
+        }
+      },
+      "automation_nodes": {
+        "description": "Individual nodes within an automation flow",
+        "columns": {
+          "id": "uuid PK default gen_random_uuid()",
+          "automation_id": "uuid NOT NULL FK -> automations(id)",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "node_type": "text NOT NULL",
+          "label": "text NULL -- custom user label",
+          "config": "jsonb DEFAULT '{}' -- node-specific configuration",
+          "position_x": "numeric DEFAULT 0",
+          "position_y": "numeric DEFAULT 0",
+          "created_at": "timestamptz DEFAULT now()"
+        }
+      },
+      "automation_edges": {
+        "description": "Connections between nodes",
+        "columns": {
+          "id": "uuid PK default gen_random_uuid()",
+          "automation_id": "uuid NOT NULL FK -> automations(id)",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "source_node_id": "uuid NOT NULL FK -> automation_nodes(id)",
+          "target_node_id": "uuid NOT NULL FK -> automation_nodes(id)",
+          "source_handle_id": "text NULL -- for nodes with multiple outputs (e.g., 'yes', 'no', 'timeout')",
+          "condition_label": "text NULL -- display label on the edge",
+          "condition_value": "text NULL -- value for conditional routing",
+          "created_at": "timestamptz DEFAULT now()"
+        }
+      },
+      "automation_executions": {
+        "description": "Track each automation run for a specific chat/lead",
+        "columns": {
+          "id": "uuid PK default gen_random_uuid()",
+          "automation_id": "uuid NOT NULL FK -> automations(id)",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "chat_id": "uuid NOT NULL FK -> chats(id)",
+          "status": "text DEFAULT 'running' -- running | completed | failed | waiting | waiting_response | cancelled",
+          "current_node_id": "uuid NULL FK -> automation_nodes(id)",
+          "context": "jsonb DEFAULT '{}' -- runtime variables and state",
+          "resume_at": "timestamptz NULL -- for delay/timeout nodes",
+          "started_at": "timestamptz DEFAULT now()",
+          "completed_at": "timestamptz NULL",
+          "created_at": "timestamptz DEFAULT now()"
+        }
+      },
+      "automation_execution_logs": {
+        "description": "Per-node execution log entries",
+        "columns": {
+          "id": "uuid PK default gen_random_uuid()",
+          "execution_id": "uuid NOT NULL FK -> automation_executions(id)",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "node_id": "uuid NOT NULL FK -> automation_nodes(id)",
+          "status": "text DEFAULT 'ok' -- ok | error | skipped | waiting",
+          "message": "text NULL -- human-readable log message + token usage appended",
+          "created_at": "timestamptz DEFAULT now()"
+        }
+      },
+      "automation_node_stats": {
+        "description": "Aggregated statistics per node",
+        "columns": {
+          "id": "uuid PK default gen_random_uuid()",
+          "node_id": "uuid NOT NULL UNIQUE FK -> automation_nodes(id)",
+          "automation_id": "uuid NOT NULL FK -> automations(id)",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "total_reached": "integer DEFAULT 0",
+          "total_responded": "integer DEFAULT 0",
+          "responses": "jsonb DEFAULT '{}' -- includes _reached_chats and _responded_chats arrays for dedup",
+          "updated_at": "timestamptz DEFAULT now()"
+        }
+      },
+      "ai_agent_credentials": {
+        "description": "API keys for AI providers (OpenAI, Gemini)",
+        "columns": {
+          "id": "uuid PK",
+          "name": "text NOT NULL",
+          "provider": "text NOT NULL -- openai | gemini",
+          "api_key": "text NOT NULL -- encrypted",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "created_at": "timestamptz DEFAULT now()",
+          "updated_at": "timestamptz DEFAULT now()"
+        }
+      },
+      "ai_agent_memory": {
+        "description": "Conversation memory for AI agents per lead",
+        "columns": {
+          "id": "uuid PK",
+          "organization_id": "uuid NOT NULL FK -> organizations(id)",
+          "memory_key": "text NOT NULL -- typically 'phone:orgId' or custom key",
+          "messages": "jsonb DEFAULT '[]' -- array of {role, content} messages",
+          "created_at": "timestamptz DEFAULT now()",
+          "updated_at": "timestamptz DEFAULT now()"
+        }
+      }
+    },
+    "database_functions": {
+      "increment_node_stat_reached": {
+        "description": "Atomically increment reached count with chat_id deduplication",
+        "params": ["p_node_id uuid", "p_automation_id uuid", "p_organization_id uuid", "p_chat_id uuid DEFAULT NULL"],
+        "type": "SECURITY DEFINER"
+      },
+      "increment_node_stat_responded": {
+        "description": "Atomically increment responded count with chat_id deduplication",
+        "params": ["p_node_id uuid", "p_automation_id uuid", "p_organization_id uuid", "p_chat_id uuid DEFAULT NULL"],
+        "type": "SECURITY DEFINER"
+      }
+    },
+    "triggers": {
+      "notify_automation_on_stage_entry": {
+        "description": "Fires when a lead enters a CRM stage, triggers automation-executor edge function",
+        "table": "chat_funnel_stage",
+        "events": ["INSERT", "UPDATE"],
+        "action": "HTTP POST to automation-executor with trigger_type='stage_entry'"
+      }
+    }
+  },
+
+  "edge_functions": {
+    "automation-executor": {
+      "description": "Main automation engine that processes flow execution node by node",
+      "trigger": "Called by database triggers, webhook triggers, or scheduled cron",
+      "input": {
+        "trigger_type": "string",
+        "chat_id": "string",
+        "stage_id": "string (optional)",
+        "funnel_id": "string (optional)",
+        "organization_id": "string",
+        "message_content": "string (optional, for message triggers)"
+      },
+      "behavior": [
+        "1. Find matching active automations for the trigger",
+        "2. Create an execution record",
+        "3. Traverse flow graph starting from trigger node",
+        "4. Execute each node based on node_type",
+        "5. Handle branching (condition, filter, router, intent)",
+        "6. Pause on wait/delay nodes, set resume_at",
+        "7. Log each node execution",
+        "8. Update execution status on completion/failure"
+      ]
+    },
+    "automation-delay-resume": {
+      "description": "Cron job (every minute) that resumes paused executions",
+      "trigger": "pg_cron every 1 minute",
+      "behavior": "Finds executions with status='waiting_response' and resume_at < now(), then continues flow"
+    },
+    "automation-webhook-trigger": {
+      "description": "HTTP endpoint for webhook-triggered automations",
+      "method": "POST",
+      "input": "?token=<webhook_token> + JSON body",
+      "behavior": "Validates token, finds automation, starts execution with webhook data as context"
+    },
+    "ai-agent-execute": {
+      "description": "Executes AI agent calls (OpenAI/Gemini) with memory and tools",
+      "input": {
+        "organization_id": "string",
+        "credential_id": "string",
+        "model": "string",
+        "system_message": "string",
+        "prompt": "string",
+        "tools": "array (optional)",
+        "phone": "string",
+        "chat_id": "string (optional)",
+        "memory_key": "string (optional)",
+        "temperature": "number (optional)",
+        "max_iterations": "number (optional)"
+      },
+      "output": {
+        "output": "string -- AI generated text",
+        "usage": { "prompt_tokens": "number", "completion_tokens": "number", "total_tokens": "number" }
+      }
+    },
+    "send-to-evolution": {
+      "description": "Sends WhatsApp messages via Evolution API",
+      "input": {
+        "organization_id": "string",
+        "phone": "string",
+        "message": "string",
+        "message_type": "text | image | audio | video | document",
+        "file_url": "string (optional)",
+        "file_name": "string (optional)"
+      }
+    },
+    "http-proxy": {
+      "description": "CORS-free HTTP proxy for HTTP Request nodes",
+      "input": { "url": "string", "method": "string", "headers": "object", "body": "string" }
+    }
+  },
+
+  "node_types": {
+    "trigger": {
+      "label": "Gatilho",
+      "category": "System",
+      "icon": "Zap",
+      "color": { "bg": "bg-primary", "text": "text-primary-foreground" },
+      "description": "Entry point of the automation flow",
+      "config_schema": {
+        "trigger_type": "stage_entry | message_received | tag_added | manual | webhook | scheduled",
+        "webhook_token": "string (auto-generated for webhook type)",
+        "schedule_config": "{ interval: number, unit: string } (for scheduled type)"
+      },
+      "handles": {
+        "source": { "position": "bottom", "id": "default" }
+      },
+      "trigger_types": {
+        "stage_entry": { "label": "Entrada em Etapa", "description": "Dispara quando um lead entra em uma etapa do CRM" },
+        "message_received": { "label": "Mensagem Recebida", "description": "Dispara ao receber uma mensagem na etapa" },
+        "tag_added": { "label": "Tag Adicionada", "description": "Dispara quando uma tag é adicionada" },
+        "manual": { "label": "Manual", "description": "Disparo manual pelo usuário" },
+        "webhook": { "label": "Webhook", "description": "Recebe dados externos via HTTP POST" },
+        "scheduled": { "label": "Timer Automático", "description": "Executa automaticamente em intervalos" }
+      }
+    },
+
+    "send_message": {
+      "label": "Enviar Mensagem",
+      "category": "Mensagens",
+      "icon": "MessageSquare",
+      "color": { "bg": "bg-blue-500/10", "text": "text-blue-500", "handle": "!bg-blue-500" },
+      "description": "Send a text message to the lead via WhatsApp",
+      "config_schema": {
+        "message": "string -- supports {{variable}} interpolation"
+      },
+      "handles": {
+        "target": { "position": "top" },
+        "source": { "position": "bottom" }
+      },
+      "features": ["Variable interpolation ({{nome}}, {{telefone}}, custom fields)", "VariablePicker dropdown"]
+    },
+
+    "send_image": {
+      "label": "Enviar Imagem",
+      "category": "Mensagens",
+      "icon": "Image",
+      "color": { "bg": "bg-pink-500/10", "text": "text-pink-500", "handle": "!bg-pink-500" },
+      "config_schema": {
+        "file_url": "string -- URL of the image",
+        "caption": "string -- optional caption with variable support"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "send_audio": {
+      "label": "Enviar Áudio",
+      "category": "Mensagens",
+      "icon": "Mic",
+      "color": { "bg": "bg-green-500/10", "text": "text-green-500", "handle": "!bg-green-500" },
+      "config_schema": { "file_url": "string", "caption": "string" },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "send_document": {
+      "label": "Enviar Documento",
+      "category": "Mensagens",
+      "icon": "FileText",
+      "color": { "bg": "bg-orange-500/10", "text": "text-orange-500", "handle": "!bg-orange-500" },
+      "config_schema": { "file_url": "string", "file_name": "string", "caption": "string" },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "send_video": {
+      "label": "Enviar Vídeo",
+      "category": "Mensagens",
+      "icon": "Video",
+      "color": { "bg": "bg-red-500/10", "text": "text-red-500", "handle": "!bg-red-500" },
+      "config_schema": { "file_url": "string", "caption": "string" },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "ask_question": {
+      "label": "Fazer Pergunta",
+      "category": "Interação",
+      "icon": "HelpCircle",
+      "color": { "bg": "bg-emerald-500/10", "text": "text-emerald-500", "handle": "!bg-emerald-500" },
+      "description": "Ask a question with predefined answer options",
+      "config_schema": {
+        "question": "string -- the question text with variable support",
+        "options": "string[] -- list of answer options"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } },
+      "features": ["Dynamic option adding/removing", "Variable interpolation in question"]
+    },
+
+    "capture_info": {
+      "label": "Capturar Informação",
+      "category": "Interação",
+      "icon": "UserPlus",
+      "color": { "bg": "bg-cyan-500/10", "text": "text-cyan-500", "handle": "!bg-cyan-500" },
+      "description": "Capture lead information into custom fields",
+      "config_schema": {
+        "field_key": "string -- custom field to save to",
+        "prompt_message": "string -- message to ask the lead"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "wait_response": {
+      "label": "Aguardar Resposta",
+      "category": "Interação",
+      "icon": "MessageCircle",
+      "color": { "bg": "bg-teal-500/10", "text": "text-teal-500", "handle": "!bg-teal-500" },
+      "description": "Pause flow until the lead sends a message",
+      "config_schema": {
+        "timeout_minutes": "number (optional) -- max wait time"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "condition": {
+      "label": "Condição",
+      "category": "Lógica",
+      "icon": "GitBranch",
+      "color": { "bg": "bg-amber-500/10", "text": "text-amber-500", "handle": "!bg-amber-500" },
+      "description": "Branch flow based on conditions",
+      "config_schema": {
+        "condition_type": "has_tag | is_assigned | response_equals | response_contains | response_in",
+        "condition_value": "string -- for single-value conditions",
+        "condition_values": "string[] -- for response_in (multiple values)"
+      },
+      "handles": {
+        "target": { "position": "top" },
+        "source_yes": { "position": "bottom", "id": "yes", "label": "Sim", "color": "emerald" },
+        "source_no": { "position": "bottom", "id": "no", "label": "Não", "color": "red" }
+      }
+    },
+
+    "filter": {
+      "label": "Filtro",
+      "category": "Lógica",
+      "icon": "Filter",
+      "color": { "bg": "bg-indigo-500/10", "text": "text-indigo-500", "handle": "!bg-indigo-500" },
+      "description": "Filter execution based on field conditions (n8n-style)",
+      "config_schema": {
+        "conditions": [{
+          "field": "string -- field name or variable path",
+          "operator": "equals | not_equals | contains | not_contains | starts_with | ends_with | is_empty | is_not_empty | greater_than | less_than | regex",
+          "value": "string"
+        }],
+        "match_mode": "all | any"
+      },
+      "handles": {
+        "target": { "position": "top" },
+        "source_pass": { "position": "bottom", "id": "pass", "label": "Passou", "color": "emerald" },
+        "source_block": { "position": "bottom", "id": "block", "label": "Bloqueado", "color": "red" }
+      }
+    },
+
+    "router": {
+      "label": "Caminho",
+      "category": "Lógica",
+      "icon": "Signpost",
+      "color": { "bg": "bg-violet-500/10", "text": "text-violet-500", "handle": "!bg-violet-500" },
+      "description": "Route to different paths based on field rules (n8n-style)",
+      "config_schema": {
+        "mode": "rules",
+        "rules": [{
+          "field": "string",
+          "operator": "equals | not_equals | contains | ...",
+          "value": "string",
+          "outputName": "string -- custom output label",
+          "renameOutput": "boolean"
+        }]
+      },
+      "handles": {
+        "target": { "position": "top" },
+        "source_dynamic": "One handle per rule (id: 'route-0', 'route-1', ...) + 'fallback' handle",
+        "route_colors": ["bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-purple-500", "bg-red-500", "bg-teal-500", "bg-orange-500"]
+      }
+    },
+
+    "delay": {
+      "label": "Aguardar",
+      "category": "Lógica",
+      "icon": "Clock",
+      "color": { "bg": "bg-purple-500/10", "text": "text-purple-500", "handle": "!bg-purple-500" },
+      "description": "Wait a specified time before continuing",
+      "config_schema": {
+        "amount": "string (number) -- delay amount",
+        "unit": "seconds | minutes | hours | days"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "crm_move": {
+      "label": "Mover no CRM",
+      "category": "CRM & Ações",
+      "icon": "ArrowRightLeft",
+      "color": { "bg": "bg-cyan-500/10", "text": "text-cyan-500", "handle": "!bg-cyan-500" },
+      "description": "Move lead to a different CRM funnel stage",
+      "config_schema": {
+        "funnel_id": "string",
+        "stage_id": "string"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "action": {
+      "label": "Ação",
+      "category": "CRM & Ações",
+      "icon": "Zap",
+      "color": { "bg": "bg-yellow-500/10", "text": "text-yellow-500", "handle": "!bg-yellow-500" },
+      "description": "Perform actions like assign, tag, notify",
+      "config_schema": {
+        "action_type": "assign_agent | add_tag | remove_tag | notify_platform",
+        "agent_id": "string (for assign)",
+        "tag_id": "string (for tag actions)"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "agenda": {
+      "label": "Criar Evento",
+      "category": "CRM & Ações",
+      "icon": "CalendarPlus",
+      "color": { "bg": "bg-blue-500/10", "text": "text-blue-500" },
+      "description": "Create a calendar event",
+      "config_schema": {
+        "title": "string",
+        "description": "string",
+        "duration_minutes": "number"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "bot_toggle": {
+      "label": "Robô I.A",
+      "category": "CRM & Ações",
+      "icon": "Bot",
+      "color": { "bg": "bg-green-500/10", "text": "text-green-500" },
+      "description": "Enable/disable bot for the lead",
+      "config_schema": { "action": "enable | disable" },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "financeiro": {
+      "label": "Financeiro",
+      "category": "CRM & Ações",
+      "icon": "DollarSign",
+      "color": { "bg": "bg-emerald-500/10", "text": "text-emerald-500" },
+      "description": "Create a financial transaction",
+      "config_schema": {
+        "amount": "number",
+        "description": "string",
+        "type": "receita | despesa"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "loop_restart": {
+      "label": "Loop (Reiniciar)",
+      "category": "CRM & Ações",
+      "icon": "RefreshCw",
+      "color": { "bg": "bg-orange-500/10", "text": "text-orange-600" },
+      "description": "Schedule flow restart after a delay",
+      "config_schema": {
+        "delay_amount": "number",
+        "delay_unit": "minutes | hours | days"
+      },
+      "handles": { "target": { "position": "top" } }
+    },
+
+    "stop_bot": {
+      "label": "Parar Automação",
+      "category": "CRM & Ações",
+      "icon": "ShieldOff",
+      "color": { "bg": "bg-red-500/10", "text": "text-red-500" },
+      "description": "Permanently stop automation for this lead",
+      "config_schema": {},
+      "handles": { "target": { "position": "top" } }
+    },
+
+    "ai_agent": {
+      "label": "Agente I.A",
+      "category": "Inteligência I.A",
+      "icon": "Brain",
+      "color": { "bg": "bg-violet-600", "text": "text-white", "handle": "!bg-violet-500" },
+      "locked": true,
+      "module_required": "atendente_ia",
+      "description": "AI agent with memory, tools, dialogue mode, and humanize text",
+      "config_schema": {
+        "provider": "openai | gemini",
+        "model": "gpt-4o | gpt-4o-mini | gpt-4-turbo | gpt-4.1 | gpt-4.1-mini | gpt-3.5-turbo | gemini-2.5-flash | gemini-2.5-pro | gemini-2.0-flash | gemini-1.5-pro | gemini-1.5-flash",
+        "credential_id": "string -- FK to ai_agent_credentials or 'vitta-openai'/'vitta-gemini' for platform credits",
+        "system_message": "string -- system prompt / persona instructions",
+        "prompt": "string -- user prompt template",
+        "dialogue_mode": "boolean -- multi-turn conversation mode",
+        "dialogue_objective": "string -- when met, dialogue ends",
+        "max_iterations": "number -- max conversation turns (default 5)",
+        "format_for_send": "boolean -- inject ⌁⌁⌁ delimiter instruction for message splitting",
+        "humanize_text": "boolean -- second AI pass to remove robotic tone",
+        "head_prompt_enabled": "boolean -- prepend global head prompt",
+        "response_timeout_enabled": "boolean -- enable timeout branching",
+        "response_timeout_minutes": "number",
+        "require_global_bot": "boolean -- check global bot status before executing",
+        "require_lead_bot": "boolean -- check per-lead bot status",
+        "tools": [{ "name": "string", "description": "string", "parameters": "JSON string" }]
+      },
+      "handles": {
+        "target": { "position": "top" },
+        "source_completed": { "position": "bottom", "id": "completed", "label": "Concluído" },
+        "source_timeout": { "position": "bottom", "id": "timeout", "label": "Tempo esgotado", "conditional": "only when timeout enabled" }
+      },
+      "ui_features": {
+        "tabs": ["Agente", "Modelo", "Memória", "Tools"],
+        "prompt_selector": "Dropdown to select from saved AI prompts",
+        "head_prompt_toggle": "Switch to prepend global head prompt",
+        "credential_management": "Create new API keys inline",
+        "vitta_credits": "Use platform-managed OpenAI/Gemini tokens"
+      }
+    },
+
+    "follow_up_ai": {
+      "label": "Follow Up I.A",
+      "category": "Inteligência I.A",
+      "icon": "MessageSquareHeart",
+      "color": { "bg": "bg-orange-500", "text": "text-white", "handle": "!bg-orange-500" },
+      "locked": true,
+      "module_required": "atendente_ia",
+      "description": "AI-powered follow-up with timeout branching",
+      "config_schema": {
+        "provider": "openai | gemini",
+        "model": "string",
+        "credential_id": "string",
+        "followup_prompt": "string -- prompt for follow-up generation",
+        "history_count": "number -- how many past messages to analyze (default 20)",
+        "format_for_send": "boolean (default true)",
+        "humanize_text": "boolean",
+        "response_timeout_minutes": "number",
+        "delay_seconds": "number -- delay between split messages",
+        "require_global_bot": "boolean",
+        "require_lead_bot": "boolean"
+      },
+      "handles": {
+        "target": { "position": "top" },
+        "source_responded": { "position": "bottom", "id": "responded", "label": "Respondeu", "color": "emerald" },
+        "source_not_responded": { "position": "bottom", "id": "not_responded", "label": "Não respondeu", "color": "red" }
+      }
+    },
+
+    "intent_router": {
+      "label": "Classificador de Intenções",
+      "category": "Inteligência I.A",
+      "icon": "Signpost",
+      "color": { "bg": "bg-purple-600", "text": "text-white" },
+      "locked": true,
+      "module_required": "atendente_ia",
+      "description": "AI-based intent classification with dynamic routing",
+      "config_schema": {
+        "provider": "openai | gemini",
+        "model": "string",
+        "credential_id": "string",
+        "intents": "string[] -- list of intent names (e.g., ['ORÇAMENTO', 'AGENDAMENTO'])",
+        "instruction": "string -- additional classification instructions",
+        "context_window": "number -- messages to analyze (1-100, default 20)"
+      },
+      "handles": {
+        "target": { "position": "top" },
+        "source_dynamic": "One handle per intent (id = intent name) + 'fallback' handle",
+        "route_colors": ["bg-indigo-500", "bg-purple-500", "bg-pink-500", "bg-blue-500", "bg-emerald-500", "bg-amber-500"]
+      }
+    },
+
+    "send_ai_response": {
+      "label": "Enviar Resposta I.A",
+      "category": "Inteligência I.A",
+      "icon": "Send",
+      "color": { "bg": "bg-emerald-600", "text": "text-white" },
+      "locked": true,
+      "module_required": "atendente_ia",
+      "description": "Send the output of an AI Agent node to the lead",
+      "config_schema": {
+        "source_ai_node_id": "string -- ID of the AI Agent node to read output from",
+        "split_enabled": "boolean (default true) -- split response using ⌁⌁⌁ delimiter",
+        "delay_seconds": "number (default 2) -- delay between split messages"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } },
+      "ai_split_delimiter": "⌁⌁⌁"
+    },
+
+    "http_request": {
+      "label": "HTTP Request",
+      "category": "Avançado",
+      "icon": "Globe",
+      "color": { "bg": "bg-sky-500/10", "text": "text-sky-500" },
+      "locked": true,
+      "module_required": "atendente_ia",
+      "description": "Make external HTTP requests (n8n-style)",
+      "config_schema": {
+        "method": "GET | POST | PUT | PATCH | DELETE",
+        "url": "string",
+        "auth_type": "none | bearer | basic | api_key",
+        "auth_config": {
+          "token": "string (bearer)",
+          "username": "string (basic)",
+          "password": "string (basic)",
+          "key": "string (api_key)",
+          "header_name": "string (api_key)",
+          "prefix": "string (api_key)"
+        },
+        "send_headers": "boolean",
+        "headers_mode": "pairs | json",
+        "headers": [{ "name": "string", "value": "string" }],
+        "headers_json": "string",
+        "send_query_params": "boolean",
+        "query_params_mode": "pairs | json",
+        "query_params": [{ "name": "string", "value": "string" }],
+        "query_params_json": "string",
+        "send_body": "boolean",
+        "body_mode": "pairs | json",
+        "body_fields": [{ "name": "string", "value": "string" }],
+        "body_json": "string"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    },
+
+    "code": {
+      "label": "Código",
+      "category": "Avançado",
+      "icon": "Code2",
+      "color": { "bg": "bg-gray-800", "text": "text-gray-100" },
+      "locked": true,
+      "module_required": "atendente_ia",
+      "description": "Execute JavaScript or Python code",
+      "config_schema": {
+        "language": "javascript | python",
+        "code": "string -- the code to execute"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } },
+      "notes": "Uses stopPropagation for Delete/Backspace keys and 'nopan' class for text editing"
+    },
+
+    "edit_fields": {
+      "label": "Edit Fields",
+      "category": "Avançado",
+      "icon": "PenLine",
+      "color": { "bg": "bg-teal-500/10", "text": "text-teal-500" },
+      "locked": true,
+      "module_required": "atendente_ia",
+      "description": "Map and transform data fields",
+      "config_schema": {
+        "mode": "pairs | json",
+        "fields": [{ "name": "string", "value": "string" }],
+        "json_value": "string"
+      },
+      "handles": { "target": { "position": "top" }, "source": { "position": "bottom" } }
+    }
+  },
+
+  "node_categories": [
+    {
+      "label": "Mensagens",
+      "locked": false,
+      "nodes": ["send_message", "send_image", "send_audio", "send_document", "send_video"]
+    },
+    {
+      "label": "Interação",
+      "locked": false,
+      "nodes": ["ask_question", "capture_info", "wait_response"]
+    },
+    {
+      "label": "Lógica",
+      "locked": false,
+      "nodes": ["condition", "filter", "router", "delay"]
+    },
+    {
+      "label": "CRM & Ações",
+      "locked": false,
+      "nodes": ["crm_move", "action", "agenda", "bot_toggle", "stop_bot", "financeiro", "loop_restart"]
+    },
+    {
+      "label": "Inteligência I.A",
+      "locked": true,
+      "module_required": "atendente_ia",
+      "nodes": ["ai_agent", "intent_router", "follow_up_ai", "send_ai_response"]
+    },
+    {
+      "label": "Avançado",
+      "locked": true,
+      "module_required": "atendente_ia",
+      "nodes": ["http_request", "code", "edit_fields"]
+    }
+  ],
+
+  "ui_architecture": {
+    "pages": {
+      "Automations": {
+        "path": "/automations",
+        "file": "src/pages/Automations.tsx",
+        "description": "Main automation listing page with 3 tabs: Flow, AI Prompt, Auto Messages",
+        "tabs": [
+          { "value": "fluxo", "label": "Automação por Fluxo", "component": "AutomationList" },
+          { "value": "ia", "label": "Automação I.A", "component": "DynamicPromptEditor" },
+          { "value": "mensagens", "label": "Mensagens Automáticas", "component": "AutoMessagesSettings" }
+        ]
+      },
+      "AutomationFlowEditor": {
+        "path": "/automations/:id",
+        "file": "src/pages/AutomationFlowEditor.tsx",
+        "description": "Visual flow editor using ReactFlow",
+        "layout": {
+          "header": "Fixed 56px top bar with back button, name, auto-layout, history, save",
+          "canvas": "Full-height ReactFlow canvas with dots background",
+          "sidebar_right": "ExecutionHistoryPanel (toggleable)",
+          "floating_menu": "NodeToolbar dropdown for adding nodes"
+        }
+      }
+    },
+
+    "components": {
+      "AutomationCard": {
+        "file": "src/components/automations/AutomationCard.tsx",
+        "description": "Card displaying automation name, status badge, trigger type, funnel/stage, execution count, and actions (edit, pause/activate, history, export, delete)"
+      },
+      "AutomationCreateDialog": {
+        "file": "src/components/automations/AutomationCreateDialog.tsx",
+        "description": "Dialog for creating/editing automations with name, description, trigger type, funnel/stage selectors, schedule config, webhook URL display"
+      },
+      "AutomationFlowEditor": {
+        "file": "src/components/automations/AutomationFlowEditor.tsx",
+        "description": "Main flow editor component (1147 lines). Handles node/edge state, CRUD, save/load, auto-layout, node execution testing, and inline node insertion"
+      },
+      "NodeToolbar": {
+        "file": "src/components/automations/NodeToolbar.tsx",
+        "description": "Dropdown menu for adding new nodes, organized by categories with locked sections"
+      },
+      "NodeHeader": {
+        "file": "src/components/automations/nodes/NodeHeader.tsx",
+        "description": "Reusable header for all nodes with icon, label, rename (double-click), duplicate, delete, execute buttons. Uses drag-handle-area for restricted dragging"
+      },
+      "NodeStatsBar": {
+        "file": "src/components/automations/nodes/NodeStatsBar.tsx",
+        "description": "Bottom bar showing reached/responded counts with conversion rate"
+      },
+      "NodeOutputPanel": {
+        "file": "src/components/automations/nodes/NodeOutputPanel.tsx",
+        "description": "Collapsible output panel showing test execution results with JSON schema viewer, drag-to-insert variables, pin/unpin, and test lead selector"
+      },
+      "VariablePicker": {
+        "file": "src/components/automations/VariablePicker.tsx",
+        "description": "Popover showing available custom fields as {{variable}} tokens for insertion"
+      },
+      "DeletableEdge": {
+        "file": "src/components/automations/edges/DeletableEdge.tsx",
+        "description": "Custom edge with hover-to-show delete button and optional label"
+      },
+      "ExecutionHistoryPanel": {
+        "file": "src/components/automations/ExecutionHistoryPanel.tsx",
+        "description": "Side panel showing last 3 executions with timeline, node logs, and token usage breakdown"
+      }
+    },
+
+    "design_patterns": {
+      "node_styling": {
+        "container": "bg-card border border-border rounded-xl shadow-lg min-w-[260px] overflow-hidden group",
+        "header": "Uses NodeHeader component with color-coded background",
+        "body": "px-4 py-3 space-y-2/3",
+        "handles": "!w-3 !h-3 !bg-{color}-500 !border-2 !border-background",
+        "drag_restriction": "dragHandle: '.drag-handle-area' on node config",
+        "overflow": "overflow-visible on nodes with external handles (intent_router, filter, router)"
+      },
+      "edge_styling": {
+        "type": "deletable (custom)",
+        "animated": true,
+        "stroke": "hsl(var(--primary))",
+        "strokeWidth": 2,
+        "markerEnd": "ArrowClosed"
+      },
+      "auto_layout": {
+        "library": "@dagrejs/dagre",
+        "direction": "TB (top-to-bottom)",
+        "nodesep": 80,
+        "ranksep": 120,
+        "edgesep": 40
+      }
+    }
+  },
+
+  "variable_system": {
+    "syntax": "{{variable_name}}",
+    "native_variables": ["nome", "telefone", "email", "instagram", "endereco", "cidade", "estado", "cep", "cpf_cnpj", "empresa", "observacoes"],
+    "node_output_variables": "{{ NomeDoNó.$json.campo }}",
+    "interpolation_regex": "/\\{\\{\\s*([^}]+?)\\s*\\}\\}/g",
+    "drag_and_drop": "Variables from NodeOutputPanel can be dragged into text fields"
+  },
+
+  "export_import": {
+    "format": "vitta-automation-v1",
+    "file": "src/lib/automation-export-import.ts",
+    "export_structure": {
+      "_format": "vitta-automation-v1",
+      "name": "string",
+      "description": "string",
+      "trigger_type": "string",
+      "schedule_config": "object",
+      "nodes": [{ "temp_id": "string", "node_type": "string", "label": "string", "config": "object", "position_x": "number", "position_y": "number" }],
+      "edges": [{ "source_temp_id": "string", "target_temp_id": "string", "source_handle_id": "string", "condition_label": "string", "condition_value": "string" }],
+      "exported_at": "ISO date string"
+    },
+    "import_behavior": "Maps temp_ids to new UUIDs, creates automation + nodes + edges in target organization"
+  },
+
+  "execution_engine": {
+    "flow_traversal": {
+      "algorithm": "BFS from trigger node following edges",
+      "state_management": "execution.context stores runtime variables per node output",
+      "branching": {
+        "condition": "Evaluates condition_type against lead data or last response",
+        "filter": "Evaluates all/any conditions, routes to 'pass' or 'block' handle",
+        "router": "Evaluates rules sequentially, routes to matching handle or 'fallback'",
+        "intent_router": "AI classifies message, normalizes to uppercase, matches handle ID"
+      },
+      "pausing": {
+        "delay": "Sets resume_at = now() + delay amount",
+        "wait_response": "Sets status='waiting_response', resumes on inbound message",
+        "ai_agent_timeout": "Sets resume_at for timeout, resets on each new message in dialogue mode",
+        "follow_up_timeout": "Sets resume_at, routes to 'responded' or 'not_responded'"
+      }
+    },
+    "save_logic": {
+      "order": "1. Delete all edges, 2. Delete all nodes, 3. Insert new nodes (with UUID mapping), 4. Insert new edges",
+      "id_mapping": "Frontend temporary IDs (e.g., 'send_message-1710000000') are converted to valid UUIDs via crypto.randomUUID()",
+      "validation": "isValidUUID regex check before deciding to reuse or generate new ID"
+    }
+  },
+
+  "ai_integration": {
+    "providers": {
+      "openai": {
+        "models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4.1", "gpt-4.1-mini", "gpt-3.5-turbo"]
+      },
+      "gemini": {
+        "models": ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"]
+      }
+    },
+    "platform_credits": {
+      "vitta-openai": "Platform-managed OpenAI tokens (no user API key needed)",
+      "vitta-gemini": "Platform-managed Gemini tokens"
+    },
+    "message_splitting": {
+      "delimiter": "⌁⌁⌁",
+      "fallback": "Split by newlines if delimiter not found",
+      "behavior": "Each part sent as separate WhatsApp message with configurable delay"
+    },
+    "humanize_text": {
+      "description": "Second AI pass without memory to remove robotic tone and excess emojis",
+      "token_accounting": "Both generation and humanization tokens are summed in billing"
+    },
+    "head_prompt": {
+      "description": "Global master instruction (is_head_prompt flag in ai_prompts metadata)",
+      "injection": "Prepended to system_message when toggle is active in AI Agent node"
+    }
+  },
+
+  "testing_system": {
+    "description": "Each node can be tested individually from the flow editor",
+    "test_lead_selector": "Dropdown to select a real lead for testing (sends actual messages)",
+    "node_output_panel": {
+      "schema_viewer": "Displays output as draggable JSON schema tree",
+      "pin_support": "Pin output panels to keep them visible",
+      "error_display": "Red error panel with message"
+    },
+    "lead_required_nodes": ["send_message", "send_image", "send_audio", "send_document", "send_video", "send_ai_response", "ask_question", "wait_response", "capture_info", "follow_up_ai"]
+  }
+}

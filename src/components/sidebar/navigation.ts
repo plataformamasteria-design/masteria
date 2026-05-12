@@ -15,6 +15,7 @@ import {
     Kanban,
     Building2,
     Megaphone,
+    Calendar,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -48,6 +49,7 @@ export type NavItem = NavItemSingle | NavItemGroupData;
 export const allNavItems: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'atendente', 'superadmin'] },
     { href: '/atendimentos', label: 'Atendimentos', icon: MessagesSquare, roles: ['admin', 'atendente', 'superadmin'] },
+    { href: '/agenda', label: 'Agendamento', icon: Calendar, roles: ['admin', 'atendente', 'superadmin'] },
     { href: '/equipes', label: 'Equipes', icon: Users, roles: ['admin', 'superadmin'] },
     { href: '/contacts', label: 'Contatos', icon: Users, roles: ['admin', 'atendente', 'superadmin'] },
     { href: '/lists', label: 'Listas', icon: ClipboardList, roles: ['admin', 'atendente', 'superadmin'] },

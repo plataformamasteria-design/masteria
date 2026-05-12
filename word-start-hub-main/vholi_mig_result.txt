@@ -1,0 +1,797 @@
+{
+  "org": {
+    "id": "a35f0d29-7002-4ca3-99d9-4f7b29ca7f14",
+    "name": "Vholi"
+  },
+  "funnel": {
+    "id": "c51dee79-6956-44e4-a76d-d16e8fa90fd2",
+    "name": "Atendimento"
+  },
+  "stage": {
+    "id": "a6e63396-2961-4c2e-bd3e-c783ccf5cdd7",
+    "name": "AD"
+  },
+  "total_chats_affected": 195,
+  "results": [
+    {
+      "chat_id": "f5e759d0-8b45-4c7f-9fd1-282adf4497c4",
+      "action": "updated"
+    },
+    {
+      "chat_id": "79469aba-0c3a-4659-b97b-1c07186e4ba9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "35f99437-a2cf-4b32-bdde-c2c39538369b",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e3dc1f9f-443b-454c-be6d-7e6bda671833",
+      "action": "updated"
+    },
+    {
+      "chat_id": "9eead1c9-1f4b-49ba-9bbb-d075f6bbb26f",
+      "action": "updated"
+    },
+    {
+      "chat_id": "11e7f085-37da-4d77-80e7-687ae018cfd0",
+      "action": "updated"
+    },
+    {
+      "chat_id": "1fd86783-230b-4c98-adec-a70813c0bb14",
+      "action": "updated"
+    },
+    {
+      "chat_id": "26e6767c-f534-4572-94c8-96743d30dff8",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ac2bad5a-2338-4896-8087-d69049f300b9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "00abf287-7269-4ab9-bbd9-9615525bba83",
+      "action": "updated"
+    },
+    {
+      "chat_id": "7426ab78-9882-4363-8ffa-884fca46d600",
+      "action": "updated"
+    },
+    {
+      "chat_id": "c891cd17-26c0-4f11-907a-bf2d36016355",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ea9b0275-4993-4144-944f-9c5060c8afd1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "261d29c4-2d46-48af-b8fa-d2c464cad256",
+      "action": "updated"
+    },
+    {
+      "chat_id": "5be9e0f3-a88d-45c6-ae01-700a76b8a46d",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4f340bd4-2952-494d-9dc9-26cc6700e777",
+      "action": "updated"
+    },
+    {
+      "chat_id": "766a1a50-d71f-408c-9b1e-6d787ba1b8c9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a9c67aae-add1-4eb5-8f90-cb437a3efd89",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d457e339-0125-4daa-8a18-769514de4f26",
+      "action": "updated"
+    },
+    {
+      "chat_id": "86d499f7-5538-4439-937d-1952705dad54",
+      "action": "updated"
+    },
+    {
+      "chat_id": "eb2cff0b-d359-4520-9320-d2c857bbd830",
+      "action": "updated"
+    },
+    {
+      "chat_id": "186ed0a4-586a-4c28-be43-8310734e4d10",
+      "action": "updated"
+    },
+    {
+      "chat_id": "95886ee0-0c62-4cd3-86c4-80c6408e5e29",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e862d29a-ea7e-4ecf-a34e-02046b9b8581",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d1f3818e-1135-4f9f-a5a0-3b0ff4c696a0",
+      "action": "updated"
+    },
+    {
+      "chat_id": "456241e0-cb8a-481f-910d-06f5114265fd",
+      "action": "updated"
+    },
+    {
+      "chat_id": "7b3ee265-812a-4b33-b088-4e4613115670",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b6b99d96-6514-44d6-8597-cfee2ba26865",
+      "action": "updated"
+    },
+    {
+      "chat_id": "24c341c0-7d0f-4771-86ee-2431787c83f1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e18ad450-c8f7-430b-b939-a68500e5ad38",
+      "action": "updated"
+    },
+    {
+      "chat_id": "988d97cd-d390-415d-96b8-c7a55e74c0c4",
+      "action": "updated"
+    },
+    {
+      "chat_id": "0a507448-1b61-443d-853f-1bf08f5dfca3",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ab09c4d7-9cf8-4fda-9cd4-53af72dcb6d8",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ce05d737-7800-451f-93b1-d75ae85f075f",
+      "action": "updated"
+    },
+    {
+      "chat_id": "df88f8c6-c6e1-4fad-b443-43ef7fe12ffd",
+      "action": "updated"
+    },
+    {
+      "chat_id": "058ef2df-bce6-46d3-a6d5-730adf8f9ea9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "94411523-2ddd-4a95-ae2b-831254cd5b63",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4de9a5f9-e081-4613-af90-c2da8f149585",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b1d21cdf-416e-4455-b467-fef7631f5905",
+      "action": "updated"
+    },
+    {
+      "chat_id": "58726749-f395-46cb-ab49-4be6949a9c29",
+      "action": "updated"
+    },
+    {
+      "chat_id": "fc5b19e0-9a84-4d92-8d48-432e67620d27",
+      "action": "updated"
+    },
+    {
+      "chat_id": "7ac81f66-3124-4899-9829-82cdb3284b78",
+      "action": "updated"
+    },
+    {
+      "chat_id": "136f1364-c3b1-418b-a324-845d0e724b3c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "024ad13e-4332-42bb-8fe6-120e1cde94e9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "3301533d-1c6e-4527-a730-d1da1aac5f10",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4b10cbd0-840e-4cf0-90c2-05295f63cee5",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a3e86263-f7f2-416d-8420-593b73e59b77",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a15da367-e5f4-45a4-8a04-78d9a76d15fa",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e10c03ee-3014-42a3-b26b-e3a2d299207c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b6a87f4b-17a9-40f3-b660-9beb54214b8d",
+      "action": "updated"
+    },
+    {
+      "chat_id": "f27fb582-2bf9-4d68-b3c2-a565862ddf4c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ae44aa88-e3cc-4113-a206-8d631ea2b0f3",
+      "action": "updated"
+    },
+    {
+      "chat_id": "39c2f793-f772-4727-8b78-6605be88f3f7",
+      "action": "updated"
+    },
+    {
+      "chat_id": "83c300ea-cb44-49f3-b155-ffb250b78536",
+      "action": "updated"
+    },
+    {
+      "chat_id": "11155fea-1d5e-4d03-8484-fb0c071dc520",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e1573f02-ef19-4c50-ae7d-7fa463daac15",
+      "action": "updated"
+    },
+    {
+      "chat_id": "0e588baf-e533-4c5c-8682-bb90fb8ede7b",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e9a981d8-8d0b-4ac7-a2ff-b52c8e8f84fb",
+      "action": "updated"
+    },
+    {
+      "chat_id": "7f2ce858-8fa1-4c33-9fac-616d142924fb",
+      "action": "updated"
+    },
+    {
+      "chat_id": "5ce5102c-37d7-4663-b259-5cb7bfa1010c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "23dfbbe9-a97d-43d0-9105-04ab460c65f9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "f31975e5-6e53-448e-9383-89139bf4c02e",
+      "action": "updated"
+    },
+    {
+      "chat_id": "f48e6781-9b28-4a0c-a531-8a30f0913787",
+      "action": "updated"
+    },
+    {
+      "chat_id": "feb7ac41-b7c4-4218-966b-c48fdda4ba23",
+      "action": "updated"
+    },
+    {
+      "chat_id": "356bafd7-c0e2-4618-a26a-d504c0aed89a",
+      "action": "updated"
+    },
+    {
+      "chat_id": "f4497022-ad58-4cc2-9c0b-a909f57d331c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "92b63728-ec0c-4084-863c-54640cf89d66",
+      "action": "updated"
+    },
+    {
+      "chat_id": "51f1157e-9c4c-41af-b18b-6ebdff8f3015",
+      "action": "updated"
+    },
+    {
+      "chat_id": "66811ce8-d1b4-4b11-86aa-e04ac548b050",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ff43c17f-1098-43ea-90a0-470164e58c92",
+      "action": "updated"
+    },
+    {
+      "chat_id": "f32cfb93-e16e-44aa-85f4-d5526c8346a1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "c47531c8-3a6e-4692-9aa1-eab9f79acb5e",
+      "action": "updated"
+    },
+    {
+      "chat_id": "f68449a6-04c5-40f1-9326-1dfdccb36721",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a25b0c44-a82d-4bd5-a0b9-18c02aa901ef",
+      "action": "updated"
+    },
+    {
+      "chat_id": "8f3502e3-b832-4fdd-b57c-1bedcdbb8e35",
+      "action": "updated"
+    },
+    {
+      "chat_id": "7dfd0ae4-dfe0-4e45-9278-4001c2d40e12",
+      "action": "updated"
+    },
+    {
+      "chat_id": "fa3fe050-5663-4e3c-9ae2-d89f468cb3cd",
+      "action": "updated"
+    },
+    {
+      "chat_id": "f72339d7-ad57-4d99-b3ca-b3addbcabb6f",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ff532a1d-4731-498d-88f7-d34a7ea63ca2",
+      "action": "updated"
+    },
+    {
+      "chat_id": "314eed86-ec85-4ec5-9d57-33997ce92990",
+      "action": "updated"
+    },
+    {
+      "chat_id": "12ca84c8-cb11-45e0-b571-e24b02a4589f",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a517c9be-893b-4148-81dd-13b918f7d255",
+      "action": "updated"
+    },
+    {
+      "chat_id": "cdd3e4e4-7b59-41c4-9156-d190b4e05747",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e517f689-81b9-43c7-b638-ecf7e0834c4a",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4fe65209-fad6-437e-8e27-976b4ee780ac",
+      "action": "updated"
+    },
+    {
+      "chat_id": "80aea261-29d8-45a4-9f17-25ee181abde7",
+      "action": "updated"
+    },
+    {
+      "chat_id": "25e9d9d8-9771-4315-97cc-a56e67ce1223",
+      "action": "updated"
+    },
+    {
+      "chat_id": "5e32c3c3-9f46-4238-bb2e-8db658b0746e",
+      "action": "updated"
+    },
+    {
+      "chat_id": "068c0d42-6421-46ed-8c82-b9d1a2322baf",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a68fe918-2d9b-48f6-ae9c-f219aaed8400",
+      "action": "updated"
+    },
+    {
+      "chat_id": "05d2d066-bb50-4c57-9d59-c054e1c5fedd",
+      "action": "updated"
+    },
+    {
+      "chat_id": "c9aea240-a4c3-4e79-9289-e5e4f23405a9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "67b51501-81e6-437c-9bf1-ad935a68edfe",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e1541354-d0e4-4dcb-bce5-93f16fe2893a",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ef10a3d4-9078-492a-b431-d407a4051a5c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ae58d623-82fb-406b-a52d-81a49cf031f5",
+      "action": "updated"
+    },
+    {
+      "chat_id": "32616cc1-5904-47f1-b7be-da97ad24c107",
+      "action": "updated"
+    },
+    {
+      "chat_id": "c2e811da-5646-45e8-bb41-e5233a3e4dc5",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d9cb69d7-7138-4417-b41f-5e543079ce66",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b5e26b72-d264-4a55-bb9a-eb8a1f585e88",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b00aea3d-c51e-480a-a20f-6c8a4a7701b1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "2c5f562b-0880-4665-ac01-2b887519c200",
+      "action": "updated"
+    },
+    {
+      "chat_id": "28a7b2b0-445b-4ef8-b7c3-3561bbe6ef93",
+      "action": "updated"
+    },
+    {
+      "chat_id": "bc1882cd-51cd-46d1-9652-a30fc99b42e0",
+      "action": "updated"
+    },
+    {
+      "chat_id": "88936dad-0045-4936-af9c-7cd5fa9221ea",
+      "action": "updated"
+    },
+    {
+      "chat_id": "819dd2cb-27c8-40fe-890b-e621a5df31e9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "be73845a-2074-4cf0-a499-13b164dd1249",
+      "action": "updated"
+    },
+    {
+      "chat_id": "58c192b6-31ef-4c40-9abb-1331ca12a2f5",
+      "action": "updated"
+    },
+    {
+      "chat_id": "74a8afed-ae29-40ca-b286-a066af3de8fc",
+      "action": "updated"
+    },
+    {
+      "chat_id": "7951ef51-f401-425e-b60e-486f6ae6655f",
+      "action": "updated"
+    },
+    {
+      "chat_id": "3f12c49b-3f10-4d69-8f88-d131f4b0bf08",
+      "action": "updated"
+    },
+    {
+      "chat_id": "7c3b31ab-097a-4227-b179-961004f2fb91",
+      "action": "updated"
+    },
+    {
+      "chat_id": "8a6de69a-f282-49d8-abae-f74949212067",
+      "action": "updated"
+    },
+    {
+      "chat_id": "fe0c8e16-acdf-4782-8d46-a3b28bf966b3",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d13c555d-25a2-4a4b-a04b-8d21e683b5be",
+      "action": "updated"
+    },
+    {
+      "chat_id": "adafdc94-5eb2-4049-bb4f-de5085e20bd1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "97ae25ce-d39c-407c-8a9b-c2fd7a1b6eb1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "151203b6-a632-482e-b26c-0d141dff73ef",
+      "action": "updated"
+    },
+    {
+      "chat_id": "5d126c1b-695c-48fd-a82c-2f7252233ff4",
+      "action": "updated"
+    },
+    {
+      "chat_id": "334d5280-a1c5-4ccb-8c2a-e39cc218d9e8",
+      "action": "updated"
+    },
+    {
+      "chat_id": "09cad1c1-3757-4741-b5a0-fc733b9748e8",
+      "action": "updated"
+    },
+    {
+      "chat_id": "1d8e1245-82e5-4ac3-b1ba-5ab6d6f79cc5",
+      "action": "updated"
+    },
+    {
+      "chat_id": "9f2f4e05-fd51-4084-a1d7-58c36aa3f720",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e7c6a47f-b83e-4dc3-aa5a-f0cabc6bd0fc",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4511ac8e-6505-4564-8c0c-a949bbb54de6",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a4d2b922-6692-47be-aa99-c480c15d4c4c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d06c9da8-7cd7-4e27-b78d-949657487c70",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a0b811a0-69b0-4b08-9093-34cccdf84127",
+      "action": "updated"
+    },
+    {
+      "chat_id": "c6efa9fe-674e-4499-bd47-d391b857c500",
+      "action": "updated"
+    },
+    {
+      "chat_id": "abed9af3-0ba1-4bb1-a282-623305c654ce",
+      "action": "updated"
+    },
+    {
+      "chat_id": "af2625ac-6985-4594-83e0-c485ec0a2a30",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b85f9e8e-c0dd-4edc-9e77-fc9b65cdbb5c",
+      "action": "updated"
+    },
+    {
+      "chat_id": "cc4e27b2-4a66-4069-8b55-784a5c8673e4",
+      "action": "updated"
+    },
+    {
+      "chat_id": "6fd0a49f-1729-46db-98ad-b0e88701dc1a",
+      "action": "updated"
+    },
+    {
+      "chat_id": "fe91dbbc-d37d-4591-a573-afb137f8a301",
+      "action": "updated"
+    },
+    {
+      "chat_id": "586c7662-ca0b-4fd5-9bce-2a45639140a7",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b7fb5ddf-114f-4a26-8731-aed9246e7108",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4e0bc817-fa1a-40e1-9d88-85d2cf1f06e3",
+      "action": "updated"
+    },
+    {
+      "chat_id": "bbaaf6c9-15b3-40a6-81e2-910a3953d0d7",
+      "action": "updated"
+    },
+    {
+      "chat_id": "91cd9dab-e9d2-412f-83be-b8b7f3e19868",
+      "action": "updated"
+    },
+    {
+      "chat_id": "8339e1a9-e292-4f46-907b-f513956a5aff",
+      "action": "updated"
+    },
+    {
+      "chat_id": "abe2dbaf-5044-4de6-88ed-04af995b983f",
+      "action": "updated"
+    },
+    {
+      "chat_id": "9f1eb267-e272-43a8-8018-7547563e5897",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e2477b9c-d1f5-4fea-9cc1-ebdb520168d1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "cccb2539-b5b4-4212-b2c7-2c676a69567b",
+      "action": "updated"
+    },
+    {
+      "chat_id": "07e4f263-50a6-439b-a11a-b3660b2599dd",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ce4de372-de1d-435b-9494-b5f862371263",
+      "action": "updated"
+    },
+    {
+      "chat_id": "71e2a073-e88a-4bfb-8ea6-1464d426f6d9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d030a7fb-1bac-4cb5-933a-c33b9f24be66",
+      "action": "updated"
+    },
+    {
+      "chat_id": "8497dd15-d42f-4076-b2c3-bc0a32f2ec74",
+      "action": "updated"
+    },
+    {
+      "chat_id": "1dfae57c-8681-44b8-a584-8e890d73e423",
+      "action": "updated"
+    },
+    {
+      "chat_id": "49a4c363-c284-4fed-ad64-b91a7ab9c179",
+      "action": "updated"
+    },
+    {
+      "chat_id": "0684f5d5-4bd0-441d-bcab-25b026d160f6",
+      "action": "updated"
+    },
+    {
+      "chat_id": "60d0594d-11ce-4977-8a7d-2167c1e4704e",
+      "action": "updated"
+    },
+    {
+      "chat_id": "0841f422-d63a-4f70-ba48-1eefd24a3fd8",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d67aee6c-aa71-4b28-97d7-d03b367af795",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b9af894f-813d-480b-94d2-e8a1c1860d58",
+      "action": "updated"
+    },
+    {
+      "chat_id": "b27001b8-7287-4aa9-ad06-4922a366ece5",
+      "action": "updated"
+    },
+    {
+      "chat_id": "ac037544-078c-4591-be3e-9a3a9fc9134b",
+      "action": "updated"
+    },
+    {
+      "chat_id": "098893c2-6664-4903-a83f-34f6a441fbd0",
+      "action": "updated"
+    },
+    {
+      "chat_id": "cc1adf40-5e43-4de4-a293-da6afdd9bdb6",
+      "action": "updated"
+    },
+    {
+      "chat_id": "235aaf60-591b-44e1-b875-b5e39cea3092",
+      "action": "updated"
+    },
+    {
+      "chat_id": "8af0e989-6dfd-4472-b39d-5f3d60d8d653",
+      "action": "updated"
+    },
+    {
+      "chat_id": "34e190b6-e491-46bd-bd00-642bf2b47113",
+      "action": "updated"
+    },
+    {
+      "chat_id": "9496ff40-c6a4-4d30-a3c1-1711b9f60e37",
+      "action": "updated"
+    },
+    {
+      "chat_id": "efa4bf33-a26e-4eb6-a669-eb0d95dec113",
+      "action": "updated"
+    },
+    {
+      "chat_id": "65a5ce3d-4d38-4be4-a31d-8ade130ce074",
+      "action": "updated"
+    },
+    {
+      "chat_id": "589bbacf-79ed-4b6e-b051-d51d8009bfd5",
+      "action": "updated"
+    },
+    {
+      "chat_id": "0afe7cd2-4b23-4d65-bc05-1142102b7afd",
+      "action": "updated"
+    },
+    {
+      "chat_id": "32ee2ca4-f6b2-458b-b1d6-083967aa5df2",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4412b9ca-162b-4f19-bb5c-721dad7e5a31",
+      "action": "updated"
+    },
+    {
+      "chat_id": "99d072f6-4bbf-4420-94a1-6fb1dab5f9b9",
+      "action": "updated"
+    },
+    {
+      "chat_id": "9cd2c2b0-85f6-49c3-972f-6ba6e8baa855",
+      "action": "updated"
+    },
+    {
+      "chat_id": "5d53909d-5843-4b14-97c0-cdbf6af619be",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d32bc16f-cc0b-4711-a38f-17aa1b8ef88a",
+      "action": "updated"
+    },
+    {
+      "chat_id": "d2e3715d-faad-45c1-acdf-ccc695af66cf",
+      "action": "updated"
+    },
+    {
+      "chat_id": "87b0e672-48e1-4549-8fa0-8a382099d860",
+      "action": "updated"
+    },
+    {
+      "chat_id": "541e3e5d-67c5-4646-8534-a3f9990c6184",
+      "action": "updated"
+    },
+    {
+      "chat_id": "442387e8-c468-4471-9382-91b9ba329753",
+      "action": "updated"
+    },
+    {
+      "chat_id": "13157fd0-da53-4fa5-9bde-21e18f603b2a",
+      "action": "updated"
+    },
+    {
+      "chat_id": "583aa808-59d1-44eb-aa3e-2ad98020052b",
+      "action": "updated"
+    },
+    {
+      "chat_id": "bcda1fae-52db-434f-be79-8d5e644b90ad",
+      "action": "updated"
+    },
+    {
+      "chat_id": "df0dda7d-4bed-4456-a33b-fc3fc0ee1906",
+      "action": "updated"
+    },
+    {
+      "chat_id": "9d9a7c9c-95de-44a1-b23a-6bf8f715c137",
+      "action": "updated"
+    },
+    {
+      "chat_id": "fa5fb8ab-7fd1-4610-ac68-3b13f093428e",
+      "action": "updated"
+    },
+    {
+      "chat_id": "03065645-a577-4f61-9c6d-7fa55206af90",
+      "action": "updated"
+    },
+    {
+      "chat_id": "4ee0c03a-6c18-49a2-b508-ccf533d1fa0b",
+      "action": "updated"
+    },
+    {
+      "chat_id": "0c427046-69b9-43f7-aefe-72cc1b4eeaa1",
+      "action": "updated"
+    },
+    {
+      "chat_id": "a4f17482-dd4a-4a52-a29e-fe418a77822d",
+      "action": "updated"
+    },
+    {
+      "chat_id": "be5b2b32-d770-4436-a9a2-7ee84b1af8d3",
+      "action": "updated"
+    },
+    {
+      "chat_id": "26ac6750-b4d8-4469-9130-2fc43094b8b2",
+      "action": "updated"
+    },
+    {
+      "chat_id": "c5571fa1-7b7e-4baf-bfc3-0e2ac12854b8",
+      "action": "updated"
+    },
+    {
+      "chat_id": "fb25564d-6f05-44ee-97ca-77bf7c1795e7",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e38fc63c-e32e-4893-8f65-0076fc8c583d",
+      "action": "updated"
+    },
+    {
+      "chat_id": "e5c183bb-b94c-4420-be09-148704cfaa8e",
+      "action": "updated"
+    }
+  ]
+}
