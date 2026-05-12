@@ -17,6 +17,7 @@ import type { KanbanFunnel } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { createToastNotifier } from '@/lib/toast-helper';
 import Link from 'next/link';
+import { ImportKommoModal } from './import-kommo-modal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -79,12 +80,15 @@ export function FunnelList() {
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Filter className="h-6 w-6" /> Funis Kanban
         </h2>
-        <Link href="/kanban/new" passHref>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Criar Funil
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ImportKommoModal />
+          <Link href="/kanban/new" passHref>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Criar Funil
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {loading ? (
