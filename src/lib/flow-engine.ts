@@ -1944,8 +1944,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
                                 const isLead = m.senderType === 'USER' || m.senderType === 'CONTACT';
                                 const role = isLead ? 'user' : 'assistant';
-                                // 🔧 BUG FIX: Limpar tokens contaminados do histórico antes de enviar ao GPT
-                                const content = (m.content || '').replace(/_+TOKENS:\d+/g, '').trim();
+                                // 🔧 BUG FIX: Limpar tokens contaminados do histórico antes de enviar ao GPT e usar aiTranscription para áudios
+                                const content = ((m as any).aiTranscription || m.content || '').replace(/_+TOKENS:\d+/g, '').trim();
                                 if (!content) continue;
 
                                 chatHistory.push({ role, content });

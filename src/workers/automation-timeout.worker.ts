@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { automationFlowExecutions, automationFlows } from '@/lib/db/schema';
+import { automationFlowExecutions, automationFlows, conversations } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { processFlowExecution } from '@/lib/flow-engine';
 
@@ -73,6 +73,21 @@ async function processTimeouts(): Promise<void> {
         const stepId = (hasAiTimeout ? vars._ai_step_id : vars._wait_step_id) || exec.currentStepId;
         
         console.log(`[AutomationTimeoutWorker] ⏰ Timeout reached for execution ${exec.id} at step ${stepId}`);
+
+        // 🚨 NOVO: VERIFICAR SE O ROBO FOI DESATIVADO NA CONVERSA
+        const conversationId = vars._conversation_id || vars.conversationId || (exec as any).conversationId;
+        if (conversationId) {
+            const conv = await db.query.conversations.findFirst({
+               where: eq(conversations.id, conversationId)
+            });
+            if (conv && conv.aiActive === false) {
+                console.log(`[AutomationTimeoutWorker] 🛑 Execução ${exec.id} abortada no passo ${stepId}. A chave "IA Ativa" foi desligada manualmente pelo operador.`);
+                await db.update(automationFlowExecutions)
+                  .set({ status: 'failed', error: 'Automação cancelada pois a IA foi desativada pelo operador' })
+                  .where(eq(automationFlowExecutions.id, exec.id));
+                continue; // Pular para a próxima execução sem retomar o fluxo
+            }
+        }
 
         // Update context to trigger timeout bypass and clear timeout flags
         vars._timeout_triggered_for_step = stepId;

@@ -2428,8 +2428,8 @@ export async function processIncomingMessageTrigger(
         const convoResult = conversation; // Alias for backward compatibility
         const logContextBase = logContext; // For backward compatibility with existing logs
 
-        // ðŸ” DIAGNOSTIC LOGGING: Ajuda a identificar por que a IA nÃ£o responde para clientes especÃ­ficos
-        console.log(`[Automation Engine] ðŸ” DIAGNÃ“STICO - Empresa: ${companyId}, Conversa: ${conversationId}, aiActive: ${conversation.aiActive}, connectionId: ${conversation.connectionId}, senderType: ${message.senderType}, contentType: ${message.contentType}`);
+        // ðŸ”  DIAGNOSTIC LOGGING: Ajuda a identificar por que a IA nÃ£o responde para clientes especÃ­ficos
+        console.log(`[Automation Engine] ðŸ”  DIAGNÃ“STICO - Empresa: ${companyId}, Conversa: ${conversationId}, aiActive: ${conversation.aiActive}, connectionId: ${conversation.connectionId}, senderType: ${message.senderType}, contentType: ${message.contentType}`);
 
         // âœ… GATILHO: Criar lead se for nova conversa
         let isNewConv = isNewConversation;
@@ -2464,7 +2464,7 @@ export async function processIncomingMessageTrigger(
 
         // ðŸ›‘ DEBOUNCE / AGGREGAÃ‡ÃƒO DE MENSAGENS
         // Otimizado: 1 segundo para texto, 3 para Ã¡udio. Agiliza resposta sem perder contexto.
-        const isAudio = message.contentType === 'AUDIO' || message.contentType === 'VOICE';
+        const isAudio = message.contentType?.toUpperCase() === 'AUDIO' || message.contentType?.toUpperCase() === 'VOICE' || message.contentType?.toLowerCase() === 'ptt' || message.contentType?.toLowerCase() === 'audio';
         const DEBOUNCE_TIME_MS = isAudio ? 3000 : 1000;
 
         console.log(`[Automation Engine] â³ Iniciando debounce de ${DEBOUNCE_TIME_MS}ms para mensagem ${messageId} (Tipo: ${isAudio ? 'AUDIO' : 'TEXTO'})...`);
@@ -2585,6 +2585,35 @@ export async function processIncomingMessageTrigger(
 
         let messageSentByRule = false;
 
+        // ==========================================
+        // 🚨 AUDIO TRANSCRIPTION FOR NEW FLOW BUILDER
+        // ==========================================
+        const isMsgAudio = message.contentType?.toUpperCase() === 'AUDIO' || message.contentType?.toUpperCase() === 'VOICE' || message.contentType?.toLowerCase() === 'ptt' || message.contentType?.toLowerCase() === 'audio';
+        if (isMsgAudio && message.mediaUrl && !(message as any).aiTranscription) {
+            try {
+                await logAutomation('INFO', `[Flow Builder] Transcrevendo áudio ${message.id}...`, logContextBase);
+                const mediaResponse = await fetch(message.mediaUrl);
+                if (mediaResponse.ok) {
+                    const arrayBuffer = await mediaResponse.arrayBuffer();
+                    const mediaBuffer = Buffer.from(arrayBuffer);
+                    const { transcribeAudioOpenAI } = await import('@/services/openai-transcription.service');
+                    const transcription = await transcribeAudioOpenAI(mediaBuffer, 'audio/ogg', companyId);
+                    
+                    if (transcription && transcription.trim().length > 0 && !transcription.includes('[Sem fala detectada]')) {
+                        const newTranscriptionText = `[Áudio Transcrito]: ${transcription}`;
+                        await db.update(messages).set({ aiTranscription: newTranscriptionText }).where(eq(messages.id, message.id));
+                        (message as any).aiTranscription = newTranscriptionText;
+                        await logAutomation('INFO', `[Flow Builder] ✅ Áudio transcrito com sucesso!`, logContextBase);
+                    } else {
+                        await db.update(messages).set({ aiTranscription: '[Áudio sem fala detectada]' }).where(eq(messages.id, message.id));
+                        (message as any).aiTranscription = '[Áudio sem fala detectada]';
+                    }
+                }
+            } catch (err: any) {
+                await logAutomation('ERROR', `[Flow Builder] Erro na transcrição: ${err.message}`, logContextBase);
+            }
+        }
+
         // SE O ROBO (IA) ESTIVER ATIVO PARA ESTA CONVERSA, AVALIA OS FLUXOS
         if (conversation.aiActive !== false) {
             // âœ… DISPARAR NOVO ENGINE DE FLUXOS (Para fluxos Inativos procurando Trigger Nova Msg)
@@ -2596,7 +2625,7 @@ export async function processIncomingMessageTrigger(
 
             // CATCH 2.0: Para fluxos que estÃ£o em ESPERA DE RESPOSTA!
             // SÃ³ retomar se um novo flow NÃƒO foi lanÃ§ado agora (evita dupla mensagem de boas-vindas)
-            const messageTextForResume = (message?.content || message?.body || message?.text || '');
+            const messageTextForResume = ((message as any).aiTranscription || message?.content || message?.body || message?.text || '');
             const flowResumed = newFlowLaunched
                 ? false
                 : await resumeFlowForContact(contact.id, messageTextForResume, companyId);
