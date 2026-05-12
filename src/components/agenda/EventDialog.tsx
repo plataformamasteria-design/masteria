@@ -115,8 +115,8 @@ export function EventDialog({ open, onOpenChange, selectedDate, event, onEventSa
     try {
       setLoading(true);
 
-      const baseStart = formData.allDay ? format(selectedDate, 'yyyy-MM-dd') + 'T00:00' : formData.startTime;
-      const baseEnd = formData.allDay ? format(selectedDate, 'yyyy-MM-dd') + 'T23:59' : formData.endTime;
+      const baseStart = formData.allDay ? format(selectedDate, 'yyyy-MM-dd') + 'T00:00:00' : formData.startTime + ':00';
+      const baseEnd = formData.allDay ? format(selectedDate, 'yyyy-MM-dd') + 'T23:59:59' : formData.endTime + ':00';
 
       let targetCalendarId = formData.calendarId || calendarId || null;
       if (isGeneralCalendar && !targetCalendarId) {
@@ -128,16 +128,18 @@ export function EventDialog({ open, onOpenChange, selectedDate, event, onEventSa
         title: formData.title.trim(), 
         description: formData.description?.trim() || null,
         location: formData.location?.trim() || null, 
-        startTime: new Date(baseStart).toISOString(),
-        endTime: new Date(baseEnd).toISOString(), 
+        startTime: baseStart, // Enviamo local time sem 'Z'
+        endTime: baseEnd, // Enviamo local time sem 'Z'
         allDay: formData.allDay, 
         color: formData.color,
         assignedTo: formData.assignedTo || null, 
         contactId: formData.chatId || null,
-        calendarId: targetCalendarId
+        calendarId: targetCalendarId,
+        createMeetLink: generateMeetLink,
       };
 
       let finalEvId = event?.id;
+      let meetLinkFromApi = undefined;
 
       if (event) {
         const res = await fetch(`/api/v1/agenda/events/${event.id}`, {
@@ -146,6 +148,8 @@ export function EventDialog({ open, onOpenChange, selectedDate, event, onEventSa
           body: JSON.stringify(eventData)
         });
         if (!res.ok) throw new Error("Erro");
+        const json = await res.json();
+        meetLinkFromApi = json.data?.location || null;
         toast({ title: "Sincronizando...", description: "Atualizando dados da reunião..." });
       } else {
         const res = await fetch(`/api/v1/agenda/events`, {
@@ -156,34 +160,22 @@ export function EventDialog({ open, onOpenChange, selectedDate, event, onEventSa
         if (!res.ok) throw new Error("Erro");
         const json = await res.json();
         finalEvId = json.data?.id;
+        meetLinkFromApi = json.data?.location || null;
         toast({ title: "Criando Evento", description: "Reservando e sincronizando calendário..." });
       }
 
       if (finalEvId) {
-        const { data: gcData, error: gcError } = await supabase.functions.invoke('google-calendar-api', {
-          headers: { Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
-          body: { action: 'push_event', organization_id: currentOrganization.id, event_id: finalEvId, generate_meet_link: generateMeetLink }
-        });
-
-        if (gcError) console.error("Google sync error:", gcError);
-
         // Automate WhatsApp Notification
         const hasLinkedLead = formData.chatId && formData.chatId !== "";
         if (notifyLead && hasLinkedLead) {
-          const datePart = format(new Date(eventData.start_time), "dd/MM/yyyy");
-          const timePart = format(new Date(eventData.start_time), "HH:mm");
+          const datePart = format(new Date(eventData.startTime), "dd/MM/yyyy");
+          const timePart = format(new Date(eventData.startTime), "HH:mm");
 
           let msgContent = `*${eventData.title}*\n${datePart} - ${timePart}\n\n`;
 
-          let meetLinkToUse = gcData?.meet_link;
-          if (!meetLinkToUse) {
-            // Ultimate absolute fallback: fetch the updated location from DB
-            const { data: latestDb } = await supabase.from('calendar_events').select('location').eq('id', finalEvId).single();
-            if (latestDb?.location && latestDb.location.includes("meet.google.com")) {
-              meetLinkToUse = latestDb.location.split('|').map((s: string) => s.trim()).find((s: string) => s.includes('meet.google.com')) || latestDb.location;
-            } else if (eventData.location && eventData.location.includes("meet.google.com")) {
-              meetLinkToUse = eventData.location;
-            }
+          let meetLinkToUse = meetLinkFromApi;
+          if (!meetLinkToUse && eventData.location && eventData.location.includes("meet.google.com")) {
+             meetLinkToUse = eventData.location;
           }
 
           if (meetLinkToUse && generateMeetLink) {

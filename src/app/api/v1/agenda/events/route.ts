@@ -17,6 +17,7 @@ const eventSchema = z.object({
   calendarId: z.string().nullable().optional(),
   contactId: z.string().nullable().optional(),
   assignedTo: z.string().nullable().optional(),
+  createMeetLink: z.boolean().optional().default(false),
 });
 
 export async function GET(req: Request) {
@@ -39,6 +40,15 @@ export async function GET(req: Request) {
     
     if (calendarId && calendarId !== 'null') {
       conditions.push(eq(calendarEvents.calendarId, calendarId));
+    }
+
+    // Call sync to pull new events from Google Calendar
+    if (start && end) {
+      try {
+        await googleCalendarService.syncEventsFromGoogle(session.companyId, new Date(start), new Date(end));
+      } catch (syncErr) {
+        console.warn('[GET /api/v1/agenda/events] Failed to sync events from Google:', syncErr);
+      }
     }
 
     const data = await db.query.calendarEvents.findMany({
@@ -93,14 +103,25 @@ export async function POST(req: Request) {
           description: result.data.description || undefined,
           startTime: start,
           durationMinutes,
+          createMeetLink: result.data.createMeetLink,
         });
 
         if (gEvent && gEvent.eventId) {
+          const updates: any = { googleEventId: gEvent.eventId, syncSource: 'google', syncedFromGoogle: true };
+          
+          if (gEvent.meetLink && !result.data.location) {
+            updates.location = gEvent.meetLink;
+            newEvent[0].location = gEvent.meetLink;
+          }
+
           await db.update(calendarEvents)
-            .set({ googleEventId: gEvent.eventId, syncSource: 'google', syncedFromGoogle: true })
+            .set(updates)
             .where(eq(calendarEvents.id, newEvent[0].id));
             
           newEvent[0].googleEventId = gEvent.eventId;
+          if (gEvent.meetLink) {
+             (newEvent[0] as any).meetLink = gEvent.meetLink;
+          }
         }
       }
     } catch (gErr) {

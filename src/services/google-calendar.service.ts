@@ -6,7 +6,8 @@
 import { google, calendar_v3 } from 'googleapis';
 import { db } from '@/lib/db';
 import { googleCalendarCredentials, aiScheduledMeetings } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
+import { calendarEvents } from '@/lib/db/schema';
 
 // OAuth2 Configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CALENDAR_CLIENT_ID;
@@ -573,6 +574,91 @@ export class GoogleCalendarService {
 
         console.log('[GoogleCalendar] All calendars are busy for this slot');
         return null;
+    }
+
+    /**
+     * Fetch events from Google Calendar and sync them to local database
+     */
+    async syncEventsFromGoogle(
+        companyId: string,
+        timeMin: Date,
+        timeMax: Date
+    ): Promise<void> {
+        const calendar = await this.getCalendarClient(companyId);
+        if (!calendar) return;
+
+        const [credential] = await db.select().from(googleCalendarCredentials)
+            .where(eq(googleCalendarCredentials.companyId, companyId))
+            .limit(1);
+
+        const targetCalendarId = credential?.calendarId;
+        if (!targetCalendarId) return;
+
+        try {
+            const response = await calendar.events.list({
+                calendarId: targetCalendarId,
+                timeMin: timeMin.toISOString(),
+                timeMax: timeMax.toISOString(),
+                singleEvents: true,
+                orderBy: 'startTime',
+            });
+
+            const items = response.data.items || [];
+            if (items.length === 0) return;
+
+            // Fetch existing local events synced from Google
+            const existingEvents = await db.select({
+                id: calendarEvents.id,
+                googleEventId: calendarEvents.googleEventId,
+            }).from(calendarEvents).where(and(
+                eq(calendarEvents.companyId, companyId),
+                eq(calendarEvents.syncSource, 'google')
+            ));
+
+            const existingGoogleIds = new Set(existingEvents.map(e => e.googleEventId).filter(Boolean));
+
+            for (const item of items) {
+                if (!item.id || item.status === 'cancelled') continue;
+
+                // Only sync if it's not already in the DB
+                if (!existingGoogleIds.has(item.id)) {
+                    let start = item.start?.dateTime ? new Date(item.start.dateTime) : null;
+                    let end = item.end?.dateTime ? new Date(item.end.dateTime) : null;
+                    let allDay = false;
+
+                    // Handle all-day events
+                    if (!start && item.start?.date) {
+                        start = new Date(item.start.date + 'T00:00:00');
+                        allDay = true;
+                    }
+                    if (!end && item.end?.date) {
+                        end = new Date(item.end.date + 'T23:59:59');
+                    }
+
+                    if (start && end) {
+                        const meetLink = item.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
+                        
+                        await db.insert(calendarEvents).values({
+                            companyId,
+                            title: item.summary || 'Evento do Google',
+                            description: item.description || null,
+                            location: meetLink || item.location || null,
+                            startTime: start,
+                            endTime: end,
+                            allDay,
+                            color: '#4285F4', // Default Google Blue
+                            googleEventId: item.id,
+                            syncSource: 'google',
+                            syncedFromGoogle: true,
+                            calendarId: null, 
+                        });
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('[GoogleCalendar] Failed to sync events from Google:', error);
+        }
     }
 }
 
