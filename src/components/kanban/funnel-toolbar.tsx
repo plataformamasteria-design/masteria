@@ -13,6 +13,7 @@ import { Badge } from '../ui/badge';
 import type { KanbanFunnel, KanbanStage } from '@/lib/types';
 import type { KanbanFilters } from '@/app/(main)/kanban/[funnelId]/page';
 import Link from 'next/link';
+import { ImportKommoModal } from './import-kommo-modal';
 
 interface FunnelToolbarProps {
   funnel: KanbanFunnel;
@@ -190,6 +191,8 @@ export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersC
             </Button>
           </Link>
 
+          <ImportKommoModal />
+          
           <Button size="sm" onClick={onAddCard} className="h-8 px-2 sm:px-3">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline ml-1.5">Novo Lead</span>
