@@ -1178,11 +1178,17 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             }
 
             if (step.data?.interactionType === 'wait_response' || step.type === 'wait_response') {
-                const timeoutMinutes = parseInt(step.data?.timeout_minutes || '0');
+                const timeoutAmount = parseInt(step.data?.timeout_amount || step.data?.timeout_minutes || '0');
+                const timeoutUnit = step.data?.timeout_unit || 'minutes';
 
-                if (timeoutMinutes > 0) {
-                    // Schedule timeout: if lead doesn't respond, send timeout message and route to 'timeout'
-                    const timeoutMs = timeoutMinutes * 60 * 1000;
+                if (timeoutAmount > 0) {
+                    const multipliers: Record<string, number> = {
+                        seconds: 1000,
+                        minutes: 60 * 1000,
+                        hours: 60 * 60 * 1000,
+                        days: 24 * 60 * 60 * 1000,
+                    };
+                    const timeoutMs = timeoutAmount * (multipliers[timeoutUnit] || 60000);
 
                     // Store timeout metadata for the cron/resume handler
                     return {
@@ -1192,7 +1198,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             _wait_timeout_message: step.data.timeout_message || '',
                             _wait_step_id: step.id,
                         },
-                        message: `Waiting for response (timeout: ${timeoutMinutes}min)`,
+                        message: `Waiting for response (timeout: ${timeoutAmount} ${timeoutUnit})`,
                     };
                 }
 
@@ -1208,22 +1214,30 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
         case 'condition': {
             const condType = step.data.condition_type;
             const condValue = step.data.condition_value;
+            const condValues = step.data.condition_values;
             let condMet = false;
 
             if (condType === 'has_tag') {
                 condMet = ctx.contactTags.includes(condValue);
+                if (!condMet && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(condValue)) {
+                    const tagObj = await db.query.tags.findFirst({ where: eq(tags.id, condValue) });
+                    if (tagObj) condMet = ctx.contactTags.includes(tagObj.name);
+                }
             } else if (condType === 'response_equals') {
                 condMet = ctx.variables.last_response === condValue;
             } else if (condType === 'response_contains') {
                 condMet = (ctx.variables.last_response || '').includes(condValue);
             } else if (condType === 'response_in') {
-                // response_in: check if last_response is in a comma-separated list
-                const options = (condValue || '').split(',').map((s: string) => s.trim().toLowerCase());
+                let options: string[] = [];
+                if (Array.isArray(condValues) && condValues.length > 0) {
+                    options = condValues.map(s => String(s).trim().toLowerCase());
+                } else {
+                    options = (condValue || '').split(',').map((s: string) => s.trim().toLowerCase());
+                }
                 condMet = options.includes((ctx.variables.last_response || '').toLowerCase());
             } else if (condType === 'is_assigned') {
                 condMet = !!ctx.variables.assigned_to;
             } else {
-                // Legacy compat
                 const reqTag = step.data.conditionValue;
                 condMet = reqTag ? ctx.contactTags.includes(reqTag) : true;
             }
@@ -1260,22 +1274,28 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 return { sourceHandle: 'pass', message: 'Filter: no conditions (pass)' };
             }
 
-            const results = conditions.map((cond: any) => {
-                const fieldValue = ctx.variables[cond.field] || '';
+            const results: boolean[] = [];
+            for (const cond of conditions) {
+                const rawField = await interpolateTemplate(cond.field || '', ctx);
+                const rawValue = await interpolateTemplate(cond.value || '', ctx);
+                const fieldValue = ctx.variables[cond.field] || rawField || '';
+                
+                let passed = false;
                 switch (cond.operator) {
-                    case 'equals': return fieldValue === cond.value;
-                    case 'not_equals': return fieldValue !== cond.value;
-                    case 'contains': return String(fieldValue).includes(cond.value);
-                    case 'not_contains': return !String(fieldValue).includes(cond.value);
-                    case 'starts_with': return String(fieldValue).startsWith(cond.value);
-                    case 'ends_with': return String(fieldValue).endsWith(cond.value);
-                    case 'greater_than': return parseFloat(String(fieldValue)) > parseFloat(cond.value);
-                    case 'less_than': return parseFloat(String(fieldValue)) < parseFloat(cond.value);
-                    case 'is_empty': return !fieldValue;
-                    case 'is_not_empty': return !!fieldValue;
-                    default: return true;
+                    case 'equals': passed = fieldValue === rawValue; break;
+                    case 'not_equals': passed = fieldValue !== rawValue; break;
+                    case 'contains': passed = String(fieldValue).includes(rawValue); break;
+                    case 'not_contains': passed = !String(fieldValue).includes(rawValue); break;
+                    case 'starts_with': passed = String(fieldValue).startsWith(rawValue); break;
+                    case 'ends_with': passed = String(fieldValue).endsWith(rawValue); break;
+                    case 'greater_than': passed = parseFloat(String(fieldValue)) > parseFloat(rawValue); break;
+                    case 'less_than': passed = parseFloat(String(fieldValue)) < parseFloat(rawValue); break;
+                    case 'is_empty': passed = !fieldValue; break;
+                    case 'is_not_empty': passed = !!fieldValue; break;
+                    default: passed = true; break;
                 }
-            });
+                results.push(passed);
+            }
 
             const passed = matchMode === 'all'
                 ? results.every((r: boolean) => r)
@@ -1289,21 +1309,24 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             const rules = step.data.rules || [];
             for (let i = 0; i < rules.length; i++) {
                 const rule = rules[i];
-                const fieldValue = ctx.variables[rule.field] || '';
+                const rawField = await interpolateTemplate(rule.field || '', ctx);
+                const rawValue = await interpolateTemplate(rule.value || '', ctx);
+                const fieldValue = ctx.variables[rule.field] || rawField || '';
+                
                 let matches = false;
                 switch (rule.operator) {
-                    case 'equals': matches = fieldValue === rule.value; break;
-                    case 'not_equals': matches = fieldValue !== rule.value; break;
-                    case 'contains': matches = String(fieldValue).includes(rule.value); break;
-                    case 'not_contains': matches = !String(fieldValue).includes(rule.value); break;
-                    case 'starts_with': matches = String(fieldValue).startsWith(rule.value); break;
-                    case 'ends_with': matches = String(fieldValue).endsWith(rule.value); break;
-                    case 'greater_than': matches = parseFloat(String(fieldValue)) > parseFloat(rule.value); break;
-                    case 'less_than': matches = parseFloat(String(fieldValue)) < parseFloat(rule.value); break;
+                    case 'equals': matches = fieldValue === rawValue; break;
+                    case 'not_equals': matches = fieldValue !== rawValue; break;
+                    case 'contains': matches = String(fieldValue).includes(rawValue); break;
+                    case 'not_contains': matches = !String(fieldValue).includes(rawValue); break;
+                    case 'starts_with': matches = String(fieldValue).startsWith(rawValue); break;
+                    case 'ends_with': matches = String(fieldValue).endsWith(rawValue); break;
+                    case 'greater_than': matches = parseFloat(String(fieldValue)) > parseFloat(rawValue); break;
+                    case 'less_than': matches = parseFloat(String(fieldValue)) < parseFloat(rawValue); break;
                     default: matches = false;
                 }
                 if (matches) {
-                    return { sourceHandle: `route - ${i} `, message: `Router: matched route ${i} ` };
+                    return { sourceHandle: `route-${i}`, message: `Router: matched route ${i}` };
                 }
             }
             return { sourceHandle: 'fallback', message: 'Router: fallback' };
