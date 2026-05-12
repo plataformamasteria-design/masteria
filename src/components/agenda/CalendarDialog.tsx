@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useOrganization } from "@/contexts/OrganizationContext";
-import { Trash2 } from "lucide-react";
+import { Trash2, Link2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ interface Calendar {
   name: string;
   is_general: boolean;
   color: string;
+  googleCalendarId?: string | null;
 }
 
 interface CalendarDialogProps {
@@ -37,16 +39,33 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState("#3B82F6");
+  const [googleCalendarId, setGoogleCalendarId] = useState<string>("");
+  const [googleCalendars, setGoogleCalendars] = useState<any[]>([]);
   const { toast } = useToast();
   const { currentOrganization } = useOrganization();
+
+  useEffect(() => {
+    const fetchGoogleCals = async () => {
+      try {
+        const res = await fetch('/api/v1/integrations/google/calendars');
+        const data = await res.json();
+        if (data.connected && data.calendars) {
+          setGoogleCalendars(data.calendars);
+        }
+      } catch (e) {}
+    };
+    if (open) fetchGoogleCals();
+  }, [open]);
 
   useEffect(() => {
     if (calendar) {
       setName(calendar.name);
       setColor(calendar.color);
+      setGoogleCalendarId(calendar.googleCalendarId || "");
     } else {
       setName("");
       setColor("#3B82F6");
+      setGoogleCalendarId("");
     }
   }, [calendar, open]);
 
@@ -71,7 +90,7 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
         const res = await fetch(`/api/v1/agenda/calendars/${calendar.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim(), color })
+          body: JSON.stringify({ name: name.trim(), color, googleCalendarId: googleCalendarId || null })
         });
         
         if (!res.ok) throw new Error("Erro ao atualizar");
@@ -89,6 +108,7 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
             name: name.trim(),
             color,
             isGeneral: false,
+            googleCalendarId: googleCalendarId || null,
           })
         });
 
@@ -197,6 +217,24 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
                 />
               </div>
             </div>
+
+            {googleCalendars.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><Link2 className="w-4 h-4 text-slate-500" /> Vincular ao Google Calendar</Label>
+                <Select value={googleCalendarId} onValueChange={setGoogleCalendarId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um calendário (Opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum (Apenas Local)</SelectItem>
+                    {googleCalendars.map(cal => (
+                      <SelectItem key={cal.id} value={cal.id}>{cal.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">Eventos desta agenda serão espelhados neste calendário do Google.</p>
+              </div>
+            )}
 
             <DialogFooter className="flex gap-2">
               {calendar && !calendar.is_general && (

@@ -10,6 +10,7 @@ const updateSchema = z.object({
   color: z.string().optional(),
   isGeneral: z.boolean().optional(),
   orderPosition: z.number().optional(),
+  googleCalendarId: z.string().nullable().optional(),
 });
 
 export async function PUT(req: Request, { params }: { params: { calendarId: string } }) {

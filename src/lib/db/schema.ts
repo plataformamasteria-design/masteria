@@ -2591,6 +2591,7 @@ export const calendars = pgTable('calendars', {
   isGeneral: boolean('is_general').default(false),
   color: varchar('color', { length: 50 }),
   orderPosition: integer('order_position').default(0),
+  googleCalendarId: text('google_calendar_id'),
   createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),

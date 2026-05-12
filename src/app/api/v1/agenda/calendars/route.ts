@@ -10,6 +10,7 @@ const calendarSchema = z.object({
   color: z.string().optional(),
   isGeneral: z.boolean().default(false),
   orderPosition: z.number().optional().default(0),
+  googleCalendarId: z.string().nullable().optional(),
 });
 
 export async function GET(req: Request) {
@@ -50,6 +51,7 @@ export async function POST(req: Request) {
       color: result.data.color,
       isGeneral: result.data.isGeneral,
       orderPosition: result.data.orderPosition,
+      googleCalendarId: result.data.googleCalendarId,
     }).returning();
 
     return NextResponse.json({ data: newCalendar[0] });

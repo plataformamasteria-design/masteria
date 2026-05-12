@@ -5,9 +5,7 @@
 
 import { google, calendar_v3 } from 'googleapis';
 import { db } from '@/lib/db';
-import { googleCalendarCredentials, aiScheduledMeetings } from '@/lib/db/schema';
-import { eq, and, desc, inArray } from 'drizzle-orm';
-import { calendarEvents } from '@/lib/db/schema';
+import { googleCalendarCredentials, aiScheduledMeetings, calendarEvents, calendars } from '@/lib/db/schema';
 
 // OAuth2 Configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CALENDAR_CLIENT_ID;
@@ -200,6 +198,23 @@ export class GoogleCalendarService {
     }
 
     /**
+     * Resolves the correct Google Calendar ID based on internal calendar ID or global fallback
+     */
+    private async resolveTargetCalendarId(companyId: string, internalCalendarId?: string): Promise<string | undefined> {
+        if (internalCalendarId) {
+            const [calendar] = await db.select().from(calendars)
+                .where(and(eq(calendars.id, internalCalendarId), eq(calendars.companyId, companyId)))
+                .limit(1);
+            if (calendar?.googleCalendarId) return calendar.googleCalendarId;
+        }
+        
+        const [credential] = await db.select().from(googleCalendarCredentials)
+            .where(eq(googleCalendarCredentials.companyId, companyId))
+            .limit(1);
+        return credential?.calendarId || undefined;
+    }
+
+    /**
      * Create a calendar event (meeting)
      */
     async createEvent(
@@ -223,15 +238,7 @@ export class GoogleCalendarService {
         const calendar = await this.getCalendarClient(companyId);
         if (!calendar) return null;
 
-        let targetCalendarId = event.calendarId;
-
-        if (!targetCalendarId) {
-            const [credential] = await db.select().from(googleCalendarCredentials)
-                .where(eq(googleCalendarCredentials.companyId, companyId))
-                .limit(1);
-            targetCalendarId = credential?.calendarId || undefined;
-        }
-
+        const targetCalendarId = await this.resolveTargetCalendarId(companyId, event.calendarId);
         if (!targetCalendarId) return null;
 
         const endTime = new Date(event.startTime.getTime() + event.durationMinutes * 60 * 1000);
@@ -305,15 +312,12 @@ export class GoogleCalendarService {
         const calendar = await this.getCalendarClient(companyId);
         if (!calendar) return false;
 
-        const [credential] = await db.select().from(googleCalendarCredentials)
-            .where(eq(googleCalendarCredentials.companyId, companyId))
-            .limit(1);
-
-        if (!credential?.calendarId) return false;
+        const targetCalendarId = await this.resolveTargetCalendarId(companyId, updates.calendarId);
+        if (!targetCalendarId) return false;
 
         try {
             const existing = await calendar.events.get({
-                calendarId: credential.calendarId,
+                calendarId: targetCalendarId,
                 eventId,
             });
 
@@ -337,7 +341,7 @@ export class GoogleCalendarService {
             }
 
             await calendar.events.update({
-                calendarId: credential.calendarId,
+                calendarId: targetCalendarId,
                 eventId,
                 requestBody: eventData,
             });
@@ -352,19 +356,16 @@ export class GoogleCalendarService {
     /**
      * Cancel/delete an event
      */
-    async cancelEvent(companyId: string, eventId: string): Promise<boolean> {
+    async cancelEvent(companyId: string, eventId: string, internalCalendarId?: string | null): Promise<boolean> {
         const calendar = await this.getCalendarClient(companyId);
         if (!calendar) return false;
 
-        const [credential] = await db.select().from(googleCalendarCredentials)
-            .where(eq(googleCalendarCredentials.companyId, companyId))
-            .limit(1);
-
-        if (!credential?.calendarId) return false;
+        const targetCalendarId = await this.resolveTargetCalendarId(companyId, internalCalendarId || undefined);
+        if (!targetCalendarId) return false;
 
         try {
             await calendar.events.delete({
-                calendarId: credential.calendarId,
+                calendarId: targetCalendarId,
                 eventId,
                 sendUpdates: 'all',
             });
@@ -584,78 +585,94 @@ export class GoogleCalendarService {
         timeMin: Date,
         timeMax: Date
     ): Promise<void> {
-        const calendar = await this.getCalendarClient(companyId);
-        if (!calendar) return;
+        const calendarClient = await this.getCalendarClient(companyId);
+        if (!calendarClient) return;
 
+        // Fetch all calendars for this company that have a googleCalendarId
+        const companyCalendars = await db.select().from(calendars).where(eq(calendars.companyId, companyId));
+        
+        const googleCalendarIdsToSync = new Set<string>();
+        
+        // Add globally connected calendar if exists
         const [credential] = await db.select().from(googleCalendarCredentials)
             .where(eq(googleCalendarCredentials.companyId, companyId))
             .limit(1);
+        if (credential?.calendarId) googleCalendarIdsToSync.add(credential.calendarId);
 
-        const targetCalendarId = credential?.calendarId;
-        if (!targetCalendarId) return;
+        // Add mapped internal calendars
+        for (const cal of companyCalendars) {
+            if (cal.googleCalendarId) googleCalendarIdsToSync.add(cal.googleCalendarId);
+        }
+
+        if (googleCalendarIdsToSync.size === 0) return;
 
         try {
-            const response = await calendar.events.list({
-                calendarId: targetCalendarId,
-                timeMin: timeMin.toISOString(),
-                timeMax: timeMax.toISOString(),
-                singleEvents: true,
-                orderBy: 'startTime',
-            });
+            for (const targetCalendarId of googleCalendarIdsToSync) {
+                const response = await calendarClient.events.list({
+                    calendarId: targetCalendarId,
+                    timeMin: timeMin.toISOString(),
+                    timeMax: timeMax.toISOString(),
+                    singleEvents: true,
+                    orderBy: 'startTime',
+                });
 
-            const items = response.data.items || [];
-            if (items.length === 0) return;
+                const items = response.data.items || [];
+                if (items.length === 0) continue;
 
-            // Fetch existing local events synced from Google
-            const existingEvents = await db.select({
-                id: calendarEvents.id,
-                googleEventId: calendarEvents.googleEventId,
-            }).from(calendarEvents).where(and(
-                eq(calendarEvents.companyId, companyId),
-                eq(calendarEvents.syncSource, 'google')
-            ));
+                // Find internal calendar ID to link if available
+                const mappedInternalCalendar = companyCalendars.find(c => c.googleCalendarId === targetCalendarId);
+                const internalCalendarId = mappedInternalCalendar?.id || null;
 
-            const existingGoogleIds = new Set(existingEvents.map(e => e.googleEventId).filter(Boolean));
+                // Fetch existing local events synced from Google for this specific Google Calendar
+                const existingEvents = await db.select({
+                    id: calendarEvents.id,
+                    googleEventId: calendarEvents.googleEventId,
+                }).from(calendarEvents).where(and(
+                    eq(calendarEvents.companyId, companyId),
+                    eq(calendarEvents.syncSource, 'google')
+                ));
 
-            for (const item of items) {
-                if (!item.id || item.status === 'cancelled') continue;
+                const existingGoogleIds = new Set(existingEvents.map(e => e.googleEventId).filter(Boolean));
 
-                // Only sync if it's not already in the DB
-                if (!existingGoogleIds.has(item.id)) {
-                    let start = item.start?.dateTime ? new Date(item.start.dateTime) : null;
-                    let end = item.end?.dateTime ? new Date(item.end.dateTime) : null;
-                    let allDay = false;
+                for (const item of items) {
+                    if (!item.id || item.status === 'cancelled') continue;
 
-                    // Handle all-day events
-                    if (!start && item.start?.date) {
-                        start = new Date(item.start.date + 'T00:00:00');
-                        allDay = true;
-                    }
-                    if (!end && item.end?.date) {
-                        end = new Date(item.end.date + 'T23:59:59');
-                    }
+                    // Only sync if it's not already in the DB
+                    if (!existingGoogleIds.has(item.id)) {
+                        let start = item.start?.dateTime ? new Date(item.start.dateTime) : null;
+                        let end = item.end?.dateTime ? new Date(item.end.dateTime) : null;
+                        let allDay = false;
 
-                    if (start && end) {
-                        const meetLink = item.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
-                        
-                        await db.insert(calendarEvents).values({
-                            companyId,
-                            title: item.summary || 'Evento do Google',
-                            description: item.description || null,
-                            location: meetLink || item.location || null,
-                            startTime: start,
-                            endTime: end,
-                            allDay,
-                            color: '#4285F4', // Default Google Blue
-                            googleEventId: item.id,
-                            syncSource: 'google',
-                            syncedFromGoogle: true,
-                            calendarId: null, 
-                        });
+                        // Handle all-day events
+                        if (!start && item.start?.date) {
+                            start = new Date(item.start.date + 'T00:00:00');
+                            allDay = true;
+                        }
+                        if (!end && item.end?.date) {
+                            end = new Date(item.end.date + 'T23:59:59');
+                        }
+
+                        if (start && end) {
+                            const meetLink = item.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
+                            
+                            await db.insert(calendarEvents).values({
+                                companyId,
+                                title: item.summary || 'Evento do Google',
+                                description: item.description || null,
+                                location: meetLink || item.location || null,
+                                startTime: start,
+                                endTime: end,
+                                allDay,
+                                color: mappedInternalCalendar?.color || '#4285F4',
+                                googleEventId: item.id,
+                                syncSource: 'google',
+                                syncedFromGoogle: true,
+                                calendarId: internalCalendarId, 
+                            });
+                        }
                     }
                 }
             }
-
         } catch (error) {
             console.error('[GoogleCalendar] Failed to sync events from Google:', error);
         }
