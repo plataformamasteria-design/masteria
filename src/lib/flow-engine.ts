@@ -10,6 +10,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import { createSystemMessage } from '@/services/system-message.service';
 import { resolveAIKeys } from './ai-keys-resolver';
+import { logContactEvent } from './contact-events';
 
 // =====================================================
 // FLOW ENGINE V3 — BFS Graph Traversal + Context
@@ -635,6 +636,14 @@ export async function triggerFlow(flowId: string, companyId: string, contactId: 
     }).returning();
 
     console.log(`[FLOW - ENGINE] 📝 Execution created: ${execution.id} `);
+
+    if (contactId) {
+        try {
+            await logContactEvent(companyId, contactId, 'AUTOMATION', `Automação Iniciada: ${flow.name}`, { flowId });
+        } catch (e) {
+            console.warn('[logContactEvent] Falha ao logar automação', e);
+        }
+    }
 
     // System message: notificar início da automação no chat
     if (contactId) {

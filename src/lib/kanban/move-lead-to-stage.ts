@@ -5,6 +5,7 @@ import type { KanbanStage } from '@/lib/types';
 import { NotificationService } from '@/lib/notifications/notification-service';
 import { UserNotificationsService } from '../notifications/user-notifications.service';
 import { webhookDispatcher } from '@/services/webhook-dispatcher.service';
+import { logContactEvent } from '@/lib/contact-events';
 
 export interface MoveLeadToStageParams {
   leadId: string;
@@ -61,6 +62,22 @@ export async function moveLeadToStage(
         lastStageChangeAt: new Date(),
       })
       .where(eq(kanbanLeads.id, leadId));
+
+    try {
+      await logContactEvent(
+        companyId,
+        lead.contactId,
+        'KANBAN',
+        `Lead movido para etapa: ${newStage.title}`,
+        { 
+          fromStage: previousStage?.title || lead.stageId, 
+          toStage: newStage.title, 
+          boardName: lead.board.title || 'Funil' 
+        }
+      );
+    } catch (e) {
+      console.warn('[logContactEvent] Failed to log kanban move:', e);
+    }
 
     // 🆕 SOCKET.IO: Emit real-time update
     try {

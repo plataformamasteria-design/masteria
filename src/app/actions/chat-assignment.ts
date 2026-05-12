@@ -6,6 +6,7 @@ import { requireAuthOr401 } from '@/lib/api-auth-helper';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { createSystemMessage } from '@/services/system-message.service';
+import { logContactEvent } from '@/lib/contact-events';
 
 export async function getOrganizationUsers() {
     try {
@@ -54,10 +55,14 @@ export async function assignChatToUser(conversationId: string, userId: string) {
             .set({ assignedTo: userId, teamId: null, status: 'OPEN', aiActive: false })
             .where(and(eq(conversations.id, conversationId), eq(conversations.companyId, companyId)));
 
-        // System message: buscar nome do usuário atribuído
         const [assignedUser] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId));
         const userName = assignedUser?.name || 'Agente';
         await createSystemMessage({ conversationId, companyId, content: `🔒 Conversa atribuída a ${userName}` });
+
+        const [conv] = await db.select({ contactId: conversations.contactId }).from(conversations).where(eq(conversations.id, conversationId));
+        if (conv?.contactId) {
+            await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Atendimento assumido por ${userName}`, { assignedUserId: userId });
+        }
 
         return { success: true };
     } catch (e: any) {
@@ -75,10 +80,14 @@ export async function assignChatToTeam(conversationId: string, teamId: string) {
             .set({ teamId: teamId, assignedTo: null, status: 'OPEN' })
             .where(and(eq(conversations.id, conversationId), eq(conversations.companyId, companyId)));
 
-        // System message: buscar nome da equipe
         const [team] = await db.select({ name: teams.name }).from(teams).where(eq(teams.id, teamId));
         const teamName = team?.name || 'Equipe';
         await createSystemMessage({ conversationId, companyId, content: `👥 Conversa transferida para equipe ${teamName}` });
+
+        const [conv] = await db.select({ contactId: conversations.contactId }).from(conversations).where(eq(conversations.id, conversationId));
+        if (conv?.contactId) {
+            await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Transferido para equipe ${teamName}`, { teamId: teamId });
+        }
 
         return { success: true };
     } catch (e: any) {
@@ -98,6 +107,11 @@ export async function unassignChat(conversationId: string) {
             .where(and(eq(conversations.id, conversationId), eq(conversations.companyId, companyId)));
 
         await createSystemMessage({ conversationId, companyId, content: '🔓 Atribuição removida — IA reativada' });
+
+        const [conv] = await db.select({ contactId: conversations.contactId }).from(conversations).where(eq(conversations.id, conversationId));
+        if (conv?.contactId) {
+            await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Atribuição de chat removida`);
+        }
 
         return { success: true };
     } catch (e: any) {

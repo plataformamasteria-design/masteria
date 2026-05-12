@@ -232,8 +232,19 @@ const MappingStep = ({ csvHeaders, mappings, setMappings, totalRows }: {
     );
 }
 
-const SegmentationStep = ({ onUpdateExistingChange, selectedListIds, setSelectedListIds, selectedTagIds, setSelectedTagIds }: { 
-    onUpdateExistingChange: (value: boolean) => void,
+const SegmentationStep = ({ 
+    existingContactsBehavior, setExistingContactsBehavior,
+    existingContactsListIds, setExistingContactsListIds,
+    updateExistingData, setUpdateExistingData,
+    selectedListIds, setSelectedListIds, 
+    selectedTagIds, setSelectedTagIds 
+}: { 
+    existingContactsBehavior: 'ignore' | 'add_to_same' | 'overwrite',
+    setExistingContactsBehavior: (val: 'ignore' | 'add_to_same' | 'overwrite') => void,
+    existingContactsListIds: string[],
+    setExistingContactsListIds: React.Dispatch<React.SetStateAction<string[]>>,
+    updateExistingData: boolean,
+    setUpdateExistingData: (val: boolean) => void,
     selectedListIds: string[],
     setSelectedListIds: React.Dispatch<React.SetStateAction<string[]>>,
     selectedTagIds: string[],
@@ -242,35 +253,60 @@ const SegmentationStep = ({ onUpdateExistingChange, selectedListIds, setSelected
     return (
         <div className="space-y-6">
             <div className="space-y-4">
-                 <Label>Segmentação Adicional</Label>
+                 <Label>Segmentação Principal (Para Todos os Contatos)</Label>
                  <MultiSelectCreatable
                     createResourceType="tag"
                     createEndpoint="tags"
                     selected={selectedTagIds}
                     onChange={setSelectedTagIds}
-                    placeholder="Adicionar tags..."
+                    placeholder="Adicionar tags principais..."
                  />
                  <MultiSelectCreatable
                     createResourceType="list"
                     createEndpoint="lists"
                     selected={selectedListIds}
                     onChange={setSelectedListIds}
-                    placeholder="Adicionar a listas..."
+                    placeholder="Adicionar a listas principais..."
                  />
             </div>
 
-             <div className="space-y-3 pt-4 border-t">
-                <Label>Contatos Existentes</Label>
-                <RadioGroup defaultValue="skip" className="space-y-1" onValueChange={(value): void => onUpdateExistingChange(value === 'update')}>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="skip" id="skip" />
-                        <Label htmlFor="skip">Não atualizar contatos existentes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="update" id="update" />
-                        <Label htmlFor="update">Atualizar informações se o telefone já existir</Label>
-                    </div>
-                </RadioGroup>
+             <div className="space-y-5 pt-4 border-t">
+                <Label className="text-base font-semibold">Tratamento de Contatos Existentes</Label>
+                
+                <div className="space-y-3 bg-muted/30 p-3 rounded-md">
+                    <Label className="text-sm">Comportamento nas Listas/Tags principais acima:</Label>
+                    <RadioGroup value={existingContactsBehavior} onValueChange={(val) => setExistingContactsBehavior(val as any)} className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="ignore" id="behavior-ignore" />
+                            <Label htmlFor="behavior-ignore" className="font-normal">Ignorar (Não adicionar nas listas/tags acima)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="add_to_same" id="behavior-add" />
+                            <Label htmlFor="behavior-add" className="font-normal">Adicionar nas listas/tags acima (Mantendo histórico antigo)</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="overwrite" id="behavior-overwrite" />
+                            <Label htmlFor="behavior-overwrite" className="font-normal text-destructive">Substituir (Apagar das listas/tags antigas e colocar apenas nas novas)</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                    <Label>Lista exclusiva para Contatos Existentes (Opcional):</Label>
+                    <p className="text-xs text-muted-foreground">Mova todos os contatos que já estavam na base para uma lista separada, independente da opção escolhida acima.</p>
+                    <MultiSelectCreatable
+                        createResourceType="list"
+                        createEndpoint="lists"
+                        selected={existingContactsListIds}
+                        onChange={setExistingContactsListIds}
+                        placeholder="Adicionar a listas exclusivas..."
+                    />
+                </div>
+
+                <div className="flex items-center space-x-2 pt-3 border-t border-border/50">
+                    <Checkbox id="update-data" checked={updateExistingData} onCheckedChange={(checked) => setUpdateExistingData(checked === true)} />
+                    <Label htmlFor="update-data" className="font-normal">Atualizar nome, e-mail e endereço dos contatos existentes com os dados da planilha</Label>
+                </div>
             </div>
         </div>
     );
@@ -340,11 +376,13 @@ export function ImportContactsDialog({ onImportCompleted, children, open: extern
   const [csvRows, setCsvRows] = useState<Record<string, unknown>[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [mappings, setMappings] = useState<Record<string, string>>({});
-  const [updateExisting, setUpdateExisting] = useState(false);
+  const [existingContactsBehavior, setExistingContactsBehavior] = useState<'ignore' | 'add_to_same' | 'overwrite'>('ignore');
+  const [updateExistingData, setUpdateExistingData] = useState(false);
   const [progress, setProgress] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [selectedListIds, setSelectedListIds] = useState<string[]>(initialListId ? [initialListId] : []);
+  const [existingContactsListIds, setExistingContactsListIds] = useState<string[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { toast } = useToast();
   const notify = React.useMemo(() => createToastNotifier(toast), [toast]);
@@ -354,11 +392,13 @@ export function ImportContactsDialog({ onImportCompleted, children, open: extern
     setCsvHeaders([]);
     setCsvRows([]);
     setMappings({});
-    setUpdateExisting(false);
+    setExistingContactsBehavior('ignore');
+    setUpdateExistingData(false);
     setProgress(0);
     setTotalRows(0);
     setImportSummary(null);
     setSelectedListIds(initialListId ? [initialListId] : []);
+    setExistingContactsListIds([]);
     setSelectedTagIds([]);
   }, [initialListId]);
 
@@ -469,7 +509,9 @@ export function ImportContactsDialog({ onImportCompleted, children, open: extern
             mappings, 
             lists: selectedListIds, 
             tags: selectedTagIds, 
-            updateExisting 
+            existingContactsBehavior,
+            existingContactsListIds,
+            updateExistingData 
         };
 
         try {
@@ -514,7 +556,18 @@ export function ImportContactsDialog({ onImportCompleted, children, open: extern
     switch (step) {
       case 'upload': return <UploadStep onFileAccepted={handleFileAccepted} onPasteAccepted={handlePasteAccepted} />;
       case 'mapping': return <MappingStep csvHeaders={csvHeaders} mappings={mappings} setMappings={setMappings} totalRows={totalRows} />;
-      case 'segmentation': return <SegmentationStep onUpdateExistingChange={setUpdateExisting} selectedListIds={selectedListIds} setSelectedListIds={setSelectedListIds} selectedTagIds={selectedTagIds} setSelectedTagIds={setSelectedTagIds} />;
+      case 'segmentation': return <SegmentationStep 
+            existingContactsBehavior={existingContactsBehavior}
+            setExistingContactsBehavior={setExistingContactsBehavior}
+            existingContactsListIds={existingContactsListIds}
+            setExistingContactsListIds={setExistingContactsListIds}
+            updateExistingData={updateExistingData}
+            setUpdateExistingData={setUpdateExistingData}
+            selectedListIds={selectedListIds} 
+            setSelectedListIds={setSelectedListIds} 
+            selectedTagIds={selectedTagIds} 
+            setSelectedTagIds={setSelectedTagIds} 
+        />;
       case 'processing': return <ProcessingStep progress={progress} totalRows={totalRows} />;
       case 'summary': return <SummaryStep summary={importSummary} />;
       default: return null;

@@ -14,6 +14,7 @@ import {
   integer,
   pgEnum,
   date,
+  time,
   customType,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
@@ -2560,3 +2561,123 @@ export const agencyMaterialsRelations = relations(agencyMaterials, ({ one }) => 
   linkedContent: one(agencyContents, { fields: [agencyMaterials.linkedContentId], references: [agencyContents.id] }),
 }));
 
+// CONTACT EVENTS (TIMELINE)
+export const contactEvents = pgTable('contact_events', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  contactId: text('contact_id').notNull().references(() => contacts.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'ASSIGNMENT', 'TAG', 'KANBAN', 'AUTOMATION', 'SYSTEM'
+  description: text('description').notNull(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  contactIdx: sql`CREATE INDEX IF NOT EXISTS contact_events_contact_idx ON ${table} (contact_id, created_at DESC)`,
+  companyIdx: sql`CREATE INDEX IF NOT EXISTS contact_events_company_idx ON ${table} (company_id, created_at DESC)`,
+}));
+
+export const contactEventsRelations = relations(contactEvents, ({ one }) => ({
+  company: one(companies, { fields: [contactEvents.companyId], references: [companies.id] }),
+  contact: one(contacts, { fields: [contactEvents.contactId], references: [contacts.id] }),
+}));
+
+// ==============================
+// AGENDA E BOOKING
+// ==============================
+
+export const calendars = pgTable('calendars', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  isGeneral: boolean('is_general').default(false),
+  color: varchar('color', { length: 50 }),
+  orderPosition: integer('order_position').default(0),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+export const calendarEvents = pgTable('calendar_events', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  calendarId: text('calendar_id').references(() => calendars.id, { onDelete: 'cascade' }),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  location: text('location'),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time').notNull(),
+  allDay: boolean('all_day').default(false),
+  color: varchar('color', { length: 50 }),
+  contactId: text('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
+  assignedTo: text('assigned_to').references(() => users.id, { onDelete: 'set null' }),
+  attendanceStatus: varchar('attendance_status', { length: 50 }),
+  googleEventId: text('google_event_id'),
+  syncSource: varchar('sync_source', { length: 50 }),
+  syncedFromGoogle: boolean('synced_from_google').default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+export const tasks = pgTable('tasks', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  dueDate: date('due_date'),
+  dueTime: time('due_time'),
+  priority: varchar('priority', { length: 50 }),
+  completed: boolean('completed').default(false),
+  contactId: text('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
+  assignedTo: text('assigned_to').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+export const bookingConfig = pgTable('booking_config', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().unique().references(() => companies.id, { onDelete: 'cascade' }),
+  calendarId: text('calendar_id').references(() => calendars.id, { onDelete: 'set null' }),
+  active: boolean('active').default(true),
+  widgetTitle: varchar('widget_title', { length: 255 }),
+  widgetDescription: text('widget_description'),
+  primaryColor: varchar('primary_color', { length: 50 }),
+  services: jsonb('services'),
+  workingDays: integer('working_days').array(),
+  startTime: time('start_time').default('09:00'),
+  endTime: time('end_time').default('18:00'),
+  slotDurationMinutes: integer('slot_duration_minutes').default(30),
+  bufferMinutes: integer('buffer_minutes').default(0),
+  minAdvanceHours: integer('min_advance_hours').default(24),
+  maxAdvanceDays: integer('max_advance_days').default(30),
+  requireEmail: boolean('require_email').default(false),
+  requirePhone: boolean('require_phone').default(true),
+  requireNotes: boolean('require_notes').default(false),
+  sendConfirmationWebhook: boolean('send_confirmation_webhook').default(false),
+  autoAssignAgentId: text('auto_assign_agent_id').references(() => users.id, { onDelete: 'set null' }),
+  autoCreateChat: boolean('auto_create_chat').default(true),
+  autoAssignFunnelId: text('auto_assign_funnel_id').references(() => kanbanBoards.id, { onDelete: 'set null' }),
+  autoAssignStageId: text('auto_assign_stage_id'),
+  autoApplyTagId: text('auto_apply_tag_id').references(() => tags.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+export const bookings = pgTable('bookings', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  calendarEventId: text('calendar_event_id').references(() => calendarEvents.id, { onDelete: 'set null' }),
+  contactId: text('contact_id').references(() => contacts.id, { onDelete: 'set null' }),
+  clientName: varchar('client_name', { length: 255 }).notNull(),
+  clientPhone: varchar('client_phone', { length: 50 }).notNull(),
+  clientEmail: varchar('client_email', { length: 255 }),
+  clientNotes: text('client_notes'),
+  serviceName: varchar('service_name', { length: 255 }),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time').notNull(),
+  status: varchar('status', { length: 50 }).default('CONFIRMED'),
+  cancellationReason: text('cancellation_reason'),
+  cancellationToken: text('cancellation_token'),
+  cancelledAt: timestamp('cancelled_at'),
+  syncSource: varchar('sync_source', { length: 50 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+});

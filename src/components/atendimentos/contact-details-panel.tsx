@@ -19,6 +19,51 @@ import { RelativeTime } from '../ui/relative-time';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { NeurolinguisticCard } from '@/components/contacts/neurolinguistic-card';
+import { MultiSelectCreatable } from '../ui/multi-select-creatable';
+import { FileText, Tag as TagIcon, Edit, Kanban, Zap, Clock, CheckCircle2, History } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ContactHistoryTimeline } from '@/components/contacts/contact-history-timeline';
+
+interface EditableSectionProps {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  isEditing: boolean;
+  isSaving: boolean;
+  onEdit: () => void;
+  onSave: () => Promise<void>;
+  onCancel: () => void;
+}
+
+const EditableCardSection: React.FC<EditableSectionProps> = ({ title, icon: Icon, children, isEditing, isSaving, onEdit, onSave, onCancel }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardTitle className="text-sm flex items-center gap-2">
+        <Icon className="h-4 w-4" />
+        {title}
+      </CardTitle>
+      {!isEditing && (
+        <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 text-xs text-muted-foreground hover:text-foreground">
+          <Edit className="h-3.5 w-3.5 mr-1" /> Editar
+        </Button>
+      )}
+    </CardHeader>
+    <CardContent>
+      {children}
+      {isEditing && (
+        <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-border/40">
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving} className="h-8 text-xs">
+            Cancelar
+          </Button>
+          <Button size="sm" onClick={onSave} disabled={isSaving} className="h-8 text-xs">
+            {isSaving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+            Salvar
+          </Button>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+);
 
 interface AIPersona {
     id: string;
@@ -44,7 +89,7 @@ interface ScheduledMeeting {
     status: string;
 }
 
-export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarchive }: { contactId: string | undefined, isArchived?: boolean, onArchive?: () => void, onUnarchive?: () => void }) => {
+export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarchive, onClose }: { contactId: string | undefined, isArchived?: boolean, onArchive?: () => void, onUnarchive?: () => void, onClose?: () => void }) => {
     const { toast } = useToast();
     const notify = useMemo(() => createToastNotifier(toast), [toast]);
     const [contact, setContact] = useState<ExtendedContact | null>(null);
@@ -63,8 +108,16 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
     const [rescheduleDateTime, setRescheduleDateTime] = useState('');
     const [isRescheduling, setIsRescheduling] = useState(false);
 
-    const fetchDetails = useCallback(async (id: string) => {
-        setLoading(true);
+    // Novos estados de edição (Tags e Custom Fields)
+    const [editingSection, setEditingSection] = useState<'segmentation' | 'customFields' | null>(null);
+    const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+    const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+    const [customFieldsArray, setCustomFieldsArray] = useState<{ id: string, key: string, value: string }[]>([]);
+
+    const fetchDetails = useCallback(async (id: string, isBackgroundRefresh = false) => {
+        if (!isBackgroundRefresh) {
+            setLoading(true);
+        }
         try {
             const contactRes = await fetch(`/api/v1/contacts/${id}`);
             if (!contactRes.ok) {
@@ -83,7 +136,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
             }
 
             // Buscar agentes vinculados e efetivos para cada conversa ativa (em paralelo)
-            if (contactData.activeConversations) {
+            if (contactData.activeConversations && contactData.activeConversations.length > 0) {
                 const personaMap: Record<string, string | null> = {};
                 const effectiveMap: Record<string, EffectivePersona> = {};
 
@@ -119,15 +172,31 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                 console.error('Failed to fetch meetings:', e);
             }
 
+            // Buscar Tags disponíveis para Segmentação
+            try {
+                const tagsRes = await fetch('/api/v1/tags');
+                if (tagsRes.ok) {
+                    const tagsData = await tagsRes.json();
+                    setAvailableTags(tagsData.tags || []);
+                }
+            } catch (e) {
+                console.error('Failed to fetch tags:', e);
+            }
+
         } catch (error) {
             notify.error('Erro', (error as Error).message);
         } finally {
-            setLoading(false);
+            if (!isBackgroundRefresh) {
+                setLoading(false);
+            }
         }
     }, [notify]);
 
     useEffect(() => {
         if (contactId) {
+            if (contact?.id !== contactId) {
+                setContact(null);
+            }
             fetchDetails(contactId);
         } else {
             setContact(null);
@@ -139,9 +208,21 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
         if (!contact) return;
         setIsSaving(true);
         try {
-            const payload = {
-                notes,
-            };
+            const payload: any = { notes };
+            
+            if (editingSection === 'segmentation') {
+                payload.tagIds = selectedTagIds;
+            }
+
+            if (editingSection === 'customFields') {
+                const customObj: Record<string, string> = {};
+                customFieldsArray.forEach(f => {
+                    const key = f.key.trim();
+                    if (key) customObj[key] = f.value;
+                });
+                payload.customFields = customObj;
+            }
+
             const response = await fetch(`/api/v1/contacts/${contact.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -149,9 +230,8 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
             });
             if (!response.ok) throw new Error('Falha ao salvar alterações.');
 
-            // Refetch full contact data to preserve activeConversations
-            await fetchDetails(contact.id);
-
+            await fetchDetails(contact.id, true);
+            setEditingSection(null);
             notify.success('Salvo!', 'As informações do contato foram atualizadas.');
         } catch (error) {
             notify.error('Erro ao Salvar', (error as Error).message);
@@ -159,6 +239,25 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
             setIsSaving(false);
         }
     }
+
+    const handleCancelEdit = () => {
+        setEditingSection(null);
+    }
+
+    const handleEditCustomFields = () => {
+        setEditingSection('customFields');
+        const fields = Object.entries(contact?.customFields as Record<string, string> || {}).map(([k, v], i) => ({
+            id: `field-${i}-${Date.now()}`,
+            key: k,
+            value: String(v)
+        }));
+        setCustomFieldsArray(fields);
+    };
+
+    const handleEditSegmentation = () => {
+        setEditingSection('segmentation');
+        setSelectedTagIds(contact?.tags?.map(t => t.id) || []);
+    };
 
     const handleInitiateCall = async () => {
         if (!contact) return;
@@ -217,7 +316,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
         }
     }
 
-    if (loading) {
+    if (loading && !contact) {
         return (
             <div className="w-full h-full flex items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -225,17 +324,27 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
         );
     }
 
-    if (!contact) {
+    if (!contact && !loading) {
         return (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground p-4 text-center">
-                Selecione uma conversa para ver os detalhes do contato.
+            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
+                <Bot className="h-10 w-10 mb-4 opacity-20" />
+                Selecione uma conversa para ver os detalhes.
             </div>
         );
     }
 
+    // Se passou, temos um contact válido
+    const hasActiveConversations = contact && contact.activeConversations && contact.activeConversations.length > 0;
+
     return (
         <ScrollArea className="h-full">
             <div className="p-4 space-y-6">
+                {onClose && (
+                    <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8 lg:hidden" onClick={onClose}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+                
                 <div className="flex flex-col items-center text-center">
                     <Avatar className="h-20 w-20 mb-4">
                         <AvatarImage src={contact.avatarUrl || `https://placehold.co/80x80.png`} alt={contact.name || 'User'} data-ai-hint="avatar user" />
@@ -248,12 +357,19 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                     </p>
                 </div>
 
-                <NeurolinguisticCard
-                    vakProfile={contact.vakProfile}
-                    dominantSocialNeed={contact.dominantSocialNeed}
-                    communicationPace={contact.communicationPace}
-                    variant="compact"
-                />
+                <Tabs defaultValue="details" className="w-full">
+                    <TabsList className="w-full grid grid-cols-2 mb-4">
+                        <TabsTrigger value="details">Detalhes</TabsTrigger>
+                        <TabsTrigger value="history">Histórico</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="details" className="space-y-6 mt-0">
+                        <NeurolinguisticCard
+                            vakProfile={contact.vakProfile}
+                            dominantSocialNeed={contact.dominantSocialNeed}
+                            communicationPace={contact.communicationPace}
+                            variant="compact"
+                        />
 
                 <Button
                     size="sm"
@@ -592,52 +708,177 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                     </CardContent>
                 </Card>
 
+                {/* --- SEÇÃO DE FUNIS --- */}
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Segmentação</CardTitle>
+                    <CardHeader className="pb-2 flex flex-row items-center gap-2 space-y-0">
+                        <Kanban className="h-4 w-4" />
+                        <CardTitle className="text-sm">Funil de Vendas</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label>Tags</Label>
-                            <div className="flex flex-wrap gap-2 pt-2">
-                                {contact.tags?.map((tag: Tag) => (<Badge key={tag.id} style={{ backgroundColor: tag.color, color: '#fff' }}>{tag.name}</Badge>))}
-                                {(!contact.tags || contact.tags.length === 0) && (<p className="text-sm text-muted-foreground">Nenhuma tag.</p>)}
-                            </div>
-                        </div>
-                        <div>
-                            <Label>Listas</Label>
-                            <div className="flex flex-wrap gap-2 pt-2">
-                                {contact.lists?.map((list: ContactList) => (<Badge key={list.id} variant="secondary">{list.name}</Badge>))}
-                                {(!contact.lists || contact.lists.length === 0) && (<p className="text-sm text-muted-foreground">Nenhuma lista.</p>)}
-                            </div>
-                        </div>
+                    <CardContent className="space-y-3">
+                        {contact.funnels && contact.funnels.length > 0 ? (
+                            contact.funnels.map((funnel) => (
+                                <div key={funnel.leadId} className="flex flex-col gap-1 p-2 rounded bg-muted/20 border border-border/40">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{funnel.boardName}</span>
+                                    <Badge variant="secondary" className="w-fit text-xs font-medium">
+                                        {funnel.stageName}
+                                    </Badge>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-xs text-muted-foreground/50">Não atribuído a nenhum funil.</p>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Dados do Formulário (campos customizados do webhook) */}
-                {contact.customFields && typeof contact.customFields === 'object' && Object.keys(contact.customFields).length > 0 && (
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm flex items-center gap-2">
-                                📋 Dados do Formulário
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-1.5">
-                                {Object.entries(contact.customFields).map(([key, value]) => {
-                                    const label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
-                                    const displayLabel = label.charAt(0).toUpperCase() + label.slice(1);
-                                    return (
-                                        <div key={key} className="flex justify-between items-start gap-2 text-sm">
-                                            <span className="text-muted-foreground font-medium min-w-0 shrink-0">{displayLabel}:</span>
-                                            <span className="text-right break-words">{String(value)}</span>
+                {/* --- SEÇÃO DE AUTOMAÇÕES --- */}
+                <Card>
+                    <CardHeader className="pb-2 flex flex-row items-center gap-2 space-y-0">
+                        <Zap className="h-4 w-4" />
+                        <CardTitle className="text-sm">Automações</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {(!contact.automations || contact.automations.length === 0) ? (
+                            <p className="text-xs text-muted-foreground/50">Nenhuma automação registrada.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {/* Automações Ativas */}
+                                {contact.automations.filter(a => a.status === 'running').length > 0 && (
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] uppercase text-muted-foreground">Em andamento</Label>
+                                        <div className="flex flex-col gap-1">
+                                            {contact.automations.filter(a => a.status === 'running').map(a => (
+                                                <div key={a.executionId} className="flex items-center gap-2 text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 p-1.5 rounded border border-blue-500/20">
+                                                    <Clock className="h-3 w-3 animate-pulse" />
+                                                    <span className="font-medium truncate">{a.flowName}</span>
+                                                </div>
+                                            ))}
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                )}
+                                
+                                {/* Automações Concluídas */}
+                                {contact.automations.filter(a => a.status === 'completed' || a.status === 'failed').length > 0 && (
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] uppercase text-muted-foreground">Histórico</Label>
+                                        <div className="flex flex-col gap-1">
+                                            {contact.automations.filter(a => a.status === 'completed' || a.status === 'failed').map(a => (
+                                                <div key={a.executionId} className={`flex items-center gap-2 text-xs p-1.5 rounded border ${a.status === 'completed' ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'}`}>
+                                                    <CheckCircle2 className="h-3 w-3" />
+                                                    <span className="font-medium truncate">{a.flowName}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </CardContent>
-                    </Card>
-                )}
+                        )}
+                    </CardContent>
+                </Card>
+
+                <EditableCardSection
+                    title="Segmentação"
+                    icon={TagIcon}
+                    isEditing={editingSection === 'segmentation'}
+                    isSaving={isSaving}
+                    onEdit={handleEditSegmentation}
+                    onSave={handleSaveChanges}
+                    onCancel={handleCancelEdit}
+                >
+                    {editingSection === 'segmentation' ? (
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs">Tags</Label>
+                                <MultiSelectCreatable
+                                    options={availableTags.map(t => ({ label: t.name, value: t.id }))}
+                                    selectedValues={selectedTagIds}
+                                    onChange={setSelectedTagIds}
+                                    placeholder="Selecione as tags..."
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div>
+                                <Label className="text-xs text-muted-foreground">Tags</Label>
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                    {contact.tags?.map((tag: Tag) => (<Badge key={tag.id} style={{ backgroundColor: tag.color, color: '#fff' }} className="text-[10px] px-1.5">{tag.name}</Badge>))}
+                                    {(!contact.tags || contact.tags.length === 0) && (<p className="text-xs text-muted-foreground/50">Nenhuma tag.</p>)}
+                                </div>
+                            </div>
+                            {contact.lists && contact.lists.length > 0 && (
+                                <div>
+                                    <Label className="text-xs text-muted-foreground">Listas</Label>
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {contact.lists.map((list: ContactList) => (<Badge key={list.id} variant="secondary" className="text-[10px] px-1.5">{list.name}</Badge>))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </EditableCardSection>
+
+                {/* Dados do Formulário (campos customizados do webhook) */}
+                <EditableCardSection
+                    title="Campos do Contato"
+                    icon={FileText}
+                    isEditing={editingSection === 'customFields'}
+                    isSaving={isSaving}
+                    onEdit={handleEditCustomFields}
+                    onSave={handleSaveChanges}
+                    onCancel={handleCancelEdit}
+                >
+                    {editingSection === 'customFields' ? (
+                        <div className="space-y-2">
+                            {customFieldsArray.map((field) => (
+                                <div key={field.id} className="flex items-center gap-1.5">
+                                    <Input
+                                        placeholder="Campo"
+                                        value={field.key}
+                                        onChange={(e) => setCustomFieldsArray(prev => prev.map(item => item.id === field.id ? { ...item, key: e.target.value } : item))}
+                                        className="flex-1 h-8 text-xs"
+                                    />
+                                    <Input
+                                        placeholder="Valor"
+                                        value={field.value}
+                                        onChange={(e) => setCustomFieldsArray(prev => prev.map(item => item.id === field.id ? { ...item, value: e.target.value } : item))}
+                                        className="flex-1 h-8 text-xs"
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => setCustomFieldsArray(prev => prev.filter(item => item.id !== field.id))} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                        <X className="h-3.5 w-3.5" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCustomFieldsArray(prev => [...prev, { id: `new-${Date.now()}`, key: '', value: '' }])}
+                                className="w-full mt-2 border-dashed text-xs text-muted-foreground"
+                            >
+                                <Plus className="mr-1.5 h-3.5 w-3.5" /> Adicionar campo
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-0">
+                            {(!contact.customFields || Object.keys(contact.customFields).length === 0) ? (
+                                <p className="text-xs text-muted-foreground">Nenhum campo personalizado.</p>
+                            ) : (
+                                <div className="divide-y divide-border/40 border border-border/40 rounded-md overflow-hidden">
+                                    {Object.entries(contact.customFields as Record<string, string>).map(([key, value]) => {
+                                        if (!value || !String(value).trim()) return null;
+                                        const displayLabel = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+                                        const capitalizedLabel = displayLabel.charAt(0).toUpperCase() + displayLabel.slice(1);
+                                        return (
+                                            <div key={key} className="flex flex-col sm:flex-row sm:items-baseline justify-between p-2 hover:bg-muted/30 transition-colors">
+                                                <span className="text-xs font-medium text-muted-foreground w-full sm:w-[120px] truncate">{capitalizedLabel}</span>
+                                                <span className="text-xs text-foreground font-medium flex-1 sm:text-right break-words">{String(value)}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </EditableCardSection>
 
                 <Card>
                     <CardHeader className="pb-2">
@@ -657,6 +898,12 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                     {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                     Salvar Alterações
                 </Button>
+                </TabsContent>
+
+                <TabsContent value="history" className="mt-0">
+                    <ContactHistoryTimeline contactId={contact.id} />
+                </TabsContent>
+                </Tabs>
             </div>
         </ScrollArea>
     )

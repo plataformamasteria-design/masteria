@@ -284,7 +284,17 @@ const MeetingIndicator = ({ text }: { text: string }) => {
 };
 
 export function MessageBubble({ message, allMessages, contactName }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null }) {
-    const isMe = message.senderType === 'AGENT' || message.senderType === 'AI' || message.senderType === 'SYSTEM';
+    if (message.senderType === 'SYSTEM') {
+        return (
+            <div id={`message-${message.id}`} className="flex w-full justify-center my-3">
+                <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-muted-foreground text-[11px] px-4 py-1.5 rounded-full flex items-center gap-1.5 max-w-[85%] text-center italic">
+                    <span>{message.content}</span>
+                </div>
+            </div>
+        );
+    }
+
+    const isMe = message.senderType === 'AGENT' || message.senderType === 'AI';
     const repliedMessage = message.repliedToMessageId ? allMessages.find(m => m.id === message.repliedToMessageId) : undefined;
     const _isAudio = message.contentType === 'AUDIO';
 

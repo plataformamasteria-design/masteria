@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Draggable } from '@hello-pangea/dnd';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { MoreHorizontal, Phone, Eye, Pencil, Trash2, MessageCircle, MoveRight, Clock, Video } from 'lucide-react';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '../ui/dropdown-menu';
@@ -54,6 +53,16 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
     stageTitle.includes('reunião') ||
     stageTitle.includes('ligação');
 
+  // Preparar dados do contato e tags
+  const contact = card.contact as any;
+  const customFields = contact?.customFields || {};
+  const tags = contact?.tags || [];
+  const displayTags = tags.slice(0, 2);
+  const remainingTags = tags.length > 2 ? tags.length - 2 : 0;
+  
+  const handleText = customFields.instagram ? customFields.instagram : (contact?.phone ? `+${contact.phone.substring(0,2)}...${contact.phone.slice(-4)}` : '');
+  const createdAtFormatted = card.createdAt ? new Date(card.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+
   return (
     <>
       <Draggable draggableId={card.id} index={index}>
@@ -61,107 +70,111 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
+            {...provided.dragHandleProps}
           >
             <Card
-              className={`cursor-pointer transition-all hover:shadow-md bg-card ${snapshot.isDragging ? 'shadow-lg rotate-1 scale-[1.02]' : ''
+              className={`cursor-pointer transition-all bg-card border-border/40 shadow-sm rounded-md hover:bg-muted/50 ${snapshot.isDragging ? 'shadow-xl rotate-2 scale-[1.02] ring-1 ring-primary/50' : ''
                 }`}
             >
-              <CardHeader className="p-3 pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div
-                    {...provided.dragHandleProps}
-                    className="flex items-center gap-2 flex-1 min-w-0"
-                  >
-                    <Avatar className="h-7 w-7 flex-shrink-0">
-                      <AvatarImage src={card.contact?.avatarUrl || ''} alt={card.contact?.name || 'Lead'} />
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                        {(card.contact?.name || 'L').substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm leading-tight truncate">{card.contact?.name || 'Lead sem nome'}</p>
-                    </div>
+              <div className="p-2.5 flex flex-col gap-1.5 relative group">
+                {/* Linha 1: Nome, Handle e Menu */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="font-bold text-[13px] text-foreground truncate">
+                      {contact?.name || 'Lead sem nome'}
+                    </span>
+                    {handleText && (
+                      <span className="text-[11px] text-muted-foreground truncate flex-shrink-0">
+                        {handleText.startsWith('@') ? handleText : `@${handleText}`}
+                      </span>
+                    )}
                   </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0 flex-shrink-0 opacity-60 hover:opacity-100"
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => setViewOpen(true)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver Detalhes
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar Lead
-                      </DropdownMenuItem>
-
-                      {isCallStage && (
-                        <DropdownMenuItem onClick={() => setMeetingTimeOpen(true)}>
-                          <Clock className="mr-2 h-4 w-4" />
-                          {hasMeetingTime ? 'Editar Horário' : 'Adicionar Horário'}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground hidden md:block">{createdAtFormatted}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => setViewOpen(true)}>
+                          <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
                         </DropdownMenuItem>
-                      )}
-
-                      {card.contact?.phone && (
-                        <DropdownMenuItem onClick={handleOpenWhatsApp}>
-                          <MessageCircle className="mr-2 h-4 w-4" />
-                          Abrir WhatsApp
+                        <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Editar Lead
                         </DropdownMenuItem>
-                      )}
-
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <MoveRight className="mr-2 h-4 w-4" />
-                          Mover para
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuSubContent>
-                          {stages.filter(s => s.id !== card.stageId).map((stage) => (
-                            <DropdownMenuItem
-                              key={stage.id}
-                              onClick={() => handleMoveStage(stage.id)}
-                            >
-                              {stage.title}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuSub>
-
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => setDeleteOpen(true)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        {isCallStage && (
+                          <DropdownMenuItem onClick={() => setMeetingTimeOpen(true)}>
+                            <Clock className="mr-2 h-4 w-4" /> {hasMeetingTime ? 'Editar Horário' : 'Adicionar Horário'}
+                          </DropdownMenuItem>
+                        )}
+                        {contact?.phone && (
+                          <DropdownMenuItem onClick={handleOpenWhatsApp}>
+                            <MessageCircle className="mr-2 h-4 w-4" /> Abrir WhatsApp
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>
+                            <MoveRight className="mr-2 h-4 w-4" /> Mover para
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent>
+                            {stages.filter(s => s.id !== card.stageId).map((stage) => (
+                              <DropdownMenuItem key={stage.id} onClick={() => handleMoveStage(stage.id)}>
+                                {stage.title}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-red-500 dark:text-red-400 focus:text-red-500 focus:bg-red-500/10">
+                          <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </CardHeader>
 
-              <CardContent className="p-3 pt-0 space-y-2">
-                {(card.value !== null && card.value !== undefined && Number(card.value) > 0) && (
-                  <Badge variant="secondary" className="text-xs font-medium">
-                    R$ {Number(card.value).toLocaleString('pt-BR')}
-                  </Badge>
-                )}
+                {/* Linha 2: Título da Oportunidade Azul */}
+                <div className="flex items-center min-w-0">
+                  <span className="text-[12.5px] font-medium text-blue-600 dark:text-blue-400/90 truncate">
+                    {card.title || contact?.name || 'Oportunidade'}
+                  </span>
+                </div>
 
-                <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  {card.contact?.phone && (
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Phone className="h-3 w-3 flex-shrink-0 text-muted-foreground/70" />
-                      <span className="truncate font-mono text-[11px]">{card.contact.phone}</span>
-                    </div>
-                  )}
+                {/* Linha 3: Tags e Status */}
+                <div className="flex items-center justify-between gap-2 mt-1">
+                  <div className="flex items-center flex-wrap gap-1 min-w-0">
+                    {displayTags.length > 0 ? (
+                      displayTags.map((tag: any) => (
+                        <div key={tag.id} className="border border-border/50 bg-muted/30 text-muted-foreground px-1.5 py-0.5 rounded text-[10px] truncate max-w-[120px]">
+                          {tag.name}
+                        </div>
+                      ))
+                    ) : (
+                      (card.value !== null && card.value !== undefined && Number(card.value) > 0) ? (
+                        <div className="border border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px]">
+                          R$ {Number(card.value).toLocaleString('pt-BR')}
+                        </div>
+                      ) : null
+                    )}
+                    {remainingTags > 0 && (
+                      <div className="border border-border/50 bg-muted/30 text-muted-foreground px-1.5 py-0.5 rounded text-[10px]">
+                        +{remainingTags}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                    <span className="text-[10px] text-amber-600 dark:text-yellow-500/90 font-medium">Sem Tarefas</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-yellow-500"></div>
+                  </div>
                 </div>
 
                 {card.notes && card.notes.includes('📅 Reunião agendada:') && (() => {
@@ -170,31 +183,29 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                     ? meetingText.replace('📅 Reunião agendada:', '🚫 Reunião cancelada:')
                     : meetingText;
                   const badgeColors = isCancelledStage
-                    ? 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
-                    : 'bg-green-50 dark:bg-green-950/50 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800';
+                    ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                    : 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20';
                   return (
-                    <div className="flex items-center gap-1 w-fit max-w-full">
-                      <Badge variant="outline" className={`text-[10px] px-1.5 py-0.5 max-w-full ${badgeColors}`}>
-                        <span className="truncate">{displayText}</span>
-                      </Badge>
+                    <div className="flex items-center gap-1 mt-2 border-t border-border/40 pt-2 w-full">
+                      <div className={`text-[10px] px-1.5 py-0.5 rounded border max-w-[85%] truncate ${badgeColors}`}>
+                        {displayText}
+                      </div>
                       {meetLink && !isCancelledStage && (
                         <a
                           href={meetLink}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="flex-shrink-0"
+                          className="flex-shrink-0 border border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded px-1.5 py-0.5 hover:bg-blue-500/20 transition-colors"
                           title="Abrir Google Meet"
                         >
-                          <Badge variant="outline" className="text-[10px] px-1 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer">
-                            <Video className="h-3 w-3" />
-                          </Badge>
+                          <Video className="h-3 w-3" />
                         </a>
                       )}
                     </div>
                   );
                 })()}
-              </CardContent>
+              </div>
             </Card>
           </div>
         )}

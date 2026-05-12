@@ -161,6 +161,6 @@ export function useInboxWebSocket(onInboxUpdate?: InboxEventCallback) {
 
   return {
     connected: socketRef.current?.connected ?? false,
-    sseActive: sseRef.current?.readyState === EventSource.OPEN,
+    sseActive: typeof EventSource !== 'undefined' ? sseRef.current?.readyState === EventSource.OPEN : false,
   };
 }

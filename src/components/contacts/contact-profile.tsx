@@ -22,6 +22,7 @@ import { MultiSelectCreatable } from '../ui/multi-select-creatable';
 import { CommunicationButton } from '@/components/contacts/communication-modal';
 import { NeurolinguisticCard } from '@/components/contacts/neurolinguistic-card';
 import useSWR from 'swr';
+import { Plus } from 'lucide-react';
 
 interface EditableSectionProps {
   title: string;
@@ -116,9 +117,12 @@ export function ContactProfile({ contactId }: { contactId: string }) {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [editingSection, setEditingSection] = useState<'profile' | 'address' | 'segmentation' | 'notes' | null>(null);
+  const [editingSection, setEditingSection] = useState<'profile' | 'address' | 'segmentation' | 'notes' | 'customFields' | null>(null);
 
   const [formState, setFormState] = useState<Partial<ExtendedContact>>({});
+  
+  // Estado específico para gerenciar os Custom Fields de forma flexível (Array de key/value)
+  const [customFieldsArray, setCustomFieldsArray] = useState<{ id: string, key: string, value: string }[]>([]);
 
   const [_availableTags, setAvailableTags] = useState<TagType[]>([]);
   const [_availableLists, setAvailableLists] = useState<ContactList[]>([]);
@@ -172,6 +176,28 @@ export function ContactProfile({ contactId }: { contactId: string }) {
     setEditingSection(null);
   }
 
+  const handleEditCustomFields = () => {
+    setEditingSection('customFields');
+    const fields = Object.entries(contact?.customFields as Record<string, string> || {}).map(([k, v], i) => ({
+      id: `field-${i}-${Date.now()}`,
+      key: k,
+      value: String(v)
+    }));
+    setCustomFieldsArray(fields);
+  };
+
+  const handleAddCustomField = () => {
+    setCustomFieldsArray(prev => [...prev, { id: `new-${Date.now()}`, key: '', value: '' }]);
+  };
+
+  const handleCustomFieldChange = (id: string, field: 'key' | 'value', val: string) => {
+    setCustomFieldsArray(prev => prev.map(item => item.id === id ? { ...item, [field]: val } : item));
+  };
+
+  const handleRemoveCustomField = (id: string) => {
+    setCustomFieldsArray(prev => prev.filter(item => item.id !== id));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -180,6 +206,15 @@ export function ContactProfile({ contactId }: { contactId: string }) {
       if (editingSection === 'segmentation') {
         payload.tagIds = selectedTagIds;
         payload.listIds = selectedListIds;
+      }
+
+      if (editingSection === 'customFields') {
+        const customObj: Record<string, string> = {};
+        customFieldsArray.forEach(f => {
+          const key = f.key.trim();
+          if (key) customObj[key] = f.value;
+        });
+        payload.customFields = customObj;
       }
 
       const response = await fetch(`/api/v1/contacts/${contactId}`, {
@@ -350,6 +385,71 @@ export function ContactProfile({ contactId }: { contactId: string }) {
                   </div>
                 </div>
               </EditableCardSection>
+
+              <EditableCardSection
+                title="Campos do Contato"
+                icon={FileText}
+                isEditing={editingSection === 'customFields'}
+                isSaving={isSaving}
+                onEdit={handleEditCustomFields}
+                onSave={handleSave}
+                onCancel={handleCancelEdit}
+              >
+                {editingSection === 'customFields' ? (
+                  <div className="space-y-3">
+                    {customFieldsArray.map((field) => (
+                      <div key={field.id} className="flex items-center gap-2">
+                        <Input
+                          placeholder="Nome do Campo (ex: Cargo)"
+                          value={field.key}
+                          onChange={(e) => handleCustomFieldChange(field.id, 'key', e.target.value)}
+                          className="flex-1"
+                        />
+                        <Input
+                          placeholder="Valor"
+                          value={field.value}
+                          onChange={(e) => handleCustomFieldChange(field.id, 'value', e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveCustomField(field.id)} className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-destructive">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddCustomField}
+                      className="w-full mt-2 border-dashed text-muted-foreground hover:text-foreground"
+                    >
+                      <Plus className="mr-2 h-4 w-4" /> Adicionar campo
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-0">
+                    {(!contact.customFields || Object.keys(contact.customFields).length === 0) ? (
+                      <p className="text-sm text-muted-foreground">Nenhum campo personalizado cadastrado.</p>
+                    ) : (
+                      <div className="divide-y divide-border/40 border border-border/40 rounded-md overflow-hidden">
+                        {Object.entries(contact.customFields as Record<string, string>).map(([key, value]) => {
+                          if (!value || !String(value).trim()) return null;
+                          const displayLabel = key
+                            .replace(/_/g, ' ')
+                            .replace(/([A-Z])/g, ' $1')
+                            .trim();
+                          const capitalizedLabel = displayLabel.charAt(0).toUpperCase() + displayLabel.slice(1);
+                          return (
+                            <div key={key} className="flex flex-col sm:flex-row sm:items-baseline justify-between p-2.5 hover:bg-muted/30 transition-colors">
+                              <span className="text-[13px] font-medium text-muted-foreground w-[140px] truncate">{capitalizedLabel}</span>
+                              <span className="text-[13px] text-foreground font-medium flex-1 sm:text-right break-words">{String(value)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </EditableCardSection>
             </div>
           )}
 
@@ -360,36 +460,6 @@ export function ContactProfile({ contactId }: { contactId: string }) {
               dominantSocialNeed={contact!.dominantSocialNeed}
               communicationPace={contact!.communicationPace}
             />
-
-            {/* Dados do Formulário (Webhook Custom Fields) — Read-only */}
-            {contact!.customFields && typeof contact!.customFields === 'object' && Object.keys(contact!.customFields).length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Dados do Formulário
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {Object.entries(contact!.customFields as Record<string, string>).map(([key, value]) => {
-                      if (!value || !String(value).trim()) return null;
-                      const label = key
-                        .replace(/_/g, ' ')
-                        .replace(/([A-Z])/g, ' $1')
-                        .trim();
-                      const displayLabel = label.charAt(0).toUpperCase() + label.slice(1);
-                      return (
-                        <div key={key} className="flex flex-col sm:flex-row sm:items-baseline gap-1">
-                          <span className="text-sm font-medium text-muted-foreground min-w-[120px]">{displayLabel}:</span>
-                          <span className="text-sm">{String(value)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             <EditableCardSection
               title="Notas Internas"

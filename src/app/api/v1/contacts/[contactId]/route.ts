@@ -1,8 +1,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { contacts, contactsToContactLists, contactsToTags, tags, contactLists } from '@/lib/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { contacts, contactsToContactLists, contactsToTags, tags, contactLists, kanbanLeads, kanbanBoards, automationFlowExecutions, automationFlows } from '@/lib/db/schema';
+import { eq, and, sql, inArray } from 'drizzle-orm';
+import { logContactEvent } from '@/lib/contact-events';
 import { z } from 'zod';
 import { getCompanyIdFromSession } from '@/app/actions';
 
@@ -121,11 +122,60 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         aiActive: boolean | null;
       }>;
 
+    // Buscar Funis (Kanban Leads) associados a este contato
+    const funnelsRaw = await db.select({
+      leadId: kanbanLeads.id,
+      boardId: kanbanLeads.boardId,
+      boardName: kanbanBoards.name,
+      stageId: kanbanLeads.stageId,
+      stagesJson: kanbanBoards.stages,
+      value: kanbanLeads.value
+    })
+    .from(kanbanLeads)
+    .innerJoin(kanbanBoards, eq(kanbanLeads.boardId, kanbanBoards.id))
+    .where(and(
+      eq(kanbanLeads.contactId, contact.id),
+      eq(kanbanLeads.companyId, companyId)
+    ));
+
+    const funnels = funnelsRaw.map(f => {
+      // Find stage name from stagesJson
+      const stages = Array.isArray(f.stagesJson) ? f.stagesJson as any[] : [];
+      const currentStage = stages.find(s => s.id === f.stageId);
+      return {
+        leadId: f.leadId,
+        boardId: f.boardId,
+        boardName: f.boardName,
+        stageId: f.stageId,
+        stageName: currentStage ? currentStage.name : 'Desconhecida',
+        value: f.value
+      };
+    });
+
+    // Buscar Automações associadas a este contato
+    const automations = await db.select({
+      executionId: automationFlowExecutions.id,
+      flowId: automationFlowExecutions.flowId,
+      flowName: automationFlows.name,
+      status: automationFlowExecutions.status,
+      startedAt: automationFlowExecutions.startedAt,
+      finishedAt: automationFlowExecutions.finishedAt
+    })
+    .from(automationFlowExecutions)
+    .innerJoin(automationFlows, eq(automationFlowExecutions.flowId, automationFlows.id))
+    .where(and(
+      eq(automationFlowExecutions.contactId, contact.id),
+      eq(automationFlowExecutions.companyId, companyId)
+    ))
+    .orderBy(sql`${automationFlowExecutions.startedAt} DESC`);
+
     const response = {
       ...contact,
       tags: contactTags,
       lists: contactContactLists,
-      activeConversations: activeConversations
+      activeConversations: activeConversations,
+      funnels: funnels,
+      automations: automations
     }
 
     return NextResponse.json(response);
@@ -188,6 +238,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             tagId,
             companyId
           })));
+        }
+
+        // Registrar no Histórico de Eventos do Contato
+        try {
+          if (tagIds.length > 0) {
+            const newTags = await tx.select({ name: tags.name }).from(tags).where(inArray(tags.id, tagIds));
+            const tagNames = newTags.map(t => t.name).join(', ');
+            await logContactEvent(companyId, contactId, 'TAG', `Etiquetas atualizadas: ${tagNames}`);
+          } else {
+            await logContactEvent(companyId, contactId, 'TAG', `Todas as etiquetas foram removidas`);
+          }
+        } catch (e) {
+          console.warn('[logContactEvent] Falha ao logar atualização de tags', e);
         }
       }
 

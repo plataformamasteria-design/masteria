@@ -450,7 +450,7 @@ async function uploadFileToS3(companyId: string, key: string, body: Buffer, cont
             if (adapter !== localAdapter) {
                 // ✅ FIX: Fallback to LocalStorage (filesystem) instead of NeonStorageAdapter (DB)
                 // Neon has a 512MB limit. LocalStorage stores files on the Replit filesystem.
-                console.log(`[Storage] 🔄 Attempting Local Filesystem fallback for ${scopedKey}...`);
+                console.warn(`[Storage] 🚨 CRITICAL: Persistent storage failed. Attempting Local Filesystem fallback for ${scopedKey}. This file MAY BE LOST on ephemeral environments like Railway!`);
                 return await localAdapter.uploadFile(scopedKey, body, contentType);
             }
             throw error;
@@ -501,21 +501,43 @@ async function fileExists(companyId: string, key: string): Promise<boolean> {
 }
 
 async function getFileStream(companyId: string, key: string): Promise<ReadableStream | NodeJS.ReadableStream> {
-    const adapter = getStorageAdapter();
+    const primaryAdapter = getStorageAdapter();
     const scopedKey = getScopedKey(companyId, key);
+
+    // 1. Tentar Adapter Primário (S3 ou Neon)
     try {
-        return await adapter.getFileStream(scopedKey);
-    } catch (error) {
-        // Fallback: Try raw key if it differs from scoped key (handles migration/legacy issues)
-        if (key !== scopedKey) {
-            try {
-                if (process.env.DEBUG) console.log(`[Storage] ⚠️ Scoped key failed, trying raw key: ${key}`);
-                return await adapter.getFileStream(key);
-            } catch (e2) {
-                // Ignore raw key failure, proceed to local fallback
-            }
+        return await primaryAdapter.getFileStream(scopedKey);
+    } catch (error: any) {
+        if (process.env.DEBUG) console.log(`[Storage] ⚠️ Primary adapter failed for scopedKey: ${scopedKey}. Reason: ${error.message}`);
+    }
+
+    // 2. Tentar Neon DB caso o primário (S3) tenha falhado
+    if (primaryAdapter.constructor.name !== 'NeonStorageAdapter') {
+        try {
+            if (process.env.DEBUG) console.log(`[Storage] 🔄 Tentando Neon DB Storage para ${scopedKey}...`);
+            const neon = new NeonStorageAdapter();
+            return await neon.getFileStream(scopedKey);
+        } catch (e2: any) {
+            if (process.env.DEBUG) console.log(`[Storage] ⚠️ Neon adapter failed for scopedKey: ${scopedKey}.`);
         }
+    }
+
+    // 3. Tentar fallback de chave bruta (migração/legado)
+    if (key !== scopedKey) {
+        try {
+            if (process.env.DEBUG) console.log(`[Storage] ⚠️ Scoped key failed, trying raw key: ${key}`);
+            return await primaryAdapter.getFileStream(key);
+        } catch (e3) {
+            // Ignore
+        }
+    }
+
+    // 4. Último recurso: Tentar Local Filesystem (Pode falhar no Railway)
+    try {
+        if (process.env.DEBUG) console.log(`[Storage] 🔄 Tentando Local Filesystem Storage para ${scopedKey}...`);
         return await localAdapter.getFileStream(scopedKey);
+    } catch (e4) {
+        throw new Error(`Arquivo não encontrado em nenhum provedor de storage para a chave: ${scopedKey}. Verifique se o upload foi bem-sucedido.`);
     }
 }
 

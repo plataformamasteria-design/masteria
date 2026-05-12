@@ -128,10 +128,19 @@ export default function RegisterPage() {
             throw new Error(data.error || 'Falha ao criar a conta.');
         }
 
-        toast({
-            title: "Conta criada com sucesso!",
-            description: "Pode agora fazer login com as suas credenciais.",
-        });
+        if (data.warning === 'email_delivery_failed') {
+            toast({
+                title: "Conta criada com aviso",
+                description: "Sua conta foi criada, mas houve uma instabilidade no disparo do e-mail de ativação. Se não recebê-lo em instantes, contate o suporte.",
+                variant: "destructive",
+            });
+        } else {
+            toast({
+                title: "Conta criada com sucesso!",
+                description: "Pode agora fazer login com as suas credenciais.",
+            });
+        }
+        
         router.push('/login');
 
     } catch (err) {

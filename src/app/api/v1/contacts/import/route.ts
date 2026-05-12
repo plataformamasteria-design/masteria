@@ -10,7 +10,9 @@ interface RequestBody {
   mappings: Record<string, string>;
   lists: string[];
   tags: string[];
-  updateExisting: boolean;
+  existingContactsBehavior?: 'ignore' | 'add_to_same' | 'overwrite';
+  existingContactsListIds?: string[];
+  updateExistingData?: boolean;
 }
 
 function sanitizeString(input: any, maxLength = 255): string | null {
@@ -36,7 +38,9 @@ export async function POST(request: NextRequest) {
         mappings,
         lists: listIds,
         tags: tagIds,
-        updateExisting
+        existingContactsBehavior = 'ignore',
+        existingContactsListIds = [],
+        updateExistingData = false
     } = await request.json() as RequestBody;
 
     if (!chunk || !Array.isArray(chunk)) {
@@ -69,9 +73,13 @@ export async function POST(request: NextRequest) {
 
     const existingContactsMap = new Map(existingContacts.map(c => [c.phone, c.id]));
     
-    const updatedContactIds: string[] = [];
+    const updatedContactIds: string[] = []; // To update data
+    const overwrittenContactIds: string[] = []; // To delete old tags/lists
     const newContactsToInsert: any[] = [];
-    const allContactsToAssociate: string[] = [];
+    
+    // Arrays for linking
+    const mainListAndTagContactIds: string[] = []; // Gets tagIds & listIds
+    const existingListContactIds: string[] = []; // Gets existingContactsListIds
 
 
     for (const rawData of chunk) {
@@ -110,17 +118,30 @@ export async function POST(request: NextRequest) {
           };
 
         if (existingId) {
-            if (updateExisting) {
+            // Se devemos atualizar os dados base do contato
+            if (updateExistingData) {
                 // SECURITY: Validar tenant ao atualizar contato existente
                 await db.update(contacts).set(contactData).where(and(
                     eq(contacts.id, existingId),
                     eq(contacts.companyId, companyId)
                 ));
                 updatedContactIds.push(existingId);
-                allContactsToAssociate.push(existingId);
                 summary.updated++;
             } else {
-                summary.ignored++;
+                summary.ignored++; // Ignorado em termos de update de dados, mas pode receber tags
+            }
+
+            // Sempre adicionar à lista específica de existentes, se configurado
+            if (existingContactsListIds.length > 0) {
+                existingListContactIds.push(existingId);
+            }
+
+            // Comportamento principal (Listas e Tags da importação principal)
+            if (existingContactsBehavior === 'overwrite') {
+                overwrittenContactIds.push(existingId);
+                mainListAndTagContactIds.push(existingId);
+            } else if (existingContactsBehavior === 'add_to_same') {
+                mainListAndTagContactIds.push(existingId);
             }
         } else {
             newContactsToInsert.push(contactData);
@@ -136,28 +157,37 @@ export async function POST(request: NextRequest) {
                 if (newContactsToInsert.length > 0) {
                     codeLocation = "INSERT_NEW_CONTACTS";
                     const newCreatedContacts = await tx.insert(contacts).values(newContactsToInsert).returning({ id: contacts.id });
-                    allContactsToAssociate.push(...newCreatedContacts.map(c => c.id));
+                    mainListAndTagContactIds.push(...newCreatedContacts.map(c => c.id));
                     summary.created = newContactsToInsert.length;
                 }
 
-                if (updateExisting && updatedContactIds.length > 0) {
+                // Se houver contatos marcados como overwrite, deletamos as associações antigas
+                if (overwrittenContactIds.length > 0) {
                     codeLocation = "DELETE_OLD_TAGS";
-                    await tx.delete(contactsToTags).where(inArray(contactsToTags.contactId, updatedContactIds));
+                    await tx.delete(contactsToTags).where(inArray(contactsToTags.contactId, overwrittenContactIds));
                     codeLocation = "DELETE_OLD_LISTS";
-                    await tx.delete(contactsToContactLists).where(inArray(contactsToContactLists.contactId, updatedContactIds));
+                    await tx.delete(contactsToContactLists).where(inArray(contactsToContactLists.contactId, overwrittenContactIds));
                 }
                 
-                if (allContactsToAssociate.length > 0) {
+                // Inserir associações principais (Listas e Tags novas)
+                if (mainListAndTagContactIds.length > 0) {
                     if (tagIds.length > 0) {
-                        codeLocation = "INSERT_NEW_TAGS";
-                        const tagsData = allContactsToAssociate.flatMap(contactId => tagIds.map(tagId => ({ contactId, tagId })));
-                        await tx.insert(contactsToTags).values(tagsData);
+                        codeLocation = "INSERT_MAIN_TAGS";
+                        const tagsData = mainListAndTagContactIds.flatMap(contactId => tagIds.map(tagId => ({ contactId, tagId })));
+                        await tx.insert(contactsToTags).values(tagsData).onConflictDoNothing();
                     }
                     if (listIds.length > 0) {
-                        codeLocation = "INSERT_NEW_LISTS";
-                        const listsData = allContactsToAssociate.flatMap(contactId => listIds.map(listId => ({ contactId, listId })));
-                        await tx.insert(contactsToContactLists).values(listsData);
+                        codeLocation = "INSERT_MAIN_LISTS";
+                        const listsData = mainListAndTagContactIds.flatMap(contactId => listIds.map(listId => ({ contactId, listId })));
+                        await tx.insert(contactsToContactLists).values(listsData).onConflictDoNothing();
                     }
+                }
+
+                // Inserir associações específicas de existentes
+                if (existingListContactIds.length > 0 && existingContactsListIds.length > 0) {
+                    codeLocation = "INSERT_EXISTING_LISTS";
+                    const existingListsData = existingListContactIds.flatMap(contactId => existingContactsListIds.map(listId => ({ contactId, listId })));
+                    await tx.insert(contactsToContactLists).values(existingListsData).onConflictDoNothing();
                 }
             } catch (error: any) {
                  throw {

@@ -1,4 +1,4 @@
-﻿// src/lib/automation-engine.ts
+// src/lib/automation-engine.ts
 'use server';
 
 import { db } from './db';
@@ -640,28 +640,22 @@ async function callExternalAIAgent(
                 );
 
                 if (!hasMatch) {
-                    await logAutomation('INFO', `â›” Agente IA bloqueado: Nova conversa sem palavra-chave. Keywords configuradas: [${persona.triggerKeywords.join(', ')}]. ConteÃºdo: "${messageContent.substring(0, 50)}..."`, logContextBase);
+                    await logAutomation('INFO', `⛔ Agente IA bloqueado: Nova conversa sem palavra-chave. Keywords configuradas: [${persona.triggerKeywords.join(', ')}]. Conteúdo: "${messageContent.substring(0, 50)}..."`, logContextBase);
                     return false; // BLOQUEIA resposta da IA
                 } else {
-                    await logAutomation('INFO', `âœ… Gatilho de palavra-chave detectado. Prosseguindo com resposta...`, logContextBase);
+                    await logAutomation('INFO', `✅ Gatilho de palavra-chave detectado. Prosseguindo com resposta...`, logContextBase);
                 }
             } else {
-                await logAutomation('INFO', `â„¹ï¸ Conversa em andamento (jÃ¡ respondeu nas Ãºltimas 24h). Ignorando verificaÃ§Ã£o de palavras-chave.`, logContextBase);
+                await logAutomation('INFO', `ℹ️ Conversa em andamento (já respondeu nas últimas 24h). Ignorando verificação de palavras-chave.`, logContextBase);
             }
         }
 
-        // âœ… Normalizar provider para uso interno (OPENAI e GEMINI/GOOGLE)
-        const supportedProviders = ['OPENAI', 'GOOGLE', 'GEMINI'];
+        // ✅ FORÇAR OPENAI CONFORME SOLICITAÇÃO (Substitui configurações prévias do Gemini/Google)
         const originalProvider = (persona.provider || '').toUpperCase();
+        currentProvider = 'OPENAI';
 
-        if (originalProvider === 'OPENAI') {
-            currentProvider = 'OPENAI';
-        } else if (originalProvider === 'GEMINI' || originalProvider === 'GOOGLE') {
-            currentProvider = 'GOOGLE';
-        } else {
-            // Fallback forÃ§ado com novo padrÃ£o OPENAI
-            currentProvider = 'OPENAI';
-            await logAutomation('WARN', `Provider "${originalProvider}" nÃ£o suportado/desativado. ForÃ§ando fallback para OPENAI.`, logContextBase);
+        if (!persona.model || persona.model.includes('gemini') || persona.model.includes('google')) {
+            persona.model = 'gpt-4o-mini';
         }
 
         await logAutomation('INFO', `Provider configurado: ${currentProvider} (Original: ${originalProvider}, Persona: ${persona.name}, Model: ${persona.model})`, logContextBase);
@@ -678,7 +672,7 @@ async function callExternalAIAgent(
 
     try {
         let effectiveProvider = currentProvider;
-        const effectiveModel = persona.model && persona.model !== 'gemini-1.5-flash' ? persona.model : 'gemini-1.5-flash-latest';
+        const effectiveModel = persona.model;
 
         // Verificar se temos chaves do Google configuradas APENAS SE for GOOGLE
         if (effectiveProvider === 'GOOGLE') {
@@ -824,8 +818,8 @@ async function callExternalAIAgent(
                     if (mediaResponse.ok) {
                         const arrayBuffer = await mediaResponse.arrayBuffer();
                         const mediaBuffer = Buffer.from(arrayBuffer);
-                        const { transcribeAudioGemini } = await import('@/services/gemini-transcription.service');
-                        const transcription = await transcribeAudioGemini(mediaBuffer, 'audio/ogg', companyId);
+                        const { transcribeAudioOpenAI } = await import('@/services/openai-transcription.service');
+                        const transcription = await transcribeAudioOpenAI(mediaBuffer, 'audio/ogg', companyId);
                         
                         if (transcription && transcription.trim().length > 0 && !transcription.includes('[Sem fala detectada]')) {
                             const newTranscriptionText = `[Ãudio Transcrito]: ${transcription}`;

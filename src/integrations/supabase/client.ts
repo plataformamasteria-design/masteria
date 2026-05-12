@@ -1,4 +1,4 @@
-export const supabase = {
+const mockSupabase: any = {
     from: (table: string) => {
         const chain: any = {
             select: () => chain,
@@ -22,3 +22,7 @@ export const supabase = {
         getSession: async () => ({ data: { session: null }, error: null })
     }
 };
+
+export const supabase = mockSupabase as any;
+export const SUPABASE_URL = "";
+export const SUPABASE_PUBLISHABLE_KEY = "";

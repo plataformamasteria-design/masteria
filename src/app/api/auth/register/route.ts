@@ -9,6 +9,7 @@ import { randomUUID, randomBytes } from 'crypto';
 import { sendEmailVerificationLink } from '@/lib/email';
 import { getBaseUrl } from '@/utils/get-base-url';
 import { createHash } from 'crypto';
+import { checkAuthRateLimit, getClientIp } from '@/lib/rate-limiter';
 
 const createExpirationDate = (hours: number): Date => {
   const date = new Date();
@@ -19,14 +20,25 @@ const createExpirationDate = (hours: number): Date => {
 const registerSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
   email: z.string().email('Email inválido.'),
-  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres.'),
+  password: z.string()
+    .min(8, 'A senha deve ter pelo menos 8 caracteres.')
+    .regex(/[A-Z]/, 'A senha deve conter pelo menos uma letra maiúscula.')
+    .regex(/[a-z]/, 'A senha deve conter pelo menos uma letra minúscula.')
+    .regex(/[0-9]/, 'A senha deve conter pelo menos um número.'),
 });
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+    const ip = getClientIp(request.headers);
+    const rateLimit = await checkAuthRateLimit(ip);
+    
+    if (!rateLimit.allowed) {
+        return NextResponse.json({ error: rateLimit.message || 'Muitas tentativas. Tente novamente mais tarde.' }, { status: 429 });
+    }
+
     const requestId = randomUUID().slice(0, 8);
-    console.log(`[REGISTER:${requestId}] Iniciando processo de registro...`);
+    console.log(`[REGISTER:${requestId}] Iniciando processo de registro. IP: ${ip}`);
     
     try {
         const body = await request.json();
@@ -54,11 +66,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const verificationLink = `${baseUrl}/verify-email?token=${verificationToken}`;
         
         console.log(`[REGISTER:${requestId}] Token gerado: ${verificationToken.slice(0, 8)}...`);
-        console.log(`[REGISTER:${requestId}] Token hash: ${tokenHash.slice(0, 16)}...`);
         console.log(`[REGISTER:${requestId}] Base URL: ${baseUrl}`);
         
         const result = await db.transaction(async (tx) => {
-            const [newCompany] = await tx.insert(companies).values({ name: `${name}'s Company` }).returning();
+            const companyName = `${name}'s Company - ${randomUUID().slice(0, 4)}`;
+            const [newCompany] = await tx.insert(companies).values({ name: companyName }).returning();
             if (!newCompany) {
                 throw new Error("Falha ao criar empresa durante o registo.");
             }
@@ -85,38 +97,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 expiresAt: createExpirationDate(24)
             }).returning({ tokenHash: emailVerificationTokens.tokenHash });
             
-            if (!tokenRecord) {
-                throw new Error("Falha ao criar token de verificação.");
-            }
-            console.log(`[REGISTER:${requestId}] Token salvo na DB`);
-            
-            if (tokenRecord.tokenHash !== tokenHash) {
-                console.error(`[REGISTER:${requestId}] ERRO CRÍTICO: Token hash não confere!`);
-                console.error(`[REGISTER:${requestId}] Esperado: ${tokenHash}`);
-                console.error(`[REGISTER:${requestId}] Recebido: ${tokenRecord.tokenHash}`);
+            if (!tokenRecord || tokenRecord.tokenHash !== tokenHash) {
                 throw new Error("Inconsistência no token de verificação.");
             }
-            console.log(`[REGISTER:${requestId}] Verificação de integridade OK`);
             
             return { user: createdUser, token: tokenRecord };
         });
 
         console.log(`[REGISTER:${requestId}] Transação concluída com sucesso`);
-        console.log(`[REGISTER:${requestId}] Enviando email para: ${result.user.email}`);
         
+        let emailWarning = false;
         try {
             await sendEmailVerificationLink(result.user.email, result.user.name, verificationLink);
             console.log(`[REGISTER:${requestId}] ✅ Email enviado com sucesso`);
         } catch (emailError) {
             console.error(`[REGISTER:${requestId}] ❌ ERRO CRÍTICO ao enviar email:`, emailError);
-            console.error(`[REGISTER:${requestId}] Tipo de erro:`, emailError instanceof Error ? emailError.message : typeof emailError);
-            // NÃO relançar - deixar o usuário criar a conta mesmo que email falhe
             console.warn(`[REGISTER:${requestId}] ⚠️ Continuando com registro mesmo com erro de email`);
+            emailWarning = true;
         }
         
         return NextResponse.json({ 
             success: true, 
             message: 'Conta criada! Verifique seu e-mail para ativar.',
+            warning: emailWarning ? 'email_delivery_failed' : undefined,
             requestId
         }, { status: 201 });
 

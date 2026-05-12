@@ -128,12 +128,25 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
             <NoConversationSelected />
           )
         ) : null}
+
+        {/* Right Column: Contact Details (Desktop) */}
+        {showActiveChat && controller.selectedConversation && controller.showContactDetails && (
+          <div className="hidden lg:flex w-full max-w-[350px] flex-shrink-0 h-full border-l border-border/40 min-h-0 overflow-hidden bg-muted/5">
+             <ContactDetailsPanel 
+              contactId={controller.selectedConversation.contactId}
+              isArchived={controller.selectedConversation.status === 'ARCHIVED' || controller.selectedConversation.status === 'archived'}
+              onArchive={controller.handleArchive}
+              onUnarchive={controller.handleUnarchive}
+              onClose={() => controller.setShowContactDetails(false)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Contact Details — Glass Popup Overlay */}
+      {/* Contact Details — Glass Popup Overlay (Mobile/Tablet only) */}
       {controller.showContactDetails && controller.selectedConversation && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex lg:hidden items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => controller.setShowContactDetails(false)}
         >
           {/* Backdrop: dark + blur */}
@@ -165,6 +178,7 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
               isArchived={controller.selectedConversation.status === 'ARCHIVED' || controller.selectedConversation.status === 'archived'}
               onArchive={controller.handleArchive}
               onUnarchive={controller.handleUnarchive}
+              onClose={() => controller.setShowContactDetails(false)}
             />
           </div>
         </div>

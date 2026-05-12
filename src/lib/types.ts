@@ -62,6 +62,22 @@ export type ExtendedContact = Contact & {
         lastMessageAt: Date | null;
         aiActive: boolean | null;
     }>;
+    funnels?: Array<{
+        leadId: string;
+        boardId: string;
+        boardName: string;
+        stageId: string;
+        stageName: string;
+        value: string | number;
+    }>;
+    automations?: Array<{
+        executionId: string;
+        flowId: string;
+        flowName: string;
+        status: string;
+        startedAt: Date | string | null;
+        finishedAt: Date | string | null;
+    }>;
 };
 
 export type Conversation = typeof schema.conversations.$inferSelect & {
