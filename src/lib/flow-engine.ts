@@ -1080,11 +1080,56 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
         case 'capture_info': {
             if (ctx.variables.last_response && ctx.variables._capture_step_id === step.id) {
                 const answer = ctx.variables.last_response;
+                
+                // Validação de tipo (e-mail, phone)
+                let isValid = true;
+                const validationType = ctx.variables._capture_validation;
+                if (validationType) {
+                    if (validationType === 'email') {
+                        isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answer);
+                    } else if (validationType === 'phone' || validationType === 'number') {
+                        isValid = /^\d+$/.test(answer.replace(/\D/g, ''));
+                    }
+                }
+
+                if (!isValid) {
+                    // Send an error message and repeat question
+                    await sendUnifiedMessage({
+                        provider: ctx.provider as any,
+                        connectionId: ctx.connectionId,
+                        to: ctx.contactPhone || ctx.contactId,
+                        message: "Formato inválido. Por favor, tente novamente com o formato correto:",
+                    });
+                    return { action: 'pause' }; // Keep paused, do not clear vars
+                }
+
                 delete ctx.variables._capture_step_id;
                 const fieldKey = ctx.variables._capture_field_key || 'captured_value';
                 delete ctx.variables._capture_field_key;
                 delete ctx.variables._capture_validation;
                 
+                // --- SAVE TO CRM DB ---
+                if (ctx.contactId) {
+                    try {
+                        const standardFields = ['name', 'nome', 'email', 'phone', 'telefone', 'celular'];
+                        const lKey = fieldKey.toLowerCase();
+                        
+                        let updateData: any = {};
+                        if (lKey === 'name' || lKey === 'nome') updateData.name = answer;
+                        else if (lKey === 'email') updateData.email = answer;
+                        else if (lKey === 'phone' || lKey === 'telefone' || lKey === 'celular') updateData.phone = answer.replace(/\D/g, '');
+                        else {
+                            // Fetch existing customFields
+                            const [contactData] = await db.select({ customFields: contacts.customFields }).from(contacts).where(eq(contacts.id, ctx.contactId)).limit(1);
+                            updateData.customFields = { ...(contactData?.customFields || {}), [fieldKey]: answer };
+                        }
+                        
+                        await db.update(contacts).set(updateData).where(eq(contacts.id, ctx.contactId));
+                    } catch (e) {
+                        console.error('[FLOW-ENGINE] Capture CRM save error:', e);
+                    }
+                }
+
                 return {
                     action: 'continue',
                     newVars: { [fieldKey]: answer },
@@ -1092,7 +1137,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 };
             }
 
-            const prompt = await interpolateTemplate(step.data.prompt_message || '', ctx);
+            const prompt = await interpolateTemplate(step.data.prompt_message || step.data.question || '', ctx);
             if (prompt) {
                 await sendUnifiedMessage({
                     provider: ctx.provider as any,
@@ -1439,16 +1484,27 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
             try {
                 // Find tag by ID or name
-                const tag = await db.query.tags.findFirst({
+                let tag = await db.query.tags.findFirst({
                     where: and(
                         eq(tags.companyId, ctx.companyId),
                         or(eq(tags.id, tagIdOrName), eq(tags.name, tagIdOrName))
                     )
                 });
+                
+                if (!tag) {
+                    // Auto-create tag Se não encontrado
+                    const inserted = await db.insert(tags).values({
+                        companyId: ctx.companyId,
+                        name: tagIdOrName,
+                    }).returning();
+                    tag = inserted[0];
+                }
+
                 if (tag) {
                     await db.insert(contactsToTags).values({
                         contactId: ctx.contactId,
                         tagId: tag.id,
+                        companyId: ctx.companyId
                     }).onConflictDoNothing();
                     if (!ctx.contactTags.includes(tag.name)) {
                         ctx.contactTags.push(tag.name);
@@ -1459,6 +1515,40 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 console.error('[FLOW-ENGINE] Add Tag error:', e);
             }
             return { message: 'Add Tag: failed or not found' };
+        }
+
+        // ---- Remove Tag ----
+        case 'remove_tag': {
+            if (!ctx.contactId) return { message: 'Remove Tag: no contact' };
+            const tagIdOrName = step.data.tagId || step.data.tag_name;
+            if (!tagIdOrName) return { message: 'Remove Tag: no tag specified' };
+
+            try {
+                const tag = await db.query.tags.findFirst({
+                    where: and(
+                        eq(tags.companyId, ctx.companyId),
+                        or(eq(tags.id, tagIdOrName), eq(tags.name, tagIdOrName))
+                    )
+                });
+
+                if (tag) {
+                    await db.delete(contactsToTags).where(
+                        and(
+                            eq(contactsToTags.contactId, ctx.contactId),
+                            eq(contactsToTags.tagId, tag.id)
+                        )
+                    );
+                    
+                    const index = ctx.contactTags.indexOf(tag.name);
+                    if (index !== -1) {
+                        ctx.contactTags.splice(index, 1);
+                    }
+                    return { message: `Remove Tag: ${tag.name}` };
+                }
+            } catch (e) {
+                console.error('[FLOW-ENGINE] Remove Tag error:', e);
+            }
+            return { message: 'Remove Tag: not found or failed' };
         }
 
         // ---- Bot Toggle ----
@@ -2834,6 +2924,42 @@ REGRAS RÍGIDAS:
                 }
             }
 
+            // --- SAVE TO CRM DB ---
+            if (ctx.contactId && Object.keys(newVars).length > 0) {
+                try {
+                    let updateData: any = {};
+                    let hasCustomUpdate = false;
+                    
+                    for (const [key, val] of Object.entries(newVars)) {
+                        const lKey = key.toLowerCase();
+                        if (lKey === 'name' || lKey === 'nome') { updateData.name = val; }
+                        else if (lKey === 'email') { updateData.email = val; }
+                        else if (lKey === 'phone' || lKey === 'telefone' || lKey === 'celular') { updateData.phone = String(val).replace(/\D/g, ''); }
+                        else { hasCustomUpdate = true; }
+                    }
+                    
+                    if (hasCustomUpdate) {
+                        const [contactData] = await db.select({ customFields: contacts.customFields }).from(contacts).where(eq(contacts.id, ctx.contactId)).limit(1);
+                        const existingCustom = contactData?.customFields || {};
+                        
+                        const newCustom: Record<string, any> = { ...existingCustom };
+                        for (const [key, val] of Object.entries(newVars)) {
+                            const lKey = key.toLowerCase();
+                            if (lKey !== 'name' && lKey !== 'nome' && lKey !== 'email' && lKey !== 'phone' && lKey !== 'telefone' && lKey !== 'celular') {
+                                newCustom[key] = val;
+                            }
+                        }
+                        updateData.customFields = newCustom;
+                    }
+                    
+                    if (Object.keys(updateData).length > 0) {
+                        await db.update(contacts).set(updateData).where(eq(contacts.id, ctx.contactId));
+                    }
+                } catch (e) {
+                    console.error('[FLOW-ENGINE] Edit fields CRM save error:', e);
+                }
+            }
+
             return { newVars, message: `Edit: ${Object.keys(newVars).length} fields` };
         }
 
@@ -2875,13 +3001,34 @@ REGRAS RÍGIDAS:
 
         // ---- Action (legacy) ----
         case 'action': {
-            const tag = step.data.tag || step.data.description;
+            const actionType = step.data.actionType || step.data.action_type || 'add_tag';
+            const tag = step.data.tag_id || step.data.tag || step.data.description;
+            
             if (tag && ctx.contactId) {
-                if (!ctx.contactTags.includes(tag)) {
-                    ctx.contactTags.push(tag);
+                if (actionType === 'remove_tag') {
+                    try {
+                        const tagRecord = await db.query.tags.findFirst({
+                            where: and(eq(tags.companyId, ctx.companyId), or(eq(tags.id, tag), eq(tags.name, tag)))
+                        });
+                        
+                        if (tagRecord) {
+                            await db.delete(contactsToTags).where(
+                                and(
+                                    eq(contactsToTags.contactId, ctx.contactId),
+                                    eq(contactsToTags.tagId, tagRecord.id)
+                                )
+                            );
+                            const index = ctx.contactTags.indexOf(tagRecord.name);
+                            if (index !== -1) ctx.contactTags.splice(index, 1);
+                        }
+                    } catch (e) {
+                        console.error('[FLOW-ENGINE] Remove Tag action error:', e);
+                    }
+                } else {
+                    // Default: add_tag
                     try {
                         let tagRecord = await db.query.tags.findFirst({
-                            where: and(eq(tags.name, tag), eq(tags.companyId, ctx.companyId))
+                            where: and(eq(tags.companyId, ctx.companyId), or(eq(tags.id, tag), eq(tags.name, tag)))
                         });
                         if (!tagRecord) {
                             const inserted = await db.insert(tags).values({
@@ -2895,12 +3042,16 @@ REGRAS RÍGIDAS:
                             tagId: tagRecord.id,
                             companyId: ctx.companyId
                         }).onConflictDoNothing();
+                        
+                        if (!ctx.contactTags.includes(tagRecord.name)) {
+                            ctx.contactTags.push(tagRecord.name);
+                        }
                     } catch (e) {
-                        console.error('[FLOW-ENGINE] Tag assignment error:', e);
+                        console.error('[FLOW-ENGINE] Tag assignment action error:', e);
                     }
                 }
             }
-            return { message: `Action: ${step.data.actionType || 'tag'} ` };
+            return { message: `Action: ${actionType} ` };
         }
 
         // ---- Marketing (V2: real actions) ----
