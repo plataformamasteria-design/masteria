@@ -2520,20 +2520,81 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             const intents = step.data.intents || [];
             if (intents.length === 0) return { sourceHandle: 'fallback', message: 'Intent: no intents configured' };
 
-            const lastMessage = ctx.variables.last_response || ctx.variables.message_text || '';
+            const instruction = step.data.instruction || 'Classifique a intenção do usuário.';
+            const model = step.data.model || 'gpt-4o-mini';
+            const contextWindow = step.data.context_window || 1;
+
+            let chatHistoryText = '';
+            
+            if (contextWindow > 1 && ctx.conversationId) {
+                try {
+                    const recentMessages = await db.select()
+                        .from(messages)
+                        .where(eq(messages.conversationId, ctx.conversationId))
+                        .orderBy(desc(messages.sentAt))
+                        .limit(contextWindow);
+                    
+                    const chronological = recentMessages.reverse();
+                    for (const m of chronological) {
+                        if (m.senderType === 'SYSTEM') continue;
+                        const role = m.senderType === 'USER' || m.senderType === 'CONTACT' ? 'Cliente' : 'Atendente';
+                        const content = ((m as any).aiTranscription || m.content || '').replace(/_+TOKENS:\d+/g, '').trim();
+                        if (content) chatHistoryText += `${role}: ${content}\n`;
+                    }
+                } catch (e) {
+                    console.warn('[FLOW-ENGINE] Failed to fetch chat history for intent_router:', e);
+                }
+            }
+            
+            if (!chatHistoryText) {
+                const lastMessage = ctx.variables.last_response || ctx.variables.message_text || '';
+                chatHistoryText = `Cliente: ${lastMessage}`;
+            }
+
+            const classificationPrompt = `
+Você é um roteador de intenções.
+Sua tarefa é analisar o histórico de conversa e classificar a ÚLTIMA mensagem do cliente em EXATAMENTE UMA destas categorias disponíveis:
+[${intents.join(', ')}]
+
+Instrução Customizada do Roteador:
+"${instruction}"
+
+Histórico da Conversa:
+${chatHistoryText}
+
+REGRAS RÍGIDAS:
+1. Responda ÚNICA E EXCLUSIVAMENTE com o nome exato da categoria escolhida.
+2. Não adicione pontuação, explicações ou texto extra.
+3. Se a intenção do cliente não se encaixar claramente em nenhuma das categorias acima, responda EXATAMENTE a palavra "OUTRO".
+`.trim();
+
             const resolvedKeys = await resolveAIKeys(ctx.companyId);
             const OPENAI_KEY = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
             const openai = new OpenAI({ apiKey: OPENAI_KEY });
 
-            const classificationPrompt = `Classifique a seguinte mensagem do usuário em uma das categorias: ${intents.join(', ')}. Se nenhuma corresponder, responda "outro".Mensagem: "${lastMessage}".Responda APENAS com o nome da categoria.`;
-            const result = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [{ role: 'user', content: classificationPrompt }],
-                temperature: 0,
-            });
-            const classified = (result.choices[0]?.message?.content?.trim() || '').toLowerCase();
+            let classified = 'OUTRO';
+            try {
+                const result = await openai.chat.completions.create({
+                    model: model,
+                    messages: [{ role: 'user', content: classificationPrompt }],
+                    temperature: 0,
+                });
+                classified = (result.choices[0]?.message?.content?.trim() || '').toUpperCase();
+            } catch (e) {
+                console.error('[FLOW-ENGINE] OpenAI error in intent_router:', e);
+            }
+            
+            // Clean up possible hallucinations (e.g. removing quotes or periods)
+            classified = classified.replace(/['"\.]/g, '');
 
-            const matchedIntent = intents.find((i: string) => classified.includes(i.toLowerCase()));
+            // 1. Tentar exact match
+            let matchedIntent = intents.find((i: string) => classified === i.toUpperCase());
+            
+            // 2. Se não achar, tentar partial match robusto
+            if (!matchedIntent) {
+                 matchedIntent = intents.find((i: string) => classified.includes(i.toUpperCase()));
+            }
+
             return {
                 sourceHandle: matchedIntent || 'fallback',
                 newVars: { classified_intent: matchedIntent || 'outro' },
