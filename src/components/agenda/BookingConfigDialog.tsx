@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarDays } from "lucide-react";
 
 interface BookingConfigDialogProps {
   open: boolean;
@@ -91,12 +92,65 @@ export function BookingConfigDialog({ open, onOpenChange }: BookingConfigDialogP
   const [agents, setAgents] = useState<Array<{ id: string; full_name: string }>>([]);
   const [existingId, setExistingId] = useState<string | null>(null);
 
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleCalendars, setGoogleCalendars] = useState<any[]>([]);
+  const [selectedGoogleCalendar, setSelectedGoogleCalendar] = useState<string | null>(null);
+
   useEffect(() => {
     if (open && currentOrganization?.id) {
       loadConfig();
       loadOptions();
+      loadGoogleIntegration();
     }
   }, [open, currentOrganization?.id]);
+
+  const loadGoogleIntegration = async () => {
+    try {
+      const res = await fetch('/api/v1/integrations/google/calendars');
+      const data = await res.json();
+      if (data.connected) {
+        setGoogleConnected(true);
+        setGoogleCalendars(data.calendars || []);
+        setSelectedGoogleCalendar(data.selectedCalendarId || null);
+      } else {
+        setGoogleConnected(false);
+      }
+    } catch (error) {
+      console.error('Failed to load Google Integration status', error);
+    }
+  };
+
+  const handleGoogleConnect = () => {
+    window.location.href = `/api/v1/integrations/google/connect?redirectUrl=${encodeURIComponent(window.location.pathname)}`;
+  };
+
+  const handleGoogleDisconnect = async () => {
+    try {
+      const res = await fetch('/api/v1/integrations/google/disconnect', { method: 'POST' });
+      if (res.ok) {
+        setGoogleConnected(false);
+        setGoogleCalendars([]);
+        setSelectedGoogleCalendar(null);
+        toast.success("Google Calendar desconectado com sucesso");
+      }
+    } catch (error) {
+      toast.error("Erro ao desconectar Google Calendar");
+    }
+  };
+
+  const handleSaveGoogleSettings = async (calendarId: string) => {
+    setSelectedGoogleCalendar(calendarId);
+    try {
+      await fetch('/api/v1/integrations/google/calendars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ calendarId }),
+      });
+      toast.success("Calendário do Google atualizado");
+    } catch (error) {
+      toast.error("Erro ao salvar calendário");
+    }
+  };
 
   const loadConfig = async () => {
     if (!currentOrganization?.id) return;
@@ -239,10 +293,11 @@ export function BookingConfigDialog({ open, onOpenChange }: BookingConfigDialogP
         </DialogHeader>
 
         <Tabs defaultValue="general" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="schedule">Horários</TabsTrigger>
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
+            <TabsTrigger value="integrations">Integrações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 mt-4">
@@ -523,6 +578,56 @@ export function BookingConfigDialog({ open, onOpenChange }: BookingConfigDialogP
                   onCheckedChange={(checked) => setConfig((prev) => ({ ...prev, require_notes: checked }))}
                 />
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="integrations" className="space-y-4 mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2 rounded-full text-blue-600">
+                    <CalendarDays className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Google Calendar</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {googleConnected 
+                        ? "Sincronização bidirecional ativa" 
+                        : "Sincronize seus agendamentos com sua agenda do Google"}
+                    </p>
+                  </div>
+                </div>
+                {googleConnected ? (
+                  <Button variant="destructive" size="sm" onClick={handleGoogleDisconnect}>
+                    Desconectar
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={handleGoogleConnect}>
+                    Conectar Google
+                  </Button>
+                )}
+              </div>
+
+              {googleConnected && googleCalendars.length > 0 && (
+                <div className="space-y-2 border p-4 rounded-lg bg-slate-50">
+                  <Label>Calendário Principal para Sincronização</Label>
+                  <Select
+                    value={selectedGoogleCalendar || "none"}
+                    onValueChange={(val) => handleSaveGoogleSettings(val === "none" ? "" : val)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione o calendário" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Selecione um calendário...</SelectItem>
+                      {googleCalendars.map(cal => (
+                        <SelectItem key={cal.id} value={cal.id}>{cal.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Todos os novos eventos criados aqui serão espelhados neste calendário do Google.
+                  </p>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

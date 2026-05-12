@@ -4,6 +4,7 @@ import { calendarEvents } from '@/lib/db/schema';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
 import { z } from 'zod';
+import { googleCalendarService } from '@/services/google-calendar.service';
 
 const eventSchema = z.object({
   title: z.string().min(1),
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 });
     }
 
+    // 1. Local Database Insert
     const newEvent = await db.insert(calendarEvents).values({
       companyId: session.companyId,
       title: result.data.title,
@@ -77,6 +79,34 @@ export async function POST(req: Request) {
       contactId: result.data.contactId || null,
       assignedTo: result.data.assignedTo || null,
     }).returning();
+
+    // 2. Google Calendar Sync
+    try {
+      const gcalClient = await googleCalendarService.getCalendarClient(session.companyId);
+      if (gcalClient) {
+        const start = new Date(result.data.startTime);
+        const end = new Date(result.data.endTime);
+        const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+
+        const gEvent = await googleCalendarService.createEvent(session.companyId, {
+          title: result.data.title,
+          description: result.data.description || undefined,
+          startTime: start,
+          durationMinutes,
+        });
+
+        if (gEvent && gEvent.eventId) {
+          await db.update(calendarEvents)
+            .set({ googleEventId: gEvent.eventId, syncSource: 'google', syncedFromGoogle: true })
+            .where(eq(calendarEvents.id, newEvent[0].id));
+            
+          newEvent[0].googleEventId = gEvent.eventId;
+        }
+      }
+    } catch (gErr) {
+      console.warn('[POST /api/v1/agenda/events] Failed to sync to Google Calendar:', gErr);
+      // We don't fail the request if Google Sync fails, just log it.
+    }
 
     return NextResponse.json({ data: newEvent[0] });
   } catch (error: any) {
