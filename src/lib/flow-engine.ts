@@ -1933,23 +1933,30 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 .orderBy(desc(messages.sentAt))
                                 .limit(historyCount);
 
-                            // Reverse to chronological order
-                            const chronological = recentMessages.reverse();
+                            let totalChars = 0;
+                            const MAX_CHARS = 30000; // ~7500 tokens limit to prevent context overflow
+                            const keptMessages: any[] = [];
 
-                            for (const m of chronological) {
+                            for (const m of recentMessages) {
                                 // 🔧 BUG FIX: Excluir mensagens de sistema do histórico enviado ao GPT
-                                // Sem esse filtro, a IA lê "⚡ Automação iniciada" no histórico
-                                // e reproduz essa string nas próximas respostas enviadas ao WhatsApp
                                 if (m.senderType === 'SYSTEM') continue;
 
-                                const isLead = m.senderType === 'USER' || m.senderType === 'CONTACT';
-                                const role = isLead ? 'user' : 'assistant';
-                                // 🔧 BUG FIX: Limpar tokens contaminados do histórico antes de enviar ao GPT e usar aiTranscription para áudios
+                                // 🔧 BUG FIX: Limpar tokens contaminados do histórico e usar aiTranscription para áudios
                                 const content = ((m as any).aiTranscription || m.content || '').replace(/_+TOKENS:\d+/g, '').trim();
                                 if (!content) continue;
 
-                                chatHistory.push({ role, content });
+                                if (totalChars + content.length > MAX_CHARS) {
+                                    console.log(`[FLOW-ENGINE] ✂️ Context limit reached. Truncating older messages (Char count: ${totalChars})`);
+                                    break; // Stop adding older messages to stay within token limits
+                                }
+                                totalChars += content.length;
+
+                                const isLead = m.senderType === 'USER' || m.senderType === 'CONTACT';
+                                keptMessages.push({ role: isLead ? 'user' : 'assistant', content });
                             }
+
+                            // Reverse to chronological order after safely filtering
+                            chatHistory.push(...keptMessages.reverse());
                         }
                     } catch (e) {
                         console.warn('[FLOW-ENGINE] Failed to fetch chat history for dialogue:', e);

@@ -2614,30 +2614,35 @@ export async function processIncomingMessageTrigger(
             }
         }
 
-        // SE O ROBO (IA) ESTIVER ATIVO PARA ESTA CONVERSA, AVALIA OS FLUXOS
-        if (conversation.aiActive !== false) {
-            // âœ… DISPARAR NOVO ENGINE DE FLUXOS (Para fluxos Inativos procurando Trigger Nova Msg)
-            // ðŸ”§ BUG FIX: evaluateMessageTriggers agora retorna true se lanÃ§ou um novo flow.
-            // Se um novo flow foi lanÃ§ado, ele pode ter pausado no nÃ³ ai_agent apÃ³s enviar boas-vindas.
-            // Chamar resumeFlowForContact neste caso retomaria o flow IMEDIATAMENTE, causando
-            // a mensagem de boas-vindas duplicada. Portanto, sÃ³ resumimos se nenhum novo flow foi lanÃ§ado.
-            const newFlowLaunched = await evaluateMessageTriggers(companyId, contact.id, message);
+// Global map for debounce across module imports
+const debounceMap = global as unknown as { __messageDebounceMap: Map<string, NodeJS.Timeout> };
+if (!debounceMap.__messageDebounceMap) {
+    debounceMap.__messageDebounceMap = new Map();
+}
 
-            // CATCH 2.0: Para fluxos que estÃ£o em ESPERA DE RESPOSTA!
-            // SÃ³ retomar se um novo flow NÃƒO foi lanÃ§ado agora (evita dupla mensagem de boas-vindas)
-            const messageTextForResume = ((message as any).aiTranscription || message?.content || message?.body || message?.text || '');
-            const flowResumed = newFlowLaunched
-                ? false
-                : await resumeFlowForContact(contact.id, messageTextForResume, companyId);
+        // ==========================================
+        // 🚦 DEBOUNCE & AI PROCESSING LOGIC
+        // ==========================================
+        const processAIAndFlow = async (currentMessage: any) => {
+            let messageSentByRule = false;
 
-            // Flag para controlar se a IA deve ser ignorada (caso uma regra de resposta tenha sido executada ou um fluxo foi retomado)
-            messageSentByRule = flowResumed || newFlowLaunched; // Se for true, bot padrao nÃ£o intervÃ©m!
-        } else {
-            console.log(`[Automation Engine] ðŸ›‘ Bot/AutomaÃ§Ãµes desativados para a conversa ${conversation.id}. O fluxo visual nÃ£o serÃ¡ engatilhado.`);
-            messageSentByRule = true; // Bloqueia tambÃ©m a IA de fallback abaixo
-        }
+            // SE O ROBO (IA) ESTIVER ATIVO PARA ESTA CONVERSA, AVALIA OS FLUXOS
+            if (conversation.aiActive !== false) {
+                // ✅ DISPARAR NOVO ENGINE DE FLUXOS
+                const newFlowLaunched = await evaluateMessageTriggers(companyId, contact.id, currentMessage);
 
-        // VERIFICAÃ‡ÃƒO #1: Regras de AutomaÃ§Ã£o (AGORA PRIORIDADE 1 - ANTES DA IA)
+                const messageTextForResume = ((currentMessage as any).aiTranscription || currentMessage?.content || currentMessage?.body || currentMessage?.text || '');
+                const flowResumed = newFlowLaunched
+                    ? false
+                    : await resumeFlowForContact(contact.id, messageTextForResume, companyId);
+
+                messageSentByRule = flowResumed || newFlowLaunched;
+            } else {
+                console.log(`[Automation Engine] 🛑 Bot/Automações desativados para a conversa ${conversation.id}.`);
+                messageSentByRule = true;
+            }
+
+        // VERIFICAÇÃO #1: Regras de Automação (AGORA PRIORIDADE 1 - ANTES DA IA)
         // Executa regras de palavras-chave primeiro. Se houver resposta automÃ¡tica, bloqueia a IA.
         const rules = await db.select().from(automationRules).where(and(
             eq(automationRules.companyId, convoResult.companyId),
@@ -2747,8 +2752,62 @@ export async function processIncomingMessageTrigger(
                 await logAutomation('INFO', 'Sem agente IA configurado para esta conversa.', logContextBase);
             }
         } else {
-            await logAutomation('INFO', `IA nÃ£o processada: aiActive = ${convoResult.aiActive}, hasRouting = ${hasRoutingConfigured} `, logContextBase);
+            await logAutomation('INFO', `IA não processada: aiActive = ${convoResult.aiActive}, hasRouting = ${hasRoutingConfigured}`, logContextBase);
         }
+    }; // End of processAIAndFlow
+
+    // ⏱️ Lógica de Debounce (Atropelamento de Mensagens)
+    let debounceSeconds = 5; // Padrão
+    
+    // Tenta ler a configuração de debounce_seconds do nó atual (se estiver pausado no ai_agent)
+    try {
+        const pausedExec = await db.query.automationFlowExecutions.findFirst({
+            where: and(
+                eq(automationFlowExecutions.contactId, contact.id),
+                eq(automationFlowExecutions.status, 'paused')
+            ),
+            columns: { flowId: true, currentStepId: true }
+        });
+
+        if (pausedExec) {
+            const flow = await db.query.automationFlows.findFirst({
+                where: eq(automationFlows.id, pausedExec.flowId)
+            });
+            if (flow) {
+                const logic = flow.executionLogic as any;
+                const steps = Array.isArray(logic) ? logic : logic?.steps;
+                const currentStep = steps?.find((s: any) => s.id === pausedExec.currentStepId);
+                
+                if (currentStep && currentStep.type === 'ai_agent' && currentStep.data?.debounce_seconds) {
+                    debounceSeconds = Number(currentStep.data.debounce_seconds);
+                    console.log(`[Automation Engine] ⏱️ Custom debounce found in node: ${debounceSeconds}s`);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn(`[Automation Engine] Could not read custom debounce:`, e);
+    }
+
+    if (debounceSeconds > 0) {
+        const convId = conversation.id;
+        if (debounceMap.__messageDebounceMap.has(convId)) {
+            clearTimeout(debounceMap.__messageDebounceMap.get(convId));
+            console.log(`[Automation Engine] ⏳ Debounce RESET for conversation ${convId} (Waiting ${debounceSeconds}s)`);
+        } else {
+            console.log(`[Automation Engine] ⏳ Debounce STARTED for conversation ${convId} (Waiting ${debounceSeconds}s)`);
+        }
+
+        const timer = setTimeout(async () => {
+            debounceMap.__messageDebounceMap.delete(convId);
+            console.log(`[Automation Engine] 🚀 Debounce FINISHED for conversation ${convId}. Processing AI...`);
+            await processAIAndFlow(message);
+        }, debounceSeconds * 1000);
+
+        debounceMap.__messageDebounceMap.set(convId, timer);
+    } else {
+        // Se debounce for 0, executa imediatamente
+        await processAIAndFlow(message);
+    }
     } catch (error: any) {
         console.error('[Automation Engine] Erro fatal no processamento de mensagem:', error);
         await logAutomation('ERROR', `Erro crÃ­tico: ${error.message}`, logContext);

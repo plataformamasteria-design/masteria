@@ -112,6 +112,19 @@ async function processTimeouts(): Promise<void> {
         });
 
         if (flow && flow.isActive && flow.executionLogic) {
+          // 🚨 ORPHAN NODE PROTECTION: Verify if the node still exists before resuming
+          const logic = flow.executionLogic as any;
+          const steps = Array.isArray(logic) ? logic : logic?.steps;
+          const stepExists = steps?.some((s: any) => s.id === stepId);
+
+          if (!stepExists) {
+              console.log(`[AutomationTimeoutWorker] 🛑 Execução ${exec.id} falhou. Nó de origem ${stepId} não existe mais no fluxo.`);
+              await db.update(automationFlowExecutions)
+                  .set({ status: 'failed', error: `Nó de origem (${stepId}) deletado ou não encontrado no fluxo.` })
+                  .where(eq(automationFlowExecutions.id, exec.id));
+              continue;
+          }
+
           // Resume execution
           processFlowExecution(exec.id, flow.executionLogic as any, stepId)
             .catch(err => console.error(`[AutomationTimeoutWorker] Error resuming flow ${exec.id}:`, err));
