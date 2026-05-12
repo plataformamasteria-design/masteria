@@ -25,7 +25,12 @@ function getBaseUrl(request: NextRequest): string {
             }
         }
     }
-    return url.replace(/\/+$/, '');
+    
+    let finalUrl = url.replace(/\/+$/, '');
+    if (finalUrl.includes('up.railway.app')) {
+        finalUrl = 'https://masteria.app';
+    }
+    return finalUrl;
 }
 
 export async function GET(request: NextRequest) {
