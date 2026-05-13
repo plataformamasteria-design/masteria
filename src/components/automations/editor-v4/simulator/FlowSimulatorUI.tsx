@@ -58,14 +58,14 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
     return (
         <div className={cn(
-            standalone ? "flex items-start sm:items-center justify-center w-full h-[100dvh] bg-zinc-950 sm:p-4 overflow-hidden" : "fixed right-8 top-16 bottom-8 w-[380px] z-50 flex flex-col animate-in slide-in-from-right-5 duration-300"
+            standalone ? "flex w-full h-[100dvh] sm:items-center sm:justify-center bg-zinc-950 sm:p-4 overflow-hidden" : "fixed right-8 top-16 bottom-8 w-[380px] z-50 flex flex-col animate-in slide-in-from-right-5 duration-300"
         )}>
             {/* iPhone Frame */}
             <div className={cn(
-                "flex flex-col bg-zinc-50 shadow-2xl relative overflow-hidden ring-1 ring-zinc-950 w-full",
+                "flex flex-col bg-zinc-50 relative overflow-hidden w-full h-full",
                 standalone 
-                    ? "max-w-[400px] h-[100dvh] sm:h-[85vh] border-0 sm:border-[10px] border-zinc-800 rounded-none sm:rounded-[2.5rem]" 
-                    : "h-full border-[10px] border-zinc-800 rounded-[2.5rem]"
+                    ? "sm:max-w-[400px] sm:h-[85vh] sm:border-[10px] sm:border-zinc-800 sm:rounded-[2.5rem] sm:shadow-2xl sm:ring-1 sm:ring-zinc-950" 
+                    : "shadow-2xl ring-1 ring-zinc-950 border-[10px] border-zinc-800 rounded-[2.5rem]"
             )}>
 
                 <div className={cn(
@@ -78,7 +78,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                 {/* Header */}
                 <div className={cn(
                     "shrink-0 bg-violet-600 pb-3 px-4 flex items-center gap-3 shadow-sm z-10",
-                    standalone ? "pt-[max(env(safe-area-inset-top),3rem)] sm:pt-8" : "pt-8"
+                    standalone ? "pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-8" : "pt-8"
                 )}>
                     <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/10">
                         <Bot className="h-5 w-5 text-white" />
@@ -246,8 +246,8 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
                 {/* Footer Input */}
                 <div className={cn(
-                    "shrink-0 bg-white p-2 relative z-10 border-t border-neutral-200",
-                    standalone ? "pb-[max(env(safe-area-inset-bottom),0.5rem)] sm:pb-2" : "pb-2"
+                    "shrink-0 bg-white relative z-10 border-t border-neutral-200",
+                    standalone ? "px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-2" : "p-2"
                 )}>
                     {/* Floating Timeout Indicator */}
                     {waitingInput && timeoutCountdown !== null && (

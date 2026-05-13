@@ -32,7 +32,7 @@ export default async function StandaloneLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex min-h-screen w-full bg-zinc-950 overflow-hidden">
+          <div className="flex h-[100dvh] w-full bg-zinc-950 overflow-hidden">
             {children}
           </div>
         </ThemeProvider>
