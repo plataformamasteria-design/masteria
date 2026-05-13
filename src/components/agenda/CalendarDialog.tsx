@@ -39,7 +39,7 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState("#3B82F6");
-  const [googleCalendarId, setGoogleCalendarId] = useState<string>("");
+  const [googleCalendarId, setGoogleCalendarId] = useState<string>("none");
   const [googleCalendars, setGoogleCalendars] = useState<any[]>([]);
   const { toast } = useToast();
   const { currentOrganization } = useOrganization();
@@ -61,11 +61,11 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
     if (calendar) {
       setName(calendar.name);
       setColor(calendar.color);
-      setGoogleCalendarId(calendar.googleCalendarId || "");
+      setGoogleCalendarId(calendar.googleCalendarId || "none");
     } else {
       setName("");
       setColor("#3B82F6");
-      setGoogleCalendarId("");
+      setGoogleCalendarId("none");
     }
   }, [calendar, open]);
 
@@ -90,7 +90,7 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
         const res = await fetch(`/api/v1/agenda/calendars/${calendar.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim(), color, googleCalendarId: googleCalendarId || null })
+          body: JSON.stringify({ name: name.trim(), color, googleCalendarId: googleCalendarId === "none" ? null : googleCalendarId })
         });
         
         if (!res.ok) throw new Error("Erro ao atualizar");
@@ -108,7 +108,7 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
             name: name.trim(),
             color,
             isGeneral: false,
-            googleCalendarId: googleCalendarId || null,
+            googleCalendarId: googleCalendarId === "none" ? null : googleCalendarId,
           })
         });
 
@@ -226,7 +226,7 @@ export function CalendarDialog({ open, onOpenChange, calendar, onSaved }: Calend
                     <SelectValue placeholder="Selecione um calendário (Opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum (Apenas Local)</SelectItem>
+                    <SelectItem value="none">Nenhum (Apenas Local)</SelectItem>
                     {googleCalendars.map(cal => (
                       <SelectItem key={cal.id} value={cal.id}>{cal.name}</SelectItem>
                     ))}
