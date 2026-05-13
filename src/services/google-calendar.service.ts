@@ -6,6 +6,7 @@
 import { google, calendar_v3 } from 'googleapis';
 import { db } from '@/lib/db';
 import { googleCalendarCredentials, aiScheduledMeetings, calendarEvents, calendars } from '@/lib/db/schema';
+import { eq, and, or, inArray, isNull, desc } from 'drizzle-orm';
 
 // OAuth2 Configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CALENDAR_CLIENT_ID;
