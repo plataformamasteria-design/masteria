@@ -70,7 +70,7 @@ export default function StandaloneSimulatorPage() {
     
     if (loading) {
         return (
-            <div className="flex-1 flex w-full min-h-screen items-center justify-center text-white font-medium gap-3 flex-col">
+            <div className="flex-1 flex w-full h-[100dvh] items-center justify-center text-white font-medium gap-3 flex-col">
                 <div className="flex gap-1">
                     <div className="h-2 w-2 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
                     <div className="h-2 w-2 rounded-full bg-violet-500 animate-bounce [animation-delay:150ms]" />
