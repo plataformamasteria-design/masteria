@@ -3,8 +3,9 @@
   "version": "2.4.2",
   "private": true,
   "engines": {
-    "node": "20"
+    "node": ">=20"
   },
+  "packageManager": "npm@10.2.4",
   "scripts": {
     "predev": "node scripts/portal-clean.js .next/cache",
     "dev": "next dev -p 3000 --hostname 0.0.0.0",
