@@ -822,8 +822,11 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                         if (aiResult) {
                             setTokensUsed((prev) => prev + aiResult.tokens);
 
+                            const objectiveRegex = /\[OBJETIVO_CONCLU[IÍ]DO\]/gi;
+                            const hasObjective = objectiveRegex.test(aiResult.response);
+
                             // Parse AI parts using delimiter
-                            const cleanResponse = aiResult.response.replace(/\[OBJETIVO_CONCLUÍDO\]/g, "").trim();
+                            const cleanResponse = aiResult.response.replace(objectiveRegex, "").trim();
                             const parts = cleanResponse.includes("⌁⌁⌁")
                                 ? cleanResponse.split("⌁⌁⌁").map(p => p.trim()).filter(Boolean)
                                 : cleanResponse.split(/\n+/).map(p => p.trim()).filter(Boolean);
@@ -840,7 +843,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                             addMessage({ type: "system", content: `🪙 Tokens gastos neste turno: ${aiResult.tokens}`, nodeId, nodeType });
 
                             // Check if AI signaled objective completion
-                            if (aiResult.response.includes("[OBJETIVO_CONCLUÍDO]")) {
+                            if (hasObjective) {
                                 addMessage({ type: "system", content: `✅ Objetivo concluído! (${aiResult.tokens} tokens)`, nodeId, nodeType });
                                 objectiveCompleted = true;
                                 break;
@@ -998,7 +1001,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
                 const fuResult = await callAI({
                     ...config,
-                    prompt: interpolatedPrompt
+                    system_message: `Você é um robô de Follow Up. O lead parou de responder há algum tempo. Sua missão é gerar uma mensagem curta e amigável tentando retomar o contato baseado no histórico. \nContexto adicional/Instrução: ${interpolatedPrompt}`
                 });
                 removeMessage(fuTypingId);
 

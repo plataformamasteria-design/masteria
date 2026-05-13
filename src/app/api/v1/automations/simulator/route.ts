@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
 
         // ==== CLASSIFY INTENT ====
         if (classify_intent || classify_intent_virtual) {
-            const routes = config.routes || [];
-            const routeLabels = routes.map((r: any) => r.label).join(', ');
+            const routes = config.intents || config.routes || [];
+            const routeLabels = routes.map((r: any) => typeof r === 'string' ? r : r.label).filter(Boolean).join(', ');
             const systemPrompt = `Você é um classificador de intenções avaliando o histórico de um diálogo. Baseado em TODO o contexto da conversa, classifique qual foi a intenção principal do usuário neste atendimento em EXATAMENTE UMA destas opções: ${routeLabels}.\nSe não for nenhuma delas, responda "OUTROS". Responda APENAS com a palavra da opção exata.`;
             
             if (isGemini) {
