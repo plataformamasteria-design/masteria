@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import {
-    MessageSquare, Image as ImageIcon, Mic, FileText, Video, MessageSquareShare,
+    MessageSquare, Image as ImageIcon, Mic, FileText, Video, MessageSquareShare, MessageSquareDashed,
     GitBranch, Clock, MessageCircle, Signpost, Filter,
     Brain, Target, MessageSquareHeart, Send,
     Columns3, Hash, Bot, UserPlus, UserSearch, StickyNote, Database,
-    Globe, Code2, PenLine, ChevronLeft, ChevronRight, Zap,
+    Globe, Code2, PenLine, ChevronLeft, ChevronRight, Zap, CalendarCheck, MessageSquareWarning
 } from 'lucide-react';
 
 // ─── Definição do catálogo de nodes ─────────────────────────────────────────
@@ -30,6 +30,7 @@ const NODE_CATALOG: NodeCategory[] = [
         label: 'Mensagens',
         nodes: [
             { type: 'send_message',  label: 'WhatsApp',        icon: MessageSquare,      color: 'text-green-600',   defaultData: { message: '' } },
+            { type: 'interactive_message', label: 'Mensagem Interativa', icon: MessageSquareDashed, color: 'text-blue-600', defaultData: { message: '', buttons: [], attachments: [] } },
             { type: 'send_template', label: 'Template',         icon: MessageSquareShare, color: 'text-green-700',   defaultData: { template_name: '' } },
             { type: 'send_image',    label: 'Imagem',           icon: ImageIcon,          color: 'text-blue-600',    defaultData: { file_url: '' } },
             { type: 'send_audio',    label: 'Áudio',            icon: Mic,                color: 'text-rose-600',    defaultData: { file_url: '' } },
@@ -41,6 +42,7 @@ const NODE_CATALOG: NodeCategory[] = [
         key: 'logic',
         label: 'Lógica e Controle',
         nodes: [
+            { type: 'trigger',       label: 'Gatilho Inicial',  icon: Zap,                color: 'text-yellow-500',  defaultData: { trigger_type: 'stage_entry' } },
             { type: 'condition',     label: 'Condição',         icon: GitBranch,          color: 'text-amber-600',   defaultData: { conditions: [] } },
             { type: 'delay',         label: 'Atraso',           icon: Clock,              color: 'text-amber-500',   defaultData: { amount: 1, unit: 'minutes' } },
             { type: 'wait_response', label: 'Aguardar Resp.',   icon: MessageCircle,      color: 'text-teal-600',    defaultData: { maxWaitTime: 10 } },
@@ -59,6 +61,14 @@ const NODE_CATALOG: NodeCategory[] = [
             { type: 'crm_move',      label: 'Mover Kanban',     icon: Columns3,           color: 'text-orange-600',  defaultData: { boardId: '', pipelineId: '' } },
             { type: 'bot_toggle',    label: 'Controlar Robô',   icon: Bot,                color: 'text-zinc-600',    defaultData: { action: 'stop' } },
             { type: 'capture_info',  label: 'Capturar Dado',    icon: Database,           color: 'text-blue-500',    defaultData: { fieldInfo: '' } },
+            { type: 'internal_message', label: 'Mensagem Interna', icon: MessageSquareWarning, color: 'text-amber-500', defaultData: { message: '' } },
+        ],
+    },
+    {
+        key: 'scheduling',
+        label: 'Agendamentos',
+        nodes: [
+            { type: 'add_task',      label: 'Adicionar Tarefa', icon: CalendarCheck,      color: 'text-rose-600',    defaultData: { task_text: '' } },
         ],
     },
     {

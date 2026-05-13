@@ -74,6 +74,14 @@ export default function AgendaPage() {
     fetchGoogleIntegration();
   }, [bookingConfigOpen]); // refetch when config dialog closes
 
+  useEffect(() => {
+    // Polling a cada 5 segundos para sincronizar o calendario e eventos
+    const interval = setInterval(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const selectedCalendar = calendars.find(c => c.id === selectedCalendarId);
   const isGeneralCalendar = selectedCalendar?.isGeneral ?? true;
 
@@ -155,6 +163,17 @@ export default function AgendaPage() {
               </div>
               {googleConnected && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
             </div>
+            {googleConnected && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="w-full mt-2 justify-center text-slate-600 font-medium hover:bg-slate-100 dark:hover:bg-white/5" 
+                onClick={() => setRefreshTrigger(prev => prev + 1)}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Sincronizar Manualmente
+              </Button>
+            )}
           </div>
 
           <Button variant="ghost" className="w-full justify-start text-slate-600 font-medium hover:bg-slate-100 dark:hover:bg-white/5" onClick={() => setBookingConfigOpen(true)}>

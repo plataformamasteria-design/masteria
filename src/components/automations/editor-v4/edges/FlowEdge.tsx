@@ -7,6 +7,7 @@ import {
     getSmoothStepPath,
     type EdgeProps,
     useReactFlow,
+    useStore,
 } from '@xyflow/react';
 import { X } from 'lucide-react';
 
@@ -27,6 +28,8 @@ const DEFAULT_EDGE = { stroke: '#cbd5e1', label: '' };
 
 export default function FlowEdge({
     id,
+    source,
+    target,
     sourceX,
     sourceY,
     targetX,
@@ -38,10 +41,22 @@ export default function FlowEdge({
     markerEnd,
 }: EdgeProps) {
     const { setEdges } = useReactFlow();
+    
+    // Check selection state
+    const isSourceSelected = useStore((s) => s.nodeLookup.get(source)?.selected);
+    const isTargetSelected = useStore((s) => s.nodeLookup.get(target)?.selected);
+
     const config = (sourceHandleId && EDGE_COLORS[sourceHandleId]) ? EDGE_COLORS[sourceHandleId] : DEFAULT_EDGE;
 
-    const strokeColor = config.stroke;
+    let strokeColor = config.stroke;
+    if (isSourceSelected) strokeColor = '#3b82f6'; // Azul saindo do selecionado
+    else if (isTargetSelected) strokeColor = '#a855f7'; // Roxo chegando no selecionado
+
     const labelText = config.label;
+
+    // Calculando um offset determinístico baseado no ID para evitar sobreposição total de linhas
+    const hash = id.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
+    const dynamicOffset = 24 + (Math.abs(hash) % 5) * 15;
 
     const [edgePath, labelX, labelY] = getSmoothStepPath({
         sourceX,
@@ -51,7 +66,7 @@ export default function FlowEdge({
         targetY,
         targetPosition,
         borderRadius: 12,
-        offset: 24,
+        offset: dynamicOffset,
     });
 
     const onDelete = (e: React.MouseEvent) => {
@@ -67,10 +82,10 @@ export default function FlowEdge({
                 markerEnd={markerEnd}
                 style={{
                     stroke: strokeColor,
-                    strokeWidth: selected ? 2 : 1.5,
+                    strokeWidth: isSourceSelected || isTargetSelected ? 2.5 : (selected ? 2 : 1.5),
                     strokeLinecap: 'round',
                     strokeLinejoin: 'round',
-                    opacity: selected ? 1 : 0.75,
+                    opacity: isSourceSelected || isTargetSelected ? 1 : (selected ? 1 : 0.75),
                     transition: 'stroke-width 0.15s, opacity 0.15s',
                 }}
             />

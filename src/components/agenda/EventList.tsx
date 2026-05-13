@@ -77,13 +77,21 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
 
   useEffect(() => {
     if (currentOrganization?.id) {
-      fetchDayData();
+      fetchDayData(true);
     }
-  }, [selectedDate, refreshTrigger, currentOrganization?.id, calendarId, isGeneralCalendar]);
+  }, [selectedDate, currentOrganization?.id, calendarId, isGeneralCalendar]);
 
-  const fetchDayData = async () => {
+  useEffect(() => {
+    if (currentOrganization?.id && refreshTrigger > 0) {
+      // Mantido useEffect + fetch para evitar regressão na junção complexa de eventos, tarefas e calendários.
+      // Refresh silencioso em background para nao piscar a tela
+      fetchDayData(false);
+    }
+  }, [refreshTrigger, currentOrganization?.id]);
+
+  const fetchDayData = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
 
       const startOfDay = new Date(selectedDate);
       startOfDay.setHours(0, 0, 0, 0);

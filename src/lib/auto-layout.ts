@@ -3,8 +3,8 @@
 
 import type { Node, Edge } from '@xyflow/react';
 
-const NODE_WIDTH = 300;
-const NODE_HEIGHT = 200;
+const DEFAULT_NODE_WIDTH = 320;
+const DEFAULT_NODE_HEIGHT = 150;
 
 /**
  * Applies Dagre auto-layout to a set of React Flow nodes and edges.
@@ -21,15 +21,17 @@ export async function getAutoLayoutNodes(
     g.setDefaultEdgeLabel(() => ({}));
     g.setGraph({
         rankdir: direction,
-        nodesep: 60,
-        ranksep: 80,
+        nodesep: 40,
+        ranksep: 70,
         marginx: 40,
         marginy: 40,
     });
 
     // Add nodes
     for (const node of nodes) {
-        g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+        const width = node.measured?.width || node.width || DEFAULT_NODE_WIDTH;
+        const height = node.measured?.height || node.height || DEFAULT_NODE_HEIGHT;
+        g.setNode(node.id, { width, height });
     }
 
     // Add edges
@@ -42,11 +44,13 @@ export async function getAutoLayoutNodes(
     // Map positions back
     return nodes.map((node) => {
         const pos = g.node(node.id);
+        const width = node.measured?.width || node.width || DEFAULT_NODE_WIDTH;
+        const height = node.measured?.height || node.height || DEFAULT_NODE_HEIGHT;
         return {
             ...node,
             position: {
-                x: pos.x - NODE_WIDTH / 2,
-                y: pos.y - NODE_HEIGHT / 2,
+                x: pos.x - width / 2,
+                y: pos.y - height / 2,
             },
         };
     });

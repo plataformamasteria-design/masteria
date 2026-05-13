@@ -18,6 +18,7 @@ export const IntentRouterNodeV4 = memo(({ id, data, selected }: any) => {
 
     // +1 para "Outros/fallback"
     const colTotal = intents.length + 1;
+    const dynamicWidth = Math.max(280, colTotal * 75);
 
     // ── CRÍTICO: Recalcula handles quando intents mudam ─────────────────────
     const updateNodeInternals = useUpdateNodeInternals();
@@ -74,6 +75,7 @@ export const IntentRouterNodeV4 = memo(({ id, data, selected }: any) => {
     return (
         <BaseNode
             selected={selected}
+            width={dynamicWidth}
             accentColor="violet"
             icon={Target}
             category="IA"

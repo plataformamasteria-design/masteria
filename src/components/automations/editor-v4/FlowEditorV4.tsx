@@ -40,6 +40,9 @@ import { DelayNodeV4 } from './nodes/DelayNodeV4';
 import { WaitResponseNodeV4 } from './nodes/WaitResponseNodeV4';
 import { RouterNodeV4 } from './nodes/RouterNodeV4';
 import { FilterNodeV4 } from './nodes/FilterNodeV4';
+import { InteractiveMessageNodeV4 } from './nodes/InteractiveMessageNodeV4';
+import { AddTaskNodeV4 } from './nodes/AddTaskNodeV4';
+import { InternalMessageNodeV4 } from './nodes/InternalMessageNodeV4';
 import { AiAgentNodeV4 } from './nodes/AiAgentNodeV4';
 import { IntentRouterNodeV4 } from './nodes/IntentRouterNodeV4';
 import {
@@ -67,17 +70,20 @@ import { LoopRestartNode } from '../nodes/loop-restart-node';
 
 // ── Layout & Painéis ─────────────────────────────────────────────────────────
 import { FlowToolbar } from './FlowToolbar';
+import { useToast } from '@/hooks/use-toast';
 import { NodeLibraryPanel } from './NodeLibraryPanel';
 import { NodeConfigDrawer } from './NodeConfigDrawer';
 import { ConnectionDropMenu } from './ConnectionDropMenu';
 import FlowEdge from './edges/FlowEdge';
 import { ExecutionHistoryPanel } from '../ExecutionHistoryPanel';
+import { FlowSimulatorUI } from './simulator/FlowSimulatorUI';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 const NODE_TYPES: NodeTypes = {
     // V4 (novos)
     trigger:          TriggerNodeV4,
     send_message:     SendMessageNodeV4,
+    interactive_message: InteractiveMessageNodeV4,
     send_image:       SendImageNodeV4,
     send_audio:       SendAudioNodeV4,
     send_document:    SendDocumentNodeV4,
@@ -101,6 +107,8 @@ const NODE_TYPES: NodeTypes = {
     http_request:     HttpRequestNodeV4,
     code:             CodeNodeV4,
     edit_fields:      EditFieldsNodeV4,
+    add_task:         AddTaskNodeV4,
+    internal_message: InternalMessageNodeV4,
     // Legado (backward compat)
     message:          MessageNode,
     media:            MediaNode,
@@ -134,6 +142,7 @@ const INITIAL_NODES: Node[] = [
 // ── Sub-componente interno (precisa do ReactFlow context) ─────────────────────
 function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: { flowId: string; onSave?: (id: string, name: string) => void; onClose?: () => void }) {
     const { session } = useSession();
+    const { toast } = useToast();
 
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>(INITIAL_NODES);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -144,6 +153,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
     const [historyOpen, setHistoryOpen] = useState(false);
     const [aiPromptOpen, setAiPromptOpen] = useState(false);
     const [webhookListenState, setWebhookListenState] = useState<'idle' | 'listening' | 'received'>('idle');
+    const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
 
     // ── Connection Drop State (arrastar handle → espaço vazio → popup) ────────
     const pendingConnectionRef = useRef<{ nodeId: string; handleId: string | null; handleType: string | null } | null>(null);
@@ -416,6 +426,36 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
         }
     }, [onCloseProp]);
 
+    // ── Importar do Kommo ─────────────────────────────────────────────────────
+    const handleImportKommo = useCallback(async (file: File) => {
+        try {
+            const text = await file.text();
+            const { parseKommoFile } = await import('@/lib/kommo-parser');
+            const { nodes: newNodes, edges: newEdges } = parseKommoFile(text);
+            
+            const enrichedNodes = newNodes.map(n => enrichNodeWithCallbacks(n as any));
+            
+            setNodes(enrichedNodes);
+            setEdges(newEdges);
+            
+            setTimeout(() => {
+                reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
+            }, 100);
+            
+            toast({
+                title: "Importação concluída!",
+                description: `${enrichedNodes.length} nós e ${newEdges.length} conexões importadas.`,
+            });
+        } catch (error: any) {
+            console.error('Falha ao importar:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Falha ao importar',
+                description: error.message || 'O arquivo do Kommo é inválido.',
+            });
+        }
+    }, [enrichNodeWithCallbacks, setNodes, setEdges, reactFlowInstance, toast]);
+
     // ── Derivados ─────────────────────────────────────────────────────────────
     const editingNodeTestOutput = editingNode ? getNodeOutput(editingNode.id) : undefined;
 
@@ -446,6 +486,9 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                 isTestingFlow={isTestingFlow}
                 flowTestProgress={flowTestProgress}
                 webhookListenState={webhookListenState}
+                onToggleSimulator={() => setIsSimulatorOpen(!isSimulatorOpen)}
+                onImportKommo={handleImportKommo}
+                automationId={flowId}
             />
 
             {/* Layout principal */}
@@ -514,6 +557,22 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                     onCancelListen={cancelListen}
                 />
             </div>
+
+            {/* Simulador Virtual */}
+            {isSimulatorOpen && (
+                <FlowSimulatorUI
+                    nodes={nodes}
+                    edges={edges}
+                    automationId={flowId !== 'new' ? flowId : undefined}
+                    onClose={() => setIsSimulatorOpen(false)}
+                    onHighlightNode={(nodeId) => {
+                        if (nodeId) {
+                            const node = nodes.find(n => n.id === nodeId);
+                            if (node) reactFlowInstance.setCenter(node.position.x, node.position.y, { zoom: 1, duration: 500 });
+                        }
+                    }}
+                />
+            )}
 
             {/* Drawer de histórico de execuções */}
             {historyOpen && (

@@ -11,6 +11,10 @@ import { NodeOutputPanel } from './NodeOutputPanel';
 import { FileUploadField } from './FileUploadField';
 import type { NodeTestOutput } from '@/hooks/useNodeTestOutputs';
 import { getTeams, getCompanyUsers } from '@/app/actions/teams';
+import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     MessageSquare, Image as ImageIcon, Mic, FileText, Video,
     HelpCircle, UserPlus, MessageCircle, GitBranch, Filter,
@@ -55,11 +59,80 @@ function ConfigSection({ label, hint, children }: { label: string; hint?: string
     );
 }
 
+const STANDARD_VARIABLES = [
+    { id: 'sys_name', field_key: 'contact.name', field_label: 'Nome', is_system: true },
+    { id: 'sys_first_name', field_key: 'contact.first_name', field_label: 'Primeiro Nome', is_system: true },
+    { id: 'sys_phone', field_key: 'contact.phone', field_label: 'Telefone', is_system: true },
+    { id: 'sys_email', field_key: 'contact.email', field_label: 'E-mail', is_system: true },
+    { id: 'sys_resp_name', field_key: 'lead.responsible.name', field_label: 'Responsável (Nome)', is_system: true },
+    { id: 'sys_status', field_key: 'lead.status', field_label: 'Status do Lead', is_system: true },
+    { id: 'sys_address', field_key: 'contact.address', field_label: 'Endereço', is_system: true },
+    { id: 'sys_city', field_key: 'contact.city', field_label: 'Cidade', is_system: true },
+    { id: 'sys_segmentation', field_key: 'contact.segmentation', field_label: 'Segmentação', is_system: true },
+    { id: 'sys_tags', field_key: 'contact.tags', field_label: 'Tags', is_system: true },
+    { id: 'sys_notes', field_key: 'contact.notes', field_label: 'Notas Internas', is_system: true },
+    { id: 'sys_calls', field_key: 'contact.call_history', field_label: 'Histórico de Ligações', is_system: true },
+];
+
 function TextFieldWithVars({ value, onChange, placeholder, multiline, monoFont }: {
     value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean; monoFont?: boolean;
 }) {
     const [isDragOver, setIsDragOver] = useState(false);
     const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+    
+    // Autocomplete state
+    const [showAuto, setShowAuto] = useState(false);
+    const [autoSearch, setAutoSearch] = useState("");
+    const [fields, setFields] = useState<any[]>([]);
+    const { currentOrganization } = useOrganization();
+
+    useEffect(() => {
+        if (!currentOrganization?.id) return;
+        (async () => {
+            const { data } = await supabase
+                .from('chat_custom_fields')
+                .select('id, field_key, field_label, field_type, is_system')
+                .eq('organization_id', currentOrganization.id)
+                .order('order_position');
+            if (data) setFields(data);
+        })();
+    }, [currentOrganization?.id]);
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const newVal = e.target.value;
+        onChange(newVal);
+        
+        const el = e.target;
+        const cursor = el.selectionStart || newVal.length;
+        const textBeforeCursor = newVal.substring(0, cursor);
+        const match = textBeforeCursor.match(/\{\{([^}]*)$/);
+        
+        if (match) {
+            setShowAuto(true);
+            setAutoSearch(match[1]);
+        } else {
+            setShowAuto(false);
+        }
+    };
+
+    const handleAutoSelect = (fieldKey: string) => {
+        const el = inputRef.current;
+        if (!el) return;
+        
+        const cursor = el.selectionStart || (value || '').length;
+        const textBeforeCursor = (value || '').substring(0, cursor);
+        const match = textBeforeCursor.match(/\{\{([^}]*)$/);
+        
+        if (match) {
+            const prefix = (value || '').substring(0, match.index);
+            const suffix = (value || '').substring(cursor);
+            onChange(`${prefix}{{${fieldKey}}}${suffix}`);
+        } else {
+            onChange((value || '') + `{{${fieldKey}}}`);
+        }
+        setShowAuto(false);
+        setTimeout(() => el.focus(), 0);
+    };
 
     const handleVarInsert = useCallback((variable: string) => {
         onChange((value || '') + variable);
@@ -84,34 +157,113 @@ function TextFieldWithVars({ value, onChange, placeholder, multiline, monoFont }
         }
     }, [value, onChange]);
 
+    const handleScroll = (e: React.UIEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+        const backdrop = e.currentTarget.previousElementSibling as HTMLElement;
+        if (backdrop) {
+            backdrop.scrollTop = e.currentTarget.scrollTop;
+            backdrop.scrollLeft = e.currentTarget.scrollLeft;
+        }
+    };
+
     const dropZoneClass = isDragOver
         ? 'ring-2 ring-indigo-400 ring-offset-1 border-indigo-300 bg-indigo-50/30'
         : '';
 
+    const allFields = [...STANDARD_VARIABLES, ...fields];
+
+    const parts = (value || '').split(/(\{\{[^}]+\}\})/g);
+    const highlighted = parts.map((part, i) => {
+        if (part.startsWith('{{') && part.endsWith('}}')) {
+            const inner = part.slice(2, -2);
+            const isValid = allFields.some(f => f.field_key === inner);
+            if (isValid) {
+                return <span key={i} className="text-violet-700 bg-violet-100/80 rounded-sm">{part}</span>;
+            } else {
+                return <span key={i} className="text-red-700 bg-red-100/80 rounded-sm">{part}</span>;
+            }
+        }
+        return <span key={i} className="text-zinc-900 dark:text-zinc-100">{part}</span>;
+    });
+
+    const filteredFields = allFields.filter(f => 
+        f.field_label.toLowerCase().includes(autoSearch.toLowerCase()) || 
+        f.field_key.toLowerCase().includes(autoSearch.toLowerCase())
+    );
+
     return (
         <div
-            className="space-y-1.5"
+            className="space-y-1.5 relative"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
         >
-            {multiline ? (
-                <Textarea
-                    ref={inputRef as any}
-                    value={value || ''}
-                    onChange={(e) => onChange(e.target.value)}
-                    placeholder={isDragOver ? '⬇ Solte aqui para inserir a referência' : placeholder}
-                    className={`min-h-[120px] rounded-xl bg-muted/50 border-border focus:ring-blue-500/20 transition-all text-sm text-foreground ${monoFont ? 'font-mono text-xs' : 'font-medium'} ${dropZoneClass}`}
-                />
-            ) : (
-                <Input
-                    ref={inputRef as any}
-                    value={value || ''}
-                    onChange={(e) => onChange(e.target.value)}
-                    placeholder={isDragOver ? '⬇ Solte aqui' : placeholder}
-                    className={`rounded-xl h-11 bg-muted/50 border-border text-sm ${monoFont ? 'font-mono text-xs' : ''} ${dropZoneClass}`}
-                />
-            )}
+            <div className="relative w-full group">
+                {multiline ? (
+                    <>
+                        <div 
+                            className={`absolute inset-0 pointer-events-none p-3 whitespace-pre-wrap break-words overflow-hidden border border-transparent rounded-xl ${monoFont ? 'font-mono text-xs' : 'text-sm font-medium'} text-zinc-900 dark:text-zinc-100`}
+                            aria-hidden="true"
+                        >
+                            {value ? highlighted : <span className="text-muted-foreground">{isDragOver ? '⬇ Solte aqui para inserir a referência' : placeholder}</span>}
+                            <br className="hidden" />
+                        </div>
+                        <Textarea
+                            ref={inputRef as any}
+                            value={value || ''}
+                            onChange={handleTextChange}
+                            onScroll={handleScroll}
+                            className={`min-h-[120px] rounded-xl bg-muted/50 border-border focus:ring-blue-500/20 transition-all text-sm ${monoFont ? 'font-mono text-xs' : 'font-medium'} ${dropZoneClass} text-transparent caret-foreground relative z-10 placeholder-transparent`}
+                            spellCheck={false}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <div 
+                            className={`absolute inset-0 pointer-events-none px-3 py-2.5 overflow-hidden whitespace-nowrap border border-transparent rounded-xl flex items-center ${monoFont ? 'font-mono text-xs' : 'text-sm font-medium'} text-zinc-900 dark:text-zinc-100`}
+                            aria-hidden="true"
+                        >
+                            {value ? highlighted : <span className="text-muted-foreground">{isDragOver ? '⬇ Solte aqui' : placeholder}</span>}
+                        </div>
+                        <Input
+                            ref={inputRef as any}
+                            value={value || ''}
+                            onChange={handleTextChange}
+                            onScroll={handleScroll}
+                            className={`rounded-xl h-11 bg-muted/50 border-border text-sm ${monoFont ? 'font-mono text-xs' : 'font-medium'} ${dropZoneClass} text-transparent caret-foreground relative z-10 placeholder-transparent`}
+                            spellCheck={false}
+                        />
+                    </>
+                )}
+
+                {/* Autocomplete Dropdown */}
+                {showAuto && (
+                    <div className="absolute top-full left-0 z-50 mt-1 w-full max-w-[280px] bg-white rounded-xl border border-border shadow-xl overflow-hidden">
+                        <div className="px-3 py-2 bg-muted/30 border-b border-border">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Variáveis Dinâmicas</span>
+                        </div>
+                        <div className="max-h-[200px] overflow-y-auto overflow-x-hidden">
+                            {filteredFields.length === 0 ? (
+                                <div className="p-3 text-center text-xs text-muted-foreground">Nenhuma variável encontrada</div>
+                            ) : (
+                                <div className="p-1">
+                                    {filteredFields.map(f => (
+                                        <button
+                                            key={f.id}
+                                            onClick={() => handleAutoSelect(f.field_key)}
+                                            className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md hover:bg-muted transition-colors"
+                                        >
+                                            <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0 bg-violet-500/10 text-violet-600 border-violet-500/20 shrink-0">
+                                                {`{{${f.field_key}}}`}
+                                            </Badge>
+                                            <span className="text-xs text-foreground truncate font-medium">{f.field_label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
             <VariablePicker onSelect={handleVarInsert} />
         </div>
     );
@@ -824,23 +976,51 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
             // MESSAGES
             // ==============================
 
+            case 'interactive_message':
             case 'send_message':
             case 'message':
                 return (
                     <div className="space-y-5">
                         <ConfigSection label="Conteúdo da Mensagem" hint="Use {{contact.name}} para inserir variáveis dinâmicas">
                             <TextFieldWithVars
-                                value={d.message || d.content || ''}
-                                onChange={(v) => update(node.type === 'message' ? 'content' : 'message', v)}
+                                value={d.message || d.content || d.text || ''}
+                                onChange={(v) => update(node.type === 'message' ? 'content' : (node.type === 'interactive_message' ? 'text' : 'message'), v)}
                                 placeholder="Olá {{contact.name}}! Como posso ajudar?"
                                 multiline
                             />
                         </ConfigSection>
-                        {(d.message || d.content) && (
+                        {(d.message || d.content || d.text) && (
                             <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                                 <span className="text-[10px] font-bold text-green-500 uppercase mb-1 block">Preview</span>
-                                <p className="text-sm text-green-800 whitespace-pre-wrap">{d.message || d.content}</p>
+                                <p className="text-sm text-green-800 whitespace-pre-wrap">{d.message || d.content || d.text}</p>
                             </div>
+                        )}
+                        {node.type === 'interactive_message' && (
+                            <ConfigSection label="Botões de Resposta" hint="As opções para o usuário clicar">
+                                <DynamicListBuilder
+                                    items={d.buttons || d.options || []}
+                                    onAdd={() => update('buttons', [...(d.buttons || d.options || []), { text: '' }])}
+                                    onRemove={(i) => update('buttons', (d.buttons || d.options || []).filter((_: any, idx: number) => idx !== i))}
+                                    onUpdate={(i, _, val) => {
+                                        const btns = [...(d.buttons || d.options || [])];
+                                        if (typeof btns[i] === 'string') {
+                                            btns[i] = val;
+                                        } else {
+                                            btns[i] = { ...btns[i], text: val };
+                                        }
+                                        update('buttons', btns);
+                                    }}
+                                    addLabel="Adicionar Botão"
+                                    renderRow={(item, i, onUpdate) => (
+                                        <Input
+                                            value={typeof item === 'string' ? item : (item.text || item.title || '')}
+                                            onChange={(e) => onUpdate('text', e.target.value)}
+                                            placeholder={`Botão ${i + 1}`}
+                                            className="rounded-xl h-10 bg-muted/50 border-border text-sm"
+                                        />
+                                    )}
+                                />
+                            </ConfigSection>
                         )}
                     </div>
                 );
@@ -2331,6 +2511,52 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     { value: 'append', label: '📝 Adicionar no final' },
                                     { value: 'replace', label: '🔄 Substituir tudo' },
                                 ]}
+                            />
+                        </ConfigSection>
+                    </div>
+                );
+
+            // ---- Add Task ----
+            case 'add_task':
+                return (
+                    <div className="space-y-4">
+                        <InfoBanner text="Cria uma nova tarefa associada ao lead/contato." color="rose" />
+                        <ConfigSection label="Descrição da Tarefa" hint="O que precisa ser feito. Suporta variáveis.">
+                            <TextFieldWithVars
+                                value={d.task_text || d.text || ''}
+                                onChange={(v) => updateMulti({ task_text: v, text: v })}
+                                placeholder="Ex: Retornar ligação para {{nome}}"
+                                multiline
+                            />
+                        </ConfigSection>
+                        <ConfigSection label="Prazo (Opcional)" hint="Data ou tempo para conclusão.">
+                            <TextFieldWithVars
+                                value={d.due_date || ''}
+                                onChange={(v) => update('due_date', v)}
+                                placeholder="Ex: Amanhã às 10:00"
+                            />
+                        </ConfigSection>
+                        <ConfigSection label="Responsável (Opcional)" hint="Nome ou ID do usuário responsável.">
+                            <TextFieldWithVars
+                                value={d.assignee || ''}
+                                onChange={(v) => update('assignee', v)}
+                                placeholder="Ex: João Silva ou {{responsavel}}"
+                            />
+                        </ConfigSection>
+                    </div>
+                );
+
+            // ---- Internal Message ----
+            case 'internal_message':
+                return (
+                    <div className="space-y-4">
+                        <InfoBanner text="Adiciona uma mensagem destacada em amarelo no histórico, visível apenas para os atendentes." color="amber" />
+                        <ConfigSection label="Mensagem Interna" hint="Texto da nota que ficará no histórico. Suporta variáveis.">
+                            <TextFieldWithVars
+                                value={d.message || d.note || ''}
+                                onChange={(v) => updateMulti({ message: v, note: v })}
+                                placeholder="Ex: O lead solicitou prioridade no atendimento..."
+                                multiline
                             />
                         </ConfigSection>
                     </div>

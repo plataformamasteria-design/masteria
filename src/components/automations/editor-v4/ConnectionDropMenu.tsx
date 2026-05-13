@@ -6,7 +6,7 @@ import {
     GitBranch, Clock, MessageCircle, Signpost, Filter,
     Brain, Target, MessageSquareHeart, Send,
     Columns3, Hash, Bot, UserPlus, UserSearch, StickyNote, Database,
-    Globe, Code2, PenLine, Search, X,
+    Globe, Code2, PenLine, Search, X, CalendarCheck, MessageSquareWarning
 } from 'lucide-react';
 
 // ─── Catálogo flat (igual ao NodeLibraryPanel mas organizado para busca) ──────
@@ -41,6 +41,9 @@ const ALL_NODES: NodeEntry[] = [
     { type: 'crm_move',      label: 'Mover Kanban',     icon: Columns3,           color: 'text-orange-600',  category: 'CRM & Ações',        defaultData: { boardId: '' } },
     { type: 'bot_toggle',    label: 'Controlar Robô',   icon: Bot,                color: 'text-zinc-600',    category: 'CRM & Ações',        defaultData: { action: 'stop' } },
     { type: 'capture_info',  label: 'Capturar Dado',    icon: Database,           color: 'text-blue-500',    category: 'CRM & Ações',        defaultData: { fieldInfo: '' } },
+    { type: 'internal_message', label: 'Mensagem Interna', icon: MessageSquareWarning, color: 'text-amber-500', category: 'CRM & Ações',  defaultData: { message: '' } },
+    // Agendamentos
+    { type: 'add_task',      label: 'Adicionar Tarefa', icon: CalendarCheck,      color: 'text-rose-600',    category: 'Agendamentos',       defaultData: { task_text: '' } },
     // IA
     { type: 'ai_agent',       label: 'Agente IA',       icon: Brain,              color: 'text-violet-600',  category: 'Inteligência IA',    defaultData: { provider: 'gemini', model: 'gemini-2.0-flash' } },
     { type: 'intent_router',  label: 'Classificador',   icon: Target,             color: 'text-purple-600',  category: 'Inteligência IA',    defaultData: { intents: [] } },

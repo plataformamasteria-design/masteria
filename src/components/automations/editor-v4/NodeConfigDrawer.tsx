@@ -22,6 +22,7 @@ interface NodeConfigDrawerProps {
 const NODE_TYPE_LABELS: Record<string, string> = {
     trigger: 'Gatilho',
     send_message: 'Enviar Mensagem',
+    interactive_message: 'Mensagem Interativa',
     send_image: 'Enviar Imagem',
     send_audio: 'Enviar Áudio',
     send_document: 'Enviar Documento',
@@ -47,6 +48,8 @@ const NODE_TYPE_LABELS: Record<string, string> = {
     edit_fields: 'Editar Campos',
     lookup_lead: 'Buscar Lead',
     add_note: 'Adicionar Nota',
+    internal_message: 'Mensagem Interna',
+    add_task: 'Adicionar Tarefa',
     assign_user: 'Atribuir Lead',
     add_tag: 'Adicionar Tag',
 };

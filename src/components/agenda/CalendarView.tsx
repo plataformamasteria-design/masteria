@@ -43,13 +43,20 @@ export function CalendarView({ selectedDate, onSelectDate, refreshTrigger, calen
 
   useEffect(() => {
     if (currentOrganization?.id) {
-      fetchData();
+      fetchData(true);
     }
-  }, [refreshTrigger, currentOrganization?.id, calendarId, isGeneralCalendar, selectedDate]);
+  }, [currentOrganization?.id, calendarId, isGeneralCalendar, selectedDate]);
 
-  const fetchData = async () => {
+  useEffect(() => {
+    if (currentOrganization?.id && refreshTrigger > 0) {
+      // Mantido useEffect + fetch para evitar regressão na junção complexa de dados
+      fetchData(false);
+    }
+  }, [refreshTrigger, currentOrganization?.id]);
+
+  const fetchData = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       
       const monthStart = subDays(startOfMonth(selectedDate), 7);
       const monthEnd = addDays(endOfMonth(selectedDate), 7);

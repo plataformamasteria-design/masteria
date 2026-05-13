@@ -122,16 +122,18 @@ export async function listFlows(companyId: string) {
     }
 }
 
-export async function getFlow(id: string, companyId: string) {
+export async function getFlow(id: string, companyId?: string) {
     try {
         const flow = await db.query.automationFlows.findFirst({
-            where: and(
-                eq(automationFlows.id, id),
-                or(
-                    eq(automationFlows.companyId, companyId),
-                    eq(automationFlows.companyId, 'current-company')
+            where: companyId 
+                ? and(
+                    eq(automationFlows.id, id),
+                    or(
+                        eq(automationFlows.companyId, companyId),
+                        eq(automationFlows.companyId, 'current-company')
+                    )
                 )
-            )
+                : eq(automationFlows.id, id)
         });
         return flow;
     } catch (error) {

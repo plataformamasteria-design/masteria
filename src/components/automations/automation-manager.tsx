@@ -53,13 +53,35 @@ export function AutomationManager() {
                 setIsImporting(true);
                 const data = JSON.parse(ev.target?.result as string);
                 
-                if (data._format !== "master-ia-automation-v2") {
-                    toast.error("Formato de arquivo inválido. O arquivo não é uma automação exportada válida.");
+                if (!session?.empresaId) {
+                    toast.error("Sessão inválida para importação.");
                     return;
                 }
 
-                if (!session?.empresaId) {
-                    toast.error("Sessão inválida para importação.");
+                // Detecta se é arquivo exportado nativo ou do Kommo
+                if (data._format !== "master-ia-automation-v2") {
+                    // Tenta detectar formato Kommo
+                    if (data.model && data.model.positions) {
+                        const { parseKommoFile } = await import('@/lib/kommo-parser');
+                        const { nodes, edges } = parseKommoFile(ev.target?.result as string);
+                        
+                        const importedName = `${data.model.name || 'Importado'} (Kommo)`;
+                        const visualData = { nodes, edges };
+                        
+                        const result = await saveFlow('new', importedName, session.empresaId, visualData, []);
+                        
+                        if (!result.success) {
+                            toast.error(result.error || 'Erro ao salvar automação importada do Kommo.');
+                            return;
+                        }
+                        
+                        toast.success('Automação do Kommo importada com sucesso!');
+                        setRefreshTrigger(prev => prev + 1);
+                        router.refresh();
+                        return;
+                    }
+                    
+                    toast.error("Formato de arquivo inválido. O arquivo não é uma automação exportada válida.");
                     return;
                 }
 
