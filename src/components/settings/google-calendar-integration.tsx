@@ -83,30 +83,9 @@ export function GoogleCalendarIntegration() {
         }
     };
 
-    const handleConnect = async () => {
+    const handleConnect = () => {
         setConnecting(true);
-        try {
-            const response = await fetch('/api/v1/integrations/google/connect');
-            if (response.ok) {
-                const data = await response.json();
-                window.location.href = data.authUrl;
-            } else {
-                toast({
-                    title: 'Erro',
-                    description: 'Erro ao iniciar conexão com Google',
-                    variant: 'destructive',
-                });
-            }
-        } catch (error) {
-            console.error('Error connecting to Google:', error);
-            toast({
-                title: 'Erro',
-                description: 'Erro ao conectar com Google',
-                variant: 'destructive',
-            });
-        } finally {
-            setConnecting(false);
-        }
+        window.location.href = `/api/v1/integrations/google/connect?redirectUrl=${encodeURIComponent(window.location.pathname)}`;
     };
 
     const toggleCalendar = useCallback((calendarId: string, calendarName: string) => {
