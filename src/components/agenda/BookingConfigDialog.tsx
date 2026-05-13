@@ -120,23 +120,7 @@ export function BookingConfigDialog({ open, onOpenChange }: BookingConfigDialogP
     }
   };
 
-  const handleGoogleConnect = () => {
-    window.location.href = `/api/v1/integrations/google/connect?redirectUrl=${encodeURIComponent(window.location.pathname)}`;
-  };
 
-  const handleGoogleDisconnect = async () => {
-    try {
-      const res = await fetch('/api/v1/integrations/google/disconnect', { method: 'POST' });
-      if (res.ok) {
-        setGoogleConnected(false);
-        setGoogleCalendars([]);
-        setSelectedGoogleCalendar(null);
-        toast.success("Google Calendar desconectado com sucesso");
-      }
-    } catch (error) {
-      toast.error("Erro ao desconectar Google Calendar");
-    }
-  };
 
   const handleSaveGoogleSettings = async (calendarId: string) => {
     setSelectedGoogleCalendar(calendarId);
@@ -592,19 +576,19 @@ export function BookingConfigDialog({ open, onOpenChange }: BookingConfigDialogP
                     <h4 className="font-medium">Google Calendar</h4>
                     <p className="text-sm text-muted-foreground">
                       {googleConnected 
-                        ? "Sincronização bidirecional ativa" 
-                        : "Sincronize seus agendamentos com sua agenda do Google"}
+                        ? "Conta do Google conectada. Selecione o calendário abaixo." 
+                        : "Sincronize seus agendamentos conectando sua conta do Google na aba Integrações."}
                     </p>
                   </div>
                 </div>
                 {googleConnected ? (
-                  <Button variant="destructive" size="sm" onClick={handleGoogleDisconnect}>
-                    Desconectar
-                  </Button>
+                  <div className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+                    Conectado
+                  </div>
                 ) : (
-                  <Button variant="outline" size="sm" onClick={handleGoogleConnect}>
-                    Conectar Google
-                  </Button>
+                  <div className="text-sm text-muted-foreground px-2 py-1 bg-slate-100 rounded">
+                    Não Conectado
+                  </div>
                 )}
               </div>
 

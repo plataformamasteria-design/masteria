@@ -27,14 +27,14 @@ export async function GET(req: Request) {
       return NextResponse.redirect(new URL('/agenda?error=invalid_state', req.url));
     }
 
-    const { c: companyId, r: redirectUrl } = stateObj;
+    const { c: companyId, r: redirectUrl, cb: callbackUri } = stateObj;
 
     if (!companyId) {
       return NextResponse.redirect(new URL('/agenda?error=invalid_company', req.url));
     }
 
     // Exchange code for tokens
-    const { accessToken, refreshToken, expiry } = await googleCalendarService.getTokensFromCode(code);
+    const { accessToken, refreshToken, expiry } = await googleCalendarService.getTokensFromCode(code, callbackUri);
 
     if (!refreshToken) {
       // Se o usuário não deu consentimento para modo offline, o Google não envia refresh_token na segunda vez.
