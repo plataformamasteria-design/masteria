@@ -4,7 +4,7 @@ import { MasterOrg } from '@/app/actions/superadmin-actions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Rocket, LayoutGrid, Power, Link2, Users, MessageSquare, Database } from 'lucide-react';
+import { Loader2, Rocket, LayoutGrid, Power, Link2, Users, MessageSquare, Database, Trash2, TimerReset, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OrganizationsTableViewProps {
@@ -12,6 +12,8 @@ interface OrganizationsTableViewProps {
     isAssuming: string | null;
     onAssumeIdentity: (id: string) => void;
     onManageProfile: (org: MasterOrg) => void;
+    onManageUsers: (org: MasterOrg) => void;
+    onDelete: (org: MasterOrg) => void;
     onToggleStatus: (org: MasterOrg) => void;
 }
 
@@ -20,6 +22,8 @@ export function OrganizationsTableView({
     isAssuming,
     onAssumeIdentity,
     onManageProfile,
+    onManageUsers,
+    onDelete,
     onToggleStatus
 }: OrganizationsTableViewProps) {
     if (organizations.length === 0) {
@@ -86,14 +90,33 @@ export function OrganizationsTableView({
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge variant={org.active ? 'default' : 'secondary'} className={cn(
-                                        "h-5 text-[9px] uppercase tracking-wider px-1.5", 
-                                        org.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20" : ""
-                                    )}>
-                                        {org.active ? 'Ativa' : 'Bloqueado'}
-                                    </Badge>
-                                    <div className="text-[9px] text-muted-foreground mt-1 whitespace-nowrap">
-                                        Criada: {new Date(org.createdAt).toLocaleDateString('pt-BR')}
+                                    <div className="flex flex-col gap-1.5 items-start">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            {org.lifetime && (
+                                                <Badge variant="outline" className="h-5 text-[9px] uppercase tracking-wider px-1.5 border-amber-500/30 text-amber-500 bg-amber-500/5 gap-1">
+                                                    <ShieldCheck className="h-2.5 w-2.5" /> Vitalício
+                                                </Badge>
+                                            )}
+                                            {org.trialEndsAt && new Date(org.trialEndsAt) > new Date() && (
+                                                <Badge variant="outline" className="h-5 text-[9px] uppercase tracking-wider px-1.5 border-blue-500/30 text-blue-500 bg-blue-500/5 gap-1">
+                                                    <TimerReset className="h-2.5 w-2.5" /> Trial
+                                                </Badge>
+                                            )}
+                                            {org.trialEndsAt && new Date(org.trialEndsAt) <= new Date() && !org.lifetime && (
+                                                <Badge variant="destructive" className="h-5 text-[9px] uppercase tracking-wider px-1.5 gap-1">
+                                                    Expirado
+                                                </Badge>
+                                            )}
+                                            <Badge variant={org.active ? 'default' : 'secondary'} className={cn(
+                                                "h-5 text-[9px] uppercase tracking-wider px-1.5", 
+                                                org.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-500/20" : ""
+                                            )}>
+                                                {org.active ? 'Ativa' : 'Bloqueado'}
+                                            </Badge>
+                                        </div>
+                                        <div className="text-[9px] text-muted-foreground whitespace-nowrap">
+                                            Criada: {new Date(org.createdAt).toLocaleDateString('pt-BR')}
+                                        </div>
                                     </div>
                                 </TableCell>
 
@@ -104,9 +127,29 @@ export function OrganizationsTableView({
                                             size="sm"
                                             onClick={() => onManageProfile(org)}
                                             className="h-8 border-border/50 bg-background hover:bg-muted font-medium text-xs hidden md:flex"
+                                            title="Perfil Financeiro e Credenciais"
                                         >
-                                            <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
-                                            Perfil
+                                            <LayoutGrid className="h-3.5 w-3.5" />
+                                        </Button>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => onManageUsers(org)}
+                                            className="h-8 border-border/50 bg-background hover:bg-muted font-medium text-xs hidden md:flex"
+                                            title="Gerenciar Usuários"
+                                        >
+                                            <Users className="h-3.5 w-3.5" />
+                                        </Button>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => onDelete(org)}
+                                            className="h-8 border-border/50 bg-background hover:text-destructive hover:bg-destructive/10 font-medium text-xs hidden md:flex"
+                                            title="Deletar Permanentemente"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
                                         </Button>
 
                                         <Button
@@ -117,7 +160,7 @@ export function OrganizationsTableView({
                                                 "h-8 text-xs font-semibold border-border/50 hidden md:flex",
                                                 org.active ? "hover:text-destructive hover:bg-destructive/10" : "hover:text-emerald-500 hover:bg-emerald-500/10"
                                             )}
-                                            title={org.active ? "Desativar Seco" : "Reativar Total"}
+                                            title={org.active ? "Bloquear Tenant" : "Reativar Tenant"}
                                         >
                                             <Power className="h-3.5 w-3.5" />
                                         </Button>

@@ -24,6 +24,9 @@ export interface MasterOrg {
     maxContacts: number;
     maxMessages: number;
     maxTokens: number;
+    isStarred?: boolean;
+    trialEndsAt: string | null;
+    lifetime: boolean;
 }
 
 const requireSuperadmin = async () => {
@@ -37,36 +40,20 @@ export async function listAllOrganizations(): Promise<{ success: boolean; data?:
     try {
         await requireSuperadmin();
 
-        // Extraimos todas as companhias
-        const orgs = await db.select().from(companies);
+        const orgsData = await db.select({
+            company: companies,
+            quota: companyQuotas,
+            usersCount: sql<number>`(SELECT COUNT(*)::int FROM ${users} WHERE ${users.companyId} = ${companies.id})`,
+            leadsCount: sql<number>`(SELECT COUNT(*)::int FROM ${contacts} WHERE ${contacts.companyId} = ${companies.id})`,
+            connectionsCount: sql<number>`(SELECT COUNT(*)::int FROM ${connections} WHERE ${connections.companyId} = ${companies.id})`,
+        })
+        .from(companies)
+        .leftJoin(companyQuotas, eq(companyQuotas.companyId, companies.id))
+        .orderBy(desc(companies.isStarred), desc(companies.createdAt));
 
-        const companyIds = orgs.map(o => o.id);
-        const hasIds = companyIds.length > 0;
-
-        // Quotas
-        const quotas = hasIds ? await db.select().from(companyQuotas).where(inArray(companyQuotas.companyId, companyIds)) : [];
-
-        // Group by Users (Otimizado)
-        const usersStats = hasIds ? await db.select({ companyId: users.companyId, c: count() })
-            .from(users).where(inArray(users.companyId, companyIds)).groupBy(users.companyId) : [];
-
-        // Group by Connections (Otimizado)
-        const connStats = hasIds ? await db.select({ companyId: connections.companyId, c: count() })
-            .from(connections).where(inArray(connections.companyId, companyIds)).groupBy(connections.companyId) : [];
-
-        // Group by Contacts (Otimizado)
-        const contactStats = hasIds ? await db.select({ companyId: contacts.companyId, c: count() })
-            .from(contacts).where(inArray(contacts.companyId, companyIds)).groupBy(contacts.companyId) : [];
-
-        const mapped: MasterOrg[] = orgs.map(org => {
-            const uCount = usersStats.find(u => u.companyId === org.id)?.c || 0;
-            const cCount = connStats.find(u => u.companyId === org.id)?.c || 0;
-            const conCount = contactStats.find(u => u.companyId === org.id)?.c || 0;
-            const qt = quotas.find(q => q.companyId === org.id);
-
-            // NOTE: A flag "active" nativa pode não existir explicitamente se depende de outra tabela ou se não existe na empresa. No schema antigo VittaIA havia `active`. 
-            // O MasterIA parece usar DeletedAt ou similar se inativo. Porem podemos considerar deletado ou uma lógica padrao.
-            // Assumiremos status 'active' baseando-se por hora na ausência de DeletedAt.
+        const mapped: MasterOrg[] = orgsData.map(row => {
+            const org = row.company;
+            const qt = row.quota;
             return {
                 id: org.id,
                 name: org.name,
@@ -74,17 +61,17 @@ export async function listAllOrganizations(): Promise<{ success: boolean; data?:
                 website: org.website,
                 active: !org.deletedAt,
                 createdAt: org.createdAt.toISOString(),
-                userCount: Number(uCount),
-                connectionCount: Number(cCount),
-                contactCount: Number(conCount),
+                userCount: Number(row.usersCount) || 0,
+                connectionCount: Number(row.connectionsCount) || 0,
+                contactCount: Number(row.leadsCount) || 0,
                 maxContacts: qt?.maxContacts || 500,
                 maxMessages: qt?.maxMessagesPerMonth || 1000,
                 maxTokens: qt?.maxAiTokens || 100000,
+                isStarred: org.isStarred || false,
+                trialEndsAt: org.trialEndsAt ? org.trialEndsAt.toISOString() : null,
+                lifetime: org.lifetime || false,
             };
         });
-
-        // Ordenado por criação decrescente
-        mapped.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return { success: true, data: mapped };
     } catch (e: any) {
@@ -321,6 +308,56 @@ export async function updateSystemSettings(data: { openaiApiKey?: string, gemini
         }
         revalidatePath('/(main)/admin/organizations', 'page');
         return { success: true };
+    } catch(e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function deleteOrganization(companyId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        await requireSuperadmin();
+        await db.delete(companies).where(eq(companies.id, companyId));
+        revalidatePath('/(main)/admin/organizations', 'page');
+        return { success: true };
+    } catch(e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function updateOrganizationTrial(companyId: string, trialEndsAt: Date | null): Promise<{ success: boolean; error?: string }> {
+    try {
+        await requireSuperadmin();
+        await db.update(companies).set({ trialEndsAt }).where(eq(companies.id, companyId));
+        revalidatePath('/(main)/admin/organizations', 'page');
+        return { success: true };
+    } catch(e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function toggleOrganizationLifetime(companyId: string, lifetime: boolean): Promise<{ success: boolean; error?: string }> {
+    try {
+        await requireSuperadmin();
+        await db.update(companies).set({ lifetime }).where(eq(companies.id, companyId));
+        revalidatePath('/(main)/admin/organizations', 'page');
+        return { success: true };
+    } catch(e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function getOrganizationUsers(companyId: string): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+        await requireSuperadmin();
+        const orgUsers = await db.select({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            role: users.role,
+            createdAt: users.createdAt,
+            avatarUrl: users.avatarUrl,
+        }).from(users).where(eq(users.companyId, companyId)).orderBy(desc(users.createdAt));
+        return { success: true, data: orgUsers };
     } catch(e: any) {
         return { success: false, error: e.message };
     }

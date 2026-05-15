@@ -70,6 +70,7 @@ const getUserSessionUncached = async (): Promise<{ user: UserWithCompany | null,
     const { user: userWithPassword, company } = results[0];
 
     if (tokenCompanyId && userWithPassword.companyId !== tokenCompanyId && userWithPassword.role !== 'superadmin') {
+      console.error('[Session Debug] JWT check missing tokenCompanyId inconsistency:', { tokenCompanyId, userCompanyId: userWithPassword.companyId, userRole: userWithPassword.role });
       return { user: null, error: 'Inconsistência de empresa na sessão.', errorCode: 'token_invalido' };
     }
 
@@ -78,6 +79,7 @@ const getUserSessionUncached = async (): Promise<{ user: UserWithCompany | null,
     return { user: { ...userWithoutPassword, company: company || null }, token: sessionToken };
 
   } catch (error: any) {
+    console.error('[Session Debug] getUserSessionUncached threw an error:', error);
     let errorCode = 'token_invalido';
     let errorMessage = 'Falha na verificação do token';
 

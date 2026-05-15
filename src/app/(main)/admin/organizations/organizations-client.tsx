@@ -9,10 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Filter, Building2, Crown, Power, Eye, Users, MessageSquare, Link2, Loader2, Database, Rocket, LayoutGrid, List } from 'lucide-react';
+import { Search, Filter, Building2, Crown, Power, Eye, Users, MessageSquare, Link2, Loader2, Database, Rocket, LayoutGrid, List, Star, Trash2, TimerReset, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { OrganizationDetailsDrawer } from './components/organization-details-drawer';
+import { CreateOrganizationDialog } from './components/create-organization-dialog';
+import { DeleteOrganizationDialog } from './components/delete-organization-dialog';
+import { OrganizationUsersDialog } from './components/organization-users-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrganizationsTableView } from './components/organizations-table-view';
 import { FinancialTab } from './components/financial-tab';
@@ -22,13 +25,19 @@ import { Wallet, KeyRound } from 'lucide-react';
 export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('starred');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [isAssuming, setIsAssuming] = useState<string | null>(null);
     const [selectedOrg, setSelectedOrg] = useState<MasterOrg | null>(null);
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [deleteOrg, setDeleteOrg] = useState<MasterOrg | null>(null);
+    const [usersOrg, setUsersOrg] = useState<MasterOrg | null>(null);
     const router = useRouter();
 
     const filteredOrgs = useMemo(() => {
-        return initialData.filter(org => {
+        let result = [...initialData];
+        
+        result = result.filter(org => {
             const matchesSearch = org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 org.slug.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -38,7 +47,22 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
 
             return matchesSearch;
         });
-    }, [initialData, searchQuery, statusFilter]);
+
+        result.sort((a, b) => {
+            if (sortBy === 'starred') {
+                if (a.isStarred && !b.isStarred) return -1;
+                if (!a.isStarred && b.isStarred) return 1;
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+            if (sortBy === 'users') return b.userCount - a.userCount;
+            if (sortBy === 'leads') return b.contactCount - a.contactCount;
+            if (sortBy === 'connections') return b.connectionCount - a.connectionCount;
+            if (sortBy === 'name') return a.name.localeCompare(b.name);
+            return 0;
+        });
+
+        return result;
+    }, [initialData, searchQuery, statusFilter, sortBy]);
 
     const handleAssumeIdentity = async (orgId: string) => {
         setIsAssuming(orgId);
@@ -67,6 +91,27 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
         }
     };
 
+    const handleToggleStar = async (org: MasterOrg) => {
+        try {
+            const currentStatus = org.isStarred;
+            // Update UI optimistically
+            org.isStarred = !currentStatus;
+            router.refresh();
+            
+            const res = await fetch('/api/v1/admin/companies', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ companyId: org.id, isStarred: !currentStatus })
+            });
+            if (!res.ok) throw new Error('Falha ao favoritar');
+            toast.success(currentStatus ? 'Removido dos favoritos' : 'Adicionado aos favoritos', { duration: 2000 });
+        } catch (error) {
+            org.isStarred = !org.isStarred;
+            router.refresh();
+            toast.error('Erro ao atualizar favorito');
+        }
+    };
+
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden shrink-0">
             {/* Header Fixed Area */}
@@ -83,10 +128,16 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                         </p>
                     </div>
 
-                    <div className="flex bg-muted/30 p-1 rounded-xl border border-border/50 items-center justify-center gap-3 px-4 py-2">
-                        <div className="flex flex-col items-end">
-                            <span className="text-xl font-black text-foreground leading-none">{initialData.length}</span>
-                            <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">Registros DB</span>
+                    <div className="flex items-center gap-3">
+                        <Button onClick={() => setIsCreateOpen(true)} className="h-10 font-bold bg-primary text-primary-foreground gap-2">
+                            <Building2 className="h-4 w-4" />
+                            Nova Empresa
+                        </Button>
+                        <div className="flex bg-muted/30 p-1 rounded-xl border border-border/50 items-center justify-center gap-3 px-4 py-2">
+                            <div className="flex flex-col items-end">
+                                <span className="text-xl font-black text-foreground leading-none">{initialData.length}</span>
+                                <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">Registros DB</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -111,6 +162,19 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                                 <SelectItem value="all">Ver Todos</SelectItem>
                                 <SelectItem value="active">Ativas (Livres)</SelectItem>
                                 <SelectItem value="inactive">Bloqueadas</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="w-[180px] h-10 bg-background shadow-sm border-border/50">
+                                <SelectValue placeholder="Ordenar por" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="starred">Favoritos (Padrão)</SelectItem>
+                                <SelectItem value="users">Mais Usuários</SelectItem>
+                                <SelectItem value="leads">Mais Leads</SelectItem>
+                                <SelectItem value="connections">Mais Conexões</SelectItem>
+                                <SelectItem value="name">Ordem Alfabética</SelectItem>
                             </SelectContent>
                         </Select>
 
@@ -175,6 +239,8 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                                     isAssuming={isAssuming}
                                     onAssumeIdentity={handleAssumeIdentity}
                                     onManageProfile={(org) => setSelectedOrg(org)}
+                                    onManageUsers={(org) => setUsersOrg(org)}
+                                    onDelete={(org) => setDeleteOrg(org)}
                                     onToggleStatus={handleToggleStatus}
                                 />
                             ) : (
@@ -198,10 +264,38 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                                             viewMode === 'list' && "md:w-auto md:min-w[300px] md:pb-5"
                                         )}>
                                             <div className="flex justify-between items-start mb-2 gap-2">
-                                                <h3 className="font-bold text-foreground text-base tracking-tight leading-tight line-clamp-1">{org.name}</h3>
-                                                <Badge variant={org.active ? 'default' : 'secondary'} className={cn("shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5", org.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" : "")}>
-                                                    {org.active ? 'Ativa' : 'Bloqueado'}
-                                                </Badge>
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleToggleStar(org); }}
+                                                        className={cn(
+                                                            "transition-colors",
+                                                            org.isStarred ? "text-amber-400 hover:text-amber-500" : "text-muted-foreground/30 hover:text-amber-400"
+                                                        )}
+                                                    >
+                                                        <Star className="h-5 w-5" fill={org.isStarred ? "currentColor" : "none"} />
+                                                    </button>
+                                                    <h3 className="font-bold text-foreground text-base tracking-tight leading-tight line-clamp-1">{org.name}</h3>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                                                    {org.lifetime && (
+                                                        <Badge variant="outline" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-amber-500/30 text-amber-500 bg-amber-500/5 gap-1">
+                                                            <ShieldCheck className="h-2.5 w-2.5" /> Vitalício
+                                                        </Badge>
+                                                    )}
+                                                    {org.trialEndsAt && new Date(org.trialEndsAt) > new Date() && (
+                                                        <Badge variant="outline" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-blue-500/30 text-blue-500 bg-blue-500/5 gap-1">
+                                                            <TimerReset className="h-2.5 w-2.5" /> Trial
+                                                        </Badge>
+                                                    )}
+                                                    {org.trialEndsAt && new Date(org.trialEndsAt) <= new Date() && !org.lifetime && (
+                                                        <Badge variant="destructive" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 gap-1">
+                                                            Expirado
+                                                        </Badge>
+                                                    )}
+                                                    <Badge variant={org.active ? 'default' : 'secondary'} className={cn("shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5", org.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" : "")}>
+                                                        {org.active ? 'Ativa' : 'Bloqueado'}
+                                                    </Badge>
+                                                </div>
                                             </div>
                                             <p className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono tracking-tight bg-muted/40 w-fit px-1.5 py-0.5 rounded">
                                                 <Link2 className="h-2.5 w-2.5" />
@@ -256,13 +350,30 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                                                     Gerenciar Perfil
                                                 </Button>
 
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setUsersOrg(org)}
+                                                        className="h-8 text-xs font-semibold gap-2 border-border/50 bg-background/50"
+                                                    >
+                                                        <Users className="h-3 w-3" /> Usuários
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => handleToggleStatus(org)}
+                                                        className="h-8 text-xs font-semibold gap-2 border-border/50 bg-background/50"
+                                                    >
+                                                        <Power className="h-3 w-3" />
+                                                        {org.active ? "Bloquear" : "Reativar"}
+                                                    </Button>
+                                                </div>
                                                 <Button
-                                                    variant="outline"
-                                                    onClick={() => handleToggleStatus(org)}
-                                                    className="w-full h-8 text-xs font-semibold gap-2 border-border/50 bg-background/50"
+                                                    variant="ghost"
+                                                    onClick={() => setDeleteOrg(org)}
+                                                    className="w-full h-8 text-xs font-semibold gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                                                 >
-                                                    <Power className="h-3 w-3" />
-                                                    {org.active ? "Desativar Seco" : "Reativar Total"}
+                                                    <Trash2 className="h-3 w-3" />
+                                                    Deletar Permanentemente
                                                 </Button>
 
                                                 {viewMode === 'grid' && (
@@ -292,6 +403,20 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                 org={selectedOrg} 
                 open={!!selectedOrg} 
                 onClose={() => setSelectedOrg(null)} 
+            />
+            <CreateOrganizationDialog 
+                open={isCreateOpen}
+                onClose={() => setIsCreateOpen(false)}
+            />
+            <DeleteOrganizationDialog
+                org={deleteOrg}
+                open={!!deleteOrg}
+                onClose={() => setDeleteOrg(null)}
+            />
+            <OrganizationUsersDialog
+                org={usersOrg}
+                open={!!usersOrg}
+                onClose={() => setUsersOrg(null)}
             />
         </div>
     );

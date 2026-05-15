@@ -36,11 +36,29 @@ export async function GET(req: NextRequest) {
             throw new Error("Invalid Session State Validation");
         }
 
-        const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.INSTAGRAM_CLIENT_ID || '1351722093634418';
-        const clientSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.INSTAGRAM_CLIENT_SECRET;
+        let clientId = process.env.FACEBOOK_CLIENT_ID || process.env.INSTAGRAM_CLIENT_ID || '1351722093634418';
+        let clientSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.INSTAGRAM_CLIENT_SECRET;
+
+        // Check if company has custom app configuration
+        const [marketingConf] = await db.select().from(marketingCredentials).where(
+            and(eq(marketingCredentials.companyId, companyId), eq(marketingCredentials.platform, 'meta'))
+        ).limit(1);
+
+        let customAppId = '';
+        let customAppSecret = '';
+
+        if (marketingConf && marketingConf.credentials) {
+            const c = marketingConf.credentials as any;
+            if (c.app_id && c.app_secret) {
+                clientId = c.app_id;
+                clientSecret = c.app_secret;
+                customAppId = c.app_id;
+                customAppSecret = c.app_secret;
+            }
+        }
 
         if (!clientSecret) {
-            throw new Error("App Secret ausente na MasterIA.");
+            throw new Error("App Secret ausente na MasterIA e não configurado na conta.");
         }
 
         // 1. Usa estritamente a variável de originalBaseUrl capturada do front-end/headers para match idêntico no FB
@@ -107,11 +125,20 @@ export async function GET(req: NextRequest) {
             )
         ).limit(1);
 
-        const credsObj = { access_token: finalToken };
+        const credsObj: any = { access_token: finalToken };
+        if (customAppId && customAppSecret) {
+            credsObj.app_id = customAppId;
+            credsObj.app_secret = customAppSecret;
+        }
 
         if (existingMarketing.length > 0) {
+            const currentCreds = (existingMarketing[0].credentials as any) || {};
+            // Preserve existing app details if we didn't use custom ones just now
+            if (!customAppId && currentCreds.app_id) credsObj.app_id = currentCreds.app_id;
+            if (!customAppSecret && currentCreds.app_secret) credsObj.app_secret = currentCreds.app_secret;
+            
             await db.update(marketingCredentials)
-                .set({ credentials: credsObj, status: 'connected', updatedAt: new Date() })
+                .set({ credentials: { ...currentCreds, ...credsObj }, status: 'connected', updatedAt: new Date() })
                 .where(eq(marketingCredentials.id, existingMarketing[0].id));
         } else {
             await db.insert(marketingCredentials).values({
