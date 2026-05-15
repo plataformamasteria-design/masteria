@@ -202,3 +202,7 @@ export async function getTestLeadsForSelector(q?: string) {
         .limit(8)
         .orderBy(desc(conversations.id));
 }
+
+export async function getSystemGlobalAiStatus() {
+    return { enabled: true };
+}

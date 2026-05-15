@@ -13,7 +13,7 @@ import { getInvestimentoPorPeriodo } from "@/lib/metricas/investimento";
 import { calcularForecast } from "@/lib/forecast/forecast-comercial";
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
   process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 );
 

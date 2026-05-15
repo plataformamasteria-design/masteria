@@ -64,7 +64,7 @@ export function BookingShareDialog({ open, onOpenChange, calendars, selectedCale
     : "";
 
   const getEmbedCode = () => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
     const projectId = supabaseUrl ? new URL(supabaseUrl).hostname.split('.')[0] : "jrxpjzgifyzhvwjfpofz";
     const apiUrl = `https://${projectId}.supabase.co/functions/v1/public-booking-api`;
     const widgetUrl = `https://${projectId}.supabase.co/functions/v1/booking-widget-js`;

@@ -138,7 +138,13 @@ export async function submitTemplateToMeta(
             };
           }
         } else if (comp.example) {
-          component.example = comp.example;
+          const safeExample = { ...comp.example };
+          if ('mediaUrl' in safeExample) delete (safeExample as any).mediaUrl;
+          if ('mediaAssetId' in safeExample) delete (safeExample as any).mediaAssetId;
+          
+          if (Object.keys(safeExample).length > 0) {
+            component.example = safeExample;
+          }
         }
 
         if (comp.buttons) {

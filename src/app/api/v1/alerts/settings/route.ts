@@ -2,7 +2,7 @@
 
 import { NextResponse, NextRequest } from 'next/server';
 import { getCompanyIdFromSession, getUserIdFromSession } from '@/app/actions';
-import AlertService from '@/services/alert.service';
+import { AlertService } from '@/services/alert.service';
 import { db } from '@/lib/db';
 import { alertSettings } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
