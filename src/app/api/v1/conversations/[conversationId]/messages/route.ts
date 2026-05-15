@@ -3,7 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { conversations, messages, contacts, templates, connections, messageReactions } from '@/lib/db/schema';
-import { eq, and, desc, inArray, lt } from 'drizzle-orm';
+import { eq, and, desc, inArray, lt, or } from 'drizzle-orm';
 import { getCompanyIdFromSession, getUserIdFromSession } from '@/app/actions';
 import { sendWhatsappTemplateMessage, sendWhatsappTextMessage } from '@/lib/facebookApiService';
 import { evolutionApiService } from '@/services/evolution-api.service';
@@ -25,13 +25,15 @@ const templateMessageSchema = z.object({
 const messageSchema = z.union([textMessageSchema, templateMessageSchema]);
 
 async function canSendFreeFormMessage(conversationId: string, companyId: string): Promise<boolean> {
-    // SECURITY: Validar tenant ao buscar última mensagem do usuário
+    // SECURITY: Validar tenant ao buscar última mensagem do contato
+    // ✅ FIX: Meta API webhook salva mensagens do contato como 'CONTACT',
+    //    enquanto Baileys antigo usava 'USER'. Aceitar ambos para compatibilidade.
     const [lastUserMessage] = await db.select()
         .from(messages)
         .where(and(
             eq(messages.conversationId, conversationId),
             eq(messages.companyId, companyId),
-            eq(messages.senderType, 'USER')
+            inArray(messages.senderType, ['USER', 'CONTACT'])
         ))
         .orderBy(desc(messages.sentAt))
         .limit(1);

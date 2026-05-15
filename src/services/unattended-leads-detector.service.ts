@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { conversations, messages, contacts, connections } from '@/lib/db/schema';
-import { and, eq, sql, desc } from 'drizzle-orm';
+import { and, eq, sql, desc, inArray } from 'drizzle-orm';
 import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 
 interface UnattendedLead {
@@ -46,12 +46,12 @@ export async function detectUnattendedLeads(companyId?: string): Promise<Unatten
       cn.config_name as connection_name,
       (
         SELECT m1.sent_at FROM messages m1 
-        WHERE m1.conversation_id = cv.id AND m1.sender_type = 'USER' 
+        WHERE m1.conversation_id = cv.id AND m1.sender_type IN ('USER', 'CONTACT') 
         ORDER BY m1.sent_at DESC LIMIT 1
       ) as last_user_msg_at,
       (
         SELECT m1.content FROM messages m1 
-        WHERE m1.conversation_id = cv.id AND m1.sender_type = 'USER' 
+        WHERE m1.conversation_id = cv.id AND m1.sender_type IN ('USER', 'CONTACT') 
         ORDER BY m1.sent_at DESC LIMIT 1
       ) as last_user_msg_content,
       (
@@ -139,7 +139,7 @@ export async function recoverUnattendedLead(lead: UnattendedLead): Promise<{ suc
       .from(messages)
       .where(and(
         eq(messages.conversationId, lead.conversationId),
-        eq(messages.senderType, 'USER')
+        inArray(messages.senderType, ['USER', 'CONTACT'])
       ))
       .orderBy(desc(messages.sentAt))
       .limit(1);
