@@ -1,28 +1,61 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Brain, Construction } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, lazy, Suspense } from "react";
+import { AdIntelligenceProvider, useAdIntelligence } from "./_components/ai-context";
+import { AdIntelligenceHeader } from "./_components/ai-header";
+import { AdIntelligenceTabs } from "./_components/ai-tabs";
 
-export default function AdIntelligencePage() {
+import { OverviewTab } from "./_components/overview";
+import { RecommendationsTab, BenchmarkTab } from "./_components/other-tabs";
+import { EstrategiaTab } from "./_components/estrategia-tab";
+
+const LazyAlertasPage = lazy(() => import("@/app/marketing/alertas/_alertas-content"));
+
+function AdIntelligenceActiveView() {
+  const { activeTab } = useAdIntelligence();
+
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700 fade-in">
-      <div className="flex flex-col bg-card/40 border border-border/50 p-5 rounded-2xl">
-        <h1 className="text-3xl font-black tracking-tighter flex items-center gap-3">
-          <Brain className="text-blue-400" size={28} />
-          IA Insights
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">Diagnóstico inteligente de performance de campanhas</p>
-      </div>
-
-      <Card className="border-dashed border-border/50">
-        <CardContent className="py-16 flex flex-col items-center gap-4 text-center">
-          <Construction size={40} className="text-muted-foreground/40" />
-          <div>
-            <p className="text-lg font-bold text-foreground/80">Em Desenvolvimento</p>
-            <p className="text-sm text-muted-foreground mt-1">A análise com IA estará disponível em breve.</p>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="mt-6 flex-1 min-h-0 bg-transparent flex flex-col">
+      {activeTab === "overview" && <OverviewTab />}
+      {activeTab === "recomendacoes" && <RecommendationsTab />}
+      {activeTab === "benchmark" && <BenchmarkTab />}
+      {activeTab === "alertas" && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Carregando alertas...</p></div>}>
+          <LazyAlertasPage />
+        </Suspense>
+      )}
+      {activeTab === "estrategia" && <EstrategiaTab />}
     </div>
   );
 }
+
+function TabFromUrl() {
+  const searchParams = useSearchParams();
+  const { setActiveTab } = useAdIntelligence();
+  const urlTab = searchParams.get("tab");
+
+  useEffect(() => {
+    if (urlTab === "alertas" || urlTab === "recomendacoes" || urlTab === "benchmark" || urlTab === "overview" || urlTab === "estrategia") {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab, setActiveTab]);
+
+  return null;
+}
+
+export default function AdIntelligencePage() {
+  return (
+    <AdIntelligenceProvider>
+      <div className="flex flex-col min-h-full pb-20">
+        <Suspense fallback={null}><TabFromUrl /></Suspense>
+        <AdIntelligenceHeader />
+        <div className="mt-4">
+          <AdIntelligenceTabs />
+        </div>
+        <AdIntelligenceActiveView />
+      </div>
+    </AdIntelligenceProvider>
+  );
+}
+

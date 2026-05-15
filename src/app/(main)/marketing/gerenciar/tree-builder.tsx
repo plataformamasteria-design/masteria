@@ -294,7 +294,7 @@ export default function TreeBuilder({ editMode = false, editCampaignId, initialT
       const res = await fetch("/api/meta/criar-campanha", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(tree) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao criar campanha");
-      if (onFinish) onFinish(); else router.push("/trafego/gerenciar");
+      if (onFinish) onFinish(); else router.push("/marketing/gerenciar");
     } catch (e: any) { setErrorMsg(e.message); }
     finally { setLoading(false); }
   };
@@ -1099,3 +1099,4 @@ export default function TreeBuilder({ editMode = false, editCampaignId, initialT
     </>
   );
 }
+
