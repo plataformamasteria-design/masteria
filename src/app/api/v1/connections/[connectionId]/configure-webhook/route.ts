@@ -66,19 +66,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // 3. Obter o App Access Token
         const appAccessToken = await getAppAccessToken(appId, appSecret);
 
-        // 4. Gerar a URL de Callback e Token de Verificação
-        let baseUrl: string = 'https://masteria.app'; // Default to production URL for safety
-
-        // PRIORIDADE: Domínio customizado configurado pelo usuário > Replit Domain > Base URL
-        if (process.env.NEXT_PUBLIC_CUSTOM_DOMAIN && !process.env.NEXT_PUBLIC_CUSTOM_DOMAIN.includes('localhost')) {
-            baseUrl = `https://${process.env.NEXT_PUBLIC_CUSTOM_DOMAIN}`;
-        } else if (process.env.REPLIT_DEV_DOMAIN) {
-            baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-        } else if (process.env.NEXT_PUBLIC_BASE_URL && !process.env.NEXT_PUBLIC_BASE_URL.includes('localhost')) {
-            baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-        } else if (process.env.NODE_ENV === 'development') {
-            baseUrl = 'http://localhost:3000'; // Only fallback to localhost if explicitly in dev mode
-        }
+        const protocol = request.headers.get('x-forwarded-proto') || 'https';
+        const host = request.headers.get('host');
+        let baseUrl = `${protocol}://${host}`;
 
         if (!baseUrl.startsWith('https://') && !baseUrl.includes('localhost')) {
             baseUrl = baseUrl.replace('http://', 'https://');

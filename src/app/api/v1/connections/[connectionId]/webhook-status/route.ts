@@ -74,22 +74,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ status: 'NAO_CONFIGURADO' });
         }
 
-        // IMPORTANTE: Usar a mesma lógica do endpoint de configuração
-        // Priorizar REPLIT_DEV_DOMAIN para evitar comparação com localhost
-        let baseUrl: string;
-
-        if (process.env.REPLIT_DEV_DOMAIN) {
-            // Ambiente Replit - usar o domínio público
-            baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-        } else if (process.env.NEXT_PUBLIC_BASE_URL && !process.env.NEXT_PUBLIC_BASE_URL.includes('localhost')) {
-            // Produção ou ambiente personalizado (não localhost)
-            baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-        } else {
-            throw new Error("Domínio público não configurado.");
-        }
-
-        // Garantir HTTPS
-        if (!baseUrl.startsWith('https://')) {
+        // Get baseUrl from request headers to ensure it always matches the current environment
+        const protocol = request.headers.get('x-forwarded-proto') || 'https';
+        const host = request.headers.get('host');
+        let baseUrl = `${protocol}://${host}`;
+        
+        // Ensure https for production
+        if (!baseUrl.startsWith('https://') && !baseUrl.includes('localhost')) {
             baseUrl = baseUrl.replace('http://', 'https://');
         }
 
