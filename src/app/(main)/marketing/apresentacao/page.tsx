@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { TabLoading } from "@/components/ui/tab-loading";
-import { InvestimentoTimestamp } from "@/components/marketing/InvestimentoTimestamp";
+import { InvestimentoTimestamp } from "@/components/trafego/InvestimentoTimestamp";
 
 // ── Types ──────────────────────────────────────────────────────────
 interface ResumoData {
@@ -740,4 +740,5 @@ export default function ApresentacaoPage() {
     </>
   );
 }
+
 

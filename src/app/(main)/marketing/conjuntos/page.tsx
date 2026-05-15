@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { TabelaInteligencia } from "@/components/marketing/TabelaInteligencia";
-import { DrillDownEntidade } from "@/components/marketing/DrillDownEntidade";
+import { TabelaInteligencia } from "@/components/trafego/TabelaInteligencia";
+import { DrillDownEntidade } from "@/components/trafego/DrillDownEntidade";
 import type { MetricaEntidade } from "@/lib/metricas/por-entidade";
 
 export default function ConjuntosPage() {
@@ -27,4 +27,5 @@ export default function ConjuntosPage() {
     </div>
   );
 }
+
 

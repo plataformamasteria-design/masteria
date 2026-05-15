@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TIPOS_FUNIL, type TipoFunil } from "@/components/marketing/FunilCampanhaConfig";
+import { TIPOS_FUNIL, type TipoFunil } from "@/components/trafego/FunilCampanhaConfig";
 import { cn } from "@/lib/utils";
 import { LayoutGrid, MessageCircle, FileText, Video } from "lucide-react";
 
@@ -98,4 +98,5 @@ export function FunilFilterBar({ value, onChange, countByFunil }: {
     </div>
   );
 }
+
 

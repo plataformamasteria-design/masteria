@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo, useCallback, Fragment, lazy, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
-import { TabelaInteligencia } from "@/components/marketing/TabelaInteligencia";
-import { DrillDownEntidade } from "@/components/marketing/DrillDownEntidade";
+import { TabelaInteligencia } from "@/components/trafego/TabelaInteligencia";
+import { DrillDownEntidade } from "@/components/trafego/DrillDownEntidade";
 import type { MetricaEntidade } from "@/lib/metricas/por-entidade";
 import type { AdsMetadata, AdsPerformance, LeadAdsAttribution } from "@/types/database";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,15 +30,15 @@ import { useAccountSpend } from "@/hooks/use-account-spend";
 import { useAudiencesEngine } from "@/hooks/use-audiences-engine";
 import { IAModelSelector } from "@/components/ia-model-selector";
 import { motion, AnimatePresence } from "framer-motion";
-import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/marketing/FunilCampanhaConfig";
-import { AdDetailDrawer } from "@/components/marketing/AdDetailDrawer";
-import type { AdDetailData } from "@/components/marketing/AdDetailDrawer";
-import { ConjuntoAlertBadge, ConjuntoAlertSummary, calcConjuntoAlert } from "@/components/marketing/ConjuntoAlertBadge";
-import type { ConjuntoAlertResult } from "@/components/marketing/ConjuntoAlertBadge";
+import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/trafego/FunilCampanhaConfig";
+import { AdDetailDrawer } from "@/components/trafego/AdDetailDrawer";
+import type { AdDetailData } from "@/components/trafego/AdDetailDrawer";
+import { ConjuntoAlertBadge, ConjuntoAlertSummary, calcConjuntoAlert } from "@/components/trafego/ConjuntoAlertBadge";
+import type { ConjuntoAlertResult } from "@/components/trafego/ConjuntoAlertBadge";
 
 /* ========== LAZY IMPORTS ========== */
-const LazyEstrutura = lazy(() => import("@/app/marketing/estrutura/_estrutura-content"));
-const LazyGerenciar = lazy(() => import("@/app/marketing/gerenciar/_gerenciar-content"));
+const LazyEstrutura = lazy(() => import("@/app/(main)/marketing/estrutura/_estrutura-content"));
+const LazyGerenciar = lazy(() => import("@/app/(main)/marketing/gerenciar/_gerenciar-content"));
 
 function TabFallback() {
   return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Carregando...</p></div>;
@@ -1394,4 +1394,5 @@ function CampanhasWithParams() {
   const nivelExpand = searchParams?.get("nivel") || null;
   return <CampanhasInner initialTab={initialTab} nivelExpand={nivelExpand} />;
 }
+
 

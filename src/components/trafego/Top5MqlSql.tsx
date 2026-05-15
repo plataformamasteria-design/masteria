@@ -7,10 +7,10 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/format";
 import { getConfigMqlSql, type ConfigMqlSql } from "@/lib/metricas/mql-sql";
 import { ATRIBUICAO_INICIO_DATA } from "@/lib/atribuicao";
-import { useConfigFunilCampanha, FunilBadge } from "@/components/marketing/FunilCampanhaConfig";
+import { useConfigFunilCampanha, FunilBadge } from "@/components/trafego/FunilCampanhaConfig";
 import { Trophy, Loader2 } from "lucide-react";
 import useSWR from "swr";
-import type { FunilFilterValue } from "@/components/marketing/FunilFilter";
+import type { FunilFilterValue } from "@/components/trafego/FunilFilter";
 
 interface AdRanking {
   ad_id: string;
@@ -385,4 +385,5 @@ export function Top5MqlSql({ funilFiltro = "todos" }: { funilFiltro?: FunilFilte
     </div>
   );
 }
+
 

@@ -3,8 +3,8 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TrendingUp, Clock } from "lucide-react";
 import { usePeriodoTrafego } from "@/contexts/periodo-trafego-context";
-import { SaturacaoFrequencia } from "@/components/marketing/SaturacaoFrequencia";
-import { HorarioLeads } from "@/components/marketing/HorarioLeads";
+import { SaturacaoFrequencia } from "@/components/trafego/SaturacaoFrequencia";
+import { HorarioLeads } from "@/components/trafego/HorarioLeads";
 
 export default function FrequenciaPage() {
   const { dataInicio, dataFim } = usePeriodoTrafego();
@@ -44,4 +44,5 @@ export default function FrequenciaPage() {
     </div>
   );
 }
+
 

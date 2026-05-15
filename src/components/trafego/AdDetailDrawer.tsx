@@ -7,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { DataHealthBadge } from "@/components/marketing/DataHealthBadge";
+import { DataHealthBadge } from "@/components/trafego/DataHealthBadge";
 import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -385,4 +385,5 @@ export function AdDetailDrawer({ ad, open, onOpenChange }: AdDetailDrawerProps) 
 }
 
 export type { AdDetailData };
+
 

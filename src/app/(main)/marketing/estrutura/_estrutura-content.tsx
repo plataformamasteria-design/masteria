@@ -14,7 +14,7 @@ import { useTrafegoData } from "@/hooks/use-trafego-data";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import useSWR from "swr";
-import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/marketing/FunilCampanhaConfig";
+import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/trafego/FunilCampanhaConfig";
 
 type Nivel = "campanhas" | "conjuntos" | "anuncios";
 type TabAnuncio = "leads" | "criativo" | "anomalias";
@@ -456,4 +456,5 @@ export default function TrafegoEstruturaPage() {
 
 function UsersIcon({ size, className }: { size: number; className?: string }) { return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>; }
 function BadgeDollarSignIcon({ size, className }: { size: number; className?: string }) { return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m3.85 8.62 1.4 1.4M18.75 14l-1.4-1.4"></path><path d="M3.85 15.38 5.25 14M18.75 10l-1.4 1.4"></path><path d="M7 6h10C18.1 6 19 6.9 19 8v8c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2Z"></path><path d="M12 14c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3Z"></path></svg>; }
+
 

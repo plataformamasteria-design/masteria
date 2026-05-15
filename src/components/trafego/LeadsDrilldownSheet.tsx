@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Download, Search } from "lucide-react";
-import type { FunilFilterValue } from "@/components/marketing/FunilFilter";
+import type { FunilFilterValue } from "@/components/trafego/FunilFilter";
 
 export type DrilldownTipo = "mql" | "sql" | "reuniao";
 
@@ -238,4 +238,5 @@ export function LeadsDrilldownSheet({
     </Sheet>
   );
 }
+
 

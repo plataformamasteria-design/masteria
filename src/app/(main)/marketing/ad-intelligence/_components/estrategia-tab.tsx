@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { FunilComarka } from "@/components/marketing/FunilComarka";
-import { CardsKPIs } from "@/components/marketing/CardsKPIs";
+import { FunilComarka } from "@/components/trafego/FunilComarka";
+import { CardsKPIs } from "@/components/trafego/CardsKPIs";
 import { BarChart3, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdIntelligence } from "./ai-context";
@@ -72,4 +72,5 @@ export function EstrategiaTab() {
     </div>
   );
 }
+
 

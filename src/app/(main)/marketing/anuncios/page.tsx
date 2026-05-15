@@ -18,15 +18,15 @@ import {
   CheckCircle2, AlertTriangle, Search, ChevronDown, Radio, Video, PenLine,
 } from "lucide-react";
 import { usePeriodoTrafego } from "@/contexts/periodo-trafego-context";
-import { truncateAdName } from "@/lib/marketing-ui";
+import { truncateAdName } from "@/lib/trafego-ui";
 import { cn } from "@/lib/utils";
 import { useTrafegoData } from "@/hooks/use-trafego-data";
 import { toast } from "sonner";
 
 // Lazy tabs: Biblioteca + Frequencia (movidas de /criativos)
 // Lazy tabs: Biblioteca + Frequencia (movidas de /criativos)
-const LazyBiblioteca = lazy(() => import("@/app/marketing/biblioteca/_biblioteca-content"));
-const LazyFrequencia = lazy(() => import("@/app/marketing/frequencia/_frequencia-content"));
+const LazyBiblioteca = lazy(() => import("@/app/(main)/marketing/biblioteca/_biblioteca-content"));
+const LazyFrequencia = lazy(() => import("@/app/(main)/marketing/frequencia/_frequencia-content"));
 
 // ─── Types for Copy Intelligence ──────────────────────────
 
@@ -247,8 +247,8 @@ Retorne: { "commonPattern": "string - o que os top criativos tem em comum", "nex
 // ═══════════════════════════════════════
 
 import { Suspense } from "react";
-import { TabelaInteligencia } from "@/components/marketing/TabelaInteligencia";
-import { DrillDownEntidade } from "@/components/marketing/DrillDownEntidade";
+import { TabelaInteligencia } from "@/components/trafego/TabelaInteligencia";
+import { DrillDownEntidade } from "@/components/trafego/DrillDownEntidade";
 import type { MetricaEntidade } from "@/lib/metricas/por-entidade";
 
 export default function CriativosHubWrapper() {
@@ -1048,4 +1048,5 @@ function InlineAnaliseCard({ analise }: { analise: AnaliseResult }) {
     </div>
   );
 }
+
 

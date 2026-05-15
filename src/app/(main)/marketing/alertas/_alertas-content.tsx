@@ -11,7 +11,7 @@ import { formatCurrency } from "@/lib/format";
 import { AlertTriangle, CheckCircle, Clock, Brain, Shield, Plus, ToggleLeft, ToggleRight, Loader2, X, Pause, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 import { AlertaDiagnosticoModal, type AlertaDiagnosticoData } from "@/components/alerta-diagnostico-modal";
-import { truncateAdName } from "@/lib/marketing-ui";
+import { truncateAdName } from "@/lib/trafego-ui";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type Tab = "alertas" | "regras" | "anomalias";
@@ -547,5 +547,6 @@ export default function TrafegoAlertasPage() {
     </div>
   );
 }
+
 
 

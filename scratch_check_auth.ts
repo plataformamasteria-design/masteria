@@ -1,11 +1,23 @@
-import 'dotenv/config';
-import { Pool } from 'pg';
+import { db } from './src/lib/db';
+import { users, companies } from './src/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 async function main() {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-    const res = await pool.query("SELECT count(*) as c FROM baileys_auth_store WHERE connection_id = '70fe289c-a77e-4e57-b278-38924f022b62'");
-    console.log('Records:', res.rows[0].c);
-    process.exit(0);
+    try {
+        const userId = 'f400e57a-3884-43cf-8277-4f56874f5ad6';
+        const results = await db
+          .select({
+            user: users,
+            company: companies
+          })
+          .from(users)
+          .leftJoin(companies, eq(users.companyId, companies.id))
+          .where(eq(users.id, userId))
+          .limit(1);
+          
+        console.log("Success:", !!results[0]);
+    } catch (e: any) {
+        console.error("DB Query Error:", e.message);
+    }
 }
-
 main();

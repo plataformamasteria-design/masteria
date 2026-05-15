@@ -10,7 +10,7 @@ import { OverviewTab } from "./_components/overview";
 import { RecommendationsTab, BenchmarkTab } from "./_components/other-tabs";
 import { EstrategiaTab } from "./_components/estrategia-tab";
 
-const LazyAlertasPage = lazy(() => import("@/app/marketing/alertas/_alertas-content"));
+const LazyAlertasPage = lazy(() => import("@/app/(main)/marketing/alertas/_alertas-content"));
 
 function AdIntelligenceActiveView() {
   const { activeTab } = useAdIntelligence();
@@ -58,4 +58,5 @@ export default function AdIntelligencePage() {
     </AdIntelligenceProvider>
   );
 }
+
 

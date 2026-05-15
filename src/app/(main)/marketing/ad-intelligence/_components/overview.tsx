@@ -7,7 +7,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Loader2, TrendingUp, TrendingDown, Target, DollarSign, Activity, Info, ShieldCheck, AlertTriangle } from "lucide-react";
 import { CanalNichoCard } from "./canal-nicho-card";
-import { DataHealthBadge, type HealthStatus } from "@/components/marketing/DataHealthBadge";
+import { DataHealthBadge, type HealthStatus } from "@/components/trafego/DataHealthBadge";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 
@@ -350,4 +350,5 @@ export function OverviewTab() {
     </div>
   );
 }
+
 
