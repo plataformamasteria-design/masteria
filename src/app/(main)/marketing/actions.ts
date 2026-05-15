@@ -53,33 +53,35 @@ async function fetchAllPages(url: string) {
     return results;
 }
 
-function extractConversions(actions: any[], objective?: string): number {
+type MetaAction = { action_type: string; value?: string };
+
+function extractConversions(actions: MetaAction[], objective?: string): number {
     const isSales = objective === 'CONVERSIONS' || objective === 'OUTCOME_SALES';
     if (isSales) {
-        const purchase = (actions || []).find((a: any) => a.action_type === 'purchase');
-        if (purchase) return parseInt(purchase.value || '0');
+        const purchase = (actions || []).find((a) => a.action_type === 'purchase');
+        if (purchase && purchase.value) return parseInt(purchase.value);
     }
     const conversionTypes = ['lead', 'purchase', 'complete_registration', 'contact', 'submit_application', 'onsite_conversion.messaging_conversation_started_7d'];
     return (actions || [])
-        .filter((a: any) => conversionTypes.includes(a.action_type))
-        .reduce((sum: number, a: any) => sum + parseInt(a.value || '0'), 0);
+        .filter((a) => conversionTypes.includes(a.action_type))
+        .reduce((sum: number, a) => sum + parseInt(a.value || '0'), 0);
 }
 
-function extractCostPerLead(costPerActionType: any[], objective?: string): number | null {
+function extractCostPerLead(costPerActionType: MetaAction[], objective?: string): number | null {
     const isSales = objective === 'CONVERSIONS' || objective === 'OUTCOME_SALES';
     if (isSales) {
-        const cpp = (costPerActionType || []).find((a: any) => a.action_type === 'purchase');
-        if (cpp) return parseFloat(cpp.value);
+        const cpp = (costPerActionType || []).find((a) => a.action_type === 'purchase');
+        if (cpp && cpp.value) return parseFloat(cpp.value);
     }
     const cpl = (costPerActionType || [])
-        .find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.messaging_conversation_started_7d');
-    return cpl ? parseFloat(cpl.value) : null;
+        .find((a) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.messaging_conversation_started_7d');
+    return cpl && cpl.value ? parseFloat(cpl.value) : null;
 }
 
-function extractRoas(action_values: any[], spend: number): number {
-    const purchase = (action_values || []).find((a: any) => a.action_type === 'purchase');
-    if (purchase && spend > 0) {
-        return parseFloat(purchase.value || '0') / spend;
+function extractRoas(action_values: MetaAction[], spend: number): number {
+    const purchase = (action_values || []).find((a) => a.action_type === 'purchase');
+    if (purchase && purchase.value && spend > 0) {
+        return parseFloat(purchase.value) / spend;
     }
     return 0;
 }

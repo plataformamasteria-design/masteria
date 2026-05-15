@@ -23,9 +23,10 @@ type KPIMap = {
   spend: number; impressions: number; clicks: number; leads: number;
   reach: number; revenue: number; purchases: number; checkouts: number;
   inline_link_clicks: number; landing_page_views: number; total_actions: number;
+  messages: number; thruplays: number; profile_visits: number; link_clicks: number;
 };
 
-const emptyKPI: KPIMap = { spend: 0, impressions: 0, clicks: 0, leads: 0, reach: 0, revenue: 0, purchases: 0, checkouts: 0, inline_link_clicks: 0, landing_page_views: 0, total_actions: 0 };
+const emptyKPI: KPIMap = { spend: 0, impressions: 0, clicks: 0, leads: 0, reach: 0, revenue: 0, purchases: 0, checkouts: 0, inline_link_clicks: 0, landing_page_views: 0, total_actions: 0, messages: 0, thruplays: 0, profile_visits: 0, link_clicks: 0 };
 
 export async function GET(req: NextRequest) {
   try {
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
       const cl = parseInt(row.clicks || "0");
       const re = parseInt(row.reach || "0");
       const ilc = parseInt(row.inline_link_clicks || "0");
-      const { ld, pur, rev, chk, lpv, total_actions } = extractActionsData(row.actions || [], row.action_values || []);
+      const { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions } = extractActionsData(row.actions || [], row.action_values || []);
       const id = row.campaign_id;
       const cur = campMap.get(id) || { ...emptyKPI };
       campMap.set(id, {
@@ -97,6 +98,10 @@ export async function GET(req: NextRequest) {
         inline_link_clicks: cur.inline_link_clicks + ilc,
         landing_page_views: cur.landing_page_views + lpv,
         total_actions: cur.total_actions + total_actions,
+        messages: cur.messages + msg,
+        thruplays: cur.thruplays + thruplay,
+        profile_visits: cur.profile_visits + profile_visits,
+        link_clicks: cur.link_clicks + link_clicks,
       });
     }
 

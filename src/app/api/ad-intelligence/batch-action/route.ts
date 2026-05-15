@@ -1,54 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMetaAuthForSession } from "@/lib/meta-ads";
+import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import { verifySession } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 
-// Simple in-memory store for batches to allow the UI to function without new DB tables
-let mockBatches: any[] = [];
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder"
+);
 
-export async function GET(req: NextRequest) {
-  try {
-    const auth = await getMetaAuthForSession();
-    if (!auth.companyId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+const ResolveItemSchema = z.object({
+  id: z.string(),
+  status: z.enum(["approved", "rejected", "adjusted"]),
+  ajuste_manual: z.string().optional()
+});
 
-    return NextResponse.json({ batches: mockBatches });
-  } catch (error: any) {
-    console.error("[api/ad-intelligence/batch-action]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+const BatchActionSchema = z.object({
+  batch_id: z.string(),
+  global_status: z.enum(["approved", "partially_approved", "rejected"]),
+  items: z.array(ResolveItemSchema)
+});
 
 export async function POST(req: NextRequest) {
+  const { error: authError } = await verifySession();
+  if (authError) return authError;
+
   try {
-    const auth = await getMetaAuthForSession();
-    if (!auth.companyId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await req.json();
+    const parsed = BatchActionSchema.safeParse(body);
+    
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid payload", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const body = await req.json();
-    const { batch_id, global_status, items } = body;
+    const { batch_id, global_status, items } = parsed.data;
 
-    const batch = mockBatches.find(b => b.id === batch_id);
-    if (batch) {
-      batch.status = global_status;
-      if (items && Array.isArray(items)) {
-        items.forEach((item: any) => {
-          const bItem = batch.ad_intelligence_batch_items.find((i: any) => i.id === item.id);
-          if (bItem) bItem.status = item.status;
-        });
-      }
+    // 1. Atualiza Status do Batch
+    const { error: batchErr } = await supabase
+      .from("ad_intelligence_batches")
+      .update({ status: global_status, resolved_at: new Date().toISOString() })
+      .eq("id", batch_id);
+
+    if (batchErr) throw batchErr;
+
+    // 2. Atualiza Status dos Itens Individualmente
+    for (const item of items) {
+      await supabase
+        .from("ad_intelligence_batch_items")
+        .update({ 
+          status: item.status, 
+          ajuste_manual: item.ajuste_manual || null 
+        })
+        .eq("id", item.id);
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("[api/ad-intelligence/batch-action]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[BatchAction Error]", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
-// Helper to push new batches from cluster-analysis
-export function addMockBatch(batch: any) {
-  mockBatches.unshift(batch);
+export async function GET() {
+  const { error: authError } = await verifySession();
+  if (authError) return authError;
+
+  try {
+    // Retorna todos os Lotes Pendentes com seus items
+    const { data: batches, error } = await supabase
+      .from("ad_intelligence_batches")
+      .select(`
+        id, title, niche, general_diagnosis, status, created_at,
+        ad_intelligence_batch_items (
+          id, account_id, account_name, diagnosis, suggested_action, confidence_level, status
+        )
+      `)
+      .order("created_at", { ascending: false });
+      
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, batches });
+  } catch(err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

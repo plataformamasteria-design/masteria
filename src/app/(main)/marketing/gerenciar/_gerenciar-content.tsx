@@ -8,7 +8,7 @@ import {
   RefreshCw, BarChart3, DollarSign, Users, Zap, ExternalLink,
   Target, AlertTriangle, CheckCircle2, Layers, Eye, Copy,
   TrendingUp, TrendingDown, Minus, MousePointer, ShoppingCart,
-  Calendar, Filter,
+  Calendar, Filter, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +71,8 @@ interface Campaign {
 type StatusFilter = "ALL" | "ACTIVE" | "PAUSED" | "RECENT";
 type MetricPreset = "PERFORMANCE" | "PERFORMANCE_CLICKS" | "ENGAGEMENT";
 type DatePreset = "7d" | "30d" | "3m" | "custom";
+type PrimaryMetric = "LEADS" | "COMPRAS" | "MENSAGENS" | "CLIQUES" | "THRUPLAY" | "VISITAS_PERFIL";
+type MetricColumn = { key: string; label: string; fmt: (v: any) => string };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const OBJECTIVE_PT: Record<string, string> = {
@@ -93,38 +95,66 @@ function getDateRange(preset: DatePreset, customSince: string, customUntil: stri
 }
 
 // ── Metric column definitions ───────────────────────────────────────────────────
-const METRIC_COLS: Record<MetricPreset, { key: string; label: string; fmt: (v: any) => string }[]> = {
-  PERFORMANCE: [
-    { key: "spend", label: "Valor Gasto", fmt: (v) => fmtExact(v || 0) },
-    { key: "leads", label: "Resultados", fmt: (v) => fmtNum(v || 0) },
-    { key: "cpl", label: "Custo por Result.", fmt: (v) => v ? fmtExact(v) : "—" },
-    { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
-    { key: "impressions", label: "Impressões", fmt: (v) => fmtNum(v || 0) },
-  ],
-  PERFORMANCE_CLICKS: [
-    { key: "leads", label: "Resultados", fmt: (v) => fmtNum(v || 0) },
-    { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
-    { key: "frequency", label: "Frequência", fmt: (v) => v ? v.toFixed(2) : "—" },
-    { key: "cpl", label: "Custo por resultado", fmt: (v) => v ? fmtExact(v) : "—" },
-    { key: "spend", label: "Valor usado", fmt: (v) => fmtExact(v || 0) },
-    { key: "impressions", label: "Impressões", fmt: (v) => fmtNum(v || 0) },
-    { key: "cpm", label: "CPM (custo por 1.000 impr.)", fmt: (v) => v ? fmtExact(v) : "—" },
-    { key: "inline_link_clicks", label: "Cliques no link", fmt: (v) => fmtNum(v || 0) },
-    { key: "cpc_link", label: "CPC (clique no link)", fmt: (v) => v ? fmtExact(v) : "—" },
-    { key: "ctr_link", label: "CTR (taxa de cliques no link)", fmt: (v) => v ? fmtPct(v) : "—" },
-    { key: "clicks", label: "Cliques (todos)", fmt: (v) => fmtNum(v || 0) },
-    { key: "ctr", label: "CTR (todos)", fmt: (v) => v ? fmtPct(v) : "—" },
-    { key: "cpc", label: "CPC (todos)", fmt: (v) => v ? fmtExact(v) : "—" },
-    { key: "landing_page_views", label: "Visual. da pág. de destino", fmt: (v) => fmtNum(v || 0) },
-    { key: "cost_per_lpv", label: "Custo por visualização", fmt: (v) => v ? fmtExact(v) : "—" },
-  ],
-  ENGAGEMENT: [
-    { key: "spend", label: "Valor Gasto", fmt: (v) => fmtExact(v || 0) },
-    { key: "actions", label: "Engajamentos", fmt: (v) => fmtNum(v || 0) },
-    { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
-    { key: "frequency", label: "Frequência", fmt: (v) => v ? v.toFixed(2) : "—" },
-  ],
-};
+function getMetricCols(preset: MetricPreset, primaryMetric: PrimaryMetric) {
+  const pmKey = primaryMetric === "COMPRAS" ? "purchases" :
+                primaryMetric === "MENSAGENS" ? "messages" :
+                primaryMetric === "CLIQUES" ? "link_clicks" :
+                primaryMetric === "THRUPLAY" ? "thruplays" :
+                primaryMetric === "VISITAS_PERFIL" ? "profile_visits" : "leads";
+  
+  const cprKey = primaryMetric === "COMPRAS" ? "cpp" :
+                 primaryMetric === "MENSAGENS" ? "cost_per_message" :
+                 primaryMetric === "CLIQUES" ? "cpc_link" :
+                 primaryMetric === "THRUPLAY" ? "cost_per_thruplay" :
+                 primaryMetric === "VISITAS_PERFIL" ? "cost_per_profile_visit" : "cpl";
+
+  const resLabel = primaryMetric === "COMPRAS" ? "Compras" :
+                   primaryMetric === "MENSAGENS" ? "Mensagens" :
+                   primaryMetric === "CLIQUES" ? "Cliques (Link)" :
+                   primaryMetric === "THRUPLAY" ? "Thruplays" :
+                   primaryMetric === "VISITAS_PERFIL" ? "Visitas" : "Resultados";
+
+  const resCostLabel = "Custo / " + (
+                   primaryMetric === "COMPRAS" ? "Compra" :
+                   primaryMetric === "MENSAGENS" ? "Mensagem" :
+                   primaryMetric === "CLIQUES" ? "Clique" :
+                   primaryMetric === "THRUPLAY" ? "Thruplay" :
+                   primaryMetric === "VISITAS_PERFIL" ? "Visita" : "Result.");
+
+  const cols: Record<MetricPreset, MetricColumn[]> = {
+    PERFORMANCE: [
+      { key: "spend", label: "Valor Gasto", fmt: (v) => fmtExact(v || 0) },
+      { key: pmKey, label: resLabel, fmt: (v) => fmtNum(v || 0) },
+      { key: cprKey, label: resCostLabel, fmt: (v) => v ? fmtExact(v) : "—" },
+      { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
+      { key: "impressions", label: "Impressões", fmt: (v) => fmtNum(v || 0) },
+    ],
+    PERFORMANCE_CLICKS: [
+      { key: pmKey, label: resLabel, fmt: (v) => fmtNum(v || 0) },
+      { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
+      { key: "frequency", label: "Frequência", fmt: (v) => v ? v.toFixed(2) : "—" },
+      { key: cprKey, label: resCostLabel, fmt: (v) => v ? fmtExact(v) : "—" },
+      { key: "spend", label: "Valor usado", fmt: (v) => fmtExact(v || 0) },
+      { key: "impressions", label: "Impressões", fmt: (v) => fmtNum(v || 0) },
+      { key: "cpm", label: "CPM (custo por 1.000 impr.)", fmt: (v) => v ? fmtExact(v) : "—" },
+      { key: "inline_link_clicks", label: "Cliques no link", fmt: (v) => fmtNum(v || 0) },
+      { key: "cpc_link", label: "CPC (clique no link)", fmt: (v) => v ? fmtExact(v) : "—" },
+      { key: "ctr_link", label: "CTR (taxa de cliques no link)", fmt: (v) => v ? fmtPct(v) : "—" },
+      { key: "clicks", label: "Cliques (todos)", fmt: (v) => fmtNum(v || 0) },
+      { key: "ctr", label: "CTR (todos)", fmt: (v) => v ? fmtPct(v) : "—" },
+      { key: "cpc", label: "CPC (todos)", fmt: (v) => v ? fmtExact(v) : "—" },
+      { key: "landing_page_views", label: "Visual. da pág. de destino", fmt: (v) => fmtNum(v || 0) },
+      { key: "cost_per_lpv", label: "Custo por visualização", fmt: (v) => v ? fmtExact(v) : "—" },
+    ],
+    ENGAGEMENT: [
+      { key: "spend", label: "Valor Gasto", fmt: (v) => fmtExact(v || 0) },
+      { key: "actions", label: "Engajamentos", fmt: (v) => fmtNum(v || 0) },
+      { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
+      { key: "frequency", label: "Frequência", fmt: (v) => v ? v.toFixed(2) : "—" },
+    ],
+  };
+  return cols[preset];
+}
 
 // ── Status Badge ───────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -169,7 +199,7 @@ function AdRow({
   onEdit: (t: EditTarget) => void;
   onToggleStatus: (id: string, currentStatus: string) => void;
   loadingId: boolean;
-  metricCols: typeof METRIC_COLS[MetricPreset];
+  metricCols: MetricColumn[];
   onPreview: (id: string, name: string) => void;
 }) {
   const isActive = ad.status === "ACTIVE";
@@ -232,7 +262,7 @@ function AdSetRow({
   onEdit: (t: EditTarget) => void;
   onToggleStatus: (id: string, currentStatus: string, type: "adset") => void;
   loadingId: boolean;
-  metricCols: typeof METRIC_COLS[MetricPreset];
+  metricCols: MetricColumn[];
   onPreview: (id: string, name: string) => void;
 }) {
   const isExp = expandedAds.has(adset.id);
@@ -298,6 +328,7 @@ function AdSetRow({
 export default function TrafegoGerenciarPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [metricPreset, setMetricPreset] = useState<MetricPreset>("PERFORMANCE");
+  const [primaryMetric, setPrimaryMetric] = useState<PrimaryMetric>("LEADS");
   const periodoGlobal = usePeriodoTrafego();
   const [expandedCamps, setExpandedCamps] = useState<Set<string>>(new Set());
   const [expandedAds, setExpandedAds] = useState<Set<string>>(new Set());
@@ -318,7 +349,7 @@ export default function TrafegoGerenciarPage() {
   const since = periodoGlobal.dataInicio;
   const until = periodoGlobal.dataFim;
   // Investimento total centralizado (fonte única para todas as telas)
-  const { totalSpend: unifiedSpend, totalLeads: unifiedLeads } = useAccountSpend(since, until);
+  const { totalSpend: unifiedSpend, totalLeads, totalMessages, totalPurchases, totalInlineLinkClicks, totalThruplays, totalProfileVisits } = useAccountSpend(since, until);
   const swrKey = accountId ? `/api/meta/campanhas?since=${since}&until=${until}${acct}` : null;
 
   const { data, isLoading, error, mutate: revalidate } = useSWR<{ data: Campaign[]; since: string; until: string }>(
@@ -370,7 +401,6 @@ export default function TrafegoGerenciarPage() {
 
   // Usar fonte unificada para KPIs (mesma fonte que todas as telas de tráfego)
   const totalSpend = unifiedSpend;
-  const totalLeads = unifiedLeads;
   const activeCampaigns = campaigns.filter((c) => c.status === "ACTIVE");
   const totalBudget = activeCampaigns.reduce((s, c) => s + (c.daily_budget || 0), 0);
   const ativos = activeCampaigns.length;
@@ -427,8 +457,18 @@ export default function TrafegoGerenciarPage() {
     }
   }, [refresh]);
 
-  const metricCols = METRIC_COLS[metricPreset];
+  const metricCols = getMetricCols(metricPreset, primaryMetric);
   const colHeaders = ["Estrutura", "Ações", "Status", "Budget/Dia", ...metricCols.map(c => c.label)];
+
+  const metricOptions: { key: PrimaryMetric; label: string; value: number; icon: any }[] = [
+    { key: "LEADS", label: "Leads Gerados", value: totalLeads, icon: Users },
+    { key: "COMPRAS", label: "Compras", value: totalPurchases, icon: ShoppingCart },
+    { key: "MENSAGENS", label: "Mensagens", value: totalMessages, icon: MessageCircle },
+    { key: "CLIQUES", label: "Cliques no Link", value: totalInlineLinkClicks, icon: MousePointer },
+    { key: "THRUPLAY", label: "Thruplays", value: totalThruplays, icon: Play },
+    { key: "VISITAS_PERFIL", label: "Visitas ao Perfil", value: totalProfileVisits, icon: Eye },
+  ];
+  const activeMetric = metricOptions.find(o => o.key === primaryMetric) || metricOptions[0];
 
   if (isLoading && (!data || !data.data.length)) {
     return <TabLoading message="Sincronizando Estrutura..." />;
@@ -465,22 +505,55 @@ export default function TrafegoGerenciarPage() {
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5 auto-rows-min">
-        {[
-          { icon: BarChart3, label: "Campanhas Ativas", value: String(ativos), color: "text-foreground" },
-          { icon: DollarSign, label: "Budget Diário Total", value: fmt(totalBudget), color: "text-foreground" },
-          { icon: Zap, label: "Gasto no Período", value: fmt(totalSpend), color: "text-foreground" },
-          { icon: Users, label: "Leads Gerados", value: fmtNum(totalLeads), color: "text-foreground" },
-        ].map((kpi, i) => (
-          <motion.div key={kpi.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}>
-            <SpotlightCard className="h-full p-6 flex flex-col justify-between">
-              <div className="flex justify-between items-start mb-6">
-                <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-foreground/90">{kpi.label}</span>
-                <kpi.icon size={18} className="text-foreground/50" />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0, ease: [0.22, 1, 0.36, 1] }}>
+          <SpotlightCard className="h-full p-6 flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-foreground/90">Campanhas Ativas</span>
+              <BarChart3 size={18} className="text-foreground/50" />
+            </div>
+            <p className="text-4xl font-bold tracking-tighter text-foreground/90">{ativos}</p>
+          </SpotlightCard>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}>
+          <SpotlightCard className="h-full p-6 flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-foreground/90">Budget Diário Total</span>
+              <DollarSign size={18} className="text-foreground/50" />
+            </div>
+            <p className="text-4xl font-bold tracking-tighter text-foreground/90">{fmt(totalBudget)}</p>
+          </SpotlightCard>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}>
+          <SpotlightCard className="h-full p-6 flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-6">
+              <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-foreground/90">Gasto no Período</span>
+              <Zap size={18} className="text-foreground/50" />
+            </div>
+            <p className="text-4xl font-bold tracking-tighter text-foreground/90">{fmt(totalSpend)}</p>
+          </SpotlightCard>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}>
+          <SpotlightCard className="h-full p-6 flex flex-col justify-between relative group">
+            <div className="flex justify-between items-start mb-6">
+              <div className="relative inline-block z-10">
+                <select
+                  value={primaryMetric}
+                  onChange={(e) => setPrimaryMetric(e.target.value as PrimaryMetric)}
+                  className="appearance-none bg-transparent text-[10px] uppercase tracking-[0.15em] font-bold text-foreground/90 cursor-pointer outline-none hover:text-foreground transition-colors pr-5"
+                >
+                  {metricOptions.map(o => (
+                    <option key={o.key} value={o.key} className="bg-zinc-900 text-foreground">{o.label}</option>
+                  ))}
+                </select>
+                <div className="absolute right-0 top-[2px] pointer-events-none">
+                  <ChevronDown className="h-3 w-3 text-foreground/50 group-hover:text-foreground/90 transition-colors" />
+                </div>
               </div>
-              <p className="text-4xl font-bold tracking-tighter text-foreground/90">{kpi.value}</p>
-            </SpotlightCard>
-          </motion.div>
-        ))}
+              <activeMetric.icon size={18} className="text-foreground/50" />
+            </div>
+            <p className="text-4xl font-bold tracking-tighter text-foreground/90">{fmtNum(activeMetric.value)}</p>
+          </SpotlightCard>
+        </motion.div>
       </div>
 
       {/* ── Controls Bar ── */}

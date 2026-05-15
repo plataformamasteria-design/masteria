@@ -1,1 +1,0 @@
-{"type":"INSERT","table":"messages","schema":"public","record":{"id":"75d691bc-341e-41eb-811c-c765efee2224","chat_id":"50e26d7c-86bd-4375-8bd2-e87f2ffc4240","content":"Ok?","organization_id":"a1227084-d46e-4596-9897-3dabe85f1a09","is_from_user":true,"sync_source":"evolution"}}

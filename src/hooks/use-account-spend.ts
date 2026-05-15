@@ -15,6 +15,10 @@ export interface AccountSpendResult {
   totalClicks: number;
   totalReach: number;
   totalInlineLinkClicks: number;
+  totalMessages: number;
+  totalPurchases: number;
+  totalThruplays: number;
+  totalProfileVisits: number;
   isLoading: boolean;
 }
 
@@ -42,6 +46,10 @@ export function useAccountSpend(since: string, until: string): AccountSpendResul
     totalClicks: totals?.clicks ?? 0,
     totalReach: totals?.reach ?? 0,
     totalInlineLinkClicks: totals?.inline_link_clicks ?? 0,
+    totalMessages: totals?.messages ?? 0,
+    totalPurchases: totals?.purchases ?? 0,
+    totalThruplays: totals?.thruplays ?? 0,
+    totalProfileVisits: totals?.profile_visits ?? 0,
     isLoading: actuallyLoading,
   };
 }

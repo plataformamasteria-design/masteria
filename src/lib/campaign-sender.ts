@@ -54,7 +54,8 @@ async function createCampaignConversationAndMessage(
     connectionId: string,
     providerMessageId: string | null,
     messageContent: string,
-    _campaignId: string
+    _campaignId: string,
+    disableBotOnSend: boolean = false
 ): Promise<void> {
     try {
         await db.transaction(async (tx) => {
@@ -76,6 +77,7 @@ async function createCampaignConversationAndMessage(
                         status: 'IN_PROGRESS',
                         archivedAt: null,
                         archivedBy: null,
+                        aiActive: disableBotOnSend ? false : undefined,
                     })
                     .where(eq(conversations.id, conversation.id))
                     .returning();
@@ -90,6 +92,7 @@ async function createCampaignConversationAndMessage(
                         connectionId,
                         status: 'IN_PROGRESS',
                         lastMessageAt: new Date(),
+                        aiActive: !disableBotOnSend,
                     })
                     .returning();
             }
@@ -739,6 +742,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
 
         // Suporte a delay aleatório individual para Baileys via variableMappings
         const variableMappings = campaign.variableMappings as Record<string, any> || {};
+        const disableBotOnSend = Boolean(variableMappings._disableBot);
 
         // DELAY OBRIGATÓRIO PARA BAILEYS - Proteção anti-bloqueio WhatsApp
         const MIN_SAFE_DELAY = 5; // Mínimo absoluto de segurança
@@ -856,7 +860,8 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                                 campaign.connectionId!,
                                 result.providerMessageId || null,
                                 messageContent,
-                                campaign.id
+                                campaign.id,
+                                disableBotOnSend
                             );
                         }
                     } catch (dbError) {
@@ -919,7 +924,8 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                                 campaign.connectionId!,
                                 report.providerMessageId || null,
                                 messageContent,
-                                campaign.id
+                                campaign.id,
+                                disableBotOnSend
                             );
                         }
                     }

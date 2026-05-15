@@ -86,6 +86,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
     const [sendNow, setSendNow] = useState(true);
     const [variableMappings, setVariableMappings] = useState<Record<string, VariableMapping>>({});
     const [delayOption, setDelayOption] = useState<string>('fast');
+    const [disableBotOnSend, setDisableBotOnSend] = useState<boolean>(false);
 
     const delayOptions = [
         { value: 'fast', label: 'Rápido (11-33s)', minDelay: 11, maxDelay: 33, description: 'Mais rápido, maior risco de bloqueio' },
@@ -217,6 +218,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
         setSendNow(true);
         setVariableMappings({});
         setDelayOption('fast');
+        setDisableBotOnSend(false);
     }, []);
 
     const handleOpenChange = (open: boolean) => {
@@ -343,6 +345,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                 schedule,
                 minDelaySeconds: selectedDelay?.minDelay || 11,
                 maxDelaySeconds: selectedDelay?.maxDelay || 33,
+                disableBot: disableBotOnSend,
             };
 
             const response = await fetch('/api/v1/campaigns/baileys', {
@@ -714,6 +717,18 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                             <p className="text-xs text-muted-foreground">
                                 {delayOptions.find(d => d.value === delayOption)?.description}
                             </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-base font-semibold">Automação</Label>
+                            <Card className="p-4 bg-muted">
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox id="disable-bot-checkbox" checked={disableBotOnSend} onCheckedChange={(checked) => setDisableBotOnSend(!!checked)} />
+                                    <Label htmlFor="disable-bot-checkbox" className="font-normal cursor-pointer text-sm">
+                                        Desativar o robô (AI) instantaneamente para os contatos que receberem este disparo
+                                    </Label>
+                                </div>
+                            </Card>
                         </div>
 
                         <div className="space-y-2">

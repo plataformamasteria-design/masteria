@@ -27,6 +27,7 @@ const baileysCampaignSchema = z.object({
   schedule: z.string().datetime({ offset: true }).nullable().optional(),
   minDelaySeconds: z.number().min(5).max(600).optional().default(11),
   maxDelaySeconds: z.number().min(10).max(900).optional().default(33),
+  disableBot: z.boolean().optional().default(false),
 }).refine(data => {
   return data.contactListIds.length > 0 || data.tagIds.length > 0 || data.funnelIds.length > 0 || data.funnelStageIds.length > 0;
 }, {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         const { 
             contactListIds, excludeListIds, tagIds, excludeTagIds, funnelIds, funnelStageIds,
-            schedule, messageText, minDelaySeconds, maxDelaySeconds, ...campaignData 
+            schedule, messageText, minDelaySeconds, maxDelaySeconds, disableBot, ...campaignData 
         } = parsed.data;
         const isScheduled = !!schedule;
         
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             ...campaignData.variableMappings,
             _minDelaySeconds: minDelaySeconds,
             _maxDelaySeconds: maxDelaySeconds,
+            _disableBot: disableBot,
         };
 
         // VALIDAÇÃO 1: Verificar ownership da conexão e que é Baileys

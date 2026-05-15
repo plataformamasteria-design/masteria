@@ -69,20 +69,24 @@ export function formatAccountId(raw: string): string {
  * Helper para extrair leads de actions da Meta API.
  */
 export function extractActionsData(actions: any[], actionValues: any[]) {
-  let ld = 0, pur = 0, rev = 0, chk = 0, lpv = 0, total_actions = 0;
+  let ld = 0, pur = 0, rev = 0, chk = 0, lpv = 0, msg = 0, thruplay = 0, profile_visits = 0, link_clicks = 0, total_actions = 0;
   for (const a of (actions || [])) {
-    total_actions += parseFloat(a.value || "0");
-    if (a.action_type === "lead") ld += parseFloat(a.value || "0");
-    if (a.action_type === "purchase") pur += parseFloat(a.value || "0");
-    if (a.action_type === "initiate_checkout") chk += parseFloat(a.value || "0");
-    if (a.action_type === "landing_page_view" || a.action_type === "offsite_conversion.custom.landing_page_view") {
-      lpv += parseFloat(a.value || "0");
-    }
+    const val = parseFloat(a.value || "0");
+    total_actions += val;
+    
+    if (a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead") ld += val;
+    else if (a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase") pur += val;
+    else if (a.action_type === "initiate_checkout") chk += val;
+    else if (a.action_type === "landing_page_view" || a.action_type === "offsite_conversion.custom.landing_page_view") lpv += val;
+    else if (a.action_type === "onsite_conversion.messaging_conversation_started_7d" || a.action_type === "onsite_conversion.messaging_first_reply" || a.action_type === "messaging_conversation_started_7d" || a.action_type === "onsite_conversion.messaging_conversation_started_14d") msg += val;
+    else if (a.action_type === "thruplay" || a.action_type === "video_view_thruplay") thruplay += val;
+    else if (a.action_type === "onsite_conversion.ig_profile_visits" || a.action_type === "instagram_profile_visits" || a.action_type === "profile_visit") profile_visits += val;
+    else if (a.action_type === "link_click") link_clicks += val;
   }
   for (const v of (actionValues || [])) {
-    if (v.action_type === "purchase") rev += parseFloat(v.value || "0");
+    if (v.action_type === "purchase" || v.action_type === "offsite_conversion.fb_pixel_purchase") rev += parseFloat(v.value || "0");
   }
-  return { ld, pur, rev, chk, lpv, total_actions };
+  return { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions };
 }
 
 /**
@@ -92,14 +96,22 @@ export function injectDerivedMetrics(kpi: {
   spend: number; impressions: number; clicks: number; leads: number;
   reach: number; revenue: number; purchases: number; checkouts: number;
   inline_link_clicks: number; landing_page_views: number; total_actions: number;
+  messages?: number; thruplays?: number; profile_visits?: number; link_clicks?: number;
 }) {
   const { spend: sp, leads: ld, impressions: im, clicks: cl, reach: re,
     purchases: pur, revenue: rev, inline_link_clicks: ilc,
-    landing_page_views: lpv, total_actions: acts } = kpi;
+    landing_page_views: lpv, total_actions: acts,
+    messages: msg = 0, thruplays: thru = 0, profile_visits: pv = 0, link_clicks: lc = 0 } = kpi;
+
+  const actual_link_clicks = ilc > 0 ? ilc : lc;
 
   return {
     ...kpi,
     actions: acts,
+    messages: msg,
+    thruplays: thru,
+    profile_visits: pv,
+    link_clicks: actual_link_clicks,
     cpl: ld > 0 ? sp / ld : null,
     cpm: im > 0 ? (sp / im) * 1000 : null,
     cpc: cl > 0 ? sp / cl : null,
@@ -107,8 +119,11 @@ export function injectDerivedMetrics(kpi: {
     frequency: re > 0 ? im / re : null,
     cpp: pur > 0 ? sp / pur : null,
     roas: sp > 0 ? rev / sp : null,
-    cpc_link: ilc > 0 ? sp / ilc : null,
-    ctr_link: im > 0 && ilc > 0 ? (ilc / im) * 100 : null,
+    cpc_link: actual_link_clicks > 0 ? sp / actual_link_clicks : null,
+    ctr_link: im > 0 && actual_link_clicks > 0 ? (actual_link_clicks / im) * 100 : null,
     cost_per_lpv: lpv > 0 ? sp / lpv : null,
+    cost_per_message: msg > 0 ? sp / msg : null,
+    cost_per_thruplay: thru > 0 ? sp / thru : null,
+    cost_per_profile_visit: pv > 0 ? sp / pv : null,
   };
 }

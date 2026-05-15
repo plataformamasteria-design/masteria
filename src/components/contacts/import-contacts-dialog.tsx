@@ -277,16 +277,16 @@ const SegmentationStep = ({
                     <Label className="text-sm">Comportamento nas Listas/Tags principais acima:</Label>
                     <RadioGroup value={existingContactsBehavior} onValueChange={(val) => setExistingContactsBehavior(val as any)} className="space-y-2">
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="ignore" id="behavior-ignore" />
-                            <Label htmlFor="behavior-ignore" className="font-normal">Ignorar (Não adicionar nas listas/tags acima)</Label>
+                            <RadioGroupItem value="add_to_same" id="behavior-add" />
+                            <Label htmlFor="behavior-add" className="font-normal">Adicionar todos na lista (incluindo números que já estão na base)</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="add_to_same" id="behavior-add" />
-                            <Label htmlFor="behavior-add" className="font-normal">Adicionar nas listas/tags acima (Mantendo histórico antigo)</Label>
+                            <RadioGroupItem value="ignore" id="behavior-ignore" />
+                            <Label htmlFor="behavior-ignore" className="font-normal">Excluir da lista os números que já estão registrados na base (apenas novos)</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="overwrite" id="behavior-overwrite" />
-                            <Label htmlFor="behavior-overwrite" className="font-normal text-destructive">Substituir (Apagar das listas/tags antigas e colocar apenas nas novas)</Label>
+                            <Label htmlFor="behavior-overwrite" className="font-normal text-destructive">Substituir (Apagar das listas antigas e colocar apenas nesta nova)</Label>
                         </div>
                     </RadioGroup>
                 </div>

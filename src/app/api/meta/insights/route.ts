@@ -50,10 +50,10 @@ export async function GET(req: NextRequest) {
     if (level === "account") {
       const row = result.data?.data?.[0];
       if (!row) {
-        return NextResponse.json({ totals: { spend: 0, leads: 0, impressions: 0, clicks: 0, reach: 0, inline_link_clicks: 0 } });
+        return NextResponse.json({ totals: { spend: 0, leads: 0, impressions: 0, clicks: 0, reach: 0, inline_link_clicks: 0, messages: 0, purchases: 0, thruplays: 0, profile_visits: 0 } });
       }
 
-      const { ld } = extractActionsData(row.actions || [], row.action_values || []);
+      const { ld, msg, pur, thruplay, profile_visits, link_clicks } = extractActionsData(row.actions || [], row.action_values || []);
 
       return NextResponse.json({
         totals: {
@@ -62,7 +62,11 @@ export async function GET(req: NextRequest) {
           impressions: parseInt(row.impressions || "0"),
           clicks: parseInt(row.clicks || "0"),
           reach: parseInt(row.reach || "0"),
-          inline_link_clicks: parseInt(row.inline_link_clicks || "0"),
+          inline_link_clicks: link_clicks > 0 ? link_clicks : parseInt(row.inline_link_clicks || "0"),
+          messages: msg,
+          purchases: pur,
+          thruplays: thruplay,
+          profile_visits: profile_visits,
         }
       });
     }
