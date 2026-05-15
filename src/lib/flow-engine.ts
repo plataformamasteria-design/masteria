@@ -987,12 +987,47 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
         case 'send_message':
         case 'message': {
             const text = await interpolateTemplate(step.data.message || step.data.content || '', ctx);
-            await sendUnifiedMessage({
+            const sendResult = await sendUnifiedMessage({
                 provider: ctx.provider as any,
                 connectionId: ctx.connectionId,
                 to: ctx.contactPhone || ctx.contactId,
                 message: text,
             });
+            
+            if (ctx.contactId) {
+                try {
+                    const { eq, and, desc } = await import('drizzle-orm');
+                    let activeConv = await db.query.conversations.findFirst({
+                        where: and(eq(conversations.contactId, ctx.contactId), eq(conversations.companyId, ctx.companyId)),
+                        orderBy: desc(conversations.lastMessageAt)
+                    });
+                    
+                    if (!activeConv && ctx.connectionId) {
+                        const [newConv] = await db.insert(conversations).values({
+                            companyId: ctx.companyId,
+                            contactId: ctx.contactId,
+                            connectionId: ctx.connectionId,
+                            status: 'IN_PROGRESS',
+                        }).returning();
+                        activeConv = newConv;
+                    }
+                    
+                    if (activeConv) {
+                        await db.insert(messages).values({
+                            companyId: ctx.companyId,
+                            conversationId: activeConv.id,
+                            senderType: 'AI',
+                            senderId: 'automation_node',
+                            content: text,
+                            contentType: 'TEXT',
+                            providerMessageId: sendResult.messageId || `auto-${Date.now()}`,
+                            status: sendResult.success ? 'SENT' : 'FAILED',
+                        });
+                    }
+                } catch (saveErr: any) {
+                    console.error('[FLOW-ENGINE] Failed to save send_message message:', saveErr.message);
+                }
+            }
             return { message: `Sent: ${text.slice(0, 50)} ` };
         }
 
@@ -1577,7 +1612,29 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
         // ---- Bot Toggle ----
         case 'bot_toggle': {
             const action = step.data.action || 'enable';
-            return { newVars: { bot_enabled: action === 'enable' }, message: `Bot: ${action} ` };
+            const botEnabled = action === 'enable' || action === 'true';
+            
+            if (ctx.contactId) {
+                try {
+                    const { eq, and, desc } = await import('drizzle-orm');
+                    const activeConv = await db.query.conversations.findFirst({
+                        where: and(
+                            eq(conversations.contactId, ctx.contactId),
+                            eq(conversations.companyId, ctx.companyId)
+                        ),
+                        orderBy: desc(conversations.lastMessageAt)
+                    });
+                    
+                    if (activeConv) {
+                        await db.update(conversations).set({ aiActive: botEnabled }).where(eq(conversations.id, activeConv.id));
+                        console.log(`[FLOW-ENGINE] 🤖 Bot toggled to ${botEnabled} for conversation ${activeConv.id}`);
+                    }
+                } catch (e) {
+                    console.error('[FLOW-ENGINE] bot_toggle error:', e);
+                }
+            }
+            
+            return { newVars: { bot_enabled: botEnabled }, message: `Bot: ${action} ` };
         }
 
         // ---- Stop ----
@@ -1923,8 +1980,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     await db.insert(messages).values({
                         companyId: ctx.companyId,
                         conversationId: conv.id,
-                        senderType: 'SYSTEM',
-                        content: `Template: ${templateName} `,
+                        senderType: 'AI',
+                        content: bodyText ? `[Template: ${templateName}]\n\n${bodyText}` : `Template: ${templateName} `,
                         contentType: 'TEXT',
                         providerMessageId: flowMsgId,
                         status: sendSuccess ? 'SENT' : 'FAILED',
