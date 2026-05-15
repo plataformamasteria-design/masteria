@@ -650,15 +650,11 @@ async function callExternalAIAgent(
             }
         }
 
-        // ✅ FORÇAR OPENAI CONFORME SOLICITAÇÃO (Substitui configurações prévias do Gemini/Google)
+        // ✅ FIX: Respeitar o provider configurado na persona (não forçar OpenAI)
         const originalProvider = (persona.provider || '').toUpperCase();
-        currentProvider = 'OPENAI';
+        currentProvider = originalProvider || 'OPENAI';
 
-        if (!persona.model || persona.model.includes('gemini') || persona.model.includes('google')) {
-            persona.model = 'gpt-4o-mini';
-        }
-
-        await logAutomation('INFO', `Provider configurado: ${currentProvider} (Original: ${originalProvider}, Persona: ${persona.name}, Model: ${persona.model})`, logContextBase);
+        await logAutomation('INFO', `Provider configurado: ${currentProvider} (Persona: ${persona.name}, Model: ${persona.model})`, logContextBase);
     } catch (error: any) {
         // Se falhar ao buscar persona, retornar false
         await logAutomation('ERROR', `Falha ao buscar persona ${personaId}: ${error.message}`, logContextBase);
