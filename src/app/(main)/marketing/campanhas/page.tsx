@@ -10,7 +10,7 @@ import type { AdsMetadata, AdsPerformance, LeadAdsAttribution } from "@/types/da
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Tooltip } from "@/components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -74,9 +74,16 @@ const CRM_TOOLTIP = "Dados de CRM não vinculados a esta campanha";
 
 function CrmDash() {
   return (
-    <Tooltip content={CRM_TOOLTIP}>
-      <span className="text-muted-foreground cursor-help">—</span>
-    </Tooltip>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="text-muted-foreground cursor-help">—</span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs">
+          {CRM_TOOLTIP}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -382,20 +389,34 @@ function ConjuntosInline({ campaignId, campaignName, metadata, performance, attr
 /* ========== ESTIMATED TOOLTIP ========== */
 function EstTooltip({ children }: { children: React.ReactNode }) {
   return (
-    <Tooltip content={<span className="text-[10px]">Estimado por atribuicao proporcional ao spend. Nao e valor exato — e uma distribuicao estatistica.</span>}>
-      <span className="cursor-help border-b border-dashed border-muted-foreground/30">{children}</span>
-    </Tooltip>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help border-b border-dashed border-muted-foreground/30">{children}</span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs">
+          <span className="text-[10px]">Estimado por atribuicao proporcional ao spend. Nao e valor exato — e uma distribuicao estatistica.</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
 function EstHeader({ label, sortCol: sc, currentSort, onToggle }: { label: string; sortCol: string; currentSort: string; onToggle: (col: string) => void }) {
   return (
     <th onClick={() => onToggle(sc)} className="px-3 py-2.5 text-right font-medium text-xs cursor-pointer hover:text-foreground whitespace-nowrap">
-      <Tooltip content={<span className="text-[10px]">Estimado por atribuicao proporcional ao spend</span>}>
-        <span className="border-b border-dashed border-muted-foreground/30 cursor-help">
-          {label} <span className="text-[8px] text-amber-400">⚡</span>
-        </span>
-      </Tooltip>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="border-b border-dashed border-muted-foreground/30 cursor-help">
+              {label} <span className="text-[8px] text-amber-400">⚡</span>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs text-xs">
+            <span className="text-[10px]">Estimado por atribuicao proporcional ao spend</span>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       {currentSort === sc && <ArrowUpDown size={10} className="inline ml-0.5" />}
     </th>
   );

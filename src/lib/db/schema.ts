@@ -2147,7 +2147,9 @@ export const marketingCampaigns = pgTable('marketing_campaigns', {
   dateEnd: timestamp('date_end', { mode: 'string' }),
   rawData: jsonb('raw_data').$type<Record<string, any>>(),
   syncedAt: timestamp('synced_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  companyCampaignUnique: unique('marketing_campaigns_company_campaign_unique').on(table.companyId, table.campaignId),
+}));
 
 export const marketingAdsets = pgTable('marketing_adsets', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -2172,7 +2174,9 @@ export const marketingAdsets = pgTable('marketing_adsets', {
   costPerLead: numeric('cost_per_lead'),
   rawData: jsonb('raw_data').$type<Record<string, any>>(),
   syncedAt: timestamp('synced_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  companyAdsetUnique: unique('marketing_adsets_company_adset_unique').on(table.companyId, table.adsetId),
+}));
 
 export const marketingAds = pgTable('marketing_ads', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -2198,7 +2202,9 @@ export const marketingAds = pgTable('marketing_ads', {
   creativeTitle: text('creative_title'),
   rawData: jsonb('raw_data').$type<Record<string, any>>(),
   syncedAt: timestamp('synced_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  companyAdUnique: unique('marketing_ads_company_ad_unique').on(table.companyId, table.adId),
+}));
 
 export const marketingSocialProfiles = pgTable('marketing_social_profiles', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),

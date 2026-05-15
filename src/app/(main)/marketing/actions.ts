@@ -30,22 +30,62 @@ function resolveDateRange(dateRange?: { from?: string; to?: string; preset?: str
     return { since, until, isAllTime: false };
 }
 
-// Calcula conversões a partir do campo actions da Graph API
-function extractConversions(actions: any[]): number {
+async function fetchAllPages(url: string) {
+    let results: any[] = [];
+    let currentUrl: string | null = url;
+    let fallbackCounter = 0;
+    while(currentUrl && fallbackCounter < 20) { // Limit to 20 pages max to avoid infinite loops
+        try {
+            const res = await fetch(currentUrl);
+            const data = await res.json();
+            if (data.error) {
+                console.error('[Sync Meta] Paging error:', data.error);
+                break;
+            }
+            if (data.data) results.push(...data.data);
+            currentUrl = data.paging?.next || null;
+            fallbackCounter++;
+        } catch(e) {
+            console.error('[Sync Meta] Fetch error:', e);
+            break;
+        }
+    }
+    return results;
+}
+
+function extractConversions(actions: any[], objective?: string): number {
+    const isSales = objective === 'CONVERSIONS' || objective === 'OUTCOME_SALES';
+    if (isSales) {
+        const purchase = (actions || []).find((a: any) => a.action_type === 'purchase');
+        if (purchase) return parseInt(purchase.value || '0');
+    }
     const conversionTypes = ['lead', 'purchase', 'complete_registration', 'contact', 'submit_application', 'onsite_conversion.messaging_conversation_started_7d'];
     return (actions || [])
         .filter((a: any) => conversionTypes.includes(a.action_type))
         .reduce((sum: number, a: any) => sum + parseInt(a.value || '0'), 0);
 }
 
-function extractCostPerLead(costPerActionType: any[]): number | null {
+function extractCostPerLead(costPerActionType: any[], objective?: string): number | null {
+    const isSales = objective === 'CONVERSIONS' || objective === 'OUTCOME_SALES';
+    if (isSales) {
+        const cpp = (costPerActionType || []).find((a: any) => a.action_type === 'purchase');
+        if (cpp) return parseFloat(cpp.value);
+    }
     const cpl = (costPerActionType || [])
         .find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.messaging_conversation_started_7d');
     return cpl ? parseFloat(cpl.value) : null;
 }
 
+function extractRoas(action_values: any[], spend: number): number {
+    const purchase = (action_values || []).find((a: any) => a.action_type === 'purchase');
+    if (purchase && spend > 0) {
+        return parseFloat(purchase.value || '0') / spend;
+    }
+    return 0;
+}
+
 // ====================================================================
-// GET DATA — Retorna todos os dados de marketing (credentials, campaigns, adsets, ads, profiles)
+// GET DATA
 // ====================================================================
 export async function getMarketingDataAction(companyId: string) {
     try {
@@ -127,7 +167,6 @@ export async function syncMetaAction(companyId: string, dateRange?: { from?: str
         const { access_token, ad_account_id, page_id, instagram_id } = creds[0].credentials as any;
         const { since: startDate, until: endDate, isAllTime } = resolveDateRange(dateRange);
 
-        // Meta limits time_range to 37 months max
         const maxBack = new Date(); maxBack.setMonth(maxBack.getMonth() - 37);
         const clampedStart = isAllTime ? maxBack.toISOString().split('T')[0] : (startDate < maxBack.toISOString().split('T')[0] ? maxBack.toISOString().split('T')[0] : startDate);
 
@@ -143,7 +182,6 @@ export async function syncMetaAction(companyId: string, dateRange?: { from?: str
                     const totalEng = (mediaData.data || []).reduce((s: number, p: any) => s + (p.like_count || 0) + (p.comments_count || 0), 0);
                     const engRate = igData.followers_count ? (totalEng / Math.max(1, mediaData.data?.length || 1) / igData.followers_count) * 100 : 0;
 
-                    // IG Insights
                     let insightsTotals: Record<string, number> = {};
                     let insightsDaily: Record<string, Record<string, number>> = {};
                     try {
@@ -247,155 +285,200 @@ export async function syncMetaAction(companyId: string, dateRange?: { from?: str
             } catch (e) { console.error('[Sync Meta] Facebook Error:', e); }
         }
 
-        // ---- Sync Meta Ads: Campaigns → AdSets → Ads ----
+        // ---- Sync Meta Ads: Campaigns → AdSets → Ads (BATCHED & UPSERT) ----
         if (ad_account_id && access_token) {
             try {
-                // Construir date param para insights
-                let dateParam = '';
-                if (isAllTime) {
-                    dateParam = 'date_preset=maximum';
-                } else {
-                    dateParam = `time_range=${encodeURIComponent(JSON.stringify({ since: clampedStart, until: endDate }))}`;
-                }
+                let dateParam = isAllTime ? 'date_preset=maximum' : `time_range=${encodeURIComponent(JSON.stringify({ since: clampedStart, until: endDate }))}`;
+                const insightsFields = 'impressions,clicks,spend,actions,ctr,cpc,cpm,cost_per_action_type,action_values,reach,frequency';
 
-                // 1. Listar todas as campanhas
-                const campaignsRes = await fetch(`https://graph.facebook.com/v21.0/act_${ad_account_id}/campaigns?fields=id,name,status,objective&limit=100&access_token=${access_token}`);
-                const campaignsData = await campaignsRes.json();
+                // 1. Fetch Structural Data with Pagination
+                const campaignsList = await fetchAllPages(`https://graph.facebook.com/v21.0/act_${ad_account_id}/campaigns?fields=id,name,status,objective&limit=200&access_token=${access_token}`);
+                const adsetsList = await fetchAllPages(`https://graph.facebook.com/v21.0/act_${ad_account_id}/adsets?fields=id,name,status,campaign_id,daily_budget,lifetime_budget,optimization_goal,targeting&limit=200&access_token=${access_token}`);
+                const adsList = await fetchAllPages(`https://graph.facebook.com/v21.0/act_${ad_account_id}/ads?fields=id,name,status,adset_id,campaign_id,creative{thumbnail_url,body,title}&limit=200&access_token=${access_token}`);
 
-                if (campaignsData.data && !campaignsData.error) {
-                    // Limpar dados antigos
-                    await db.delete(marketingCampaigns).where(and(eq(marketingCampaigns.companyId, companyId), eq(marketingCampaigns.platform, 'meta_ads')));
-                    await db.delete(marketingAdsets).where(and(eq(marketingAdsets.companyId, companyId), eq(marketingAdsets.platform, 'meta_ads')));
-                    await db.delete(marketingAds).where(and(eq(marketingAds.companyId, companyId), eq(marketingAds.platform, 'meta_ads')));
+                // 2. Fetch Insights Data (Batched at account level, grouped by levels)
+                const campInsightsList = await fetchAllPages(`https://graph.facebook.com/v21.0/act_${ad_account_id}/insights?level=campaign&fields=campaign_id,${insightsFields}&${dateParam}&limit=200&access_token=${access_token}`);
+                const adsetInsightsList = await fetchAllPages(`https://graph.facebook.com/v21.0/act_${ad_account_id}/insights?level=adset&fields=adset_id,${insightsFields}&${dateParam}&limit=200&access_token=${access_token}`);
+                const adInsightsList = await fetchAllPages(`https://graph.facebook.com/v21.0/act_${ad_account_id}/insights?level=ad&fields=ad_id,${insightsFields}&${dateParam}&limit=200&access_token=${access_token}`);
 
-                    for (const campaign of campaignsData.data) {
-                        // Insights da campanha
-                        let campInsights: any = {};
-                        try {
-                            const ciRes = await fetch(`https://graph.facebook.com/v21.0/${campaign.id}/insights?fields=impressions,clicks,spend,actions,ctr,cpc,cpm,cost_per_action_type,reach,frequency&${dateParam}&access_token=${access_token}`);
-                            const ciData = await ciRes.json();
-                            if (ciData.data?.length) campInsights = ciData.data[0];
-                        } catch (e) { console.error(`[Sync] Campaign insights error ${campaign.id}:`, e); }
+                // Map insights for quick lookup
+                const campMap = new Map(campInsightsList.map(i => [i.campaign_id, i]));
+                const adsetMap = new Map(adsetInsightsList.map(i => [i.adset_id, i]));
+                const adMap = new Map(adInsightsList.map(i => [i.ad_id, i]));
+                const campObjMap = new Map(campaignsList.map(c => [c.id, c.objective]));
 
-                        const campConversions = extractConversions(campInsights.actions);
-                        const campCpl = extractCostPerLead(campInsights.cost_per_action_type);
+                // 3. Upsert Campaigns
+                for (const campaign of campaignsList) {
+                    const ins = campMap.get(campaign.id) || {};
+                    const spendVal = parseFloat(ins.spend || '0');
+                    const conv = extractConversions(ins.actions, campaign.objective);
+                    const cpl = extractCostPerLead(ins.cost_per_action_type, campaign.objective);
+                    const roasVal = extractRoas(ins.action_values, spendVal);
 
-                        await db.insert(marketingCampaigns).values({
+                    await db.insert(marketingCampaigns)
+                        .values({
                             companyId,
                             platform: 'meta_ads',
                             campaignId: campaign.id,
                             campaignName: campaign.name,
                             status: campaign.status,
                             objective: campaign.objective,
-                            impressions: parseInt(campInsights.impressions || '0'),
-                            clicks: parseInt(campInsights.clicks || '0'),
-                            spend: String(campInsights.spend || '0'),
-                            conversions: campConversions,
-                            ctr: String(campInsights.ctr || '0'),
-                            cpc: String(campInsights.cpc || '0'),
-                            cpm: String(campInsights.cpm || '0'),
-                            roas: String(parseFloat(campInsights.spend || '0') > 0 ? campConversions / parseFloat(campInsights.spend || '1') : 0),
-                            reach: parseInt(campInsights.reach || '0'),
-                            frequency: String(campInsights.frequency || '0'),
-                            costPerLead: campCpl !== null ? String(campCpl) : null,
-                            dateStart: campInsights.date_start || clampedStart,
-                            dateEnd: campInsights.date_stop || endDate,
-                            rawData: { ...campaign, reach: parseInt(campInsights.reach || '0'), frequency: parseFloat(campInsights.frequency || '0'), cost_per_lead: campCpl, actions: campInsights.actions || [] },
-                        });
-
-                        // 2. Listar AdSets desta campanha
-                        try {
-                            const adsetsRes = await fetch(`https://graph.facebook.com/v21.0/${campaign.id}/adsets?fields=id,name,status,daily_budget,lifetime_budget,optimization_goal&limit=100&access_token=${access_token}`);
-                            const adsetsData = await adsetsRes.json();
-
-                            if (adsetsData.data) {
-                                for (const adset of adsetsData.data) {
-                                    let adsetInsights: any = {};
-                                    try {
-                                        const aiRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/insights?fields=impressions,clicks,spend,actions,ctr,cpc,cpm,cost_per_action_type,reach,frequency&${dateParam}&access_token=${access_token}`);
-                                        const aiData = await aiRes.json();
-                                        if (aiData.data?.length) adsetInsights = aiData.data[0];
-                                    } catch (e) { console.error(`[Sync] AdSet insights error ${adset.id}:`, e); }
-
-                                    const adsetConv = extractConversions(adsetInsights.actions);
-                                    const adsetCpl = extractCostPerLead(adsetInsights.cost_per_action_type);
-
-                                    await db.insert(marketingAdsets).values({
-                                        companyId,
-                                        platform: 'meta_ads',
-                                        campaignId: campaign.id,
-                                        adsetId: adset.id,
-                                        adsetName: adset.name,
-                                        status: adset.status,
-                                        dailyBudget: adset.daily_budget ? String(Number(adset.daily_budget) / 100) : null,
-                                        lifetimeBudget: adset.lifetime_budget ? String(Number(adset.lifetime_budget) / 100) : null,
-                                        optimizationGoal: adset.optimization_goal,
-                                        impressions: parseInt(adsetInsights.impressions || '0'),
-                                        clicks: parseInt(adsetInsights.clicks || '0'),
-                                        spend: String(adsetInsights.spend || '0'),
-                                        conversions: adsetConv,
-                                        ctr: String(adsetInsights.ctr || '0'),
-                                        cpc: String(adsetInsights.cpc || '0'),
-                                        cpm: String(adsetInsights.cpm || '0'),
-                                        reach: parseInt(adsetInsights.reach || '0'),
-                                        frequency: String(adsetInsights.frequency || '0'),
-                                        costPerLead: adsetCpl !== null ? String(adsetCpl) : null,
-                                        rawData: { ...adset, actions: adsetInsights.actions || [] },
-                                    });
-
-                                    // 3. Listar Ads deste AdSet
-                                    try {
-                                        const adsRes = await fetch(`https://graph.facebook.com/v21.0/${adset.id}/ads?fields=id,name,status,creative{thumbnail_url,body,title}&limit=100&access_token=${access_token}`);
-                                        const adsData = await adsRes.json();
-
-                                        if (adsData.data) {
-                                            for (const ad of adsData.data) {
-                                                let adInsights: any = {};
-                                                try {
-                                                    const adIRes = await fetch(`https://graph.facebook.com/v21.0/${ad.id}/insights?fields=impressions,clicks,spend,actions,ctr,cpc,cpm,cost_per_action_type,reach,frequency&${dateParam}&access_token=${access_token}`);
-                                                    const adIData = await adIRes.json();
-                                                    if (adIData.data?.length) adInsights = adIData.data[0];
-                                                } catch (e) { console.error(`[Sync] Ad insights error ${ad.id}:`, e); }
-
-                                                const adConv = extractConversions(adInsights.actions);
-                                                const adCpl = extractCostPerLead(adInsights.cost_per_action_type);
-
-                                                await db.insert(marketingAds).values({
-                                                    companyId,
-                                                    platform: 'meta_ads',
-                                                    adsetId: adset.id,
-                                                    campaignId: campaign.id,
-                                                    adId: ad.id,
-                                                    adName: ad.name,
-                                                    status: ad.status,
-                                                    impressions: parseInt(adInsights.impressions || '0'),
-                                                    clicks: parseInt(adInsights.clicks || '0'),
-                                                    spend: String(adInsights.spend || '0'),
-                                                    conversions: adConv,
-                                                    ctr: String(adInsights.ctr || '0'),
-                                                    cpc: String(adInsights.cpc || '0'),
-                                                    cpm: String(adInsights.cpm || '0'),
-                                                    reach: parseInt(adInsights.reach || '0'),
-                                                    frequency: String(adInsights.frequency || '0'),
-                                                    costPerLead: adCpl !== null ? String(adCpl) : null,
-                                                    creativeThumbnailUrl: ad.creative?.thumbnail_url || null,
-                                                    creativeBody: ad.creative?.body || null,
-                                                    creativeTitle: ad.creative?.title || null,
-                                                    rawData: { ...ad, actions: adInsights.actions || [] },
-                                                });
-                                            }
-                                        }
-                                    } catch (e) { console.error(`[Sync] Ads list error for adset ${adset.id}:`, e); }
-                                }
+                            impressions: parseInt(ins.impressions || '0'),
+                            clicks: parseInt(ins.clicks || '0'),
+                            spend: String(spendVal),
+                            conversions: conv,
+                            ctr: String(ins.ctr || '0'),
+                            cpc: String(ins.cpc || '0'),
+                            cpm: String(ins.cpm || '0'),
+                            roas: String(roasVal),
+                            reach: parseInt(ins.reach || '0'),
+                            frequency: String(ins.frequency || '0'),
+                            costPerLead: cpl !== null ? String(cpl) : null,
+                            dateStart: ins.date_start || clampedStart,
+                            dateEnd: ins.date_stop || endDate,
+                            rawData: { ...campaign, insights: ins },
+                            syncedAt: new Date()
+                        })
+                        .onConflictDoUpdate({
+                            target: [marketingCampaigns.companyId, marketingCampaigns.campaignId],
+                            set: {
+                                campaignName: campaign.name,
+                                status: campaign.status,
+                                objective: campaign.objective,
+                                impressions: parseInt(ins.impressions || '0'),
+                                clicks: parseInt(ins.clicks || '0'),
+                                spend: String(spendVal),
+                                conversions: conv,
+                                ctr: String(ins.ctr || '0'),
+                                cpc: String(ins.cpc || '0'),
+                                cpm: String(ins.cpm || '0'),
+                                roas: String(roasVal),
+                                reach: parseInt(ins.reach || '0'),
+                                frequency: String(ins.frequency || '0'),
+                                costPerLead: cpl !== null ? String(cpl) : null,
+                                rawData: { ...campaign, insights: ins },
+                                syncedAt: new Date()
                             }
-                        } catch (e) { console.error(`[Sync] AdSets list error for campaign ${campaign.id}:`, e); }
-                    }
+                        });
+                }
+
+                // 4. Upsert AdSets
+                for (const adset of adsetsList) {
+                    const ins = adsetMap.get(adset.id) || {};
+                    const objective = campObjMap.get(adset.campaign_id);
+                    const spendVal = parseFloat(ins.spend || '0');
+                    const conv = extractConversions(ins.actions, objective);
+                    const cpl = extractCostPerLead(ins.cost_per_action_type, objective);
+
+                    await db.insert(marketingAdsets)
+                        .values({
+                            companyId,
+                            platform: 'meta_ads',
+                            campaignId: adset.campaign_id,
+                            adsetId: adset.id,
+                            adsetName: adset.name,
+                            status: adset.status,
+                            dailyBudget: adset.daily_budget ? String(Number(adset.daily_budget) / 100) : null,
+                            lifetimeBudget: adset.lifetime_budget ? String(Number(adset.lifetime_budget) / 100) : null,
+                            optimizationGoal: adset.optimization_goal,
+                            impressions: parseInt(ins.impressions || '0'),
+                            clicks: parseInt(ins.clicks || '0'),
+                            spend: String(spendVal),
+                            conversions: conv,
+                            ctr: String(ins.ctr || '0'),
+                            cpc: String(ins.cpc || '0'),
+                            cpm: String(ins.cpm || '0'),
+                            reach: parseInt(ins.reach || '0'),
+                            frequency: String(ins.frequency || '0'),
+                            costPerLead: cpl !== null ? String(cpl) : null,
+                            rawData: { ...adset, insights: ins },
+                            syncedAt: new Date()
+                        })
+                        .onConflictDoUpdate({
+                            target: [marketingAdsets.companyId, marketingAdsets.adsetId],
+                            set: {
+                                adsetName: adset.name,
+                                status: adset.status,
+                                dailyBudget: adset.daily_budget ? String(Number(adset.daily_budget) / 100) : null,
+                                lifetimeBudget: adset.lifetime_budget ? String(Number(adset.lifetime_budget) / 100) : null,
+                                optimizationGoal: adset.optimization_goal,
+                                impressions: parseInt(ins.impressions || '0'),
+                                clicks: parseInt(ins.clicks || '0'),
+                                spend: String(spendVal),
+                                conversions: conv,
+                                ctr: String(ins.ctr || '0'),
+                                cpc: String(ins.cpc || '0'),
+                                cpm: String(ins.cpm || '0'),
+                                reach: parseInt(ins.reach || '0'),
+                                frequency: String(ins.frequency || '0'),
+                                costPerLead: cpl !== null ? String(cpl) : null,
+                                rawData: { ...adset, insights: ins },
+                                syncedAt: new Date()
+                            }
+                        });
+                }
+
+                // 5. Upsert Ads
+                for (const ad of adsList) {
+                    const ins = adMap.get(ad.id) || {};
+                    const objective = campObjMap.get(ad.campaign_id);
+                    const spendVal = parseFloat(ins.spend || '0');
+                    const conv = extractConversions(ins.actions, objective);
+                    const cpl = extractCostPerLead(ins.cost_per_action_type, objective);
+
+                    await db.insert(marketingAds)
+                        .values({
+                            companyId,
+                            platform: 'meta_ads',
+                            adsetId: ad.adset_id,
+                            campaignId: ad.campaign_id,
+                            adId: ad.id,
+                            adName: ad.name,
+                            status: ad.status,
+                            impressions: parseInt(ins.impressions || '0'),
+                            clicks: parseInt(ins.clicks || '0'),
+                            spend: String(spendVal),
+                            conversions: conv,
+                            ctr: String(ins.ctr || '0'),
+                            cpc: String(ins.cpc || '0'),
+                            cpm: String(ins.cpm || '0'),
+                            reach: parseInt(ins.reach || '0'),
+                            frequency: String(ins.frequency || '0'),
+                            costPerLead: cpl !== null ? String(cpl) : null,
+                            creativeThumbnailUrl: ad.creative?.thumbnail_url || null,
+                            creativeBody: ad.creative?.body || null,
+                            creativeTitle: ad.creative?.title || null,
+                            rawData: { ...ad, insights: ins },
+                            syncedAt: new Date()
+                        })
+                        .onConflictDoUpdate({
+                            target: [marketingAds.companyId, marketingAds.adId],
+                            set: {
+                                adName: ad.name,
+                                status: ad.status,
+                                impressions: parseInt(ins.impressions || '0'),
+                                clicks: parseInt(ins.clicks || '0'),
+                                spend: String(spendVal),
+                                conversions: conv,
+                                ctr: String(ins.ctr || '0'),
+                                cpc: String(ins.cpc || '0'),
+                                cpm: String(ins.cpm || '0'),
+                                reach: parseInt(ins.reach || '0'),
+                                frequency: String(ins.frequency || '0'),
+                                costPerLead: cpl !== null ? String(cpl) : null,
+                                creativeThumbnailUrl: ad.creative?.thumbnail_url || null,
+                                creativeBody: ad.creative?.body || null,
+                                creativeTitle: ad.creative?.title || null,
+                                rawData: { ...ad, insights: ins },
+                                syncedAt: new Date()
+                            }
+                        });
                 }
             } catch (e) {
                 console.error('[Sync Meta] Ads sync error:', e);
             }
         } else if (!ad_account_id) {
-            // Sem conta de anúncio selecionada — limpar dados antigos
+            // Em caso de desvincular
             await db.delete(marketingCampaigns).where(and(eq(marketingCampaigns.companyId, companyId), eq(marketingCampaigns.platform, 'meta_ads')));
             await db.delete(marketingAdsets).where(and(eq(marketingAdsets.companyId, companyId), eq(marketingAdsets.platform, 'meta_ads')));
             await db.delete(marketingAds).where(and(eq(marketingAds.companyId, companyId), eq(marketingAds.platform, 'meta_ads')));
@@ -413,7 +496,7 @@ export async function syncMetaAction(companyId: string, dateRange?: { from?: str
 }
 
 // ====================================================================
-// AUTO-SYNC DIAGNOSTICS — Totaliza campanhas e alimenta lead_diagnostics
+// AUTO-SYNC DIAGNOSTICS
 // ====================================================================
 async function syncDiagnosticsFromCampaigns(companyId: string) {
     const campaigns = await db.select({
@@ -426,7 +509,6 @@ async function syncDiagnosticsFromCampaigns(companyId: string) {
 
     if (!campaigns.length) return;
 
-    // Agrupar por mês
     const byMonth: Record<string, { spend: number; impressions: number; clicks: number; conversions: number }> = {};
     for (const c of campaigns) {
         const m = (c.dateStart || '').substring(0, 7);
@@ -438,7 +520,6 @@ async function syncDiagnosticsFromCampaigns(companyId: string) {
         byMonth[m].conversions += c.conversions || 0;
     }
 
-    // Se todos os meses são antigos, colapsar no mês atual
     const monthKeys = Object.keys(byMonth);
     let targetMonths = byMonth;
     if (monthKeys.length === 1 || monthKeys.every(k => k < '2026-01')) {

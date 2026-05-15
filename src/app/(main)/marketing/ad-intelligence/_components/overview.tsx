@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { useAdIntelligence } from "./ai-context";
 import { useAccountId } from "@/contexts/ad-account-context";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { Tooltip } from "@/components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Loader2, TrendingUp, TrendingDown, Target, DollarSign, Activity, Info, ShieldCheck, AlertTriangle } from "lucide-react";
 import { CanalNichoCard } from "./canal-nicho-card";
 import { DataHealthBadge, type HealthStatus } from "@/components/trafego/DataHealthBadge";
@@ -125,7 +125,8 @@ export function OverviewTab() {
   scaleOpportunities.sort((a, b) => b.score - a.score);
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider delayDuration={200}>
+      <div className="space-y-6">
 
       {/* Banner de auditoria de dados */}
       {auditData && (
@@ -145,8 +146,13 @@ export function OverviewTab() {
             <>
               <AlertTriangle className="h-4 w-4" />
               <span>{auditData.total_alerts} inconsistência(s) detectada(s)</span>
-              <Tooltip content={auditData.alerts?.map((a: any) => a.message).join(" | ") || ""}>
-                <span className="underline cursor-help ml-1">ver detalhes</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="underline cursor-help ml-1">ver detalhes</span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs">
+                  {auditData.alerts?.map((a: any) => a.message).join(" | ") || ""}
+                </TooltipContent>
               </Tooltip>
             </>
           )}
@@ -170,8 +176,13 @@ export function OverviewTab() {
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center gap-1">
                   {k.label}
-                  <Tooltip content={`${(k as any).isScore ? "Score de 0 a 100 baseado em CPL, CTR e eficiência de gasto. Acima de 70 = bom, 40-70 = monitorar, abaixo de 40 = ação necessária." : k.label}${k.fonte ? ` — Fonte: ${k.fonte}` : ""}`}>
-                    <Info className="h-3 w-3 text-zinc-600 cursor-help" />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-zinc-600 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      {`${(k as any).isScore ? "Score de 0 a 100 baseado em CPL, CTR e eficiência de gasto. Acima de 70 = bom, 40-70 = monitorar, abaixo de 40 = ação necessária." : k.label}${k.fonte ? ` — Fonte: ${k.fonte}` : ""}`}
+                    </TooltipContent>
                   </Tooltip>
                 </span>
                 <Icon className="h-4 w-4 text-primary" />
@@ -348,6 +359,7 @@ export function OverviewTab() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }
 
