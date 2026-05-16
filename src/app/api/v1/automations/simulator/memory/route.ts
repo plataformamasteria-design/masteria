@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
         const openai = new OpenAI({ apiKey });
         
-        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda do comportamento dela.\nSe ela errou algo que não estava nas instruções, ou se não seguiu algo que estava na memória, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória dela na próxima vez.\nA nota deve ser uma instrução direta e imperativa. Exemplo: "Nunca dê preços antes de perguntar o nome do cliente" ou "Você ignorou a instrução X, preste atenção nela."`;
+        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda do comportamento dela.\nSe a I.A cometeu algum erro, NÃO seguiu alguma instrução, OU se o LEAD (usuário) deu uma nova regra, correção ou comando explícito para a I.A seguir, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória dela.\nA nota deve ser uma instrução direta e imperativa. Exemplo: "Nunca dê preços antes de perguntar o nome", ou "Você deve assumir o nome Mark se o cliente pedir".`;
 
         const prompt = `Você é um supervisor de qualidade de I.A.
         
@@ -114,8 +114,8 @@ ${formattedHistory}
 ${customInstruction}
 
 REGRAS OBRIGATÓRIAS DE SAÍDA:
-- Se o atendimento tiver falhas, retorne APENAS a nova nota de aprendizado.
-- Se o atendimento foi perfeito e não há absolutamente NADA a corrigir ou adicionar, responda exatamente "NADA A MELHORAR".`;
+- Se houver qualquer falha da I.A. OU qualquer instrução/correção explícita dada pelo Lead, retorne APENAS a nova nota de aprendizado.
+- Se o atendimento foi perfeito E o Lead não deu nenhuma instrução ou correção de comportamento, responda exatamente "NADA A MELHORAR".`;
 
         const completion = await openai.chat.completions.create({
           model: 'gpt-4o',
@@ -153,21 +153,19 @@ REGRAS OBRIGATÓRIAS DE SAÍDA:
     targetNode.data.config.learning_notes = newNotes;
     targetNode.data.learning_notes = newNotes;
 
-    // Apenas salva no banco de dados se não for modo Sandbox (usuários deslogados ou simulador standalone)
+    // Salva no banco de dados independentemente de ser Standalone, pois o usuário deseja usar o link para treinar a IA
     const isSandboxMode = is_sandbox === true || !session?.user?.companyId;
 
-    if (!isSandboxMode) {
-        if (isV4) {
-            await db.update(automationFlows)
-                .set({ visualData: flowData })
-                .where(eq(automationFlows.id, ruleId));
-        } else if (ruleV3) {
-            const updatedActions = [...(ruleV3.actions as any[])];
-            updatedActions[0].value = JSON.stringify(flowData);
-            await db.update(automationRules)
-                .set({ actions: updatedActions as any })
-                .where(eq(automationRules.id, ruleId));
-        }
+    if (isV4) {
+        await db.update(automationFlows)
+            .set({ visualData: flowData })
+            .where(eq(automationFlows.id, ruleId));
+    } else if (ruleV3) {
+        const updatedActions = [...(ruleV3.actions as any[])];
+        updatedActions[0].value = JSON.stringify(flowData);
+        await db.update(automationRules)
+            .set({ actions: updatedActions as any })
+            .where(eq(automationRules.id, ruleId));
     }
 
     return NextResponse.json({ 
@@ -175,7 +173,7 @@ REGRAS OBRIGATÓRIAS DE SAÍDA:
         learnedNote, 
         fullNotes: newNotes, 
         tokens: tokensUsed,
-        sandbox: isSandboxMode
+        sandbox: false // Mock para indicar que foi salvo
     });
   } catch (error) {
     console.error('[SimulatorMemory POST] Error:', error);
