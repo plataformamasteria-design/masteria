@@ -52,6 +52,7 @@ export interface FlowSimulatorUIProps {
     onClose: () => void;
     onHighlightNode?: (nodeId: string | null) => void;
     onCorrectionsGenerated?: (corrections: FlowCorrection[]) => void;
+    onMemoryUpdated?: (nodeId: string, notes: string) => void;
     standalone?: boolean;
 }
 
@@ -167,7 +168,7 @@ function comparePhones(phone1: string, phone2: string): boolean {
 }
 
 // -- Component --
-export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated }: FlowSimulatorUIProps) {
+export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, onMemoryUpdated }: FlowSimulatorUIProps) {
     const { currentOrganization } = useOrganization();
     const [messages, setMessages] = useState<SimMessage[]>([]);
     const [simulatorLogId, setSimulatorLogId] = useState<string | null>(null);
@@ -406,8 +407,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         if (config.system_message) parts.push(config.system_message);
         
         if (config.learning_notes) {
-            parts.push("\n\n🧠 MEMÓRIA DE APRENDIZADO DA I.A:\n" + config.learning_notes);
-            parts.push("\nSiga estritamente as instruções de aprendizado acima, elas foram geradas a partir de correções em simulações anteriores.");
+            parts.push("\n\n#REGRAS ABSOLUTAS ACIMA DO PROMPT E DE TUDO, ESSAS INFORMAÇÕES ESTÃO CORRETAS E VALIDADAS E DEVEM SER SEGUIDAS A TODO CUSTO:\n" + config.learning_notes);
         }
         // In dialogue mode, prompt is part of the system instructions
         if (config.dialogue_mode && config.prompt) parts.push(config.prompt);
@@ -537,9 +537,10 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         setCurrentNodeId(nodeId);
         onHighlightNode?.(nodeId);
 
-        const config = (node.data as Record<string, unknown>)?.config || node.data || {};
+        const rawData = node.data as any;
+        const config = { ...rawData, ...(rawData?.config || {}) };
         const nodeType = node.type || "";
-        const nodeLabel = (node.data as Record<string, unknown>)?.label || NODE_TYPE_LABELS[nodeType] || nodeType;
+        const nodeLabel = rawData?.label || NODE_TYPE_LABELS[nodeType] || nodeType;
         const nextNodes = getNextNodes(nodeId, edges);
 
         // Read from refs (NOT state) to avoid stale closures
@@ -1522,7 +1523,7 @@ Seja direto, prático e use emojis para organizar. Responda em português.`;
             .join('\n');
 
         const aiAgentNode = nodes.find(n => n.type === 'ai_agent');
-        const agentPrompt = (aiAgentNode?.data as Record<string, unknown>)?.config?.system_message || '';
+        const agentPrompt = (aiAgentNode?.data as Record<string, unknown>)?.system_message || (aiAgentNode?.data as Record<string, unknown>)?.config?.system_message || '';
         const agentLabel = (aiAgentNode?.data as Record<string, unknown>)?.label || 'Agente I.A';
 
         const analysisPrompt = `Você é um consultor especialista em automação de atendimento e CRM.
@@ -1673,35 +1674,46 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
             simulationContextRef.current._memory_saved = true;
             const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
             if (aiNode) {
+                const typingMsgId = addMessage({ type: "typing", content: "🧠 I.A. refletindo sobre o atendimento para auto-aprendizado..." });
                 fetch('/api/v1/automations/simulator/memory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        ruleId: automationId,
+                        ruleId: automationId || 'new',
                         nodeId: aiNode.id,
                         virtual_history: virtualHistoryRef.current,
-                        system_message: (aiNode.data as any)?.config?.system_message || "",
-                        existing_notes: (aiNode.data as any)?.config?.learning_notes || ""
+                        system_message: (aiNode.data as any)?.system_message || (aiNode.data as any)?.config?.system_message || "",
+                        existing_notes: (aiNode.data as any)?.learning_notes || (aiNode.data as any)?.config?.learning_notes || "",
+                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || ""
                     })
                 })
                 .then(res => res.json())
                 .then(data => {
+                    removeMessage(typingMsgId);
                     if (data.tokens) {
                         setTokensUsed(prev => prev + data.tokens);
                     }
                     if (data.success && data.fullNotes) {
                         addMessage({ type: "system", content: `🧠 Memória da I.A. atualizada após reflexão! (${data.tokens || 0} tokens gastos na revisão)` });
-                        if (onCorrectionsGenerated) {
-                            onCorrectionsGenerated(aiNode.id, data.fullNotes);
+                        if (onMemoryUpdated) {
+                            onMemoryUpdated(aiNode.id, data.fullNotes);
                         }
                     } else if (data.message === 'Nenhum aprendizado necessário gerado') {
                         addMessage({ type: "system", content: `🧠 I.A. revisou o atendimento e não encontrou erros. (${data.tokens || 0} tokens gastos)` });
+                    } else if (data.message) {
+                        addMessage({ type: "system", content: `⚠️ Aviso de Memória: ${data.message}` });
+                    } else if (data.error) {
+                        addMessage({ type: "system", content: `❌ Erro na Memória: ${data.error}` });
                     }
                 })
-                .catch(err => console.error('Error saving simulator memory:', err));
+                .catch(err => {
+                    removeMessage(typingMsgId);
+                    console.error('Error saving simulator memory:', err);
+                    addMessage({ type: "system", content: `❌ Falha ao tentar atualizar memória: ${err.message}` });
+                });
             }
         }
-    }, [nodes, processNode, addMessage, onHighlightNode, automationId, onCorrectionsGenerated]);
+    }, [nodes, processNode, addMessage, removeMessage, onHighlightNode, automationId, onCorrectionsGenerated, onMemoryUpdated]);
 
     const fullReset = useCallback(() => {
         // Disparar aprendizado da IA em background antes de resetar (se houver conversa)
@@ -1709,32 +1721,43 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
             simulationContextRef.current._memory_saved = true;
             const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
             if (aiNode) {
+                const typingMsgId = addMessage({ type: "typing", content: "🧠 I.A. refletindo sobre o atendimento para auto-aprendizado..." });
                 fetch('/api/v1/automations/simulator/memory', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        ruleId: automationId,
+                        ruleId: automationId || 'new',
                         nodeId: aiNode.id,
                         virtual_history: virtualHistoryRef.current,
-                        system_message: (aiNode.data as any)?.config?.system_message || "",
-                        existing_notes: (aiNode.data as any)?.config?.learning_notes || ""
+                        system_message: (aiNode.data as any)?.system_message || (aiNode.data as any)?.config?.system_message || "",
+                        existing_notes: (aiNode.data as any)?.learning_notes || (aiNode.data as any)?.config?.learning_notes || "",
+                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || ""
                     })
                 })
                 .then(res => res.json())
                 .then(data => {
+                    removeMessage(typingMsgId);
                     if (data.tokens) {
                         setTokensUsed(prev => prev + data.tokens);
                     }
                     if (data.success && data.fullNotes) {
                         addMessage({ type: "system", content: `🧠 Memória da I.A. atualizada após reflexão! (${data.tokens || 0} tokens gastos na revisão)` });
-                        if (onCorrectionsGenerated) {
-                            onCorrectionsGenerated(aiNode.id, data.fullNotes);
+                        if (onMemoryUpdated) {
+                            onMemoryUpdated(aiNode.id, data.fullNotes);
                         }
-                    } else if (data.message === 'Nenhum aprendizado necessário gerado') {
+                    } else if (data.message?.includes('Nenhum aprendizado')) {
                         addMessage({ type: "system", content: `🧠 I.A. revisou o atendimento e não encontrou erros. (${data.tokens || 0} tokens gastos)` });
+                    } else if (data.message) {
+                        addMessage({ type: "system", content: `⚠️ Aviso de Memória: ${data.message}` });
+                    } else if (data.error) {
+                        addMessage({ type: "system", content: `❌ Erro na Memória: ${data.error}` });
                     }
                 })
-                .catch(err => console.error('Error saving simulator memory:', err));
+                .catch(err => {
+                    removeMessage(typingMsgId);
+                    console.error('Error saving simulator memory:', err);
+                    addMessage({ type: "system", content: `❌ Falha ao tentar atualizar memória: ${err.message}` });
+                });
             }
         }
 
@@ -1759,7 +1782,7 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
         virtualHistoryRef.current = [];
         simulationContextRef.current = {};
         onHighlightNode?.(null);
-    }, [onHighlightNode]);
+    }, [onHighlightNode, automationId, nodes, onMemoryUpdated, removeMessage]);
 
     const stopSimulation = useCallback(() => {
         abortRef.current = true;

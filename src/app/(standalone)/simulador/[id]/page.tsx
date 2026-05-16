@@ -85,6 +85,25 @@ export default function StandaloneSimulatorPage() {
         return <div className="flex-1 w-full min-h-screen flex items-center justify-center text-red-500 font-medium">{error}</div>;
     }
 
+    const handleMemoryUpdated = (nodeId: string, newNotes: string) => {
+        setNodes(ns => ns.map(n => {
+            if (n.id === nodeId) {
+                return {
+                    ...n,
+                    data: {
+                        ...n.data,
+                        learning_notes: newNotes,
+                        config: {
+                            ...(n.data.config || {}),
+                            learning_notes: newNotes
+                        }
+                    }
+                };
+            }
+            return n;
+        }));
+    };
+
     return (
         <FlowSimulatorUI
             nodes={nodes}
@@ -92,6 +111,7 @@ export default function StandaloneSimulatorPage() {
             automationId={automationId}
             onClose={() => {}}
             standalone={true}
+            onMemoryUpdated={handleMemoryUpdated}
         />
     );
 }

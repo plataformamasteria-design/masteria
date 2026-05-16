@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/contexts/session-context';
+import { useParams } from 'next/navigation';
 import { VariablePicker } from './VariablePicker';
 import { NodeOutputPanel } from './NodeOutputPanel';
 import { FileUploadField } from './FileUploadField';
@@ -37,6 +38,7 @@ interface NodeConfigPanelProps {
     isListening?: boolean;
     onListen?: () => void;
     onCancelListen?: () => void;
+    flowId?: string;
 }
 
 // ==============================
@@ -458,7 +460,7 @@ const AI_MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
 // Main Component
 // ==============================
 
-export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTestingNode, onTestNode, allTestOutputs, isListening, onListen, onCancelListen }: NodeConfigPanelProps) => {
+export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTestingNode, onTestNode, allTestOutputs, isListening, onListen, onCancelListen, flowId }: NodeConfigPanelProps) => {
     const d = node.data;
     const update = useCallback((field: string, value: any) => {
         onUpdateData(node.id, { [field]: value });
@@ -467,6 +469,33 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
     const updateMulti = useCallback((fields: Record<string, any>) => {
         onUpdateData(node.id, fields);
     }, [node.id, onUpdateData]);
+
+    const params = useParams();
+    const [isSavingMemory, setIsSavingMemory] = useState(false);
+
+    const handleSaveMemory = useCallback(async () => {
+        const ruleId = flowId || (params?.id as string);
+        if (!ruleId || ruleId === 'new') return;
+        setIsSavingMemory(true);
+        try {
+            await fetch('/api/v1/automations/simulator/memory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ruleId,
+                    nodeId: node.id,
+                    virtual_history: [],
+                    system_message: d.system_message || d.config?.system_message || '',
+                    existing_notes: d.learning_notes || '',
+                    manualUpdate: true
+                })
+            });
+        } catch (err) {
+            console.error('Failed to save memory manually', err);
+        } finally {
+            setIsSavingMemory(false);
+        }
+    }, [params?.id, node.id, d.system_message, d.config?.system_message, d.learning_notes]);
 
     // Template fetching for send_template node
     const { session } = useSession();
@@ -1726,17 +1755,50 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 <ConfigSection label="System Prompt" hint="Personalidade, instruções e objetivo do agente IA">
                                     <TextFieldWithVars
                                         value={d.system_message || d.description || d.systemPrompt || ''}
-                                        onChange={(v) => update(node.type === 'ai' ? 'description' : 'system_message', v)}
+                                        onChange={(v) => {
+                                            const field = node.type === 'ai' ? 'description' : 'system_message';
+                                            updateMulti({
+                                                [field]: v,
+                                                config: { ...(d.config || {}), [field]: v }
+                                            });
+                                        }}
                                         placeholder="Você é um assistente de vendas especializado em..."
                                         multiline
                                     />
                                 </ConfigSection>
                                 <ConfigSection label="🧠 Memória de Aprendizado" hint="Regras e correções aprendidas automaticamente pelo Simulador. Você pode editar livremente.">
+                                    <div className="relative">
+                                        <Textarea
+                                            value={d.learning_notes || ''}
+                                            onChange={(e) => updateMulti({
+                                                learning_notes: e.target.value,
+                                                config: { ...(d.config || {}), learning_notes: e.target.value }
+                                            })}
+                                            className="text-xs min-h-[80px] rounded-xl bg-violet-50/50 border-violet-100 placeholder:text-violet-300 focus:border-violet-300 focus:ring-violet-200 nodrag nowheel pb-9"
+                                            placeholder="Ex: Nunca dê o preço antes de perguntar o nome..."
+                                        />
+                                        <div className="absolute bottom-2 right-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-6 px-2 text-[10px] bg-white text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
+                                                onClick={handleSaveMemory}
+                                                disabled={isSavingMemory || !params?.id || params?.id === 'new'}
+                                            >
+                                                {isSavingMemory ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Settings2 className="w-3 h-3 mr-1" />}
+                                                Salvar no Banco
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </ConfigSection>
+                                <ConfigSection label="Prompt de Reflexão (Supervisor IA)" hint="Ordem restrita dada ao modelo que avalia a simulação para gerar a memória. Edite apenas se quiser alterar como a IA aprende.">
                                     <Textarea
-                                        value={d.learning_notes || ''}
-                                        onChange={(e) => update('learning_notes', e.target.value)}
-                                        className="text-xs min-h-[80px] rounded-xl bg-violet-50/50 border-violet-100 placeholder:text-violet-300 focus:border-violet-300 focus:ring-violet-200 nodrag nowheel"
-                                        placeholder="Ex: Nunca dê o preço antes de perguntar o nome..."
+                                        value={d.reflection_prompt !== undefined ? d.reflection_prompt : `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda do comportamento dela.\nSe ela errou algo que não estava nas instruções, ou se não seguiu algo que estava na memória, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória dela na próxima vez.\nA nota deve ser uma instrução direta e imperativa. Exemplo: "Nunca dê preços antes de perguntar o nome do cliente" ou "Você ignorou a instrução X, preste atenção nela."`}
+                                        onChange={(e) => updateMulti({
+                                            reflection_prompt: e.target.value,
+                                            config: { ...(d.config || {}), reflection_prompt: e.target.value }
+                                        })}
+                                        className="text-[11px] font-mono min-h-[100px] rounded-xl bg-zinc-50 border-zinc-200 text-zinc-600 nodrag nowheel"
                                     />
                                 </ConfigSection>
                                 <ConfigSection label="Temperatura (Criatividade)">

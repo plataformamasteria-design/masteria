@@ -17,6 +17,7 @@ interface NodeConfigDrawerProps {
     isListening?: boolean;
     onListen?: () => void;
     onCancelListen?: () => void;
+    flowId?: string;
 }
 
 const NODE_TYPE_LABELS: Record<string, string> = {
@@ -65,6 +66,7 @@ export function NodeConfigDrawer({
     isListening,
     onListen,
     onCancelListen,
+    flowId,
 }: NodeConfigDrawerProps) {
     const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -125,6 +127,7 @@ export function NodeConfigDrawer({
                                 isListening={isListening}
                                 onListen={onListen}
                                 onCancelListen={onCancelListen}
+                                flowId={flowId}
                             />
                         </div>
                     )}

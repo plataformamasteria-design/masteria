@@ -10,10 +10,11 @@ import {
     Paperclip, Timer, BarChart3, Target, Sparkles, CheckCheck, StickyNote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { useFlowSimulator, SimMessage, FlowCorrection, FlowSimulatorUIProps, MEDIA_ICONS } from "./useFlowSimulator";
 
-export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, standalone }: FlowSimulatorUIProps) {
-    const props = { nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, standalone };
+export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, onMemoryUpdated, standalone }: FlowSimulatorUIProps) {
+    const props = { nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, onMemoryUpdated, standalone };
     const {
         messages,
         currentNodeId,
@@ -56,10 +57,8 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
         isVirtualRef,
     } = useFlowSimulator(props);
 
-    return (
-        <div className={cn(
-            standalone ? "flex w-full h-[100dvh] sm:items-center sm:justify-center bg-zinc-950 sm:p-4 overflow-hidden" : "fixed right-8 top-16 bottom-8 w-[380px] z-50 flex flex-col animate-in slide-in-from-right-5 duration-300"
-        )}>
+    const containerContent = (
+        <>
             {/* iPhone Frame */}
             <div className={cn(
                 "flex flex-col bg-zinc-50 relative overflow-hidden w-full h-full",
@@ -77,13 +76,14 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
                 {/* Header */}
                 <div className={cn(
-                    "shrink-0 bg-violet-600 pb-3 px-4 flex items-center gap-3 shadow-sm z-10",
+                    "shrink-0 bg-violet-600 pb-3 px-4 flex items-center gap-3 shadow-sm z-10 drag-handle",
+                    !standalone && "cursor-grab active:cursor-grabbing",
                     standalone ? "pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-8" : "pt-8"
                 )}>
-                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/10">
+                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/10 pointer-events-none">
                         <Bot className="h-5 w-5 text-white" />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 select-none">
                         <p className="text-[15px] font-semibold text-white leading-tight truncate">
                             {useVirtualLead ? "Master I.A Virtual" : "Atendimento Real"}
                         </p>
@@ -316,9 +316,29 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                     )}
                 </div>
             </div>
-        </div>
+        </>
+    );
+
+    if (standalone) {
+        return (
+            <div className="flex w-full h-[100dvh] sm:items-center sm:justify-center bg-zinc-950 sm:p-4 overflow-hidden">
+                {containerContent}
+            </div>
+        );
+    }
+
+    return (
+        <motion.div
+            drag
+            dragHandle=".drag-handle"
+            dragMomentum={false}
+            className="fixed right-8 top-16 bottom-8 w-[380px] z-50 flex flex-col"
+        >
+            {containerContent}
+        </motion.div>
     );
 }
+
 
 // -- Message Bubble --
 function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage; nodes: Node[]; onButtonClick?: (text: string) => void }) {

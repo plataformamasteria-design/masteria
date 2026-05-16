@@ -560,6 +560,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                     isListening={!!isListening}
                     onListen={editingNode ? () => listenForWebhook(editingNode.id, flowId, editingNode.data as any) : undefined}
                     onCancelListen={cancelListen}
+                    flowId={flowId !== 'new' ? flowId : undefined}
                 />
             </div>
 
@@ -576,13 +577,14 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                             if (node) reactFlowInstance.setCenter(node.position.x, node.position.y, { zoom: 1, duration: 500 });
                         }
                     }}
-                    onCorrectionsGenerated={(nodeId, notes) => {
+                    onMemoryUpdated={(nodeId, notes) => {
                         setNodes(nds => nds.map(n => {
                             if (n.id === nodeId) {
                                 return {
                                     ...n,
                                     data: {
                                         ...n.data,
+                                        learning_notes: notes,
                                         config: {
                                             ...(n.data.config as any),
                                             learning_notes: notes
@@ -599,6 +601,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                                     ...prev,
                                     data: {
                                         ...prev.data,
+                                        learning_notes: notes,
                                         config: {
                                             ...(prev.data.config as any),
                                             learning_notes: notes
