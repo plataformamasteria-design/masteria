@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
         const openai = new OpenAI({ apiKey });
         
-        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda da conversa.\nSe o LEAD (usuário) der qualquer ORDEM, REGRA ou RESTRIÇÃO (ex: "Não anote isso", "Meu nome é X", "Não fale sobre Y"), OU se a I.A cometeu um erro óbvio, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória.\nA nota deve ser imperativa e incorporar a regra do Lead. Exemplo: "Você deve tratar o usuário como Mark sempre que ele pedir" ou "Nunca anote a idade do cliente se ele proibir".`;
+        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda da conversa.\nSe o LEAD (usuário) der qualquer ORDEM, REGRA ou RESTRIÇÃO (ex: "Não anote isso", "Meu nome é X", "Não fale sobre Y"), OU se a I.A cometeu um erro óbvio, extraia UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória.\nA nota deve ser imperativa e incorporar a regra do Lead. Exemplo: "Você deve tratar o usuário como Mark sempre que ele pedir" ou "Nunca anote a idade do cliente se ele proibir".`;
 
         const prompt = `Você é o SUPERVISOR DE APRENDIZADO DE UMA I.A.
 Sua única função é ler a CONVERSA abaixo e extrair NOVAS REGRAS DE COMPORTAMENTO para a I.A usar no futuro.
@@ -117,24 +117,40 @@ Verifique a CONVERSA (3) procurando rigorosamente por:
 A) O Lead (humano) deu alguma ORDEM, RESTRIÇÃO ou REGRA que a I.A deve seguir? (ex: "Me chame de X", "Não anote Y", "A partir de agora faça Z").
 B) A I.A cometeu algum erro óbvio que violou as instruções (1) ou a memória (2)?
 
+ATENÇÃO: Mesmo que a I.A tenha recusado a regra do humano durante a conversa, VOCÊ DEVE EXTRAIR A REGRA ditada pelo humano.
+
 ${customInstruction}
 
 REGRAS OBRIGATÓRIAS DE SAÍDA:
-- Se (A) ou (B) aconteceram, escreva APENAS a nova nota de aprendizado (ex: "Sempre obedeça quando o usuário disser para não anotar algo").
-- Se a conversa foi apenas bate-papo normal e não há NENHUMA regra nova ou erro a extrair, escreva EXATAMENTE: "NADA A MELHORAR".`;
+Você deve retornar EXCLUSIVAMENTE um objeto JSON válido com a seguinte estrutura:
+{
+  "has_new_rule": boolean, // true se (A) ou (B) aconteceram, false caso contrário
+  "reasoning": "string", // explique brevemente o raciocínio
+  "extracted_rule": "string" // a nova nota de aprendizado imperativa. null ou string vazia se has_new_rule for false
+}`;
 
         const completion = await openai.chat.completions.create({
           model: 'gpt-4o',
+          response_format: { type: "json_object" },
           messages: [{ role: 'system', content: prompt }],
-          temperature: 0.3,
+          temperature: 0.2,
         });
 
-        learnedNote = completion.choices[0]?.message?.content?.trim() || '';
+        const content = completion.choices[0]?.message?.content?.trim() || '{}';
         tokensUsed = completion.usage?.total_tokens || 0;
 
-        if (!learnedNote || learnedNote.toUpperCase().includes('NADA A MELHORAR')) {
-          return NextResponse.json({ message: 'Nenhum aprendizado necessário gerado', tokens: tokensUsed }, { status: 200 });
+        let parsed: any = {};
+        try {
+            parsed = JSON.parse(content);
+        } catch (e) {
+            console.error('[SimulatorMemory POST] Error parsing JSON from OpenAI:', content);
         }
+
+        if (!parsed.has_new_rule || !parsed.extracted_rule) {
+          return NextResponse.json({ message: 'Nenhum aprendizado necessário gerado', tokens: tokensUsed, debug_reasoning: parsed.reasoning }, { status: 200 });
+        }
+
+        learnedNote = parsed.extracted_rule;
 
         newNotes = existing_notes 
             ? `${existing_notes}\n- ${learnedNote}` 
