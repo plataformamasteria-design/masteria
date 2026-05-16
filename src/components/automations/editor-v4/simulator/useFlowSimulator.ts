@@ -1672,6 +1672,7 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
         // Auto-trigger learning at the end of the simulation
         if (virtualHistoryRef.current.length >= 3 && !simulationContextRef.current._memory_saved) {
             simulationContextRef.current._memory_saved = true;
+            const historySnapshot = [...virtualHistoryRef.current];
             const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
             if (aiNode) {
                 const typingMsgId = addMessage({ type: "typing", content: "🧠 I.A. refletindo sobre o atendimento para auto-aprendizado..." });
@@ -1681,10 +1682,11 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
                     body: JSON.stringify({
                         ruleId: automationId || 'new',
                         nodeId: aiNode.id,
-                        virtual_history: virtualHistoryRef.current,
+                        virtual_history: historySnapshot,
                         system_message: (aiNode.data as any)?.system_message || (aiNode.data as any)?.config?.system_message || "",
                         existing_notes: (aiNode.data as any)?.learning_notes || (aiNode.data as any)?.config?.learning_notes || "",
-                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || ""
+                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || "",
+                        is_sandbox: useVirtualLead
                     })
                 })
                 .then(res => res.json())
@@ -1719,6 +1721,7 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
         // Disparar aprendizado da IA em background antes de resetar (se houver conversa)
         if (virtualHistoryRef.current.length >= 3 && !simulationContextRef.current._memory_saved) {
             simulationContextRef.current._memory_saved = true;
+            const historySnapshot = [...virtualHistoryRef.current];
             const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
             if (aiNode) {
                 const typingMsgId = addMessage({ type: "typing", content: "🧠 I.A. refletindo sobre o atendimento para auto-aprendizado..." });
@@ -1728,10 +1731,11 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
                     body: JSON.stringify({
                         ruleId: automationId || 'new',
                         nodeId: aiNode.id,
-                        virtual_history: virtualHistoryRef.current,
+                        virtual_history: historySnapshot,
                         system_message: (aiNode.data as any)?.system_message || (aiNode.data as any)?.config?.system_message || "",
                         existing_notes: (aiNode.data as any)?.learning_notes || (aiNode.data as any)?.config?.learning_notes || "",
-                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || ""
+                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || "",
+                        is_sandbox: useVirtualLead
                     })
                 })
                 .then(res => res.json())

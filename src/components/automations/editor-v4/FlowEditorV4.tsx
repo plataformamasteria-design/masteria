@@ -22,6 +22,7 @@ import {
     type OnConnectEnd,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { X } from 'lucide-react';
 
 
 import { useSession } from '@/contexts/session-context';
@@ -159,6 +160,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
     const [aiPromptOpen, setAiPromptOpen] = useState(false);
     const [webhookListenState, setWebhookListenState] = useState<'idle' | 'listening' | 'received'>('idle');
     const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+    const [pendingCorrections, setPendingCorrections] = useState<any[]>([]);
 
     // ── Connection Drop State (arrastar handle → espaço vazio → popup) ────────
     const pendingConnectionRef = useRef<{ nodeId: string; handleId: string | null; handleType: string | null } | null>(null);
@@ -612,6 +614,10 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                             return prev;
                         });
                     }}
+                    onCorrectionsGenerated={(corrections) => {
+                        setPendingCorrections(corrections);
+                        setIsSimulatorOpen(false); // Fechar simulador para ver as correções no canvas
+                    }}
                 />
             )}
 
@@ -625,6 +631,46 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                             nodes={nodes}
                             onHighlightNodes={() => setHistoryOpen(false)}
                         />
+                    </div>
+                </div>
+            )}
+
+            {/* Painel de Correções Sugeridas pela IA */}
+            {pendingCorrections.length > 0 && (
+                <div className="absolute top-20 right-6 z-40 w-96 bg-white rounded-xl shadow-2xl border border-violet-200 flex flex-col max-h-[80vh]">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-violet-100 bg-violet-50/50 rounded-t-xl shrink-0">
+                        <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center">
+                                <span className="text-violet-600 text-xs font-bold">IA</span>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-violet-900">Sugestões de Correção</h3>
+                                <p className="text-[10px] text-violet-600 font-medium">{pendingCorrections.length} itens encontrados</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setPendingCorrections([])} className="text-violet-400 hover:text-violet-700 hover:bg-violet-100 p-1.5 rounded-lg transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {pendingCorrections.map((corr, idx) => (
+                            <div key={idx} className="bg-zinc-50 border border-zinc-200 p-3 rounded-lg flex gap-3">
+                                <div className="shrink-0 mt-0.5">
+                                    {corr.action === 'add_node' && <span className="text-green-500 font-bold text-xs bg-green-50 px-1.5 py-0.5 rounded border border-green-200">NOVO</span>}
+                                    {corr.action === 'update_node' && <span className="text-blue-500 font-bold text-xs bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">EDITAR</span>}
+                                    {corr.action === 'delete_node' && <span className="text-red-500 font-bold text-xs bg-red-50 px-1.5 py-0.5 rounded border border-red-200">REMOVER</span>}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-zinc-900 mb-1">{corr.node_id ? `Nó: ${corr.node_id}` : 'Novo Nó'}</p>
+                                    <p className="text-[11px] text-zinc-600 leading-relaxed">{corr.reason || corr.description || JSON.stringify(corr)}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-3 border-t border-zinc-100 bg-zinc-50 rounded-b-xl shrink-0">
+                        <button onClick={() => setPendingCorrections([])} className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-violet-200">
+                            Entendi, Fechar
+                        </button>
                     </div>
                 </div>
             )}

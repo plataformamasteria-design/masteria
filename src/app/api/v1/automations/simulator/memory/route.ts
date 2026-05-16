@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getUserSession();
     const body = await request.json();
-    const { ruleId, nodeId, virtual_history, system_message, existing_notes, manualUpdate, reflection_prompt } = body;
+    const { ruleId, nodeId, virtual_history, system_message, existing_notes, manualUpdate, reflection_prompt, is_sandbox } = body;
 
     if (!ruleId || !nodeId) {
         return NextResponse.json({ error: 'ruleId e nodeId são obrigatórios' }, { status: 400 });
@@ -98,9 +98,7 @@ export async function POST(request: NextRequest) {
 
         const openai = new OpenAI({ apiKey });
         
-        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda do comportamento dela.
-Se ela errou algo que não estava nas instruções, ou se não seguiu algo que estava na memória, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória dela na próxima vez.
-A nota deve ser uma instrução direta e imperativa. Exemplo: "Nunca dê preços antes de perguntar o nome do cliente" ou "Você ignorou a instrução X, preste atenção nela."`;
+        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda do comportamento dela.\nSe ela errou algo que não estava nas instruções, ou se não seguiu algo que estava na memória, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória dela na próxima vez.\nA nota deve ser uma instrução direta e imperativa. Exemplo: "Nunca dê preços antes de perguntar o nome do cliente" ou "Você ignorou a instrução X, preste atenção nela."`;
 
         const prompt = `Você é um supervisor de qualidade de I.A.
         
@@ -155,20 +153,30 @@ REGRAS OBRIGATÓRIAS DE SAÍDA:
     targetNode.data.config.learning_notes = newNotes;
     targetNode.data.learning_notes = newNotes;
 
-    // Salva no banco de dados
-    if (isV4) {
-        await db.update(automationFlows)
-            .set({ visualData: flowData })
-            .where(eq(automationFlows.id, ruleId));
-    } else if (ruleV3) {
-        const updatedActions = [...(ruleV3.actions as any[])];
-        updatedActions[0].value = JSON.stringify(flowData);
-        await db.update(automationRules)
-            .set({ actions: updatedActions as any })
-            .where(eq(automationRules.id, ruleId));
+    // Apenas salva no banco de dados se não for modo Sandbox (usuários deslogados ou simulador standalone)
+    const isSandboxMode = is_sandbox === true || !session?.user?.companyId;
+
+    if (!isSandboxMode) {
+        if (isV4) {
+            await db.update(automationFlows)
+                .set({ visualData: flowData })
+                .where(eq(automationFlows.id, ruleId));
+        } else if (ruleV3) {
+            const updatedActions = [...(ruleV3.actions as any[])];
+            updatedActions[0].value = JSON.stringify(flowData);
+            await db.update(automationRules)
+                .set({ actions: updatedActions as any })
+                .where(eq(automationRules.id, ruleId));
+        }
     }
 
-    return NextResponse.json({ success: true, learnedNote, fullNotes: newNotes, tokens: tokensUsed });
+    return NextResponse.json({ 
+        success: true, 
+        learnedNote, 
+        fullNotes: newNotes, 
+        tokens: tokensUsed,
+        sandbox: isSandboxMode
+    });
   } catch (error) {
     console.error('[SimulatorMemory POST] Error:', error);
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
