@@ -34,6 +34,7 @@ interface MultiSelectCreatableProps {
   placeholder?: string;
   createEndpoint: 'tags' | 'lists' | 'connections';
   createResourceType: 'tag' | 'list' | 'connection';
+  initialOptions?: Option[];
 }
 
 export function MultiSelectCreatable({
@@ -42,13 +43,34 @@ export function MultiSelectCreatable({
   className,
   placeholder = 'Selecione ou crie...',
   createEndpoint,
+  initialOptions = [],
 }: MultiSelectCreatableProps): JSX.Element {
   const { toast } = useToast();
   const notify = React.useMemo(() => createToastNotifier(toast), [toast]);
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
-  const [options, setOptions] = React.useState<Option[]>([]);
+  const [options, setOptions] = React.useState<Option[]>(initialOptions);
   const [isLoading, setIsLoading] = React.useState(false);
+
+  // Guardar as opções como referência em string para evitar loops do useEffect
+  const initialOptionsJson = React.useMemo(() => JSON.stringify(initialOptions), [initialOptions]);
+
+  React.useEffect(() => {
+    const parsedInitialOptions = JSON.parse(initialOptionsJson) as Option[];
+    if (parsedInitialOptions.length > 0) {
+      setOptions(prev => {
+        const newOptions = [...prev];
+        let changed = false;
+        for (const opt of parsedInitialOptions) {
+          if (!newOptions.some(o => o.value === opt.value)) {
+            newOptions.push(opt);
+            changed = true;
+          }
+        }
+        return changed ? newOptions : prev;
+      });
+    }
+  }, [initialOptionsJson]);
 
   const fetchOptions = React.useCallback(async () => {
     try {

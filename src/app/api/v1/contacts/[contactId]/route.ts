@@ -1,7 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { contacts, contactsToContactLists, contactsToTags, tags, contactLists, kanbanLeads, kanbanBoards, automationFlowExecutions, automationFlows } from '@/lib/db/schema';
+import { contacts, contactsToContactLists, contactsToTags, tags, contactLists, kanbanLeads, kanbanBoards, automationFlowExecutions, automationFlows, automationNodes } from '@/lib/db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { logContactEvent } from '@/lib/contact-events';
 import { z } from 'zod';
@@ -148,6 +148,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         boardName: f.boardName,
         stageId: f.stageId,
         stageName: currentStage ? currentStage.name : 'Desconhecida',
+        boardStages: stages,
         value: f.value
       };
     });
@@ -158,11 +159,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       flowId: automationFlowExecutions.flowId,
       flowName: automationFlows.name,
       status: automationFlowExecutions.status,
+      currentStepId: automationFlowExecutions.currentStepId,
+      currentStepLabel: automationNodes.label,
       startedAt: automationFlowExecutions.startedAt,
       finishedAt: automationFlowExecutions.finishedAt
     })
     .from(automationFlowExecutions)
     .innerJoin(automationFlows, eq(automationFlowExecutions.flowId, automationFlows.id))
+    .leftJoin(automationNodes, and(
+      eq(automationFlowExecutions.currentStepId, automationNodes.id),
+      eq(automationNodes.automationId, automationFlows.id)
+    ))
     .where(and(
       eq(automationFlowExecutions.contactId, contact.id),
       eq(automationFlowExecutions.companyId, companyId)

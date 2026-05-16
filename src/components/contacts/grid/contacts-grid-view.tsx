@@ -4,9 +4,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone } from 'lucide-react';
+import { Phone, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { CommunicationButton } from '@/components/contacts/communication-modal';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface ContactsGridViewProps {
     contacts: ExtendedContact[];
@@ -14,9 +16,10 @@ interface ContactsGridViewProps {
     // Optional: selection support in grid view if desired
     selectedRows: string[];
     onSelectRow: (id: string, checked: boolean) => void;
+    onDelete: (id: string) => void;
 }
 
-export const ContactsGridView = memo(({ contacts, onRowClick, selectedRows, onSelectRow }: ContactsGridViewProps) => {
+export const ContactsGridView = memo(({ contacts, onRowClick, selectedRows, onSelectRow, onDelete }: ContactsGridViewProps) => {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {contacts.map(contact => (
@@ -33,15 +36,46 @@ export const ContactsGridView = memo(({ contacts, onRowClick, selectedRows, onSe
                             className="bg-background/80 backdrop-blur-sm data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                         />
                     </div>
-                    <div className="absolute top-2 right-2 z-10">
-                        <CommunicationButton
-                            contact={contact}
-                            trigger={
+                    <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-8 w-8 bg-background/50 hover:bg-background backdrop-blur-sm">
-                                    <Phone className="h-3.5 w-3.5" />
+                                    <MoreVertical className="h-4 w-4" />
                                 </Button>
-                            }
-                        />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                <CommunicationButton
+                                    contact={contact}
+                                    trigger={
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Phone className="mr-2 h-4 w-4" /> Ligar
+                                        </DropdownMenuItem>
+                                    }
+                                />
+                                <DropdownMenuItem onSelect={() => onRowClick(contact.id)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Editar
+                                </DropdownMenuItem>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Tem certeza que deseja excluir o contato "{contact.name}"? Esta ação não pode ser desfeita.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => onDelete(contact.id)} className="bg-destructive hover:bg-destructive/90">Sim, Excluir</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                     <CardContent className="pt-8 flex flex-col items-center text-center">
                         <Avatar className="h-20 w-20 mb-4 ring-2 ring-background shadow-sm">

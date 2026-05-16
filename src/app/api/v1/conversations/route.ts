@@ -154,21 +154,23 @@ async function getBaseConditions(companyId: string, userId: string, filterParam:
         )`);
     }
     if (adv.awaitingResponse) {
-        base.push(sql`(
-            SELECT sender_type FROM messages 
-            WHERE messages.conversation_id = conversations.id 
-            AND messages.company_id = conversations.company_id
-            ORDER BY messages.sent_at DESC LIMIT 1
-        ) = 'CONTACT'`);
+        base.push(sql`EXISTS (
+            SELECT 1 FROM messages m 
+            WHERE m.conversation_id = conversations.id 
+            AND m.company_id = conversations.company_id
+            AND m.sender_type = 'CONTACT'
+            AND m.sent_at = (SELECT MAX(sent_at) FROM messages WHERE conversation_id = conversations.id)
+        )`);
     }
     if (adv.onlyUnread) {
-        base.push(sql`(
-            SELECT status FROM messages
-            WHERE messages.conversation_id = conversations.id 
-            AND messages.company_id = conversations.company_id
-            AND sender_type = 'CONTACT'
-            ORDER BY messages.sent_at DESC LIMIT 1
-        ) IS DISTINCT FROM 'read'`);
+        base.push(sql`EXISTS (
+            SELECT 1 FROM messages m 
+            WHERE m.conversation_id = conversations.id 
+            AND m.company_id = conversations.company_id
+            AND m.sender_type = 'CONTACT'
+            AND m.status IS DISTINCT FROM 'read'
+            AND m.sent_at = (SELECT MAX(sent_at) FROM messages WHERE conversation_id = conversations.id)
+        )`);
     }
 
     return base;
@@ -178,6 +180,22 @@ async function fetchConversationsData(companyId: string, userId: string, limit: 
     const startTime = Date.now();
     const dynamicConditions = await getBaseConditions(companyId, userId, filterParam, adv);
 
+    // Passo 1: Buscar apenas os IDs e base de forma rápida
+    const baseConvos = await db.select({ id: conversations.id })
+        .from(conversations)
+        .innerJoin(contacts, eq(conversations.contactId, contacts.id))
+        .where(and(...dynamicConditions))
+        .orderBy(desc(conversations.lastMessageAt))
+        .limit(limit)
+        .offset(offset);
+
+    if (baseConvos.length === 0) {
+        return { data: [], total: 0, limit, offset };
+    }
+
+    const convoIds = baseConvos.map(c => c.id);
+
+    // Passo 2: Buscar dados completos apenas para a página selecionada
     const companyConversations = await db.select({
         id: conversations.id,
         status: conversations.status,
@@ -204,72 +222,57 @@ async function fetchConversationsData(companyId: string, userId: string, limit: 
             INNER JOIN tags ON contacts_to_tags.tag_id = tags.id 
             WHERE contacts_to_tags.contact_id = ${conversations.contactId}
         )`.as('tags'),
-        lastMessage: sql<string | null>`(
-                SELECT content 
-                FROM ${messages} 
-                WHERE ${messages.conversationId} = ${conversations.id} 
-                AND ${messages.companyId} = ${conversations.companyId}
-                ORDER BY ${messages.sentAt} DESC 
-                LIMIT 1
-            )`.as('last_message'),
-        lastMessageStatus: sql<string | null>`(
-                SELECT status 
-                FROM ${messages} 
-                WHERE ${messages.conversationId} = ${conversations.id} 
-                AND ${messages.companyId} = ${conversations.companyId}
-                ORDER BY ${messages.sentAt} DESC 
-                LIMIT 1
-            )`.as('last_message_status'),
-        lastMessageSenderType: sql<string | null>`(
-                SELECT sender_type 
-                FROM ${messages} 
-                WHERE ${messages.conversationId} = ${conversations.id} 
-                AND ${messages.companyId} = ${conversations.companyId}
-                ORDER BY ${messages.sentAt} DESC 
-                LIMIT 1
-            )`.as('last_message_sender_type'),
+        lastMessageData: sql<any>`(
+            SELECT json_build_object(
+                'content', content,
+                'status', status,
+                'sender_type', sender_type
+            )
+            FROM ${messages} 
+            WHERE ${messages.conversationId} = ${conversations.id} 
+            AND ${messages.companyId} = ${conversations.companyId}
+            ORDER BY ${messages.sentAt} DESC 
+            LIMIT 1
+        )`.as('last_message_data'),
         contactActiveConversationsCount: sql<number>`1`.as('active_count'),
-        kanbanBoardName: sql<string | null>`(
-            SELECT kb.name FROM kanban_leads kl
+        kanbanData: sql<any>`(
+            SELECT json_build_object(
+                'boardName', kb.name,
+                'stageName', kl.current_stage->>'title',
+                'stageType', kl.current_stage->>'type'
+            )
+            FROM kanban_leads kl
             INNER JOIN kanban_boards kb ON kl.board_id = kb.id
             WHERE kl.contact_id = ${conversations.contactId}
             ORDER BY kl.updated_at DESC LIMIT 1
-        )`.as('kanban_board_name'),
-        kanbanStageName: sql<string | null>`(
-            SELECT kl.current_stage->>'title' FROM kanban_leads kl
-            WHERE kl.contact_id = ${conversations.contactId}
-            ORDER BY kl.updated_at DESC LIMIT 1
-        )`.as('kanban_stage_name'),
-        kanbanStageType: sql<string | null>`(
-            SELECT kl.current_stage->>'type' FROM kanban_leads kl
-            WHERE kl.contact_id = ${conversations.contactId}
-            ORDER BY kl.updated_at DESC LIMIT 1
-        )`.as('kanban_stage_type'),
+        )`.as('kanban_data'),
     })
         .from(conversations)
         .innerJoin(contacts, eq(conversations.contactId, contacts.id))
         .leftJoin(connections, eq(conversations.connectionId, connections.id))
-        .where(and(...dynamicConditions))
-        .orderBy(desc(conversations.lastMessageAt))
-        .limit(limit)
-        .offset(offset);
+        .where(inArray(conversations.id, convoIds))
+        .orderBy(desc(conversations.lastMessageAt));
 
     const queryTime = Date.now() - startTime;
+    
+    // Mapeamento em memória para preservar compatibilidade de interface
+    const formattedData = companyConversations.map(conv => ({
+        ...conv,
+        lastMessage: conv.lastMessageData?.content || null,
+        lastMessageStatus: conv.lastMessageData?.status || null,
+        lastMessageSenderType: conv.lastMessageData?.sender_type || null,
+        kanbanBoardName: conv.kanbanData?.boardName || null,
+        kanbanStageName: conv.kanbanData?.stageName || null,
+        kanbanStageType: conv.kanbanData?.stageType || null,
+        lastMessageData: undefined,
+        kanbanData: undefined
+    }));
 
-    const [totalCountResult] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(conversations)
-        .innerJoin(contacts, eq(conversations.contactId, contacts.id))
-        .where(and(...dynamicConditions));
-
-    const totalCount = totalCountResult?.count || 0;
-    const totalTime = Date.now() - startTime;
-
-    console.log(`[Conversations API] ⚡ Fetch completed in ${totalTime}ms (query: ${queryTime}ms) | Rows: ${companyConversations.length}/${totalCount} | Limit: ${limit} | Offset: ${offset}`);
+    console.log(`[Conversations API] ⚡ Two-Step Fetch completed in ${queryTime}ms | Rows: ${formattedData.length} | Limit: ${limit} | Offset: ${offset}`);
 
     return {
-        data: companyConversations,
-        total: totalCount,
+        data: formattedData,
+        total: 0, // Ignorado pelo client, economia de 1 query pesada
         limit,
         offset
     };
@@ -280,77 +283,10 @@ async function fetchConversationsWithSearch(companyId: string, userId: string, s
     const searchPattern = `%${searchTerm}%`;
     const dynamicConditions = await getBaseConditions(companyId, userId, filterParam, adv);
 
-    const companyConversations = await db.select({
-        id: conversations.id,
-        status: conversations.status,
-        aiActive: conversations.aiActive,
-        lastMessageAt: conversations.lastMessageAt,
-        contactId: contacts.id,
-        contactName: contacts.name,
-        contactAvatar: contacts.avatarUrl,
-        phone: contacts.phone,
-        isGroup: contacts.isGroup,
-        connectionName: connections.config_name,
-        connectionType: connections.connectionType,
-        source: conversations.source,
-        assignedTo: conversations.assignedTo,
-        teamId: conversations.teamId,
-        assignedUserName: sql<string | null>`(
-            SELECT users.name 
-            FROM users 
-            WHERE users.id = ${conversations.assignedTo}
-        )`.as('assigned_user_name'),
-        tags: sql<any>`(
-            SELECT json_agg(json_build_object('id', tags.id, 'name', tags.name, 'color', tags.color))
-            FROM contacts_to_tags 
-            INNER JOIN tags ON contacts_to_tags.tag_id = tags.id 
-            WHERE contacts_to_tags.contact_id = ${conversations.contactId}
-        )`.as('tags'),
-        lastMessage: sql<string | null>`(
-            SELECT content 
-            FROM ${messages} 
-            WHERE ${messages.conversationId} = ${conversations.id} 
-            AND ${messages.companyId} = ${conversations.companyId}
-            ORDER BY ${messages.sentAt} DESC 
-            LIMIT 1
-        )`.as('last_message'),
-        lastMessageStatus: sql<string | null>`(
-            SELECT status 
-            FROM ${messages} 
-            WHERE ${messages.conversationId} = ${conversations.id} 
-            AND ${messages.companyId} = ${conversations.companyId}
-            ORDER BY ${messages.sentAt} DESC 
-            LIMIT 1
-        )`.as('last_message_status'),
-        lastMessageSenderType: sql<string | null>`(
-            SELECT sender_type 
-            FROM ${messages} 
-            WHERE ${messages.conversationId} = ${conversations.id} 
-            AND ${messages.companyId} = ${conversations.companyId}
-            ORDER BY ${messages.sentAt} DESC 
-            LIMIT 1
-        )`.as('last_message_sender_type'),
-        contactActiveConversationsCount: sql<number>`1`.as('active_count'),
-        kanbanBoardName: sql<string | null>`(
-            SELECT kb.name FROM kanban_leads kl
-            INNER JOIN kanban_boards kb ON kl.board_id = kb.id
-            WHERE kl.contact_id = ${conversations.contactId}
-            ORDER BY kl.updated_at DESC LIMIT 1
-        )`.as('kanban_board_name_s'),
-        kanbanStageName: sql<string | null>`(
-            SELECT kl.current_stage->>'title' FROM kanban_leads kl
-            WHERE kl.contact_id = ${conversations.contactId}
-            ORDER BY kl.updated_at DESC LIMIT 1
-        )`.as('kanban_stage_name_s'),
-        kanbanStageType: sql<string | null>`(
-            SELECT kl.current_stage->>'type' FROM kanban_leads kl
-            WHERE kl.contact_id = ${conversations.contactId}
-            ORDER BY kl.updated_at DESC LIMIT 1
-        )`.as('kanban_stage_type_s'),
-    })
+    // Passo 1: Busca base rápida com filtros
+    const baseConvos = await db.select({ id: conversations.id })
         .from(conversations)
         .innerJoin(contacts, eq(conversations.contactId, contacts.id))
-        .leftJoin(connections, eq(conversations.connectionId, connections.id))
         .where(and(
             ...dynamicConditions,
             or(
@@ -367,33 +303,89 @@ async function fetchConversationsWithSearch(companyId: string, userId: string, s
         .limit(limit)
         .offset(offset);
 
-    const queryTime = Date.now() - startTime;
+    if (baseConvos.length === 0) {
+        return { data: [], total: 0, limit, offset, search: searchTerm };
+    }
 
-    const [totalCountResult] = await db
-        .select({ count: sql<number>`count(*)::int` })
+    const convoIds = baseConvos.map(c => c.id);
+
+    // Passo 2: Carga rica apenas para a página
+    const companyConversations = await db.select({
+        id: conversations.id,
+        status: conversations.status,
+        aiActive: conversations.aiActive,
+        lastMessageAt: conversations.lastMessageAt,
+        contactId: contacts.id,
+        contactName: contacts.name,
+        contactAvatar: contacts.avatarUrl,
+        phone: contacts.phone,
+        isGroup: contacts.isGroup,
+        connectionName: connections.config_name,
+        connectionType: connections.connectionType,
+        source: conversations.source,
+        assignedTo: conversations.assignedTo,
+        teamId: conversations.teamId,
+        assignedUserName: sql<string | null>`(
+            SELECT users.name 
+            FROM users 
+            WHERE users.id = ${conversations.assignedTo}
+        )`.as('assigned_user_name'),
+        tags: sql<any>`(
+            SELECT json_agg(json_build_object('id', tags.id, 'name', tags.name, 'color', tags.color))
+            FROM contacts_to_tags 
+            INNER JOIN tags ON contacts_to_tags.tag_id = tags.id 
+            WHERE contacts_to_tags.contact_id = ${conversations.contactId}
+        )`.as('tags'),
+        lastMessageData: sql<any>`(
+            SELECT json_build_object(
+                'content', content,
+                'status', status,
+                'sender_type', sender_type
+            )
+            FROM ${messages} 
+            WHERE ${messages.conversationId} = ${conversations.id} 
+            AND ${messages.companyId} = ${conversations.companyId}
+            ORDER BY ${messages.sentAt} DESC 
+            LIMIT 1
+        )`.as('last_message_data'),
+        contactActiveConversationsCount: sql<number>`1`.as('active_count'),
+        kanbanData: sql<any>`(
+            SELECT json_build_object(
+                'boardName', kb.name,
+                'stageName', kl.current_stage->>'title',
+                'stageType', kl.current_stage->>'type'
+            )
+            FROM kanban_leads kl
+            INNER JOIN kanban_boards kb ON kl.board_id = kb.id
+            WHERE kl.contact_id = ${conversations.contactId}
+            ORDER BY kl.updated_at DESC LIMIT 1
+        )`.as('kanban_data_s'),
+    })
         .from(conversations)
         .innerJoin(contacts, eq(conversations.contactId, contacts.id))
-        .where(and(
-            ...dynamicConditions,
-            or(
-                ilike(contacts.name, searchPattern),
-                ilike(contacts.phone, searchPattern),
-                sql`EXISTS (
-                    SELECT 1 FROM ${messages} 
-                    WHERE ${messages.conversationId} = ${conversations.id} 
-                    AND ${messages.content} ILIKE ${searchPattern}
-                )`
-            )
-        ));
+        .leftJoin(connections, eq(conversations.connectionId, connections.id))
+        .where(inArray(conversations.id, convoIds))
+        .orderBy(desc(conversations.lastMessageAt));
 
-    const totalCount = totalCountResult?.count || 0;
-    const totalTime = Date.now() - startTime;
+    const queryTime = Date.now() - startTime;
+    
+    const formattedData = companyConversations.map(conv => ({
+        ...conv,
+        lastMessage: conv.lastMessageData?.content || null,
+        lastMessageStatus: conv.lastMessageData?.status || null,
+        lastMessageSenderType: conv.lastMessageData?.sender_type || null,
+        kanbanBoardName: conv.kanbanData?.boardName || null,
+        kanbanStageName: conv.kanbanData?.stageName || null,
+        kanbanStageType: conv.kanbanData?.stageType || null,
+        lastMessageData: undefined,
+        kanbanData: undefined
+    }));
 
-    console.log(`[Conversations API] 🔍 Search "${searchTerm}" completed in ${totalTime}ms (query: ${queryTime}ms) | Rows: ${companyConversations.length}/${totalCount}`);
+    console.log(`[Conversations API] 🔍 Two-Step Search "${searchTerm}" completed in ${queryTime}ms | Rows: ${formattedData.length}`);
 
     return {
-        data: companyConversations,
-        total: totalCount,
+        data: formattedData,
+        total: 0,
         limit,
         offset,
         search: searchTerm

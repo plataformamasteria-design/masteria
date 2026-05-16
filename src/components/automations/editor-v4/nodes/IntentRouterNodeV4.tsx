@@ -6,7 +6,7 @@ import { Target } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const IntentRouterNodeV4 = memo(({ id, data, selected }: any) => {
+export const IntentRouterNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
     // ── Normaliza intents: aceita string[] OU {id,label}[] ──────────────────
     // NodeConfigPanel salva intents como string[]; legado usa {id,label,examples}[]
     const rawIntents: Array<string | { id?: string; label?: string }> = data.intents || [];

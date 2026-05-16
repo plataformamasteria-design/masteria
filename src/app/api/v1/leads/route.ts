@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { kanbanLeads, contacts, contactsToTags, tags, kanbanBoards } from '@/lib/db/schema';
-import { asc, eq, and } from 'drizzle-orm';
+import { asc, eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
 import { getCompanyIdFromSession } from '@/app/actions';
@@ -92,25 +92,42 @@ async function fetchLeadsData(companyId: string, boardId: string) {
     .where(eq(kanbanLeads.boardId, boardId))
     .orderBy(asc(kanbanLeads.createdAt));
 
-  // Post-process to add tags
-  const leads = await Promise.all(flatLeadsAndContacts.map(async (row) => {
-    const { lead, contact } = row;
-    if (!contact) return lead;
+  // Otimização: Batch Fetching para Tags (Evitar N+1 Queries)
+  const contactIds = flatLeadsAndContacts.map(row => row.contact?.id).filter(Boolean) as string[];
 
-    const contactTags = await db
-      .select({ id: tags.id, name: tags.name, color: tags.color })
+  let allTags: any[] = [];
+  if (contactIds.length > 0) {
+    // Busca todas as tags vinculadas aos contatos deste funil em uma única query
+    allTags = await db
+      .select({ 
+          contactId: contactsToTags.contactId, 
+          tag: { id: tags.id, name: tags.name, color: tags.color } 
+      })
       .from(tags)
       .innerJoin(contactsToTags, eq(tags.id, contactsToTags.tagId))
-      .where(eq(contactsToTags.contactId, contact.id));
+      .where(inArray(contactsToTags.contactId, contactIds));
+  }
+
+  // Agrupa tags por contato em memória (Acesso O(1))
+  const tagsByContactId = allTags.reduce((acc, row) => {
+      if (!acc[row.contactId]) acc[row.contactId] = [];
+      acc[row.contactId].push(row.tag);
+      return acc;
+  }, {} as Record<string, any[]>);
+
+  // Post-process to add tags
+  const leads = flatLeadsAndContacts.map((row) => {
+    const { lead, contact } = row;
+    if (!contact) return lead;
 
     return {
       ...lead,
       contact: {
         ...contact,
-        tags: contactTags
+        tags: tagsByContactId[contact.id] || []
       }
     };
-  }));
+  });
 
   return leads;
 }

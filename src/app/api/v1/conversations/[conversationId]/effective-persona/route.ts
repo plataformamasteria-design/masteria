@@ -69,7 +69,7 @@ export async function GET(
           eq(kanbanBoards.companyId, companyId)
         ))
         .limit(1);
-      const stageConfig = stageConfigResults[0]?.kanban_stage_personas || null;
+      const stageConfig = stageConfigResults[0]?.kanbanStagePersonas || null;
 
       if (stageConfig) {
         const personaId = contactType === 'ACTIVE' 
@@ -99,7 +99,7 @@ export async function GET(
             eq(kanbanBoards.companyId, companyId)
           ))
           .limit(1);
-        const boardConfig = boardConfigResults[0]?.kanban_stage_personas || null;
+        const boardConfig = boardConfigResults[0]?.kanbanStagePersonas || null;
 
         if (boardConfig) {
           const personaId = contactType === 'ACTIVE' 

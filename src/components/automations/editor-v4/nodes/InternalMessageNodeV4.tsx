@@ -1,10 +1,11 @@
+import { NodePropsV4 } from './types';
 import { memo } from 'react';
 import { Position } from '@xyflow/react';
 import { MessageSquareWarning } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const InternalMessageNodeV4 = memo(({ data, selected }: any) => {
+export const InternalMessageNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     const message = data.message || data.note || '';
 
     return (

@@ -1731,6 +1731,14 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         multiline
                                     />
                                 </ConfigSection>
+                                <ConfigSection label="🧠 Memória de Aprendizado" hint="Regras e correções aprendidas automaticamente pelo Simulador. Você pode editar livremente.">
+                                    <Textarea
+                                        value={d.learning_notes || ''}
+                                        onChange={(e) => update('learning_notes', e.target.value)}
+                                        className="text-xs min-h-[80px] rounded-xl bg-violet-50/50 border-violet-100 placeholder:text-violet-300 focus:border-violet-300 focus:ring-violet-200 nodrag nowheel"
+                                        placeholder="Ex: Nunca dê o preço antes de perguntar o nome..."
+                                    />
+                                </ConfigSection>
                                 <ConfigSection label="Temperatura (Criatividade)">
                                     <div className="flex items-center gap-3">
                                         <input

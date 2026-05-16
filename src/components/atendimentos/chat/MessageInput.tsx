@@ -1,8 +1,9 @@
 import React, { useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Send, X, LockKeyhole, Loader2, Paperclip } from "lucide-react";
+import { Send, X, LockKeyhole, Loader2, Paperclip, Mic, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/lib/types";
+import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 
 interface MessageInputProps {
   messageText: string;
@@ -19,7 +20,14 @@ interface MessageInputProps {
   onAssignToMe?: () => void;
   actionMenuSlot?: React.ReactNode; 
   placeholder?: string;
+  onSendMedia?: (file: File) => Promise<void>;
 }
+
+const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
 
 export function MessageInput({
   messageText,
@@ -35,9 +43,11 @@ export function MessageInput({
   isAssigning = false,
   onAssignToMe,
   actionMenuSlot,
-  placeholder = "Digite sua mensagem..."
+  placeholder = "Digite sua mensagem...",
+  onSendMedia
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const recorder = useAudioRecorder();
 
   // Auto-resize
   useEffect(() => {
@@ -119,37 +129,75 @@ export function MessageInput({
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="flex items-end gap-2 px-1 relative">
-          <div className="flex gap-1 shrink-0 pb-1">
-            {actionMenuSlot}
-          </div>
-          
-          <div className="relative flex-1 bg-white dark:bg-zinc-900 border border-border/80 shadow-sm rounded-3xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all duration-200">
-            <textarea
-              ref={textareaRef}
-              placeholder={placeholder}
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isSending || disabled}
-              className="w-full min-h-[46px] max-h-[120px] resize-none border-0 bg-transparent py-3 pl-4 pr-12 text-[14px] leading-relaxed placeholder:text-muted-foreground/50 focus:ring-0 focus-visible:ring-0"
-              rows={1}
-            />
-          </div>
+        {recorder.isRecording ? (
+          <div className="flex items-center gap-2 px-1 relative w-full animate-in slide-in-from-bottom-2 fade-in duration-200">
+            <div className="flex-1 flex items-center gap-3 bg-red-500/10 text-red-500 border border-red-500/20 shadow-sm rounded-3xl overflow-hidden px-4 py-2 min-h-[46px]">
+               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+               <span className="font-bold text-sm tabular-nums tracking-wider">{formatTime(recorder.recordingTime)}</span>
+               <span className="text-xs font-medium opacity-80 ml-1">Gravando áudio...</span>
+            </div>
 
-          <Button
-            type="submit"
-            size="icon"
-            className={cn(
-              "shrink-0 h-11 w-11 rounded-full transition-all duration-300 pb-0.5 ml-1 flex items-center justify-center shadow-md",
-              "bg-primary hover:bg-primary/90 text-primary-foreground",
-              !messageText.trim() && !isSending && "opacity-50 scale-95"
+            <Button type="button" variant="ghost" size="icon" className="shrink-0 h-11 w-11 rounded-full text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-colors" onClick={recorder.cancelRecording}>
+               <Trash2 className="h-5 w-5" />
+            </Button>
+
+            <Button type="button" size="icon" className="shrink-0 h-11 w-11 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-md transition-transform active:scale-95" onClick={async () => {
+               const file = await recorder.stopRecording();
+               if (file && onSendMedia) await onSendMedia(file);
+            }}>
+               <Send className="h-4 w-4 ml-0.5" />
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={onSubmit} className="flex items-end gap-2 px-1 relative">
+            <div className="flex gap-1 shrink-0 pb-1">
+              {actionMenuSlot}
+            </div>
+            
+            <div className="relative flex-1 bg-white dark:bg-zinc-900 border border-border/80 shadow-sm rounded-3xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all duration-200">
+              <textarea
+                ref={textareaRef}
+                placeholder={placeholder}
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isSending || disabled}
+                className="w-full min-h-[46px] max-h-[120px] resize-none border-0 bg-transparent py-3 pl-4 pr-12 text-[14px] leading-relaxed placeholder:text-muted-foreground/50 focus:ring-0 focus-visible:ring-0"
+                rows={1}
+              />
+            </div>
+
+            {messageText.trim() ? (
+              <Button
+                type="submit"
+                size="icon"
+                className={cn(
+                  "shrink-0 h-11 w-11 rounded-full transition-all duration-300 pb-0.5 ml-1 flex items-center justify-center shadow-md",
+                  "bg-primary hover:bg-primary/90 text-primary-foreground",
+                  !messageText.trim() && !isSending && "opacity-50 scale-95"
+                )}
+                disabled={disabled || (!messageText.trim() && !isSending)}
+              >
+                {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4 ml-0.5" />}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="icon"
+                className={cn(
+                  "shrink-0 h-11 w-11 rounded-full transition-all duration-300 ml-1 flex items-center justify-center shadow-md",
+                  "bg-emerald-500 hover:bg-emerald-600 text-white focus:ring-2 focus:ring-emerald-500/30",
+                  disabled && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={disabled}
+                onClick={recorder.startRecording}
+                title="Gravar Áudio"
+              >
+                <Mic className="h-5 w-5" />
+              </Button>
             )}
-            disabled={disabled || (!messageText.trim() && !isSending)}
-          >
-            {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4 ml-0.5" />}
-          </Button>
-        </form>
+          </form>
+        )}
       </div>
     </div>
   );

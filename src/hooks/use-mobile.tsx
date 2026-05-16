@@ -1,6 +1,6 @@
 import * as React from "react"
 
-const MOBILE_BREAKPOINT = 640 // Alterado para sm
+const MOBILE_BREAKPOINT = 768 // Alterado para md para sincronizar com Tailwind
 
 export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = React.useState<boolean>(false)

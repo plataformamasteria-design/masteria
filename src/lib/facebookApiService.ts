@@ -231,7 +231,7 @@ export async function sendWhatsappMediaMessage({ connectionId, to, type, url, me
     if (mediaBuffer && connection.phoneNumberId) {
         // Upload to Meta's servers for reliable delivery
         const { uploadMediaToMeta } = await import('./metaMediaUpload');
-        const uploadMime = mimeType || (type === 'audio' ? 'audio/ogg; codecs=opus' : 'application/octet-stream');
+        const uploadMime = mimeType || (type === 'audio' ? 'audio/ogg' : 'application/octet-stream');
 
         console.log(`[Facebook API - ${type}] Uploading ${mediaBuffer.length} bytes to Meta servers...`);
         const mediaId = await uploadMediaToMeta(

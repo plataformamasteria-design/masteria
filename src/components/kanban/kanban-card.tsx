@@ -9,7 +9,8 @@ import { MoreHorizontal, Phone, Eye, Pencil, Trash2, MessageCircle, MoveRight, C
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '../ui/dropdown-menu';
 import type { KanbanCard as KanbanCardType, KanbanStage } from '@/lib/types';
-import { EditLeadDialog, DeleteLeadDialog, ViewLeadDialog, AddMeetingTimeDialog } from './lead-dialogs';
+import { DeleteLeadDialog, AddMeetingTimeDialog } from './lead-dialogs';
+import { LeadExpansiveDrawer } from './lead-expansive-drawer';
 
 interface KanbanCardProps {
   card: KanbanCardType;
@@ -23,7 +24,6 @@ interface KanbanCardProps {
 export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp }: KanbanCardProps) {
   const router = useRouter();
   const [viewOpen, setViewOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [meetingTimeOpen, setMeetingTimeOpen] = useState(false);
 
@@ -73,10 +73,14 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
             {...provided.dragHandleProps}
           >
             <Card
-              className={`cursor-pointer transition-all bg-card border-border/40 shadow-sm rounded-md hover:bg-muted/50 ${snapshot.isDragging ? 'shadow-xl rotate-2 scale-[1.02] ring-1 ring-primary/50' : ''
-                }`}
+              onClick={() => setViewOpen(true)}
+              className={`cursor-pointer transition-all duration-200 border-border/40 backdrop-blur-md rounded-lg hover:bg-muted/50 ${
+                snapshot.isDragging 
+                  ? 'bg-background dark:bg-zinc-900/90 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-[1.03] rotate-2 ring-1 ring-primary/40 z-50' 
+                  : 'bg-card dark:bg-black/20 shadow-sm'
+              }`}
             >
-              <div className="p-2.5 flex flex-col gap-1.5 relative group">
+              <div className="p-3 flex flex-col gap-2 relative group">
                 {/* Linha 1: Nome, Handle e Menu */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -105,10 +109,7 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem onClick={() => setViewOpen(true)}>
-                          <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                          <Pencil className="mr-2 h-4 w-4" /> Editar Lead
+                          <Pencil className="mr-2 h-4 w-4" /> Editar / Detalhes
                         </DropdownMenuItem>
                         {isCallStage && (
                           <DropdownMenuItem onClick={() => setMeetingTimeOpen(true)}>
@@ -211,15 +212,15 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
         )}
       </Draggable>
 
-      <ViewLeadDialog
+      <LeadExpansiveDrawer
         open={viewOpen}
         onOpenChange={setViewOpen}
         card={card}
-        onEdit={() => setEditOpen(true)}
-        onDelete={() => setDeleteOpen(true)}
+        stages={stages}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
         onOpenWhatsApp={handleOpenWhatsApp}
       />
-      <EditLeadDialog open={editOpen} onOpenChange={setEditOpen} card={card} onSave={onUpdate} />
       <AddMeetingTimeDialog open={meetingTimeOpen} onOpenChange={setMeetingTimeOpen} card={card} onSave={onUpdate} />
       <DeleteLeadDialog open={deleteOpen} onOpenChange={setDeleteOpen} card={card} onConfirm={onDelete} />
     </>

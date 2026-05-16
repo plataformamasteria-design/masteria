@@ -1,12 +1,13 @@
 'use client';
 
 import React, { memo } from 'react';
+import { NodePropsV4 } from './types';
 import { Position } from '@xyflow/react';
 import { MessageSquare } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const SendMessageNodeV4 = memo(({ data, selected }: any) => {
+export const SendMessageNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     const message = data.message || data.content || '';
     const preview = message.length > 80 ? message.slice(0, 80) + '...' : message;
 

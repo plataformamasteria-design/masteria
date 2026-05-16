@@ -6,7 +6,7 @@ import { Signpost } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const RouterNodeV4 = memo(({ id, data, selected }: any) => {
+export const RouterNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
     // Normaliza rotas: aceita string[] OU {id, label, condition}[]
     const rawRoutes: Array<string | { id?: string; label?: string }> = data.routes || [];
     const routes = rawRoutes.map((item, i) =>

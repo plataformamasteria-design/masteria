@@ -21,6 +21,7 @@ import {
   RefreshCcw,
   ChevronDown,
   UserPlus,
+  FileText,
 } from 'lucide-react';
 import { format, isToday, isYesterday, differenceInDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -43,7 +44,16 @@ import { Switch } from '../ui/switch';
 import { cn } from '@/lib/utils';
 import { ChatAssignmentDropdown } from './chat-assignment';
 import { MessageInput } from './chat/MessageInput';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface ActiveChatProps {
   conversation: Conversation | null;
@@ -52,6 +62,7 @@ interface ActiveChatProps {
   loadingMessages: boolean;
   templates: Template[];
   onSendMessage: (text: string) => Promise<void>;
+  onSendMedia?: (file: File) => Promise<void>;
   onBack: () => void;
   onToggleAi: (conversationId: string, aiActive: boolean) => Promise<void>;
   onLoadMoreMessages?: () => Promise<void>;
@@ -72,6 +83,7 @@ export function ActiveChat({
   loadingMessages,
   templates,
   onSendMessage,
+  onSendMedia,
   onBack,
   onToggleAi,
   onLoadMoreMessages,
@@ -92,6 +104,7 @@ export function ActiveChat({
   const [isAssigning, setIsAssigning] = React.useState(false);
   const [replyToMessage, setReplyToMessage] = React.useState<Message | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const connectionDropdownRef = React.useRef<HTMLDivElement>(null);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -99,8 +112,21 @@ export function ActiveChat({
   const isInitialLoadRef = React.useRef(true);
   const lastMessageIdRef = React.useRef<string | null>(null);
 
-  // ✅ v2: Optimistic Assignment state for immediate UI feedback
-  const [optimisticAssignment, setOptimisticAssignment] = React.useState<{ assignedTo: string | null, teamId: string | null } | null>(null);
+  const [optimisticAssignment, setOptimisticAssignment] = React.useState<{ assignedTo: string | null; teamId: string | null } | null>(null);
+
+  // Estados do Modal de Preview de Mídia
+  const [previewFile, setPreviewFile] = React.useState<File | null>(null);
+  const [previewCaption, setPreviewCaption] = React.useState('');
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (previewFile) {
+      const url = URL.createObjectURL(previewFile);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPreviewUrl(null);
+  }, [previewFile]);
 
   React.useEffect(() => {
     setOptimisticAssignment(null);
@@ -115,10 +141,9 @@ export function ActiveChat({
   const canSendMessage = isAssignedToMe;
 
   const lastWindowOpeningMessage = React.useMemo(() => {
-    const relevantMessages = [...messages].filter(m =>
-      m.senderType === 'CONTACT' ||
-      (m.senderType === 'AGENT' && m.content && m.content.startsWith('Template:'))
-    );
+    // A janela de 24 horas da Meta SÓ É ABERTA por mensagens do cliente.
+    // Templates enviados pelo agente NÃO ABREM a janela para envio de mensagens livres.
+    const relevantMessages = [...messages].filter(m => m.senderType === 'CONTACT');
     return relevantMessages.sort((a, b) =>
       new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
     )[0];
@@ -255,9 +280,9 @@ export function ActiveChat({
   const isArchived = conversation.status === 'ARCHIVED';
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 bg-transparent">
       {/* Premium Chat Header */}
-      <div className="flex items-center gap-3 p-3 shrink-0 bg-card/80 backdrop-blur-md border-b border-white/[0.06] z-10">
+      <div className="flex items-center gap-3 p-3 lg:p-4 shrink-0 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl border-b border-border/30 z-10">
         <div className="flex items-center gap-3 shrink-0">
           {isMobile && (
             <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 hover:bg-white/[0.04]">
@@ -328,82 +353,78 @@ export function ActiveChat({
 
           {/* Connection Toggle */}
           {availableConnections.length > 0 && onSwitchConnection && (
-            <div className="relative" ref={connectionDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setShowConnectionDropdown(prev => !prev)}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 mr-1",
-                  ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '')
-                    ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15'
-                    : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15'
-                )}
-              >
-                <Wifi className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">
-                  {['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API'}
-                </span>
-                <ChevronDown className={cn(
-                  "h-3 w-3 transition-transform duration-300",
-                  showConnectionDropdown && 'rotate-180'
-                )} />
-              </button>
-
-              {showConnectionDropdown && (
-                <div className="absolute top-full right-0 mt-1.5 w-64 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 py-1 animate-in fade-in-0 zoom-in-95">
-                  <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 border-b border-white/[0.06]">
-                    Trocar Conexão
-                  </div>
-                  {availableConnections.map((conn) => {
-                    const isActive = conn.id === conversation?.connectionId;
-                    const isBaileys = ['baileys', 'evolution'].includes(conn.connectionType);
-                    return (
-                      <button
-                        key={conn.id}
-                        type="button"
-                        onClick={async () => {
-                          if (!isActive) {
-                            await onSwitchConnection(conn.id);
-                          }
-                          setShowConnectionDropdown(false);
-                        }}
-                        className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-all duration-200",
-                          isActive
-                            ? 'bg-primary/5 text-primary'
-                            : 'hover:bg-white/[0.04]'
-                        )}
-                      >
-                        <div className={cn(
-                          "w-2 h-2 rounded-full shrink-0 transition-colors",
-                          isActive ? 'bg-primary shadow-[0_0_6px_hsl(161_79%_39%_/_0.4)]' : 'bg-muted-foreground/20'
-                        )} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium truncate text-[13px]">{conn.config_name}</span>
-                            <span className={cn(
-                              "text-[9px] px-1.5 py-0.5 rounded-full font-bold",
-                              isBaileys
-                                ? 'bg-blue-500/10 text-blue-400'
-                                : 'bg-emerald-500/10 text-emerald-400'
-                            )}>
-                              {isBaileys ? 'Baileys' : 'API'}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-muted-foreground/50">
-                            {conn.phoneNumber || conn.phone || 'Sem número'}
-                            {isBaileys ? ' • Gratuito' : ' • Templates pagos'}
+            <DropdownMenu open={showConnectionDropdown} onOpenChange={setShowConnectionDropdown}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 mr-1 outline-none",
+                    ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '')
+                      ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 focus:ring-2 focus:ring-blue-500/30'
+                      : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 focus:ring-2 focus:ring-emerald-500/30'
+                  )}
+                >
+                  <Wifi className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">
+                    {['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API'}
+                  </span>
+                  <ChevronDown className={cn(
+                    "h-3 w-3 transition-transform duration-300",
+                    showConnectionDropdown && 'rotate-180'
+                  )} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 p-1">
+                <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 border-b border-white/[0.06] mb-1">
+                  Trocar Conexão
+                </DropdownMenuLabel>
+                {availableConnections.map((conn) => {
+                  const isActive = conn.id === conversation?.connectionId;
+                  const isBaileys = ['baileys', 'evolution'].includes(conn.connectionType);
+                  return (
+                    <DropdownMenuItem
+                      key={conn.id}
+                      onClick={async () => {
+                        if (!isActive) {
+                          await onSwitchConnection(conn.id);
+                        }
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-all duration-200 cursor-pointer rounded-lg",
+                        isActive
+                          ? 'bg-primary/5 text-primary focus:bg-primary/10'
+                          : 'hover:bg-white/[0.04] focus:bg-white/[0.04]'
+                      )}
+                    >
+                      <div className={cn(
+                        "w-2 h-2 rounded-full shrink-0 transition-colors",
+                        isActive ? 'bg-primary shadow-[0_0_6px_hsl(161_79%_39%_/_0.4)]' : 'bg-muted-foreground/20'
+                      )} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate text-[13px]">{conn.config_name}</span>
+                          <span className={cn(
+                            "text-[9px] px-1.5 py-0.5 rounded-full font-bold",
+                            isBaileys
+                              ? 'bg-blue-500/10 text-blue-400'
+                              : 'bg-emerald-500/10 text-emerald-400'
+                          )}>
+                            {isBaileys ? 'Baileys' : 'API'}
                           </span>
                         </div>
-                        {isActive && (
-                          <span className="text-[10px] text-primary font-bold">Ativo</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                        <span className="text-[11px] text-muted-foreground/50">
+                          {conn.phoneNumber || conn.phone || 'Sem número'}
+                          {isBaileys ? ' • Gratuito' : ' • Templates pagos'}
+                        </span>
+                      </div>
+                      {isActive && (
+                        <span className="text-[10px] text-primary font-bold">Ativo</span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {/* AI Toggle */}
@@ -413,12 +434,12 @@ export function ActiveChat({
                 <div className={cn(
                   "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all duration-200",
                   conversation.aiActive
-                    ? "bg-primary/10 border-primary/20"
+                    ? "bg-violet-500/10 border-violet-500/20"
                     : "bg-white/[0.02] border-white/[0.06]"
                 )}>
                   <Bot className={cn(
                     "h-4 w-4 transition-colors duration-200",
-                    conversation.aiActive ? "text-primary" : "text-muted-foreground/50"
+                    conversation.aiActive ? "text-violet-400" : "text-muted-foreground/50"
                   )} />
                   <Switch
                     id={`ai-switch-${conversation.id}`}
@@ -531,8 +552,8 @@ export function ActiveChat({
                 return (
                   <React.Fragment key={msg.id}>
                     {showDivider && (
-                       <div className="w-full flex justify-center py-2 relative z-10 w-full col-span-full">
-                         <span className="bg-background/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] uppercase font-bold text-muted-foreground/70 border border-white/[0.04]">
+                       <div className="w-full flex justify-center py-2 sticky top-2 z-20 col-span-full pointer-events-none">
+                         <span className="bg-background/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] uppercase font-bold text-muted-foreground/70 border border-white/[0.04] shadow-sm">
                            {isToday(currentDate) ? 'Hoje' : 
                             isYesterday(currentDate) ? 'Ontem' : 
                             differenceInDays(new Date(), currentDate) < 7 ? format(currentDate, 'EEEE', { locale: ptBR }) :
@@ -544,6 +565,7 @@ export function ActiveChat({
                       message={msg as any} 
                       allMessages={messages as any} 
                       contactName={contact.name}
+                      templates={templates}
                       onReply={(m) => setReplyToMessage(m as Message)}
                       onCopy={(text) => navigator.clipboard.writeText(text)}
                     />
@@ -556,47 +578,21 @@ export function ActiveChat({
       </div>
 
       {/* Premium Input Area */}
-      <div className="shrink-0 border-t border-white/[0.06] bg-card/80 backdrop-blur-md p-3 overflow-x-hidden">
-        {!isArchived && (
-          <>
-            {/* ✅ v2: Only show 24h window for Meta API — Baileys has no 24h restriction */}
-            {is24hRestricted && (() => {
-              // Cenário 1: Janela aberta com tempo restante
-              if (canSendFreeform && timeLeft !== null && timeLeft > 0) {
-                return (
-                  <div className="mb-2.5 text-[11px] text-center text-muted-foreground/60 font-semibold flex items-center justify-center gap-1.5 bg-primary/5 py-1.5 rounded-full mx-auto w-fit px-4 border border-primary/10">
-                    <Clock className="h-3 w-3 shrink-0 text-primary/60" />
-                    <span>Janela de 24h aberta • Restam {formatTimeLeft(timeLeft)}</span>
-                  </div>
-                );
-              }
-
-              // Cenário 2 e 3: Janela expirada (timer zerou) OU lead sem histórico (nunca mandou mensagem)
-              if (!canSendFreeform) {
-                return (
-                  <div className="mb-3 mx-2 flex flex-col sm:flex-row items-center justify-between p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 text-amber-500 gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span className="font-medium text-[12px] sm:text-[13px]">
-                        {!lastWindowOpeningMessage 
-                          ? 'Janela de 24h fechada — Nenhuma mensagem do lead.' 
-                          : 'Janela de 24h expirada.'}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-amber-500/60 hidden sm:inline">Envie um template para iniciar conversa</span>
-                    
-                    <SendTemplateDialog templates={templates} connectionId={conversation.connectionId!} contact={contact}>
-                       <Button type="button" size="sm" className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 h-8 rounded-lg text-xs font-semibold px-4 w-full sm:w-auto shadow-none">
-                           Escolher Template
-                       </Button>
-                    </SendTemplateDialog>
-                  </div>
-                );
-              }
-
-              return null;
-            })()}
-          </>
+      <div className="shrink-0 border-t border-border/30 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl p-3 pt-2 overflow-x-hidden relative">
+        {!isArchived && is24hRestricted && (
+          <div className="w-full flex justify-center mb-1.5 pointer-events-none">
+            {canSendFreeform && timeLeft !== null && timeLeft > 0 ? (
+              <div className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1.5 bg-emerald-500/10 py-1 px-3 rounded-full border border-emerald-500/20">
+                <Clock className="h-3 w-3 shrink-0" />
+                <span>Janela 24h aberta • Restam {formatTimeLeft(timeLeft)}</span>
+              </div>
+            ) : (
+              <div className="text-[10px] text-amber-500 font-semibold flex items-center gap-1.5 bg-amber-500/10 py-1 px-3 rounded-full border border-amber-500/20">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                <span>Janela fechada • Clique no clipe (📎) para enviar template</span>
+              </div>
+            )}
+          </div>
         )}
         {/* ✅ v2: Assignment requirement replaces the input entirely */}
         {/* ✅ v2: Assignment requirement replaces the input entirely */}
@@ -628,21 +624,102 @@ export function ActiveChat({
              }
            }}
            placeholder={isArchived ? "Esta conversa está arquivada." : (!canSendFreeform && is24hRestricted ? "Janela 24h fechada." : "Digite sua mensagem...")}
+           onSendMedia={onSendMedia}
            actionMenuSlot={
-              <SendTemplateDialog templates={templates} connectionId={conversation.connectionId!} contact={contact}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 focus:bg-muted"
-                  disabled={isArchived}
-                >
-                  <Paperclip className="h-5 w-5" />
-                </Button>
-              </SendTemplateDialog>
+              <div className="flex items-center gap-1">
+                {onSendMedia && (
+                  <label
+                    className={cn(
+                      "cursor-pointer shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground transition-all duration-200",
+                      isArchived || (!canSendFreeform && is24hRestricted)
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:text-foreground hover:bg-muted focus:bg-muted"
+                    )}
+                  >
+                    <input
+                      type="file"
+                      className="hidden"
+                      disabled={isArchived || (!canSendFreeform && is24hRestricted)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPreviewFile(file);
+                          setPreviewCaption('');
+                        }
+                        e.target.value = ''; // Reset
+                      }}
+                    />
+                    <Paperclip className="h-5 w-5" />
+                  </label>
+                )}
+                <SendTemplateDialog templates={templates} connectionId={conversation.connectionId!} contact={contact}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 focus:bg-muted"
+                    disabled={isArchived}
+                  >
+                    <FileText className="h-5 w-5" />
+                  </Button>
+                </SendTemplateDialog>
+              </div>
            }
         />
       </div>
+
+      {/* Modal de Preview de Mídia */}
+      <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Enviar Arquivo</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            {previewUrl && previewFile?.type.startsWith('image/') && (
+              <div className="w-full flex justify-center bg-black/5 dark:bg-white/5 rounded-lg overflow-hidden max-h-[300px]">
+                <img src={previewUrl} alt="Preview" className="object-contain" />
+              </div>
+            )}
+            {previewUrl && previewFile?.type.startsWith('video/') && (
+              <div className="w-full flex justify-center bg-black/5 dark:bg-white/5 rounded-lg overflow-hidden max-h-[300px]">
+                <video src={previewUrl} controls className="object-contain w-full h-full" />
+              </div>
+            )}
+            {previewFile && !previewFile.type.startsWith('image/') && !previewFile.type.startsWith('video/') && (
+              <div className="w-full h-24 bg-black/5 dark:bg-white/5 rounded-lg flex flex-col items-center justify-center border border-border/50">
+                <FileText className="h-8 w-8 text-muted-foreground/60 mb-2" />
+                <span className="text-sm font-medium truncate max-w-[80%]">{previewFile.name}</span>
+                <span className="text-xs text-muted-foreground mt-1">
+                  {(previewFile.size / 1024 / 1024).toFixed(2)} MB
+                </span>
+              </div>
+            )}
+            <Input
+              placeholder="Adicionar legenda (opcional)..."
+              value={previewCaption}
+              onChange={(e) => setPreviewCaption(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && previewFile && onSendMedia) {
+                  onSendMedia(previewFile, previewCaption);
+                  setPreviewFile(null);
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPreviewFile(null)}>Cancelar</Button>
+            <Button onClick={() => {
+              if (previewFile && onSendMedia) {
+                onSendMedia(previewFile, previewCaption);
+                setPreviewFile(null);
+              }
+            }}>
+              Enviar <Send className="w-4 h-4 ml-2" />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

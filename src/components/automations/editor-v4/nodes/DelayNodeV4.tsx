@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
+import { NodePropsV4 } from './types';
 import { Position } from '@xyflow/react';
 import { Clock } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
@@ -10,7 +11,7 @@ const UNIT_LABELS: Record<string, string> = {
     seconds: 'segundo(s)', minutes: 'minuto(s)', hours: 'hora(s)', days: 'dia(s)',
 };
 
-export const DelayNodeV4 = memo(({ data, selected }: any) => {
+export const DelayNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     const amount = data.amount ?? 1;
     const unit = data.unit || 'minutes';
     const label = `${amount} ${UNIT_LABELS[unit] || unit}`;

@@ -45,12 +45,17 @@ import { AddTaskNodeV4 } from './nodes/AddTaskNodeV4';
 import { InternalMessageNodeV4 } from './nodes/InternalMessageNodeV4';
 import { AiAgentNodeV4 } from './nodes/AiAgentNodeV4';
 import { IntentRouterNodeV4 } from './nodes/IntentRouterNodeV4';
-import {
-    FollowUpAiNodeV4, SendAiResponseNodeV4, CrmMoveNodeV4,
-    AddTagNodeV4, BotToggleNodeV4, LookupLeadNodeV4,
-    AssignUserNodeV4, AddNoteNodeV4, HttpRequestNodeV4,
-    CodeNodeV4, EditFieldsNodeV4,
-} from './nodes/RemainingNodesV4';
+import { FollowUpAiNodeV4 } from './nodes/FollowUpAiNodeV4';
+import { SendAiResponseNodeV4 } from './nodes/SendAiResponseNodeV4';
+import { CrmMoveNodeV4 } from './nodes/CrmMoveNodeV4';
+import { AddTagNodeV4 } from './nodes/AddTagNodeV4';
+import { BotToggleNodeV4 } from './nodes/BotToggleNodeV4';
+import { LookupLeadNodeV4 } from './nodes/LookupLeadNodeV4';
+import { AssignUserNodeV4 } from './nodes/AssignUserNodeV4';
+import { AddNoteNodeV4 } from './nodes/AddNoteNodeV4';
+import { HttpRequestNodeV4 } from './nodes/HttpRequestNodeV4';
+import { CodeNodeV4 } from './nodes/CodeNodeV4';
+import { EditFieldsNodeV4 } from './nodes/EditFieldsNodeV4';
 
 // Legado para compatibilidade com fluxos salvos
 import { MessageNode, SendMessageNode } from '../nodes/message-node';
@@ -570,6 +575,39 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                             const node = nodes.find(n => n.id === nodeId);
                             if (node) reactFlowInstance.setCenter(node.position.x, node.position.y, { zoom: 1, duration: 500 });
                         }
+                    }}
+                    onCorrectionsGenerated={(nodeId, notes) => {
+                        setNodes(nds => nds.map(n => {
+                            if (n.id === nodeId) {
+                                return {
+                                    ...n,
+                                    data: {
+                                        ...n.data,
+                                        config: {
+                                            ...(n.data.config as any),
+                                            learning_notes: notes
+                                        }
+                                    }
+                                };
+                            }
+                            return n;
+                        }));
+                        // Update currently editing node if it's the one being modified
+                        setEditingNode(prev => {
+                            if (prev && prev.id === nodeId) {
+                                return {
+                                    ...prev,
+                                    data: {
+                                        ...prev.data,
+                                        config: {
+                                            ...(prev.data.config as any),
+                                            learning_notes: notes
+                                        }
+                                    }
+                                };
+                            }
+                            return prev;
+                        });
                     }}
                 />
             )}

@@ -59,6 +59,8 @@ export function useInboxController({
         robotService: false,
         filterTeamId: null,
         filterAgentId: null,
+        filterTagId: null,
+        filterKanbanId: null,
     });
 
     // Message Pagination
@@ -212,6 +214,58 @@ export function useInboxController({
             setCurrentMessages(prev => prev.map(m =>
                 m.id === tempId
                     ? { ...m, id: result.dbId || m.id, status: 'SENT', providerMessageId: result.messageId } as Message
+                    : m
+            ));
+        } catch (error) {
+            notify.error('Erro de Envio', (error as Error).message);
+            setCurrentMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'FAILED' } as Message : m));
+        }
+    }, [selectedConversation, session, notify]);
+
+    const handleSendMedia = useCallback(async (file: File, caption?: string) => {
+        if (!selectedConversation || !session?.userId) return;
+
+        const tempId = `temp-media-${Date.now()}`;
+        let contentType: any = 'DOCUMENT';
+        if (file.type.startsWith('image/')) contentType = 'IMAGE';
+        else if (file.type.startsWith('video/')) contentType = 'VIDEO';
+        else if (file.type.startsWith('audio/')) contentType = 'AUDIO';
+
+        const optimisticMessage: Message = {
+            id: tempId,
+            conversationId: selectedConversation.id,
+            senderType: 'AGENT',
+            senderId: session.userId,
+            content: caption || file.name,
+            contentType,
+            status: 'PENDING',
+            sentAt: new Date(),
+            providerMessageId: null,
+            repliedToMessageId: null,
+            mediaUrl: URL.createObjectURL(file), // Temp URL
+            readAt: null
+        } as Message;
+
+        setCurrentMessages(prev => [...prev, optimisticMessage]);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            if (caption) {
+                formData.append('caption', caption);
+            }
+            
+            const res = await fetch(`/api/v1/conversations/${selectedConversation.id}/media`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await res.json();
+            
+            if (!res.ok) throw new Error(result.error || 'Erro ao enviar mídia');
+
+            setCurrentMessages(prev => prev.map(m =>
+                m.id === tempId
+                    ? { ...m, id: result.id || m.id, status: 'SENT', providerMessageId: result.providerMessageId, mediaUrl: result.mediaUrl } as Message
                     : m
             ));
         } catch (error) {
@@ -465,6 +519,7 @@ export function useInboxController({
         advancedFilters,
         handleSelectConversation,
         handleSendMessage,
+        handleSendMedia,
         handleToggleAi,
         handleSwitchConnection,
         handleSyncHistory,

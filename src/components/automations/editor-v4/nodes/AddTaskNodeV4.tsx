@@ -1,10 +1,11 @@
+import { NodePropsV4 } from './types';
 import { memo } from 'react';
 import { Position } from '@xyflow/react';
 import { CalendarCheck } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const AddTaskNodeV4 = memo(({ data, selected }: any) => {
+export const AddTaskNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     const taskText = data.task_text || data.text || '';
     const dueDate = data.due_date || '';
     const assignee = data.assignee || '';

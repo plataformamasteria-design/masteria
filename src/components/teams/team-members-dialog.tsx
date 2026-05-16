@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { UserPlus, UserMinus, Shield, User, Loader2 } from "lucide-react";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,29 +10,18 @@ import { toast } from "@/hooks/use-toast";
 
 export function TeamMembersDialog({ team, allUsers }: { team: any, allUsers: any[] }) {
     const [open, setOpen] = useState(false);
-    const [members, setMembers] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [selectedUser, setSelectedUser] = useState<string>("");
 
-    const loadMembers = async () => {
-        setIsLoading(true);
-        try {
-            const data = await getTeamMembers(team.id);
-            setMembers(data);
-        } catch {
-            toast({ variant: "destructive", title: "Erro ao carregar membros" });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    // SWR fetcher para garantir dados em tempo real quando o dialog está aberto
+    const { data: members = [], isLoading, mutate } = useSWR(
+        open ? `team-members-${team.id}` : null, 
+        async () => await getTeamMembers(team.id)
+    );
 
     const onOpenChange = (newOpen: boolean) => {
         setOpen(newOpen);
-        if (newOpen) {
-            loadMembers();
-        } else {
-            setMembers([]);
+        if (!newOpen) {
             setSelectedUser("");
         }
     };
@@ -42,10 +32,10 @@ export function TeamMembersDialog({ team, allUsers }: { team: any, allUsers: any
         try {
             await addMemberToTeam(team.id, selectedUser);
             toast({ title: "Membro adicionado" });
-            await loadMembers();
+            await mutate(); // Revalida a lista
             setSelectedUser("");
         } catch (e: unknown) {
-            toast({ variant: "destructive", title: "Erro", description: e instanceof Error ? e.message : "Erro desconhecido" });
+            toast({ variant: "destructive", title: "Erro ao adicionar", description: e instanceof Error ? e.message : "Erro desconhecido" });
         } finally {
             setIsProcessing(false);
         }
@@ -54,22 +44,25 @@ export function TeamMembersDialog({ team, allUsers }: { team: any, allUsers: any
     const handleRemoveMember = async (userId: string) => {
         setIsProcessing(true);
         try {
+            // Optimistic update
+            mutate(members.filter((m: any) => m.id !== userId), false);
             await removeMemberFromTeam(team.id, userId);
             toast({ title: "Membro removido" });
-            await loadMembers();
+            await mutate();
         } catch (e: unknown) {
-            toast({ variant: "destructive", title: "Erro", description: e instanceof Error ? e.message : "Erro desconhecido" });
+            toast({ variant: "destructive", title: "Erro ao remover", description: e instanceof Error ? e.message : "Erro desconhecido" });
+            mutate(); // Revert
         } finally {
             setIsProcessing(false);
         }
     };
 
-    const availableUsers = allUsers.filter(u => !members.some(m => m.id === u.id));
+    const availableUsers = allUsers.filter(u => !members.some((m: any) => m.id === u.id));
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
-                <Button variant="secondary" size="sm" className="gap-1.5 h-8 text-xs">
+                <Button variant="secondary" size="sm" className="gap-1.5 h-8 text-xs bg-secondary/50 hover:bg-secondary">
                     <UserPlus className="h-3.5 w-3.5 text-primary" /> {members.length > 0 ? `${members.length} Membros` : "Ver Membros"}
                 </Button>
             </DialogTrigger>
@@ -100,32 +93,43 @@ export function TeamMembersDialog({ team, allUsers }: { team: any, allUsers: any
                             </SelectContent>
                         </Select>
                         <Button onClick={handleAddMember} disabled={!selectedUser || isProcessing} className="gap-2">
-                            <UserPlus className="h-4 w-4" /> Adicionar
+                            {isProcessing && selectedUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} 
+                            Adicionar
                         </Button>
                     </div>
 
                     <div className="bg-muted/30 border border-border rounded-xl p-2 min-h-[150px] max-h-[300px] overflow-y-auto space-y-2">
                         {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-6">
-                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground mt-2">Carregando membros...</span>
+                            <div className="space-y-2">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="flex items-center justify-between bg-card p-2 rounded-lg border border-border/50 animate-pulse">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-full bg-muted" />
+                                            <div className="space-y-1.5">
+                                                <div className="h-3 w-24 bg-muted rounded" />
+                                                <div className="h-2 w-32 bg-muted/70 rounded" />
+                                            </div>
+                                        </div>
+                                        <div className="h-8 w-8 rounded-md bg-muted/50" />
+                                    </div>
+                                ))}
                             </div>
                         ) : members.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-8 text-center px-4">
                                 <User className="h-8 w-8 text-muted-foreground mb-2 opacity-50" />
-                                <span className="text-sm font-medium text-muted-foreground">Nenhum membro</span>
+                                <span className="text-sm font-medium text-foreground">Nenhum membro</span>
                                 <span className="text-xs text-muted-foreground mt-1">Este departamento está vazio. Adicione atendentes acima para rotear as conversas.</span>
                             </div>
                         ) : (
-                            members.map(m => (
-                                <div key={m.id} className="flex items-center justify-between bg-card p-2 rounded-lg border border-border shadow-sm">
+                            members.map((m: any) => (
+                                <div key={m.id} className="flex items-center justify-between bg-card p-2 rounded-lg border border-border shadow-sm hover:border-primary/20 transition-all">
                                     <div className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8">
+                                        <Avatar className="h-8 w-8 border border-border/50">
                                             <AvatarImage src={m.avatarUrl || ""} />
                                             <AvatarFallback className="text-xs font-semibold">{m.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <p className="text-sm font-semibold flex items-center gap-1.5">
+                                            <p className="text-sm font-semibold flex items-center gap-1.5 text-card-foreground">
                                                 {m.name}
                                                 {m.role === 'admin' && <Shield className="h-3 w-3 text-amber-500" />}
                                             </p>

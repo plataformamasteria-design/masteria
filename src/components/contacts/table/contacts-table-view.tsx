@@ -1,5 +1,4 @@
 import { memo } from 'react';
-import Link from 'next/link';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
@@ -46,13 +45,13 @@ export const ContactsTableView = memo(({
     const isIndeterminate = selectedRows.length > 0 && selectedRows.length < contacts.length;
 
     return (
-        <div className="w-full border border-white/[0.05] rounded-3xl relative bg-card/40 backdrop-blur-3xl shadow-[0_8px_32px_rgba(0,0,0,0.15)] overflow-hidden">
+        <div className="w-full border border-border/60 rounded-3xl relative bg-card shadow-[0_8px_32px_rgba(0,0,0,0.15)] overflow-hidden">
             {/* Ambient base glow */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-50" />
             <div className="w-full overflow-auto">
                 <Table>
-                    <TableHeader className="bg-background/40">
-                        <TableRow className="hover:bg-card/60 border-white/[0.05] transition-colors">
+                    <TableHeader className="bg-muted/30">
+                        <TableRow className="hover:bg-muted/50 border-border/40 transition-colors">
                             <TableHead className="w-[50px] pl-6">
                                 <Checkbox
                                     checked={allSelected || (isIndeterminate ? 'indeterminate' : false)}
@@ -90,9 +89,9 @@ export const ContactsTableView = memo(({
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <Link href={`/contacts/${contact.id}`} className="font-bold hover:underline text-foreground block truncate" onClick={(e) => e.stopPropagation()}>
+                                    <span className="font-bold hover:underline text-foreground block truncate cursor-pointer" onClick={(e) => { e.stopPropagation(); onRowClick(contact.id); }}>
                                         {contact.name}
-                                    </Link>
+                                    </span>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground/80 text-[13px] font-mono tracking-tight">{contact.phone}</TableCell>
                                 <TableCell className="text-muted-foreground/80 text-[13px] truncate max-w-[180px]">{contact.email}</TableCell>

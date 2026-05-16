@@ -68,6 +68,7 @@ export type ExtendedContact = Contact & {
         boardName: string;
         stageId: string;
         stageName: string;
+        boardStages?: any[];
         value: string | number;
     }>;
     automations?: Array<{
@@ -75,6 +76,8 @@ export type ExtendedContact = Contact & {
         flowId: string;
         flowName: string;
         status: string;
+        currentStepId?: string | null;
+        currentStepLabel?: string | null;
         startedAt: Date | string | null;
         finishedAt: Date | string | null;
     }>;

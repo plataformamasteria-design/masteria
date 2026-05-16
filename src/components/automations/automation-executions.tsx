@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, Search, RefreshCw, AlertCircle, CheckCircle2, PlayCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface AutomationExecution {
     id: string;
@@ -36,6 +37,7 @@ export function AutomationExecutions() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedExecution, setSelectedExecution] = useState<AutomationExecution | null>(null);
 
     const fetchExecutions = async () => {
         try {
@@ -122,7 +124,11 @@ export function AutomationExecutions() {
                                     const StatusIcon = config.icon;
 
                                     return (
-                                        <TableRow key={exec.id} className="hover:bg-slate-50/50 transition-colors border-slate-100">
+                                        <TableRow 
+                                            key={exec.id} 
+                                            className="hover:bg-slate-50/50 transition-colors border-slate-100 cursor-pointer"
+                                            onClick={() => setSelectedExecution(exec)}
+                                        >
                                             <TableCell className="pl-6 py-4">
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-bold text-slate-700">
@@ -195,6 +201,28 @@ export function AutomationExecutions() {
                     </div>
                 )}
             </CardContent>
+            
+            <Dialog open={!!selectedExecution} onOpenChange={(open) => !open && setSelectedExecution(null)}>
+                <DialogContent className="max-w-2xl bg-white border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="text-slate-900 font-bold">Detalhes da Execução</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Fluxo: {selectedExecution?.flowName}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                        {selectedExecution?.error && (
+                            <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-red-700 text-sm font-mono whitespace-pre-wrap overflow-auto max-h-[300px]">
+                                {selectedExecution.error}
+                            </div>
+                        )}
+                        <div className="text-sm bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-slate-700">
+                            <p><strong className="text-slate-900">Contato:</strong> {selectedExecution?.contactName} ({selectedExecution?.contactPhone})</p>
+                            <p><strong className="text-slate-900">Status:</strong> {selectedExecution?.status}</p>
+                            <p><strong className="text-slate-900">Início:</strong> {selectedExecution?.startedAt && format(new Date(selectedExecution.startedAt), 'dd/MM/yyyy HH:mm:ss')}</p>
+                            <p><strong className="text-slate-900">Fim:</strong> {selectedExecution?.finishedAt ? format(new Date(selectedExecution.finishedAt), 'dd/MM/yyyy HH:mm:ss') : '-'}</p>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 }

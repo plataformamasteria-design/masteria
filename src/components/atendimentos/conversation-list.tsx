@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-    Search, Check, CheckCheck, Clock, MessageSquare, Smartphone,
+    Search, Check, CheckCheck, Clock, MessageSquare, Smartphone, FileText,
     Loader2, X, Instagram, SlidersHorizontal, BellDot, MessageCircle, Bot,
     Users, User, ChevronDown, Hash, Columns3
 } from 'lucide-react';
@@ -46,14 +46,30 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
     const lastMsg = conversation.lastMessage || '';
     const isFromContact = conversation.lastMessageSenderType && !['SYSTEM', 'USER'].includes(conversation.lastMessageSenderType);
 
+    const renderLastMsg = () => {
+        if (!lastMsg) return 'Sem mensagens';
+        if (lastMsg.startsWith('Template:')) {
+            const tName = lastMsg.replace('Template:', '').trim();
+            const formatted = tName.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/_/g, ' ');
+            return (
+                <span className="inline-flex items-center gap-1">
+                    <FileText className="h-3 w-3 shrink-0 opacity-70" />
+                    <span className="capitalize">{formatted}</span>
+                </span>
+            );
+        }
+        return lastMsg;
+    };
+
     return (
-        <button
+        <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={() => onSelect(conversation.id)}
             className={cn(
-                "w-full flex items-center gap-3 pr-3 pl-3 py-3 transition-none text-left group relative outline-none border-b border-border/50 box-border overflow-hidden",
+                "w-full flex items-center gap-3.5 px-4 py-3.5 transition-all duration-200 text-left group relative outline-none border-b border-border/40 box-border overflow-hidden",
                 isSelected
-                    ? "bg-zinc-200/50 dark:bg-[#202c33]"
-                    : "bg-transparent hover:bg-zinc-100 dark:hover:bg-[#202c33]/50"
+                    ? "bg-zinc-100 dark:bg-white/[0.04] border-l-[3px] border-l-primary"
+                    : "bg-transparent hover:bg-zinc-50 dark:hover:bg-white/[0.02] border-l-[3px] border-l-transparent"
             )}
             style={{ maxWidth: '100%' }}
         >
@@ -97,7 +113,7 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
                         "text-[13px] truncate flex-1 min-w-0 leading-relaxed",
                         isFromContact && conversation.lastMessageStatus !== 'read' ? "text-foreground font-semibold" : "text-muted-foreground"
                     )}>
-                        {lastMsg ? lastMsg : 'Sem mensagens'}
+                        {renderLastMsg()}
                     </span>
                     
                     <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
@@ -143,7 +159,7 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
                      </div>
                 )}
             </div>
-        </button>
+        </motion.button>
     );
 }, (prev, next) => {
     return prev.isSelected === next.isSelected && 
@@ -472,8 +488,8 @@ export function ConversationList({
         : 0;
 
     return (
-        <div className="h-full flex flex-col min-h-0 overflow-hidden bg-background">
-            <div className="shrink-0 bg-zinc-50 dark:bg-[#202c33] border-b border-border/50">
+        <div className="h-full flex flex-col min-h-0 overflow-hidden bg-transparent">
+            <div className="shrink-0 bg-transparent border-b border-border/40 backdrop-blur-md">
                 {/* Search & Toggle Row */}
                 <div className="flex items-center gap-2 px-3 py-2.5">
                     <div className="relative group flex-1">
@@ -572,7 +588,7 @@ export function ConversationList({
                 )}
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 relative bg-white dark:bg-[#111b21] overflow-hidden" viewportRef={scrollContainerRef}>
+            <ScrollArea className="flex-1 min-h-0 relative bg-transparent overflow-hidden" viewportRef={scrollContainerRef}>
                 <div className="flex flex-col w-full overflow-hidden">
                     {filteredConversations.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-12 mt-10 text-center animate-in fade-in duration-500">

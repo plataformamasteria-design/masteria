@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { conversations, messages, messageTemplates, connections, contacts, users } from '@/lib/db/schema';
-import { eq, and, desc, not, sql } from 'drizzle-orm';
+import { eq, and, desc, not, sql, inArray } from 'drizzle-orm';
 import { getUserIdFromSession, getCompanyIdFromSession } from '@/app/actions';
 import { revalidatePath } from 'next/cache';
 import { sendUnifiedMessage } from '@/services/unified-message-sender.service';
@@ -139,6 +139,16 @@ export async function fetchInitialConversations() {
             conditions.push(eq(conversations.assignedTo, userId));
         }
 
+        const baseConvos = await db.select({ id: conversations.id })
+            .from(conversations)
+            .innerJoin(contacts, eq(conversations.contactId, contacts.id))
+            .where(and(...conditions))
+            .orderBy(desc(conversations.lastMessageAt))
+            .limit(50);
+
+        if (baseConvos.length === 0) return [];
+        const convoIds = baseConvos.map(c => c.id);
+
         const companyConversations = await db.select({
             id: conversations.id,
             status: conversations.status,
@@ -210,9 +220,8 @@ export async function fetchInitialConversations() {
             .from(conversations)
             .innerJoin(contacts, eq(conversations.contactId, contacts.id))
             .leftJoin(connections, eq(conversations.connectionId, connections.id))
-            .where(and(...conditions))
-            .orderBy(desc(conversations.lastMessageAt))
-            .limit(50);
+            .where(inArray(conversations.id, convoIds))
+            .orderBy(desc(conversations.lastMessageAt));
 
         return JSON.parse(JSON.stringify(companyConversations));
     } catch (error) {

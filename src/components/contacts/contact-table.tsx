@@ -18,12 +18,14 @@ import { ContactsToolbar } from './contacts-toolbar';
 import { ContactsTableView } from './table/contacts-table-view';
 import { ContactsGridView } from './grid/contacts-grid-view';
 import { ContactsBulkActions } from './contacts-bulk-actions';
+import { ContactProfileSheet } from './contact-profile-sheet';
 
 export function ContactTable() {
     const router = useRouter();
     const isMobileDetected = useIsMobile();
     const [mounted, setMounted] = useState(false);
     const [isAddContactOpen, setIsAddContactOpen] = useState(false);
+    const [profileContactId, setProfileContactId] = useState<string | null>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -61,7 +63,7 @@ export function ContactTable() {
     } = useContactsController();
 
     const handleRowClick = (contactId: string) => {
-        router.push(`/contacts/${contactId}`);
+        setProfileContactId(contactId);
     };
 
     const hasActiveFilters = searchTerm || tagFilter !== 'all' || listFilter !== 'all';
@@ -145,6 +147,7 @@ export function ContactTable() {
                             onRowClick={handleRowClick}
                             selectedRows={selectedRows}
                             onSelectRow={handleSelectRow}
+                            onDelete={handleDelete}
                         />
                     ) : (
                         // Mobile View - can reuse Grid or TableMobile?
@@ -161,6 +164,7 @@ export function ContactTable() {
                             onRowClick={handleRowClick}
                             selectedRows={selectedRows}
                             onSelectRow={handleSelectRow}
+                            onDelete={handleDelete}
                         />
                     )}
                 </>
@@ -200,6 +204,11 @@ export function ContactTable() {
                 selectedCount={selectedRows.length}
                 onClearSelection={() => handleSelectAll(false)}
                 onDelete={handleBulkDelete}
+            />
+
+            <ContactProfileSheet 
+                contactId={profileContactId} 
+                onClose={() => setProfileContactId(null)} 
             />
         </>
     );

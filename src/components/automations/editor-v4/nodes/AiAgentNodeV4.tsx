@@ -10,7 +10,7 @@ const PROVIDER_LABELS: Record<string, string> = {
     gemini: 'Gemini', openai: 'OpenAI', anthropic: 'Claude',
 };
 
-export const AiAgentNodeV4 = memo(({ id, data, selected }: any) => {
+export const AiAgentNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
     const provider = data.provider || 'gemini';
     const model = data.model || 'gemini-2.0-flash';
     // Suporte a ambas as chaves: response_timeout_enabled (NodeConfigPanel) e timeout_enabled (legado)

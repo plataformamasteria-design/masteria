@@ -1,7 +1,7 @@
 // src/components/kanban/kanban-view.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FunnelToolbar } from './funnel-toolbar';
 import { KanbanColumn } from './kanban-column';
 import type { KanbanFunnel, KanbanCard as KanbanCardType, KanbanStage } from '@/lib/types';
@@ -27,10 +27,45 @@ interface KanbanViewProps {
 export function KanbanView({ funnel, cards, onMoveCard, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount }: KanbanViewProps): JSX.Element | null {
   const [showLossStages, setShowLossStages] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Drag-to-Scroll refs and states
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Ignorar cliques em botões, links, inputs, menus e CARDS (drag-and-drop nativo)
+    const target = e.target as HTMLElement;
+    if (target.closest('button, a, input, textarea, select, [role="menuitem"], [role="button"], [data-rbd-draggable-id]')) {
+      return;
+    }
+    
+    setIsDragging(true);
+    if (!scrollRef.current) return;
+    setStartX(e.clientX);
+    setScrollLeft(scrollRef.current.scrollLeft);
+    // Captura o ponteiro para continuar o drag mesmo se o mouse sair da div
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    // Evita seleção de texto durante o arraste
+    e.preventDefault(); 
+    const x = e.clientX;
+    const walk = (x - startX) * 1.5; // Multiplicador de velocidade
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   if (!isMounted) {
     return null; // Evita problema de hidratação com DragDropContext
@@ -53,10 +88,17 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateLead, onDeleteLe
         onFiltersChange={onFiltersChange}
         activeFilterCount={activeFilterCount}
       />
-      <div className="flex-1 min-h-0 overflow-auto">
-        <div className="p-3 sm:p-4 min-h-full">
+      <div 
+        ref={scrollRef}
+        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden custom-scrollbar ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerMove={handlePointerMove}
+      >
+        <div className="p-3 sm:p-4 h-full">
           <DragDropContext onDragEnd={onMoveCard}>
-            <div className="flex flex-col md:flex-row gap-0 md:min-h-[500px]">
+            <div className="flex gap-0 h-full w-max min-w-full">
               {visibleStages.map((stage: KanbanStage, index: number) => (
                 <KanbanColumn
                   key={stage.id}

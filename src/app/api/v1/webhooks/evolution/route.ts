@@ -6,7 +6,7 @@ import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 import { resumeFlowForContact } from '@/lib/flow-engine';
 import { emitToCompany } from '@/lib/socket';
 import { uploadFileToS3 } from '@/lib/s3';
-
+import { evolutionApiService } from '@/services/evolution-api.service';
 
 export async function POST(req: NextRequest) {
     try {
@@ -90,10 +90,22 @@ export async function POST(req: NextRequest) {
             mimeType = messageObj.documentMessage.mimetype || 'application/pdf';
             fileName = messageObj.documentMessage.fileName || 'document.pdf';
         } else if (messageObj.stickerMessage) {
-            content = '🖼️ Sticker';
-            messageType = 'IMAGE';
+            content = 'Sticker';
+            messageType = 'STICKER';
             mimeType = messageObj.stickerMessage.mimetype || 'image/webp';
             fileName = 'sticker.webp';
+        } else if (messageObj.contactMessage) {
+            const vcard = messageObj.contactMessage.vcard || '';
+            const nameMatch = vcard.match(/FN:(.+)/);
+            const phoneMatch = vcard.match(/waid=([^:]+):/i) || vcard.match(/TEL.*:(.+)/);
+            const contactName = nameMatch ? nameMatch[1] : 'Contato';
+            const contactPhone = phoneMatch ? phoneMatch[1].replace(/[\r\n]/g, '') : '';
+            content = `👤 Contato compartilhado\nNome: ${contactName}${contactPhone ? `\nTelefone: ${contactPhone}` : ''}`;
+            messageType = 'TEXT';
+        } else if (messageObj.contactsArrayMessage) {
+            const count = messageObj.contactsArrayMessage.contacts?.length || 0;
+            content = `👤 ${count} Contato(s) compartilhado(s)`;
+            messageType = 'TEXT';
         } else {
             content = 'Mensagem não suportada';
         }
@@ -110,124 +122,131 @@ export async function POST(req: NextRequest) {
 
         const companyId = connection.companyId;
 
-        // 2. Garantir que o Contato existe
-        let contact = await db.query.contacts.findFirst({
-            where: and(eq(contacts.companyId, companyId), eq(contacts.phone, phone))
-        });
+        let mediaUploadInfo: {
+            messageId: string;
+            messageType: string;
+            fileName: string;
+            mimeType: string;
+            base64String: string | null;
+            instanceName: string;
+            messageData: any;
+            conversationId: string;
+        } | null = null;
 
-        if (!contact) {
-            const [newContact] = await db.insert(contacts).values({
-                companyId,
-                name: pushName,
-                whatsappName: pushName,
-                phone: phone,
-                status: 'ACTIVE'
-            }).returning();
-            contact = newContact;
-        }
+        // 2. Transação: Criar Contato, Conversa e Mensagem atomicamente
+        const txResult = await db.transaction(async (tx) => {
+            let [contact] = await tx.select().from(contacts).where(and(eq(contacts.companyId, companyId), eq(contacts.phone, phone)));
+            
+            if (!contact) {
+                let avatarUrl: string | null = null;
+                try {
+                    avatarUrl = await evolutionApiService.fetchProfilePictureUrl(instanceName, remoteJid);
+                } catch (e) {
+                    console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar para ${phone}`);
+                }
 
-        // 3. Garantir que a Conversa existe
-        let conversation = await db.query.conversations.findFirst({
-            where: and(
+                [contact] = await tx.insert(contacts).values({
+                    companyId,
+                    name: pushName,
+                    whatsappName: pushName,
+                    phone: phone,
+                    avatarUrl,
+                    status: 'ACTIVE'
+                }).returning();
+            } else if (!contact.avatarUrl && !contact.profileLastSyncedAt) {
+                 // Sincronização preguiçosa de avatar se estiver nulo e nunca foi sincronizado
+                 try {
+                     const avatarUrl = await evolutionApiService.fetchProfilePictureUrl(instanceName, remoteJid);
+                     if (avatarUrl) {
+                         [contact] = await tx.update(contacts)
+                            .set({ avatarUrl, profileLastSyncedAt: new Date() })
+                            .where(eq(contacts.id, contact.id))
+                            .returning();
+                     } else {
+                         // Marcar que tentou sincronizar para não ficar tentando em toda msg
+                         await tx.update(contacts).set({ profileLastSyncedAt: new Date() }).where(eq(contacts.id, contact.id));
+                     }
+                 } catch (e) {
+                     console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar pendente para ${phone}`);
+                 }
+            }
+
+            let [conversation] = await tx.select().from(conversations).where(and(
                 eq(conversations.companyId, companyId),
                 eq(conversations.contactId, contact.id)
-            )
-        });
+            ));
 
-        if (!conversation) {
-            const [newConv] = await db.insert(conversations).values({
-                companyId,
-                contactId: contact.id,
-                connectionId: connection.id,
-                status: 'NEW',
-            }).returning();
-            conversation = newConv;
-        } else {
-            // Atualizar lastMessageAt da conversa e connectionId se estiver faltando
-            const updatePayload: any = { lastMessageAt: new Date() };
-            if (!conversation.connectionId) {
-                updatePayload.connectionId = connection.id;
-                conversation.connectionId = connection.id;
+            if (!conversation) {
+                [conversation] = await tx.insert(conversations).values({
+                    companyId,
+                    contactId: contact.id,
+                    connectionId: connection.id,
+                    status: 'NEW',
+                }).returning();
+            } else {
+                const updatePayload: any = { lastMessageAt: new Date() };
+                if (!conversation.connectionId) updatePayload.connectionId = connection.id;
+                [conversation] = await tx.update(conversations).set(updatePayload).where(eq(conversations.id, conversation.id)).returning();
             }
-            
-            await db.update(conversations)
-                .set(updatePayload)
-                .where(eq(conversations.id, conversation.id));
-        }
 
-        const conversationId = conversation.id;
+            const conversationId = conversation.id;
 
-        // 3.5 Processar mídia se necessário
-        if (['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT'].includes(messageType)) {
-            try {
-                let base64String = data.base64 || messageObj.base64 || messageObj.imageMessage?.base64 || messageObj.videoMessage?.base64 || messageObj.audioMessage?.base64 || messageObj.documentMessage?.base64 || messageObj.stickerMessage?.base64;
-                
-                if (!base64String) {
-                    const evoUrl = process.env.EVOLUTION_API_URL || '';
-                    const evoKey = process.env.EVOLUTION_API_KEY || '';
-                    
-                    if (evoUrl && evoKey) {
-                        const apiUrl = `${evoUrl}/chat/getBase64FromMediaMessage/${instanceName}`;
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': evoKey,
-                            },
-                            body: JSON.stringify({
-                                message: data,
-                                convertToMp4: false,
-                            }),
-                        });
-                        
-                        if (response.ok) {
-                            const result = await response.json();
-                            if (result && result.base64) {
-                                base64String = result.base64;
-                            }
-                        } else {
-                            console.error(`[EVOLUTION-WEBHOOK] Failed to fetch base64: ${response.status} ${await response.text()}`);
-                        }
-                    }
-                }
-                
-                if (base64String) {
-                    const cleanBase64 = base64String.replace(/^data:.*?;base64,/, '').replace(/\s+/g, '');
-                    const buffer = Buffer.from(cleanBase64, 'base64');
-                    const fileKey = `chat-media/${conversationId}/${Date.now()}_${fileName}`;
-                    mediaUrl = await uploadFileToS3(companyId, fileKey, buffer, mimeType);
-                    console.log(`[EVOLUTION-WEBHOOK] Media uploaded to S3: ${mediaUrl}`);
-                }
-            } catch (mediaErr) {
-                console.error(`[EVOLUTION-WEBHOOK] Error processing media:`, mediaErr);
+            const [existingMessage] = await tx.select({ id: messages.id }).from(messages).where(eq(messages.providerMessageId, messageId)).limit(1);
+
+            if (existingMessage) {
+                return { ignored: true, messageId: existingMessage.id, conversationId, contactId: contact.id, aiActive: conversation.aiActive };
             }
-        }
 
-        // 4. Inserir a Mensagem no DB
-        // Verificar se a mensagem já existe para evitar duplicatas
-        const existingMessage = await db.query.messages.findFirst({
-            where: eq(messages.providerMessageId, messageId)
-        });
+            if (['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT', 'STICKER'].includes(messageType)) {
+                let base64String = data.base64 || messageObj.base64 || messageObj.imageMessage?.base64 || messageObj.videoMessage?.base64 || messageObj.audioMessage?.base64 || messageObj.documentMessage?.base64 || messageObj.stickerMessage?.base64 || null;
+                
+                mediaUploadInfo = {
+                    messageId: '', // set below
+                    messageType,
+                    fileName,
+                    mimeType,
+                    base64String,
+                    instanceName,
+                    messageData: data,
+                    conversationId
+                };
+            }
 
-        let savedMessageId = existingMessage?.id;
-
-        if (!existingMessage) {
-            const [newMsg] = await db.insert(messages).values({
+            const [newMsg] = await tx.insert(messages).values({
                 companyId,
                 conversationId,
                 providerMessageId: messageId,
                 senderType: fromMe ? 'AGENT' : 'CONTACT',
                 content: content,
                 contentType: messageType,
-                mediaUrl: mediaUrl,
+                mediaUrl: null, // Set by background job
                 status: fromMe ? 'SENT' : 'RECEIVED'
             }).returning();
-            
-            savedMessageId = newMsg.id;
+
+            if (mediaUploadInfo) mediaUploadInfo.messageId = newMsg.id;
+
+            return {
+                ignored: false,
+                messageId: newMsg.id,
+                conversationId: conversation.id,
+                contactId: contact.id,
+                aiActive: conversation.aiActive
+            };
+        });
+
+        if (txResult.ignored) {
+            console.log(`[EVOLUTION-WEBHOOK] 🛑 Mensagem duplicada ignorada (ID: ${messageId})`);
+            return NextResponse.json({ success: true, message: 'Processado com sucesso (Duplicada ignorada)' }, { status: 200 });
         }
 
-        if (!savedMessageId) {
-             return NextResponse.json({ error: 'Failed to save message' }, { status: 500 });
+        const savedMessageId = txResult.messageId;
+        const conversationId = txResult.conversationId;
+        const contactId = txResult.contactId;
+
+        // Background Media Upload
+        if (mediaUploadInfo) {
+            uploadMediaToS3Evo(mediaUploadInfo, companyId)
+                .catch(err => console.error(`[EVOLUTION-WEBHOOK] ❌ S3 media upload failed for msg ${mediaUploadInfo!.messageId}:`, err));
         }
 
         // 5. Emitir eventos Realtime
@@ -240,7 +259,7 @@ export async function POST(req: NextRequest) {
                 contactName: pushName,
                 content: content,
                 contentType: messageType,
-                mediaUrl: mediaUrl,
+                mediaUrl: null, // Will be updated by chat:message-updated if it has media
                 isFromMe: fromMe,
                 senderType: fromMe ? 'AGENT' : 'CONTACT',
                 timestamp: new Date().toISOString(),
@@ -254,30 +273,80 @@ export async function POST(req: NextRequest) {
         if (!fromMe) {
             console.log(`[EVOLUTION-WEBHOOK] 🤖 Triggering automation for message ${savedMessageId}`);
 
-            try {
-                if (conversation.aiActive === false) {
-                    console.log(`[EVOLUTION-WEBHOOK] 🛑 AI disabled for conversation ${conversationId}, skipping automation.`);
-                } else {
-                    const resumed = await resumeFlowForContact(contact.id, content, companyId);
-                    if (resumed) {
-                        console.log(`[EVOLUTION-WEBHOOK] 🔄 Resumed paused flow for contact ${contact.id}`);
+            setTimeout(async () => {
+                try {
+                    if (txResult.aiActive === false) {
+                        console.log(`[EVOLUTION-WEBHOOK] 🛑 AI disabled for conversation ${conversationId}, skipping automation.`);
                     } else {
-                        console.log(`[EVOLUTION-WEBHOOK] ⏳ Executing processIncomingMessageTrigger for ${savedMessageId}...`);
-                        await processIncomingMessageTrigger(conversationId, savedMessageId);
-                        console.log(`[EVOLUTION-WEBHOOK] ✅ processIncomingMessageTrigger finished.`);
+                        const resumed = await resumeFlowForContact(contactId, content, companyId);
+                        if (resumed) {
+                            console.log(`[EVOLUTION-WEBHOOK] 🔄 Resumed paused flow for contact ${contactId}`);
+                        } else {
+                            console.log(`[EVOLUTION-WEBHOOK] ⏳ Executing processIncomingMessageTrigger for ${savedMessageId}...`);
+                            await processIncomingMessageTrigger(conversationId, savedMessageId);
+                            console.log(`[EVOLUTION-WEBHOOK] ✅ processIncomingMessageTrigger finished.`);
+                        }
                     }
+                } catch (err) {
+                    console.error('[EVOLUTION-WEBHOOK] Erro na execução da automação:', err);
                 }
-            } catch (err) {
-                console.error('[EVOLUTION-WEBHOOK] Erro na execução da automação:', err);
-            }
+            }, 500);
         }
-
-
 
         return NextResponse.json({ success: true, message: 'Processado com sucesso' }, { status: 200 });
 
     } catch (error) {
         console.error('[EVOLUTION-WEBHOOK] Fatal error:', error);
         return NextResponse.json({ error: 'Erro interno no webhook' }, { status: 500 });
+    }
+}
+
+async function uploadMediaToS3Evo(info: any, companyId: string) {
+    try {
+        let base64String = info.base64String;
+        
+        if (!base64String) {
+            const evoUrl = process.env.EVOLUTION_API_URL || '';
+            const evoKey = process.env.EVOLUTION_API_KEY || '';
+            
+            if (evoUrl && evoKey) {
+                const apiUrl = `${evoUrl}/chat/getBase64FromMediaMessage/${info.instanceName}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': evoKey,
+                    },
+                    body: JSON.stringify({
+                        message: info.messageData,
+                        convertToMp4: false,
+                    }),
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result && result.base64) {
+                        base64String = result.base64;
+                    }
+                } else {
+                    console.error(`[EVOLUTION-WEBHOOK] Failed to fetch base64: ${response.status} ${await response.text()}`);
+                }
+            }
+        }
+        
+        if (base64String) {
+            const cleanBase64 = base64String.replace(/^data:.*?;base64,/, '').replace(/\s+/g, '');
+            const buffer = Buffer.from(cleanBase64, 'base64');
+            const fileKey = `chat-media/${info.conversationId}/${Date.now()}_${info.fileName}`;
+            const mediaUrl = await uploadFileToS3(companyId, fileKey, buffer, info.mimeType);
+            
+            if (mediaUrl) {
+                console.log(`[EVOLUTION-WEBHOOK] Media uploaded to S3: ${mediaUrl}`);
+                await db.update(messages).set({ mediaUrl }).where(eq(messages.id, info.messageId));
+                emitToCompany(companyId, 'chat:message-updated', { messageId: info.messageId, mediaUrl });
+            }
+        }
+    } catch (err) {
+        console.error(`[EVOLUTION-WEBHOOK] Error in async media upload:`, err);
     }
 }

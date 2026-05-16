@@ -144,7 +144,7 @@ function AudioPlayer({ url }: { url: string }) {
 }
 
 // ─── Node Principal ───────────────────────────────────────────────────────────
-export const SendMediaNodeV4 = memo(({ data, selected, type }: { data: any; selected?: boolean; type: MediaType }) => {
+export const SendMediaNodeV4 = memo(({ data, selected, type }: { data: Record<string, unknown>; selected?: boolean; type: MediaType }) => {
     const cfg = MEDIA_CONFIG[type] ?? MEDIA_CONFIG.send_image;
     const url: string = data.file_url || data.url || '';
     const caption: string = data.caption || '';
@@ -197,7 +197,7 @@ export const SendMediaNodeV4 = memo(({ data, selected, type }: { data: any; sele
 SendMediaNodeV4.displayName = 'SendMediaNodeV4';
 
 // Wrappers individuais para compatibilidade com nodeTypes do ReactFlow
-export const SendImageNodeV4    = (props: any) => <SendMediaNodeV4 {...props} type="send_image" />;
-export const SendAudioNodeV4    = (props: any) => <SendMediaNodeV4 {...props} type="send_audio" />;
-export const SendDocumentNodeV4 = (props: any) => <SendMediaNodeV4 {...props} type="send_document" />;
-export const SendVideoNodeV4    = (props: any) => <SendMediaNodeV4 {...props} type="send_video" />;
+export const SendImageNodeV4    = (props: NodePropsV4) => <SendMediaNodeV4 {...props} type="send_image" />;
+export const SendAudioNodeV4    = (props: NodePropsV4) => <SendMediaNodeV4 {...props} type="send_audio" />;
+export const SendDocumentNodeV4 = (props: NodePropsV4) => <SendMediaNodeV4 {...props} type="send_document" />;
+export const SendVideoNodeV4    = (props: NodePropsV4) => <SendMediaNodeV4 {...props} type="send_video" />;

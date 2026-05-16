@@ -1,13 +1,14 @@
 'use client';
 
 import React, { memo } from 'react';
+import { NodePropsV4 } from './types';
 import { Position } from '@xyflow/react';
 import { Filter } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const FilterNodeV4 = memo(({ data, selected }: any) => {
-    const conditions: any[] = data.conditions || [];
+export const FilterNodeV4 = memo(({ data, selected }: NodePropsV4) => {
+    const conditions: Record<string, unknown>[] = (data.conditions as Record<string, unknown>[]) || [];
 
     const footer = (
         <div style={{ position: 'relative' }}>

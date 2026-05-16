@@ -34,12 +34,15 @@ export async function convertToOgg(inputBuffer: Buffer): Promise<Buffer> {
         const isMP3 = inputBuffer.subarray(0, 3).toString('ascii') === 'ID3' ||
             (inputBuffer[0] === 0xFF && (inputBuffer[1] & 0xE0) === 0xE0);
 
+        // Check if input is WebM (EBML header)
+        const isWebM = inputBuffer.subarray(0, 4).toString('hex') === '1a45dfa3';
+
         // Convert
         await new Promise<void>((resolve, reject) => {
             let command = ffmpeg(inputPath);
 
-            // If not WAV AND not MP3, assume Raw PCM from Gemini (s16le, 24kHz, Mono)
-            if (!isWav && !isMP3) {
+            // If not WAV, not MP3, and not WebM, assume Raw PCM from Gemini (s16le, 24kHz, Mono)
+            if (!isWav && !isMP3 && !isWebM) {
                 if (process.env.NODE_ENV !== 'production') {
                     console.log('[FFmpeg] Input appears to be Raw PCM (Gemini format). Applying input options.');
                 }
@@ -49,11 +52,11 @@ export async function convertToOgg(inputBuffer: Buffer): Promise<Buffer> {
                         '-ar 24000', // Gemini 2.5 Flash TTS uses 24kHz
                         '-ac 1'
                     ]);
-            } else if (isMP3) {
+            } else if (isMP3 || isWebM || isWav) {
                 if (process.env.NODE_ENV !== 'production') {
-                    console.log('[FFmpeg] Input detected as MP3 (ElevenLabs format). Auto-detecting input options.');
+                    console.log('[FFmpeg] Input detected as standard format (MP3/WAV/WebM). Auto-detecting input options.');
                 }
-                // Let FFmpeg auto-detect MP3 format - no special input options needed
+                // Let FFmpeg auto-detect format - no special input options needed
             }
 
             command
@@ -61,7 +64,8 @@ export async function convertToOgg(inputBuffer: Buffer): Promise<Buffer> {
                 .audioCodec('libopus') // WhatsApp prefers opus in ogg container for Voice Notes
                 .outputOptions([
                     '-ac 1', // Mono audio is often preferred for voice notes
-                    '-ar 16000' // 16kHz sample rate is good for voice
+                    '-ar 16000', // 16kHz sample rate is good for voice
+                    '-avoid_negative_ts make_zero' // Fixes "audio unavailable" error on WhatsApp iOS
                 ])
                 .on('end', () => resolve())
                 .on('error', (err: any) => {

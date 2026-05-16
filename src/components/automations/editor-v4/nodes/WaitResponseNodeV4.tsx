@@ -6,7 +6,7 @@ import { MessageCircle } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const WaitResponseNodeV4 = memo(({ id, data, selected }: any) => {
+export const WaitResponseNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
     const timeout = data.maxWaitTime ?? data.timeout_minutes ?? data.timeout_amount ?? 10;
     const unit = data.unit || 'minutes';
     const hasTimeout = !!(data.timeout_enabled || data.maxWaitTime);

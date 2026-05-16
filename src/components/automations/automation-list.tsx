@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Pencil, Trash2, Loader2, Check, X, Search, Filter, Copy, MoreHorizontal, Download } from 'lucide-react';
+import { Play, Pause, Pencil, Trash2, Loader2, Check, X, Search, Filter, Copy, MoreHorizontal, Download, Bot } from 'lucide-react';
 import { listFlows, deleteFlow, renameFlow, cloneFlow, toggleFlowStatus } from '@/lib/automations';
 import { useSession } from '@/contexts/session-context';
 import { toast } from 'sonner';
@@ -353,12 +353,12 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
           <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[32px] bg-white border-slate-100 shadow-sm">
             <div className="flex flex-col items-center gap-4">
               <div className="w-20 h-20 rounded-[32px] bg-primary/5 flex items-center justify-center mb-2">
-                <Loader2 className="h-10 w-10 text-primary/20" />
+                <Bot className="h-10 w-10 text-primary/40" />
               </div>
               <div className="space-y-1">
                 <p className="text-slate-900 font-extrabold text-xl">Inicie sua Automação</p>
                 <p className="text-slate-500 text-sm max-w-[320px] mx-auto leading-relaxed">
-                  Escaneie o QR Code e crie fluxos inteligentes para atender seus clientes 24/7.
+                  Clique no botão "Nova Automação" para criar fluxos inteligentes e escalar o atendimento.
                 </p>
               </div>
             </div>

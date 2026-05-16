@@ -6,12 +6,12 @@ import { MessageSquareDashed, Image as ImageIcon, Video, FileText } from 'lucide
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const InteractiveMessageNodeV4 = memo(({ id, data, selected }: any) => {
+export const InteractiveMessageNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
     const message = data.message || data.content || '';
     const preview = message.length > 80 ? message.slice(0, 80) + '...' : message;
     
     // Normaliza botões: pode vir como array de strings ou array de objetos {id, text, type}
-    const rawButtons: any[] = data.buttons || [];
+    const rawButtons: Record<string, unknown>[] = (data.buttons as Record<string, unknown>[]) || [];
     const buttons = rawButtons.map((btn, i) => 
         typeof btn === 'string' 
             ? { id: `btn_${i}`, text: btn, type: 'inline' }
@@ -74,7 +74,7 @@ export const InteractiveMessageNodeV4 = memo(({ id, data, selected }: any) => {
                     type="source"
                     position={Position.Bottom}
                     id={handle.id}
-                    accentColor={handle.color as any}
+                    accentColor={handle.color as "orange" | "violet" | "rose" | "zinc" | "cyan" | "fuchsia" | "amber" | "teal" | "blue" | "green" | "red" | "indigo" | "emerald" | "yellow" | "sky"}
                     colIndex={buttons.length + i}
                     colTotal={colTotal}
                 />

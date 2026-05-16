@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
 
 // Import Type
 import { Conversation } from '@/lib/types';
@@ -63,9 +64,15 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
   });
   const isMobileDetected = useIsMobile();
   const [mounted, setMounted] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    const media = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(media.matches);
+    const listener = () => setIsDesktop(media.matches);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
   }, []);
 
   const isMobile = mounted ? isMobileDetected : false;
@@ -81,7 +88,7 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
     <>
       <div className="h-full flex flex-row overflow-hidden bg-background relative shadow-none">
         {showConversationList && (
-          <div className="w-full md:min-w-[320px] md:max-w-[400px] lg:max-w-[420px] md:w-[30%] flex-shrink-0 h-full border-r border-border/40 min-h-0 overflow-hidden bg-background">
+          <div className="w-full md:min-w-[320px] md:max-w-[400px] lg:max-w-[420px] md:w-[30%] flex-shrink-0 h-full border-r border-border/40 min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/50">
             <ConversationList
               conversations={controller.conversations}
               currentConversationId={controller.selectedConversation?.id || null}
@@ -102,7 +109,7 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
 
         {showActiveChat ? (
           controller.selectedConversation ? (
-            <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden">
+            <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-zinc-100/50 dark:bg-zinc-900/30">
               <ActiveChat
                 key={controller.selectedConversation.id}
                 conversation={controller.selectedConversation}
@@ -111,6 +118,7 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
                 loadingMessages={controller.loadingMessages}
                 templates={controller.templates}
                 onSendMessage={controller.handleSendMessage}
+                onSendMedia={controller.handleSendMedia}
                 onBack={() => controller.handleSelectConversation('')}
                 onToggleAi={controller.handleToggleAi}
                 onLoadMoreMessages={controller.loadMoreMessages}
@@ -131,7 +139,7 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
 
         {/* Right Column: Contact Details (Desktop) */}
         {showActiveChat && controller.selectedConversation && controller.showContactDetails && (
-          <div className="hidden lg:flex w-full max-w-[350px] flex-shrink-0 h-full border-l border-border/40 min-h-0 overflow-hidden bg-muted/5">
+          <div className="hidden lg:flex w-full max-w-[350px] flex-shrink-0 h-full border-l border-border/40 min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/50 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]">
              <ContactDetailsPanel 
               contactId={controller.selectedConversation.contactId}
               isArchived={controller.selectedConversation.status === 'ARCHIVED' || controller.selectedConversation.status === 'archived'}
@@ -144,44 +152,28 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
       </div>
 
       {/* Contact Details — Glass Popup Overlay (Mobile/Tablet only) */}
-      {controller.showContactDetails && controller.selectedConversation && (
-        <div
-          className="fixed inset-0 z-50 flex lg:hidden items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => controller.setShowContactDetails(false)}
-        >
-          {/* Backdrop: dark + blur */}
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
-          {/* Glass Panel */}
-          <div
-            className={cn(
-              "relative z-10 w-full max-w-2xl max-h-[90vh] rounded-2xl overflow-y-auto",
-              "bg-card/95 backdrop-blur-xl",
-              "border border-white/[0.08]",
-              "shadow-2xl shadow-black/40",
-              "animate-in slide-in-from-bottom-4 zoom-in-95 duration-300"
+      {!isDesktop && (
+        <Sheet open={controller.showContactDetails && !!controller.selectedConversation} onOpenChange={(open) => {
+          if (!open) controller.setShowContactDetails(false);
+        }}>
+        <SheetContent side="bottom" className="h-[90vh] p-0 lg:hidden rounded-t-2xl bg-card/95 backdrop-blur-xl border-t border-white/[0.08]">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Detalhes do Contato</SheetTitle>
+            <SheetDescription>Ver e editar informações do contato.</SheetDescription>
+          </SheetHeader>
+          <div className="h-full overflow-y-auto">
+            {controller.selectedConversation && (
+              <ContactDetailsPanel 
+                contactId={controller.selectedConversation.contactId}
+                isArchived={controller.selectedConversation.status === 'ARCHIVED' || controller.selectedConversation.status === 'archived'}
+                onArchive={controller.handleArchive}
+                onUnarchive={controller.handleUnarchive}
+                onClose={() => controller.setShowContactDetails(false)}
+              />
             )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 z-20 h-8 w-8 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
-              onClick={() => controller.setShowContactDetails(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-
-            <ContactDetailsPanel 
-              contactId={controller.selectedConversation.contactId}
-              isArchived={controller.selectedConversation.status === 'ARCHIVED' || controller.selectedConversation.status === 'archived'}
-              onArchive={controller.handleArchive}
-              onUnarchive={controller.handleUnarchive}
-              onClose={() => controller.setShowContactDetails(false)}
-            />
           </div>
-        </div>
+        </SheetContent>
+      </Sheet>
       )}
     </>
   );

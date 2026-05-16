@@ -38,13 +38,13 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
   };
 
   return (
-    <div className="flex flex-col w-full md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] border-r border-border/40 bg-transparent md:flex-1 md:min-h-[400px] md:max-h-full last:border-r-0">
-      <div className={`p-3 border-b border-border/40 flex-shrink-0 border-t-2 ${getTopBorderColor(stage.type, index)} bg-muted/30`}>
-        <h3 className="font-bold text-[11px] uppercase tracking-wider text-foreground/90 truncate text-center mb-1">
+    <div className="flex flex-col w-full md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] border-r border-border/40 bg-muted/30 dark:bg-zinc-950/40 backdrop-blur-md md:flex-1 md:min-h-[400px] md:max-h-full last:border-r-0 transition-colors">
+      <div className={`p-3 border-b border-border/40 flex-shrink-0 border-t-[3px] ${getTopBorderColor(stage.type, index)} bg-card/80 dark:bg-black/20 backdrop-blur-xl shadow-sm z-10`}>
+        <h3 className="font-bold text-[12px] uppercase tracking-widest text-foreground/90 truncate text-center mb-1">
           {stage.title}
         </h3>
         <p className="text-[11px] text-muted-foreground/80 text-center font-medium">
-          {stageCards.length} {stageCards.length === 1 ? 'lead' : 'leads'}: R$ {totalValue.toLocaleString('pt-BR')}
+          {stageCards.length} {stageCards.length === 1 ? 'lead' : 'leads'} • R$ {totalValue.toLocaleString('pt-BR')}
         </p>
       </div>
       
@@ -53,11 +53,11 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 min-h-0 overflow-hidden transition-colors ${
-              snapshot.isDraggingOver ? 'bg-primary/5' : ''
+            className={`flex-1 min-h-0 overflow-hidden transition-all duration-300 ${
+              snapshot.isDraggingOver ? 'bg-primary/5 ring-1 ring-primary/20 ring-inset' : ''
             }`}
           >
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-full custom-scrollbar">
               <div className="p-2 space-y-2">
                 {stageCards.length === 0 && !snapshot.isDraggingOver && (
                   <div className="flex items-center justify-center py-8 text-[11px] uppercase tracking-wider text-muted-foreground/40 font-medium">

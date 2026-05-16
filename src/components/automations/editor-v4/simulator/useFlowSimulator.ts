@@ -98,7 +98,7 @@ export const NODE_TYPE_LABELS: Record<string, string> = {
     internal_message: "Mensagem Interna",
 };
 
-export const MEDIA_ICONS: Record<string, any> = {
+export const MEDIA_ICONS: Record<string, React.ElementType> = {
     send_image: Image,
     send_video: Video,
     send_audio: Mic,
@@ -153,7 +153,7 @@ export function buildRouteLabel(
         if (handleId === "no") return "❌ Não";
     }
     if (nodeType === "router" && handleId) return `Rota: ${handleId}`;
-    const targetLabel = (targetNode?.data as any)?.label || NODE_TYPE_LABELS[targetNode?.type || ""];
+    const targetLabel = (targetNode?.data as Record<string, unknown>)?.label || NODE_TYPE_LABELS[targetNode?.type || ""];
     if (targetLabel) return `Rota ${index + 1}: ${targetLabel}`;
     return `Rota ${index + 1}`;
 }
@@ -170,6 +170,36 @@ function comparePhones(phone1: string, phone2: string): boolean {
 export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated }: FlowSimulatorUIProps) {
     const { currentOrganization } = useOrganization();
     const [messages, setMessages] = useState<SimMessage[]>([]);
+    const [simulatorLogId, setSimulatorLogId] = useState<string | null>(null);
+    
+
+    // Sync simulator log to backend
+    useEffect(() => {
+        if (messages.length > 0) {
+            const timer = setTimeout(async () => {
+                try {
+                    const res = await fetch('/api/v1/automations/simulator/log', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            logId: simulatorLogId,
+                            ruleId: automationId,
+                            flowName: 'Simulador Virtual (Testes)',
+                            messages
+                        })
+                    });
+                    const data = await res.json();
+                    if (data?.success && data?.logId && !simulatorLogId) {
+                        setSimulatorLogId(data.logId);
+                    }
+                } catch (err) {
+                    console.error('Failed to sync simulator log:', err);
+                }
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [messages, automationId, simulatorLogId]);
+
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
     const [isRunning, setIsRunning] = useState(false);
     const [waitingInput, setWaitingInput] = useState(false);
@@ -195,7 +225,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
     const selectedLeadRef = useRef<LeadOption | null>(null);
     const isVirtualRef = useRef(false);
     const virtualHistoryRef = useRef<{ role: string; content: string }[]>([]);
-    const simulationContextRef = useRef<Record<string, any>>({});
+    const simulationContextRef = useRef<Record<string, unknown>>({});
     const speedRef = useRef(1);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -224,7 +254,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 .eq("organization_id", currentOrganization.id)
                 .or(`lead_name.ilike.%${leadSearch}%,phone.ilike.%${leadSearch}%`)
                 .limit(8);
-            setLeadResults((data || []).map((c: any) => ({ id: c.id, name: c.lead_name || c.phone, phone: c.phone })));
+            setLeadResults((data || []).map((c: { id: string; lead_name?: string; phone: string }) => ({ id: c.id, name: c.lead_name || c.phone, phone: c.phone })));
             setSearchingLeads(false);
         }, 300);
         return () => clearTimeout(timer);
@@ -362,7 +392,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         const ctx = simulationContextRef.current;
         return text.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match: string, key: string) => {
             const parts = key.trim().split(".");
-            let val: any = ctx;
+            let val: unknown = ctx;
             for (const p of parts) { val = val?.[p]; }
             if (val && typeof val === "object") return JSON.stringify(val, null, 2);
             return val !== undefined ? String(val) : match;
@@ -371,9 +401,14 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
     // -- AI calls using refs (no stale closure) --
     // Builds the full system message from node config (system_message + prompt + head prompt info)
-    const buildSystemPrompt = useCallback((config: any): string => {
+    const buildSystemPrompt = useCallback((config: Record<string, unknown>): string => {
         const parts: string[] = [];
         if (config.system_message) parts.push(config.system_message);
+        
+        if (config.learning_notes) {
+            parts.push("\n\n🧠 MEMÓRIA DE APRENDIZADO DA I.A:\n" + config.learning_notes);
+            parts.push("\nSiga estritamente as instruções de aprendizado acima, elas foram geradas a partir de correções em simulações anteriores.");
+        }
         // In dialogue mode, prompt is part of the system instructions
         if (config.dialogue_mode && config.prompt) parts.push(config.prompt);
         if (config.followup_prompt) parts.push(config.followup_prompt);
@@ -397,8 +432,9 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         return parts.join("\n\n");
     }, []);
 
-    const callAI = useCallback(async (config: any): Promise<{ response: string; tokens: number } | null> => {
+    const callAI = useCallback(async (config: Record<string, unknown>): Promise<{ response: string; tokens: number; error?: string } | null> => {
         try {
+            console.log('[useFlowSimulator] callAI initiated with model:', config.model);
             const lead = selectedLeadRef.current;
             const isVirtual = isVirtualRef.current;
             const fullSystemMessage = buildSystemPrompt(config);
@@ -415,21 +451,38 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 virtual_history: virtualHistoryRef.current,
             };
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+            console.log('[useFlowSimulator] Sending payload to simulator API...');
             const response = await fetch('/api/v1/automations/simulator', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
+
+            console.log('[useFlowSimulator] Response received. Status:', response.status);
             const data = await response.json();
             
-            if (!response.ok || data.error) return null;
+            if (!response.ok || data.error) {
+                console.error('[useFlowSimulator] API Error:', data.error);
+                const errMsg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+                return { response: "", tokens: 0, error: errMsg || `HTTP ${response.status}` };
+            }
             return { response: data.response || "(sem resposta)", tokens: data.total_tokens || 0 };
-        } catch {
-            return null;
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                console.error('[useFlowSimulator] Request to simulator API timed out after 30s');
+                return { response: "", tokens: 0, error: "Tempo esgotado (timeout 30s). O servidor não respondeu." };
+            }
+            console.error('[useFlowSimulator] Fetch Exception:', error);
+            return { response: "", tokens: 0, error: error.message || "Erro desconhecido na rede" };
         }
     }, [currentOrganization?.id, buildSystemPrompt]);
 
-    const classifyIntent = useCallback(async (config: any): Promise<{ intent: string; tokens: number } | null> => {
+    const classifyIntent = useCallback(async (config: Record<string, unknown>): Promise<{ intent: string; tokens: number } | null> => {
         try {
             const lead = selectedLeadRef.current;
             const isVirtual = isVirtualRef.current;
@@ -484,9 +537,9 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         setCurrentNodeId(nodeId);
         onHighlightNode?.(nodeId);
 
-        const config = (node.data as any)?.config || node.data || {};
+        const config = (node.data as Record<string, unknown>)?.config || node.data || {};
         const nodeType = node.type || "";
-        const nodeLabel = (node.data as any)?.label || NODE_TYPE_LABELS[nodeType] || nodeType;
+        const nodeLabel = (node.data as Record<string, unknown>)?.label || NODE_TYPE_LABELS[nodeType] || nodeType;
         const nextNodes = getNextNodes(nodeId, edges);
 
         // Read from refs (NOT state) to avoid stale closures
@@ -533,7 +586,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                     content: displayMsg, 
                     nodeId, 
                     nodeType,
-                    buttons: buttons.map((b: any) => ({ id: b.id || b.text, text: b.text }))
+                    buttons: buttons.map((b: { id?: string; text: string }) => ({ id: b.id || b.text, text: b.text }))
                 });
                 addBotToHistory(displayMsg);
 
@@ -548,7 +601,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
                 // Match simples com o texto do botão
                 const normalize = (str: string) => str.toLowerCase().trim();
-                const btnIdx = buttons.findIndex((b: any) => normalize(b.text) === normalize(response));
+                const btnIdx = buttons.findIndex((b: { text: string }) => normalize(b.text) === normalize(response));
                 
                 if (btnIdx !== -1) {
                     const btnEdge = nextNodes.find(n => n.handleId === `btn_${btnIdx}`);
@@ -628,7 +681,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
             case "ask_question": {
                 const rawQuestion = config.question || "(pergunta vazia)";
                 const question = interpolateWithContext(rawQuestion);
-                const options = (config.options || []).filter((o: any) => o?.text);
+                const options = (config.options || []).filter((o: { text: string }) => o?.text);
                 let fullMsg = question;
                 if (options.length > 0) {
                     fullMsg += "\n\n" + options.map((o: any, i: number) => `${i + 1}. ${o.text}`).join("\n");
@@ -819,7 +872,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                         const aiResult = await callAI(config);
                         removeMessage(aiTypingId);
 
-                        if (aiResult) {
+                        if (aiResult && !aiResult.error) {
                             setTokensUsed((prev) => prev + aiResult.tokens);
 
                             const objectiveRegex = /\[OBJETIVO_CONCLU[IÍ]DO\]/gi;
@@ -849,7 +902,9 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                                 break;
                             }
                         } else {
-                            addMessage({ type: "bot", content: "[Erro na chamada I.A]", nodeId, nodeType });
+                            const errorMsg = aiResult?.error || 'O servidor não respondeu ou limite excedido.';
+                            addMessage({ type: "bot", content: `[Erro na chamada I.A]`, nodeId, nodeType });
+                            addMessage({ type: "system", content: `Detalhes: ${errorMsg}`, nodeId, nodeType });
                             break;
                         }
 
@@ -1130,7 +1185,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
             case "edit_fields": {
                 const fields = config.fields || [];
-                const fieldNames = fields.map((f: any) => f.field).join(", ") || "(nenhum)";
+                const fieldNames = fields.map((f: { field: string }) => f.field).join(", ") || "(nenhum)";
                 addMessage({ type: "system", content: `✏️ Editando campos: ${fieldNames}`, nodeId, nodeType });
                 await simDelay(300);
                 return nextNodes[0]?.targetId || null;
@@ -1149,7 +1204,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                         "7d": "last_7d", "14d": "last_7d", "30d": "last_30d",
                         "60d": "last_90d", "90d": "last_90d", "all": "all_time",
                     };
-                    let edgeDateRange: any = { preset: presetMap[dateRange] || "last_30d" };
+                    let edgeDateRange: string = { preset: presetMap[dateRange] || "last_30d" };
                     // For 14d and 60d, use custom dates since there's no exact preset
                     if (dateRange === "14d" || dateRange === "60d") {
                         const days = parseInt(dateRange) || 30;
@@ -1174,19 +1229,19 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
                     if (campaigns && campaigns.length > 0) {
                         // Filter out account total row and campaigns with zero activity
-                        const regularCampaigns = campaigns.filter((c: any) =>
+                        const regularCampaigns = campaigns.filter((c: Record<string, any>) =>
                             !c.raw_data?.is_account_total &&
                             ((c.spend || 0) > 0 || (c.clicks || 0) > 0 || (c.impressions || 0) > 0)
                         );
-                        const isMessageObj = (c: any) => c.raw_data?.objective === 'MESSAGES' || c.raw_data?.objective === 'OUTCOME_ENGAGEMENT' || (c.campaign_name || '').includes('[MSGS]');
+                        const isMessageObj = (c: Record<string, any>) => c.raw_data?.objective === 'MESSAGES' || c.raw_data?.objective === 'OUTCOME_ENGAGEMENT' || (c.campaign_name || '').includes('[MSGS]');
 
                         // Use account total for accurate global metrics
-                        const accountTotal = campaigns.find((c: any) => c.raw_data?.is_account_total);
+                        const accountTotal = campaigns.find((c: Record<string, any>) => c.raw_data?.is_account_total);
                         const totalSpend = accountTotal ? (accountTotal.spend || 0) : regularCampaigns.reduce((s: number, c: any) => s + (c.spend || 0), 0);
                         const totalClicks = accountTotal ? (accountTotal.clicks || 0) : regularCampaigns.reduce((s: number, c: any) => s + (c.clicks || 0), 0);
                         const totalImpressions = accountTotal ? (accountTotal.impressions || 0) : regularCampaigns.reduce((s: number, c: any) => s + (c.impressions || 0), 0);
-                        const totalLeads = (accountTotal?.raw_data as any)?.leads || regularCampaigns.filter(isMessageObj).reduce((s: number, c: any) => s + (c.conversions || 0), 0);
-                        const totalMessages = (accountTotal?.raw_data as any)?.messages_started || 0;
+                        const totalLeads = (accountTotal?.raw_data as Record<string, unknown>)?.leads || regularCampaigns.filter(isMessageObj).reduce((s: number, c: any) => s + (c.conversions || 0), 0);
+                        const totalMessages = (accountTotal?.raw_data as Record<string, unknown>)?.messages_started || 0;
                         const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
                         const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100) : 0;
                         const cpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
@@ -1201,7 +1256,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                                 if (orgErr) {
                                     addMessage({ type: "system", content: `⚠️ Erro ao buscar KPIs: ${orgErr.message}`, nodeId, nodeType });
                                 }
-                                const kpis = (org?.settings as any)?.marketing_kpis;
+                                const kpis = (org?.settings as Record<string, unknown>)?.marketing_kpis;
                                 if (kpis && typeof kpis === "object") {
                                     const kpiLines: string[] = ["\n\n=== METAS KPI (Objetivos) ==="];
                                     if (kpis.target_cpl != null) kpiLines.push(`Meta CPL: R$ ${kpis.target_cpl} | Atual: R$ ${cpl.toFixed(2)} ${cpl <= kpis.target_cpl ? "✅" : "⚠️"}`);
@@ -1221,15 +1276,15 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                         // === Campaigns with data ===
                         formattedText += "\n\n=== CAMPANHAS COM DADOS ===";
                         for (const c of regularCampaigns) {
-                            const leads = (c.raw_data as any)?.leads || 0;
-                            const msgs = (c.raw_data as any)?.messages_started || 0;
+                            const leads = (c.raw_data as Record<string, unknown>)?.leads || 0;
+                            const msgs = (c.raw_data as Record<string, unknown>)?.messages_started || 0;
                             formattedText += `\n\nCampanha: ${c.campaign_name}\nStatus: ${c.status}\nGasto: R$ ${(c.spend || 0).toFixed(2)}\nCliques: ${c.clicks || 0}\nImpressões: ${c.impressions || 0}\nConversões: ${c.conversions || 0}`;
                             if (leads > 0) formattedText += `\nLeads: ${leads} (CPL: R$ ${((c.spend || 0) / leads).toFixed(2)})`;
                             if (msgs > 0) formattedText += `\nMensagens Iniciadas: ${msgs}`;
 
                             // Ad Sets
-                            const adsets = (c.raw_data as any)?.adsets || [];
-                            const adsetsWithData = adsets.filter((a: any) => (a.spend || 0) > 0 || (a.clicks || 0) > 0);
+                            const adsets = (c.raw_data as Record<string, unknown>)?.adsets || [];
+                            const adsetsWithData = adsets.filter((a: { spend?: number; clicks?: number; [key: string]: unknown }) => (a.spend || 0) > 0 || (a.clicks || 0) > 0);
                             if (adsetsWithData.length > 0) {
                                 formattedText += `\n  --- Conjuntos de Anúncios (${adsetsWithData.length}) ---`;
                                 for (const as2 of adsetsWithData) {
@@ -1238,8 +1293,8 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                             }
 
                             // Ads
-                            const ads = (c.raw_data as any)?.ads || [];
-                            const adsWithData = ads.filter((a: any) => (a.spend || 0) > 0 || (a.clicks || 0) > 0);
+                            const ads = (c.raw_data as Record<string, unknown>)?.ads || [];
+                            const adsWithData = ads.filter((a: { spend?: number; clicks?: number; [key: string]: unknown }) => (a.spend || 0) > 0 || (a.clicks || 0) > 0);
                             if (adsWithData.length > 0) {
                                 formattedText += `\n  --- Anúncios (${adsWithData.length}) ---`;
                                 for (const ad of adsWithData) {
@@ -1355,8 +1410,8 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
     // -- Build full flow description for analysis --
     const buildFlowDescription = useCallback((): string => {
         const nodeDescs = nodes.map(n => {
-            const cfg = (n.data as any)?.config || n.data || {};
-            const label = (n.data as any)?.label || NODE_TYPE_LABELS[n.type || ""] || n.type;
+            const cfg = (n.data as Record<string, unknown>)?.config || n.data || {};
+            const label = (n.data as Record<string, unknown>)?.label || NODE_TYPE_LABELS[n.type || ""] || n.type;
             const outEdges = edges.filter(e => e.source === n.id);
             const details: string[] = [`Nó: "${label}" (tipo: ${n.type})`];
             if (cfg.system_message) details.push(`System Message: ${cfg.system_message.substring(0, 300)}...`);
@@ -1379,7 +1434,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
             if (outEdges.length > 0) {
                 const routes = outEdges.map(e => {
                     const targetNode = nodes.find(nd => nd.id === e.target);
-                    const targetLabel = (targetNode?.data as any)?.label || NODE_TYPE_LABELS[targetNode?.type || ""] || targetNode?.type;
+                    const targetLabel = (targetNode?.data as Record<string, unknown>)?.label || NODE_TYPE_LABELS[targetNode?.type || ""] || targetNode?.type;
                     return `${e.sourceHandle || 'default'} → "${targetLabel}"`;
                 });
                 details.push(`Saídas: ${routes.join(', ')}`);
@@ -1401,7 +1456,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
         // Get the AI agent's system message for context
         const aiAgentNode = nodes.find(n => n.type === 'ai_agent');
-        const agentPrompt = (aiAgentNode?.data as any)?.config?.system_message || '';
+        const agentPrompt = (aiAgentNode?.data as Record<string, unknown>)?.config?.system_message || '';
 
         const analysisPrompt = `Você é um consultor especialista em atendimento ao cliente e vendas.
 
@@ -1467,8 +1522,8 @@ Seja direto, prático e use emojis para organizar. Responda em português.`;
             .join('\n');
 
         const aiAgentNode = nodes.find(n => n.type === 'ai_agent');
-        const agentPrompt = (aiAgentNode?.data as any)?.config?.system_message || '';
-        const agentLabel = (aiAgentNode?.data as any)?.label || 'Agente I.A';
+        const agentPrompt = (aiAgentNode?.data as Record<string, unknown>)?.config?.system_message || '';
+        const agentLabel = (aiAgentNode?.data as Record<string, unknown>)?.label || 'Agente I.A';
 
         const analysisPrompt = `Você é um consultor especialista em automação de atendimento e CRM.
 
@@ -1560,7 +1615,7 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
                         onCorrectionsGenerated(parsed.corrections);
                         addMessage({ type: "system", content: `✨ Foram mapeadas ${parsed.corrections.length} sugestões de correção na tela de automações! Crie o botão para visualizar.` });
                     }
-                } catch (e: any) {
+                } catch (e: unknown) {
                     addMessage({ type: "bot", content: data.response });
                 }
 
@@ -1578,12 +1633,14 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
     const startSimulation = useCallback(async () => {
         abortRef.current = false;
         setMessages([]);
+        setSimulatorLogId(null);
         setIsRunning(true);
         setSimFinished(false);
         setWaitingInput(false);
         setRouteChoice(null);
         setTokensUsed(0);
         virtualHistoryRef.current = [];
+        simulationContextRef.current._memory_saved = false;
 
         const trigger = findTriggerNode(nodes, edges);
         if (!trigger) {
@@ -1610,13 +1667,82 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
         setIsRunning(false);
         setCurrentNodeId(null);
         onHighlightNode?.(null);
-    }, [nodes, processNode, addMessage, onHighlightNode]);
+
+        // Auto-trigger learning at the end of the simulation
+        if (virtualHistoryRef.current.length >= 3 && !simulationContextRef.current._memory_saved) {
+            simulationContextRef.current._memory_saved = true;
+            const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
+            if (aiNode) {
+                fetch('/api/v1/automations/simulator/memory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ruleId: automationId,
+                        nodeId: aiNode.id,
+                        virtual_history: virtualHistoryRef.current,
+                        system_message: (aiNode.data as any)?.config?.system_message || "",
+                        existing_notes: (aiNode.data as any)?.config?.learning_notes || ""
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.tokens) {
+                        setTokensUsed(prev => prev + data.tokens);
+                    }
+                    if (data.success && data.fullNotes) {
+                        addMessage({ type: "system", content: `🧠 Memória da I.A. atualizada após reflexão! (${data.tokens || 0} tokens gastos na revisão)` });
+                        if (onCorrectionsGenerated) {
+                            onCorrectionsGenerated(aiNode.id, data.fullNotes);
+                        }
+                    } else if (data.message === 'Nenhum aprendizado necessário gerado') {
+                        addMessage({ type: "system", content: `🧠 I.A. revisou o atendimento e não encontrou erros. (${data.tokens || 0} tokens gastos)` });
+                    }
+                })
+                .catch(err => console.error('Error saving simulator memory:', err));
+            }
+        }
+    }, [nodes, processNode, addMessage, onHighlightNode, automationId, onCorrectionsGenerated]);
 
     const fullReset = useCallback(() => {
+        // Disparar aprendizado da IA em background antes de resetar (se houver conversa)
+        if (virtualHistoryRef.current.length >= 3 && !simulationContextRef.current._memory_saved) {
+            simulationContextRef.current._memory_saved = true;
+            const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
+            if (aiNode) {
+                fetch('/api/v1/automations/simulator/memory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ruleId: automationId,
+                        nodeId: aiNode.id,
+                        virtual_history: virtualHistoryRef.current,
+                        system_message: (aiNode.data as any)?.config?.system_message || "",
+                        existing_notes: (aiNode.data as any)?.config?.learning_notes || ""
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.tokens) {
+                        setTokensUsed(prev => prev + data.tokens);
+                    }
+                    if (data.success && data.fullNotes) {
+                        addMessage({ type: "system", content: `🧠 Memória da I.A. atualizada após reflexão! (${data.tokens || 0} tokens gastos na revisão)` });
+                        if (onCorrectionsGenerated) {
+                            onCorrectionsGenerated(aiNode.id, data.fullNotes);
+                        }
+                    } else if (data.message === 'Nenhum aprendizado necessário gerado') {
+                        addMessage({ type: "system", content: `🧠 I.A. revisou o atendimento e não encontrou erros. (${data.tokens || 0} tokens gastos)` });
+                    }
+                })
+                .catch(err => console.error('Error saving simulator memory:', err));
+            }
+        }
+
         abortRef.current = true;
         resolveInputRef.current?.("");
         resolveRouteRef.current?.("");
         setMessages([]);
+        setSimulatorLogId(null);
         setIsRunning(false);
         setWaitingInput(false);
         setRouteChoice(null);

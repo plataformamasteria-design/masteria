@@ -249,7 +249,27 @@ const FormatWhatsAppText = ({ text }: { text: string }) => {
                             if (strikePart.startsWith('~') && strikePart.endsWith('~') && strikePart.length > 2) {
                                 return <del key={`${index}-${bIndex}-${iIndex}-${sIndex}`}>{strikePart.slice(1, -1)}</del>;
                             }
-                            return strikePart;
+                            
+                            // Process URLs
+                            const urlRegex = /(https?:\/\/[^\s]+)/g;
+                            const urlParts = strikePart.split(urlRegex);
+                            return urlParts.map((uPart, uIndex) => {
+                                if (urlRegex.test(uPart)) {
+                                    return (
+                                        <a 
+                                            key={`url-${index}-${bIndex}-${iIndex}-${sIndex}-${uIndex}`} 
+                                            href={uPart} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="text-blue-500 hover:text-blue-600 hover:underline cursor-pointer break-all"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {uPart}
+                                        </a>
+                                    );
+                                }
+                                return uPart;
+                            });
                         });
                     });
                 });
@@ -283,7 +303,7 @@ const MeetingIndicator = ({ text }: { text: string }) => {
     );
 };
 
-export function MessageBubble({ message, allMessages, contactName }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null }) {
+export function MessageBubble({ message, allMessages, contactName, templates }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null, templates?: any[] }) {
     if (message.senderType === 'SYSTEM') {
         return (
             <div id={`message-${message.id}`} className="flex w-full justify-center my-3">
@@ -327,9 +347,9 @@ export function MessageBubble({ message, allMessages, contactName }: { message: 
                             </div>
                         ) : <MediaError />}
                         
-                        {message.mediaUrl && ((message as any).aiTranscription || (message.content && message.content !== '🎵 Áudio')) && (
+                        {message.mediaUrl && (message as any).aiTranscription && (
                             <p className="text-xs italic opacity-70 border-t border-black/5 dark:border-white/5 pt-1 mt-1">
-                                {(message as any).aiTranscription || message.content}
+                                {(message as any).aiTranscription}
                             </p>
                         )}
                     </div>
@@ -374,10 +394,73 @@ export function MessageBubble({ message, allMessages, contactName }: { message: 
                         </div>
                     );
                 }
+
+                if (message.content?.startsWith('Template:')) {
+                    const tName = message.content.replace('Template:', '').trim();
+                    const templateDef = templates?.find(t => t.name === tName);
+                    
+                    if (templateDef) {
+                        const components = templateDef.components || [];
+                        const header = components.find((c: any) => c.type === 'HEADER');
+                        const body = components.find((c: any) => c.type === 'BODY');
+                        const footer = components.find((c: any) => c.type === 'FOOTER');
+                        const buttons = components.find((c: any) => c.type === 'BUTTONS');
+
+                        return (
+                            <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
+                                {header && header.format === 'IMAGE' && (
+                                    <div className="w-full h-32 bg-black/10 dark:bg-white/10 rounded-lg flex items-center justify-center mb-1 border border-white/10">
+                                        <ImageIcon className="h-8 w-8 opacity-40" />
+                                    </div>
+                                )}
+                                {header && header.format === 'VIDEO' && (
+                                    <div className="w-full h-32 bg-black/10 dark:bg-white/10 rounded-lg flex items-center justify-center mb-1 border border-white/10">
+                                        <Video className="h-8 w-8 opacity-40" />
+                                    </div>
+                                )}
+                                {header && header.format === 'DOCUMENT' && (
+                                    <div className="w-full h-16 bg-black/10 dark:bg-white/10 rounded-lg flex items-center justify-center mb-1 border border-white/10">
+                                        <FileText className="h-6 w-6 opacity-40" />
+                                    </div>
+                                )}
+                                {header && header.format === 'TEXT' && (
+                                    <div className="font-bold text-[14px] leading-tight pb-1"><FormatWhatsAppText text={header.text} /></div>
+                                )}
+                                {body && (
+                                    <div className="text-[13px] leading-relaxed whitespace-pre-wrap"><FormatWhatsAppText text={body.text} /></div>
+                                )}
+                                {footer && (
+                                    <div className="text-[11px] opacity-60 mt-1">{footer.text}</div>
+                                )}
+                                {buttons && buttons.buttons?.length > 0 && (
+                                    <div className="flex flex-col gap-0 mt-2 border-t border-white/10">
+                                        {buttons.buttons.map((btn: any, i: number) => (
+                                            <div key={i} className="text-center text-[#00a884] dark:text-[#33c2a6] font-semibold text-[13px] py-2 border-b border-white/10 last:border-0 hover:bg-white/5 transition-colors cursor-pointer rounded-sm">
+                                                {btn.text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    }
+
+                    const formatted = tName.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/_/g, ' ');
+                    return (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-black/10 dark:bg-white/10 text-sm">
+                            <FileText className="h-5 w-5 opacity-70 shrink-0" />
+                            <div className="flex flex-col">
+                                <span className="text-[10px] uppercase font-bold opacity-60 tracking-wider">Template Enviado</span>
+                                <span className="capitalize font-medium">{formatted}</span>
+                            </div>
+                        </div>
+                    );
+                }
+
                 return (
                     <>
-                        <FormatWhatsAppText text={message.content} />
-                        {isMe && <MeetingIndicator text={message.content} />}
+                        <FormatWhatsAppText text={message.content || ''} />
+                        {isMe && <MeetingIndicator text={message.content || ''} />}
                     </>
                 );
             }

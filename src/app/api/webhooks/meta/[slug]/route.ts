@@ -15,6 +15,9 @@ import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 import { resumeFlowForContact } from '@/lib/flow-engine';
 import { webhookDispatcher } from '@/services/webhook-dispatcher.service';
 import { UserNotificationsService } from '@/lib/notifications/user-notifications.service';
+import { emitToCompany } from '@/lib/socket';
+import { v4 as uuidv4 } from 'uuid';
+import { uploadFileToS3 } from '@/lib/s3';
 
 async function recordWebhookHealth(connectionId: string, companyId: string, status: 'success' | 'failure', errorMessage?: string) {
     try {
@@ -522,7 +525,8 @@ function getMessageContent(messageData: any): string {
     }
     if (messageData.type === 'contacts') {
         const name = messageData.contacts?.[0]?.name?.formatted_name || 'Contato';
-        return `👤 Contato compartilhado: ${name}`;
+        const phones = messageData.contacts?.[0]?.phones?.map((p: any) => p.phone).join(', ');
+        return `👤 Contato compartilhado\nNome: ${name}${phones ? `\nTelefone: ${phones}` : ''}`;
     }
     if (messageData.type === 'location') {
         const lat = messageData.location?.latitude;
@@ -545,8 +549,7 @@ async function processIncomingMessage(
     const phone = sanitizePhone(contactData.wa_id);
     const messagePreview = getMessageContent(messageData).substring(0, 50);
 
-    // 1. Duplication Check: If providerMessageId already exists, skip to avoid double-logging
-    // Validar que a mensagem pertence à empresa
+    // 1. Duplication Check
     const [existingMessage] = await db.select({ id: messages.id })
         .from(messages)
         .innerJoin(conversations, eq(messages.conversationId, conversations.id))
@@ -562,11 +565,31 @@ async function processIncomingMessage(
     }
 
     const isEcho = messageData.from === metadata.display_phone_number;
-
     console.log(`📨 [Meta Webhook] ${isEcho ? '[ECHO] ' : ''}Nova mensagem de ${contactData.profile?.name || phone} (${phone}): "${messagePreview}"`);
 
-    const { conversationId, newMessageId, isNewConversation, contactId, contactName, contactPhone, aiActive } = await db.transaction(async (tx) => {
-        // Multi-tenant check always includes companyId
+    // Store IDs from transaction for AI trigger AFTER commit
+    let triggerConversationId: string | null = null;
+    let triggerMessageId: string | null = null;
+    let triggerContactId: string | null = null;
+    let triggerMessageText: string | null = null;
+    let triggerCompanyId: string = companyId;
+    let triggerAiActive: boolean | null = null;
+    let triggerContentType: string | null = null;
+    let triggerContactName: string | null = null;
+    let triggerContactPhone: string | null = null;
+    let triggerIsEcho: boolean = isEcho;
+    let triggerIsNewConversation: boolean = false;
+    
+    // Store media info for S3 upload AFTER transaction
+    let mediaUploadInfo: {
+        messageId: string;
+        messageType: string;
+        mediaId: string;
+        accessToken: string;
+        companyId: string;
+    } | null = null;
+
+    await db.transaction(async (tx) => {
         const conns = await tx.select().from(connections).where(and(
             eq(connections.companyId, companyId),
             eq(connections.connectionType, 'meta_api'),
@@ -576,59 +599,26 @@ async function processIncomingMessage(
             )
         ));
 
-        // Rule: Prioritize PhoneNumberId, then WABA ID
         let connection = conns.find(c => c.phoneNumberId === metadata.phone_number_id);
-        if (!connection && wabaId) {
-            connection = conns.find(c => c.wabaId === wabaId);
-        }
-
-        // CANDIDATE FALLBACK: If lookup by IDs failed, use the one that validated HMAC
-        if (!connection && candidateConnection) {
-            connection = candidateConnection;
-            if (connection) {
-                console.log(`⚠️ [Meta Webhook] Conexão encontrada via CANDIDATE fallback (ID: ${connection.id}) após falha de ID lookup`);
-            }
-        }
-
-        if (!connection && conns.length > 0) {
-            connection = conns[0];
-            if (connection) {
-                console.log(`⚠️ [Meta Webhook] Conexão encontrada via FIRST-MATCH fallback (ID: ${connection.id})`);
-            }
-        }
+        if (!connection && wabaId) connection = conns.find(c => c.wabaId === wabaId);
+        if (!connection && candidateConnection) connection = candidateConnection;
+        if (!connection && conns.length > 0) connection = conns[0];
 
         if (!connection) {
             console.error(`❌ [Meta Webhook] Conexão não encontrada para Phone Number ID: ${metadata.phone_number_id}${wabaId ? ` ou WABA ID: ${wabaId}` : ''}`);
             throw new Error('Connection not found');
         }
 
-        // AUTO-HEALING: Update IDs if they changed or were missing
-        const needsHealing =
-            (metadata.phone_number_id && connection.phoneNumberId !== metadata.phone_number_id) ||
-            (wabaId && connection.wabaId !== wabaId);
-
+        const needsHealing = (metadata.phone_number_id && connection.phoneNumberId !== metadata.phone_number_id) || (wabaId && connection.wabaId !== wabaId);
         if (needsHealing) {
-            console.log(`🛠️ [Meta Webhook] Auto-healing connection ${connection.id}: Updating IDs (PhoneID: ${connection.phoneNumberId} -> ${metadata.phone_number_id}, WABA: ${connection.wabaId} -> ${wabaId})`);
-
             const updateData: any = {
                 phoneNumberId: metadata.phone_number_id || connection.phoneNumberId,
                 wabaId: wabaId || connection.wabaId
             };
-
-            // Optional: Update display phone if provided
-            if (metadata.display_phone_number) {
-                updateData.phone = metadata.display_phone_number;
-            }
-
-            await tx.update(connections)
-                .set(updateData)
-                .where(eq(connections.id, connection.id));
-
-            // Update the local connection object for the rest of this transaction
+            if (metadata.display_phone_number) updateData.phone = metadata.display_phone_number;
+            await tx.update(connections).set(updateData).where(eq(connections.id, connection.id));
             connection = { ...connection, ...updateData };
         }
-
-        console.log(`✅ [Meta Webhook] Conexão encontrada: ${connection?.config_name}`);
 
         const initialPhone = sanitizePhone(contactData.wa_id);
         if (!initialPhone) throw new Error('Invalid phone number');
@@ -640,7 +630,6 @@ async function processIncomingMessage(
         const canonicalPhone = canonicalizeBrazilPhone(initialPhone);
 
         if (!contact) {
-            console.log(`➕ [Meta Webhook] Criando novo contato: ${profileName || canonicalPhone} (${canonicalPhone})`);
             [contact] = await tx.insert(contacts).values({
                 companyId: companyId,
                 name: profileName || canonicalPhone,
@@ -648,253 +637,182 @@ async function processIncomingMessage(
                 phone: canonicalPhone
             }).returning();
         } else {
-            console.log(`✅ [Meta Webhook] Contato existente encontrado: ${contact.name} (ID: ${contact.id})`);
+            const isGenericName = /^\\d+$/.test(contact.name.replace(/\\D/g, ''));
+            const updatePayload: any = { whatsappName: profileName, profileLastSyncedAt: new Date() };
+            if (isGenericName && profileName) updatePayload.name = profileName;
 
-            // Auto-update name if current name is generic (just numbers)
-            const isGenericName = /^\d+$/.test(contact.name.replace(/\D/g, ''));
-            const updatePayload: any = {
-                whatsappName: profileName,
-                profileLastSyncedAt: new Date()
-            };
-
-            if (isGenericName && profileName) {
-                console.log(`🛠️ [Meta Webhook] Updating generic name '${contact.name}' -> '${profileName}'`);
-                updatePayload.name = profileName;
-            }
-
-            // SECURITY: Validar tenant ao atualizar (contact já foi buscado com companyId)
             const [updatedContact] = await tx.update(contacts)
                 .set(updatePayload)
-                .where(and(
-                    eq(contacts.id, contact.id),
-                    eq(contacts.companyId, companyId)
-                ))
+                .where(and(eq(contacts.id, contact.id), eq(contacts.companyId, companyId)))
                 .returning();
-
             if (updatedContact) contact = updatedContact;
         }
 
-        // BACKGROUND SYNC: Try to fetch profile picture via Baileys Bridge was removed.
-        // Meta API does not provide profile pictures by default.
-
         if (!contact) throw new Error("Falha ao criar ou encontrar o contato.");
 
-        if (!connection) throw new Error('Connection not found for conversation selection');
         let [conversation] = await tx.select().from(conversations).where(and(eq(conversations.contactId, contact.id), eq(conversations.connectionId, connection.id)));
         let isNewConversation = false;
+        
         if (!conversation) {
-            console.log(`➕ [Meta Webhook] Criando nova conversa para ${contact.name}`);
-            if (!connection) throw new Error('Connection not found for new conversation');
             [conversation] = await tx.insert(conversations).values({ companyId, contactId: contact.id, connectionId: connection.id }).returning();
-            isNewConversation = !isEcho; // Only truly "new" message if not an echo
+            isNewConversation = !isEcho;
         } else {
-            console.log(`✅ [Meta Webhook] Conversa existente atualizada (ID: ${conversation.id})`);
             const updatePayload: any = { lastMessageAt: new Date() };
-
-            // Only unarchive and move to IN_PROGRESS if it's a REAL incoming message (not ECHO)
             if (!isEcho) {
                 updatePayload.status = 'IN_PROGRESS';
                 updatePayload.archivedAt = null;
                 updatePayload.archivedBy = null;
             }
-
             [conversation] = await tx.update(conversations).set(updatePayload).where(eq(conversations.id, conversation.id)).returning();
         }
 
         if (!conversation) throw new Error("Falha ao criar ou encontrar a conversa.");
 
-        let permanentMediaUrl = null;
-        if (['image', 'video', 'document', 'audio'].includes(messageData.type)) {
-            const mediaType = messageData.type;
-            const mediaObject = messageData[mediaType];
-
-            if (!mediaObject || !mediaObject.id) {
-                console.error(`[Meta Webhook] Objeto de mídia ${mediaType} está incompleto no payload:`, JSON.stringify(messageData));
-            } else {
-                const mediaId = mediaObject.id;
-                if (mediaId) {
-                    try {
-                        // Check if connection has access token
-                        if (!connection?.accessToken) {
-                            console.warn(`⚠️ [Meta Webhook] Access token ausente para conexão ${connection?.config_name}. Mídia não será processada.`);
-                        } else {
-                            const accessToken = decrypt(connection.accessToken);
-                            if (accessToken) {
-                                const mediaUrl = await getMediaUrl(mediaId, accessToken);
-                                if (mediaUrl) {
-                                    // ✅ FASE 3.2: Download da mídia para processamento local (Transcrição)
-                                    console.log(`📸 [Meta Webhook] Media detected. Starting download...`);
-
-                                    try {
-                                        const mediaResponse = await fetch(mediaUrl, {
-                                            headers: { Authorization: `Bearer ${accessToken}` }
-                                        });
-
-                                        if (mediaResponse.ok) {
-                                            const arrayBuffer = await mediaResponse.arrayBuffer();
-                                            const mediaBuffer = Buffer.from(arrayBuffer);
-                                            console.log(`✅ [Meta Webhook] Media downloaded (${mediaBuffer.length} bytes). Processing...`);
-
-                                            // Upload para S3
-                                            const { uploadFileToS3 } = await import('@/lib/s3');
-                                            const { v4: uuidv4 } = await import('uuid');
-
-                                            // Determinar extensão
-                                            let extension = 'bin';
-                                            if (mediaType === 'image') extension = 'jpg';
-                                            else if (mediaType === 'video') extension = 'mp4';
-                                            else if (mediaType === 'audio') extension = 'ogg';
-                                            else if (mediaType === 'document') extension = 'pdf';
-
-                                            const s3Key = `media_recebida/${uuidv4()}.${extension}`;
-                                            // FIXED: company is not defined in this scope, use companyId passed to function
-                                            const s3Url = await uploadFileToS3(companyId, s3Key, mediaBuffer, messageData[mediaType]?.mime_type || 'application/octet-stream');
-
-                                            if (s3Url) {
-                                                console.log(`✅ [Meta Webhook] Media uploaded to S3: ${s3Url}`);
-                                                permanentMediaUrl = s3Url;
-                                            }
-
-                                            // 🚨 TRANSCRIÇÃO REMOVIDA DAQUI: 
-                                            // A partir de agora, áudios são salvos nativamente e a transcrição 
-                                            // será feita sob demanda (Just-in-Time) pelo automation-engine.ts
-                                        } else {
-                                            console.warn(`⚠️ [Meta Webhook] Failed to download media: ${mediaResponse.statusText}`);
-                                        }
-                                    } catch (downloadErr) {
-                                        console.error(`❌ [Meta Webhook] Error downloading media:`, downloadErr);
-                                    }
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        console.error(`❌ [Meta Webhook] Error processing media:`, error);
-                    }
+        const mediaTypes = ['image', 'video', 'document', 'audio', 'sticker'];
+        const messageType = messageData.type;
+        
+        if (mediaTypes.includes(messageType)) {
+            const mediaObject = messageData[messageType];
+            if (mediaObject?.id) {
+                const accessToken = connection.accessToken ? decrypt(connection.accessToken) : null;
+                if (accessToken) {
+                    mediaUploadInfo = {
+                        messageId: '', // set after insert
+                        messageType,
+                        mediaId: mediaObject.id,
+                        accessToken,
+                        companyId,
+                    };
                 }
             }
         }
 
-        if (permanentMediaUrl && typeof permanentMediaUrl === 'string' && (permanentMediaUrl as string).includes('mmg.whatsapp.net')) {
-            console.error(`🚨 [Meta Webhook] ERRO CRÍTICO: Tentativa de salvar URL temporária do WhatsApp detectada! URL rejeitada.`);
-            permanentMediaUrl = null;
+        let repliedToInternalId: string | null = null;
+        if (messageData.context?.id) {
+            const [originalMessage] = await tx.select({ id: messages.id })
+                .from(messages)
+                .where(eq(messages.providerMessageId, messageData.context.id));
+            if (originalMessage) repliedToInternalId = originalMessage.id;
         }
 
         const [newMessage] = await tx.insert(messages).values({
-            companyId: companyId, // Added missing companyId
+            companyId: companyId,
             conversationId: conversation.id,
             providerMessageId: messageData.id,
-            repliedToMessageId: null,
+            repliedToMessageId: repliedToInternalId,
             senderType: isEcho ? 'AGENT' : 'CONTACT',
             senderId: isEcho ? null : contact.id,
             content: getMessageContent(messageData),
             contentType: messageData.type.toUpperCase(),
-            mediaUrl: permanentMediaUrl,
+            mediaUrl: null, // Updated after S3 upload completes
             status: isEcho ? 'SENT' : 'RECEIVED',
         }).returning();
 
         if (!newMessage) throw new Error('Falha ao salvar a nova mensagem.');
 
-        console.log(`✅ [Meta Webhook] Mensagem salva no banco (ID: ${newMessage.id}) na conversa ${conversation.id}`);
+        if (mediaUploadInfo && newMessage) mediaUploadInfo.messageId = newMessage.id;
 
         try {
             if (!isEcho) {
-                console.log(`[Webhook] Dispatching message_received for message ${newMessage.id}`);
                 await webhookDispatcher.dispatch(companyId, 'message_received', {
                     messageId: newMessage.id,
                     conversationId: conversation.id,
                     content: getMessageContent(messageData),
                     senderPhone: contact.phone,
                 });
-
-                // Trigger Automation Engine - MOVED OUTSIDE TRANSACTION
-                // await processIncomingMessageTrigger(conversation.id, newMessage.id);
-            } else {
-                console.log(`[Meta Webhook] Echo message saved as AGENT activity (ID: ${newMessage.id})`);
             }
         } catch (webhookError) {
             console.error('[Webhook] Error dispatching events:', webhookError);
         }
 
-        return {
-            conversationId: conversation.id,
-            newMessageId: newMessage.id,
-            isNewConversation,
-            contactId: contact.id,
-            contactName: contact.name || contact.phone,
-            contactPhone: contact.phone,
-            aiActive: conversation.aiActive
-        };
+        if (newMessage && conversation) {
+            triggerConversationId = conversation.id;
+            triggerMessageId = newMessage.id;
+            triggerContactId = contact.id;
+            triggerMessageText = getMessageContent(messageData);
+            triggerAiActive = conversation.aiActive;
+            triggerContentType = messageData.type.toUpperCase();
+            triggerContactName = contact.name || contactData.profile?.name || null;
+            triggerContactPhone = contact.phone || null;
+            triggerIsNewConversation = isNewConversation;
+        }
     });
 
-    // TRIGGER AI & AUTOMATION (After DB insertion)
-    // Disparar processamento assíncrono garantindo que não trave o webhook
-    if (newMessageId && !isEcho) {
-        const _cId = contactId;
-        const _coId = companyId;
-        const _msgText = getMessageContent(messageData) || '';
-        const _convId = conversationId;
-        const _msgId = newMessageId;
-        const _aiActive = aiActive;
+    // === AFTER TRANSACTION COMMIT ===
 
-        console.log(`🤖 [Meta Webhook] Disparando IA para conversa ${conversationId} / Mensagem ${newMessageId} / Contact ${_cId}`);
+    // 1. Upload Media
+    if (mediaUploadInfo) {
+        uploadMediaToS3(mediaUploadInfo.messageId, mediaUploadInfo.messageType, mediaUploadInfo.mediaId, mediaUploadInfo.accessToken, mediaUploadInfo.companyId)
+            .catch(err => console.error(`[META-WEBHOOK] ❌ S3 media upload failed for msg ${mediaUploadInfo!.messageId}:`, err));
+    }
 
-        setTimeout(async () => {
-            // 1. Primeiro: tentar retomar execução pausada (diálogo IA)
-            if (_cId && _aiActive !== false) {
-                try {
-                    const resumed = await resumeFlowForContact(_cId, _msgText, _coId);
-                    if (resumed) {
-                        console.log(`[Meta Webhook] 🔄 Resumed paused flow for contact ${_cId}`);
-                        return; // Não disparar nova automação se retomou uma pausada
-                    }
-                } catch (err) {
-                    console.error(`[Meta Webhook] ❌ Error resuming flow for contact ${_cId}:`, err);
+    // 2. Realtime and AI Triggers
+    if (triggerConversationId && triggerMessageId) {
+        // Emit Realtime Event
+        emitToCompany(triggerCompanyId, 'chat:new-message', {
+            conversationId: triggerConversationId,
+            messageId: triggerMessageId,
+            content: triggerMessageText,
+            contentType: triggerContentType || 'TEXT',
+            isFromMe: triggerIsEcho,
+            senderType: triggerIsEcho ? 'AGENT' : 'CONTACT',
+            mediaUrl: null,
+            timestamp: new Date().toISOString(),
+            contactName: triggerContactName,
+            contactPhone: triggerContactPhone,
+        });
+        emitToCompany(triggerCompanyId, 'inbox:update', { timestamp: Date.now() });
+
+        if (triggerIsNewConversation && triggerConversationId) {
+            try {
+                await UserNotificationsService.notifyNewConversation(triggerCompanyId, triggerConversationId, triggerContactName || triggerContactPhone || 'Desconhecido');
+                await webhookDispatcher.dispatch(triggerCompanyId, 'conversation_created', {
+                    conversationId: triggerConversationId,
+                    contactId: triggerContactId,
+                    contactPhone: triggerContactPhone,
+                    contactName: triggerContactName,
+                });
+            } catch (e) {}
+        }
+
+        if (!triggerIsEcho) {
+            setTimeout(async () => {
+                if (triggerContactId && triggerAiActive !== false) {
+                    try {
+                        const resumed = await resumeFlowForContact(triggerContactId, triggerMessageText || '', triggerCompanyId);
+                        if (resumed) return;
+                    } catch (err) {}
                 }
-            } else if (_aiActive === false) {
-                console.log(`[Meta Webhook] 🛑 IA desativada para a conversa ${_convId}. Fluxos pausados não serão retomados.`);
-            }
-
-            // 2. Segundo: disparar nova automação se não havia execução pausada
-
-            processIncomingMessageTrigger(_convId, _msgId).catch(err => {
-                console.error(`❌ [Automation Engine Error] Falha crítica no disparo da IA:`, err);
-            });
-        }, 500); // Delay curto para garantir consistência do commit do banco
-    }
-
-    // Notificar usuários sobre novo atendimento (APÓS transação commitada)
-    if (isNewConversation && conversationId) {
-        try {
-            await UserNotificationsService.notifyNewConversation(
-                companyId,
-                conversationId,
-                contactName
-            );
-            console.log(`[UserNotifications] New conversation notification sent for ${conversationId}`);
-        } catch (notifError) {
-            console.error('[UserNotifications] Error sending new conversation notification:', notifError);
-        }
-
-        try {
-            console.log(`[Webhook] Dispatching conversation_created for conversation ${conversationId}`);
-            await webhookDispatcher.dispatch(companyId, 'conversation_created', {
-                conversationId: conversationId,
-                contactId: contactId,
-                contactPhone: contactPhone,
-                contactName: contactName,
-            });
-        } catch (webhookError) {
-            console.error('[Webhook] Error dispatching conversation_created:', webhookError);
+                processIncomingMessageTrigger(triggerConversationId!, triggerMessageId!).catch(err => {});
+            }, 500);
         }
     }
+}
 
-    // Double-check: Automation is already triggered asynchronously above (lines 740+)
-    // Removing the blocking await call to prevent webhook timeout
-    if (conversationId && newMessageId && !isEcho) {
-        console.log(`🤖 [Meta Webhook] Automação já disparada em background para conversa ${conversationId}`);
+async function uploadMediaToS3(messageId: string, messageType: string, mediaId: string, accessToken: string, companyId: string) {
+    try {
+        const tempMediaUrl = await getMediaUrl(mediaId, accessToken);
+        if (!tempMediaUrl) return;
+
+        const mediaResponse = await fetch(tempMediaUrl, {
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+            signal: AbortSignal.timeout(30000)
+        });
+
+        if (!mediaResponse.ok) throw new Error(`Falha ao baixar mídia: ${mediaResponse.status}`);
+
+        const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer());
+        const contentType = mediaResponse.headers.get('content-type') || 'application/octet-stream';
+        const extension = contentType.split('/')[1] || 'bin';
+        const s3Key = `media_recebida/${uuidv4()}.${extension}`;
+
+        const permanentMediaUrl = await uploadFileToS3(companyId, s3Key, mediaBuffer, contentType);
+        
+        await db.update(messages).set({ mediaUrl: permanentMediaUrl }).where(eq(messages.id, messageId));
+        emitToCompany(companyId, 'chat:message-updated', { messageId, mediaUrl: permanentMediaUrl });
+    } catch (error) {
+        console.error(`[META-WEBHOOK] ❌ Erro upload media:`, error);
     }
-
-    console.log(`✅ [Meta Webhook] Processamento completo para ${contactData.profile.name}`);
 }
 
 // --------------------------------------------------------------------------
@@ -940,7 +858,7 @@ async function processIncomingInstagramMessage(event: any, companyId: string) {
     console.log(`📸 [Instagram Webhook] ${isEcho ? '[ECHO] ' : ''}Nova mensagem de ${contactExternalId}: "${messageContent}"`);
 
     try {
-        await db.transaction(async (tx) => {
+        const result = await db.transaction(async (tx) => {
             // Find Connection (by pageId which is our Page/Account ID)
             const [connection] = await tx.select().from(connections)
                 .where(and(
@@ -1066,7 +984,7 @@ async function processIncomingInstagramMessage(event: any, companyId: string) {
                 companyId: companyId,
                 conversationId: conversation.id,
                 providerMessageId: mid,
-                senderType: isEcho ? 'AGENT' : 'CONTACT', // ✅ FIX: Instagram contacts must be 'CONTACT' (not 'USER') to match debounce filter in automation-engine
+                senderType: isEcho ? 'AGENT' : 'CONTACT', // ✅ FIX: Instagram contacts must be 'CONTACT'
                 senderId: isEcho ? null : contact.id,
                 content: messageContent,
                 contentType: messageType === 'IMAGE' || messageType === 'VIDEO' ? messageType : 'TEXT',
@@ -1079,7 +997,7 @@ async function processIncomingInstagramMessage(event: any, companyId: string) {
                 throw new Error('Database integrity error during Instagram processing');
             }
 
-            // Dispatch Events (Webhooks/Automations) - ONLY for incoming messages (non-echo)
+            // Dispatch Events (Webhooks) - ONLY for incoming messages (non-echo)
             if (!isEcho) {
                 try {
                     await webhookDispatcher.dispatch(companyId, 'message_received', {
@@ -1090,21 +1008,58 @@ async function processIncomingInstagramMessage(event: any, companyId: string) {
                         channel: 'instagram'
                     });
                 } catch (e) { console.error(e); }
-
-                if (isNewConversation) {
-                    try {
-                        await UserNotificationsService.notifyNewConversation(companyId, conversation.id, contact.name || contactExternalId);
-                    } catch (e) { console.error(e); }
-                }
-
-                // Trigger Automation Engine
-                if (conversation.id && newMessage.id) {
-                    await processIncomingMessageTrigger(conversation.id, newMessage.id);
-                }
             } else {
                 console.log(`[Instagram Webhook] Echo message saved as AGENT activity (Connection: ${connection.config_name})`);
             }
+
+            return {
+                conversationId: conversation.id,
+                newMessageId: newMessage.id,
+                isNewConversation,
+                contactId: contact.id,
+                contactName: contact.name,
+                contactPhone: contact.phone,
+                aiActive: conversation.aiActive,
+                newMessage,
+            };
         });
+
+        // === AFTER TRANSACTION COMMIT ===
+        if (result && result.newMessageId) {
+            // 1. Emit Realtime Event
+            emitToCompany(companyId, 'chat:new-message', {
+                conversationId: result.conversationId,
+                messageId: result.newMessageId,
+                content: messageContent,
+                contentType: result.newMessage.contentType,
+                isFromMe: isEcho,
+                senderType: isEcho ? 'AGENT' : 'CONTACT',
+                mediaUrl: result.newMessage.mediaUrl,
+                timestamp: new Date().toISOString(),
+                contactName: result.contactName,
+                contactPhone: result.contactPhone,
+            });
+            emitToCompany(companyId, 'inbox:update', { timestamp: Date.now() });
+
+            // 2. Triggers (Notifications and Automation)
+            if (result.isNewConversation) {
+                try {
+                    await UserNotificationsService.notifyNewConversation(companyId, result.conversationId, result.contactName || contactExternalId);
+                } catch (e) { console.error(e); }
+            }
+
+            if (!isEcho) {
+                setTimeout(async () => {
+                    if (result.contactId && result.aiActive !== false) {
+                        try {
+                            const resumed = await resumeFlowForContact(result.contactId, messageContent || '', companyId);
+                            if (resumed) return;
+                        } catch (err) {}
+                    }
+                    await processIncomingMessageTrigger(result.conversationId, result.newMessageId);
+                }, 500);
+            }
+        }
 
     } catch (err) {
         console.error(`❌ [Instagram Webhook] Erro ao processar mensagem:`, err);

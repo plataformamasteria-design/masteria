@@ -1,12 +1,13 @@
 'use client';
 
 import React, { memo } from 'react';
+import { NodePropsV4 } from './types';
 import { Position } from '@xyflow/react';
 import { GitBranch } from 'lucide-react';
 import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
-export const ConditionNodeV4 = memo(({ data, selected }: any) => {
+export const ConditionNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     const hasConfig = !!(data.condition_type);
 
     const CONDITION_LABELS: Record<string, string> = {

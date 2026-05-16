@@ -47,10 +47,18 @@ function Loading() {
 }
 
 import { fetchInitialConversations, fetchTemplates } from '@/app/actions/chat';
+import { getUserSession } from '@/app/actions';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 async function DataLoader() {
+  const session = await getUserSession();
+  
+  if (session.error || !session.user?.companyId) {
+    redirect('/login?error=token_invalido');
+  }
+
   const [conversations, templates] = await Promise.all([
     fetchInitialConversations(),
     fetchTemplates()

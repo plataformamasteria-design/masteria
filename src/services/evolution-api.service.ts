@@ -250,26 +250,40 @@ export class EvolutionApiService {
         const config = this.getConfig();
         
         const isUrl = urlOrBase64.startsWith('http');
-        const mediaField = isUrl ? urlOrBase64 : urlOrBase64;
+        const mediaField = urlOrBase64; // already data:mime... or URL
         
-        let mediatype = mediaType;
         if (mediaType === 'audio') {
-             mediatype = 'audio';
+            const body: any = {
+                number,
+                audio: mediaField,
+                delay: 100
+            };
+
+            const response = await fetch(`${config.url}/message/sendWhatsAppAudio/${instanceName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': config.apiKey,
+                },
+                body: JSON.stringify(body),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to send audio: ${errorText}`);
+            }
+
+            return response.json();
         }
 
         const body: any = {
             number,
-            mediatype,
+            mediatype: mediaType,
             media: mediaField,
         };
 
         if (caption) body.caption = caption;
         if (fileName) body.fileName = fileName;
-
-        // Force PTT for audio (Voice Note)
-        if (mediaType === 'audio') {
-            body.options = { ptt: true };
-        }
 
         const response = await fetch(`${config.url}/message/sendMedia/${instanceName}`, {
             method: 'POST',
@@ -286,6 +300,30 @@ export class EvolutionApiService {
         }
 
         return response.json();
+    }
+
+    async fetchProfilePictureUrl(instanceName: string, number: string) {
+        const config = this.getConfig();
+        try {
+            const response = await fetch(`${config.url}/chat/fetchProfilePictureUrl/${instanceName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': config.apiKey,
+                },
+                body: JSON.stringify({ number })
+            });
+
+            if (!response.ok) {
+                return null;
+            }
+
+            const data = await response.json();
+            return data?.profilePictureUrl || null;
+        } catch (e) {
+            console.error(`[Evolution API] Falha ao buscar avatar de ${number}`, e);
+            return null;
+        }
     }
 
     async fetchGroups(instanceName: string) {

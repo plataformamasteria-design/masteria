@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getPersonaPromptSections, assembleDynamicPrompt } from '@/lib/prompt-utils';
+import { resolveAIKeys } from '@/lib/ai-keys-resolver';
 
 function getValidOpenAIModel(modelName: string | undefined): string {
     if (!modelName) return 'gpt-4o-mini';
@@ -20,7 +21,9 @@ function getValidOpenAIModel(modelName: string | undefined): string {
 
 export async function POST(req: NextRequest) {
     try {
+        console.log('[SIMULATOR AI] Request received');
         const body = await req.json();
+        console.log('[SIMULATOR AI] Body parsed:', Object.keys(body));
         const { 
             simulate_ai_virtual, 
             simulate_ai_node,
@@ -35,6 +38,7 @@ export async function POST(req: NextRequest) {
         // Extract organizationId safely, fallback to a dummy string to bypass if not found
         // Since we are simulating, we mainly care about the personaId.
         const orgId = body.organization_id || 'sim-org';
+        const resolvedKeys = await resolveAIKeys(orgId);
 
         // ==== INJECT PERSONA PROMPT IF APPLICABLE ====
         let finalSystemMessage = config.system_message || '';
@@ -60,7 +64,7 @@ export async function POST(req: NextRequest) {
             const systemPrompt = `Você é um classificador de intenções avaliando o histórico de um diálogo. Baseado em TODO o contexto da conversa, classifique qual foi a intenção principal do usuário neste atendimento em EXATAMENTE UMA destas opções: ${routeLabels}.\nSe não for nenhuma delas, responda "OUTROS". Responda APENAS com a palavra da opção exata.`;
             
             if (isGemini) {
-                const geminiKey = process.env.GEMINI_API_KEY;
+                const geminiKey = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_AGENTS1;
                 if (!geminiKey) return NextResponse.json({ error: 'No Gemini API Key found' }, { status: 500 });
                 const genAI = new GoogleGenerativeAI(geminiKey);
                 const model = genAI.getGenerativeModel({ model: config.model, systemInstruction: systemPrompt });
@@ -71,7 +75,7 @@ export async function POST(req: NextRequest) {
                 const result = await model.generateContent(fullConversation);
                 return NextResponse.json({ intent: result.response.text().trim() || 'OUTROS', total_tokens: 0 });
             } else {
-                const apiKey = process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
+                const apiKey = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
                 if (!apiKey) return NextResponse.json({ error: 'No OpenAI API Key found' }, { status: 500 });
                 const openai = new OpenAI({ apiKey });
                 
@@ -97,7 +101,7 @@ export async function POST(req: NextRequest) {
         // ==== SIMULATE AI NODE ====
         if (simulate_ai_virtual || simulate_ai_node) {
             if (isGemini) {
-                const geminiKey = process.env.GEMINI_API_KEY;
+                const geminiKey = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_AGENTS1;
                 if (!geminiKey) return NextResponse.json({ error: 'No Gemini API Key found' }, { status: 500 });
                 
                 const genAI = new GoogleGenerativeAI(geminiKey);
@@ -127,7 +131,7 @@ export async function POST(req: NextRequest) {
 
                 return NextResponse.json({ response: responseText.trim(), total_tokens: 0 });
             } else {
-                const apiKey = process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
+                const apiKey = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
                 if (!apiKey) return NextResponse.json({ error: 'No OpenAI API Key found' }, { status: 500 });
                 const openai = new OpenAI({ apiKey });
                 

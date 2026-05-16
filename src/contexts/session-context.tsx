@@ -34,7 +34,7 @@ function MainContentInner({ children }: { children: ReactNode }): JSX.Element {
   const isFullHeight = layoutMode === 'full-height';
 
   const mainClasses = isFullHeight
-    ? 'flex-1 min-h-0 overflow-hidden bg-background p-4 sm:p-6 md:p-8 flex flex-col'
+    ? 'flex-1 min-h-0 overflow-hidden bg-background flex flex-col'
     : 'flex-1 overflow-y-auto bg-background p-4 sm:p-6 md:p-8 pb-24 md:pb-8';
 
   const contentWrapperClasses = isFullHeight

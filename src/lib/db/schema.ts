@@ -637,6 +637,7 @@ export const kanbanLeads = pgTable('kanban_leads', {
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   externalId: text('external_id'),
   externalProvider: text('external_provider'),
+  status: text('status').default('ACTIVE').notNull(),
 }, (table) => ({
   companyBoardIdx: sql`CREATE INDEX IF NOT EXISTS kanban_leads_company_board_idx ON ${table} (company_id, board_id)`,
   companyStageIdx: sql`CREATE INDEX IF NOT EXISTS kanban_leads_company_stage_idx ON ${table} (company_id, stage_id)`,

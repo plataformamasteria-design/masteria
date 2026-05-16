@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo } from 'react';
+import { NodePropsV4 } from './types';
 import { Position } from '@xyflow/react';
 import {
     Zap, MessageSquare, Globe, CreditCard, ShoppingBag,
@@ -30,7 +31,7 @@ const TRIGGER_MAP: Record<string, {
 const DEFAULT_TRIGGER = { icon: Zap, label: 'Configurar Gatilho', color: 'amber' as NodeColorKey, badge: 'Trigger' };
 
 // ─── Componente ──────────────────────────────────────────────────────────────
-export const TriggerNodeV4 = memo(({ data, selected }: any) => {
+export const TriggerNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     const triggerType = data.triggerType || '';
     const cfg = TRIGGER_MAP[triggerType] ?? DEFAULT_TRIGGER;
     const TriggerIcon = cfg.icon;
