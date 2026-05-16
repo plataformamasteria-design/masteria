@@ -1689,7 +1689,17 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
                         is_sandbox: useVirtualLead
                     })
                 })
-                .then(res => res.json())
+                .then(async res => {
+                    if (!res.ok) {
+                        let errMsg = `Erro HTTP ${res.status}`;
+                        try {
+                            const errData = await res.json();
+                            errMsg = errData.error || errMsg;
+                        } catch(e) {}
+                        throw new Error(errMsg);
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     removeMessage(typingMsgId);
                     if (data.tokens) {
@@ -1738,7 +1748,17 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
                         is_sandbox: useVirtualLead
                     })
                 })
-                .then(res => res.json())
+                .then(async res => {
+                    if (!res.ok) {
+                        let errMsg = `Erro HTTP ${res.status}`;
+                        try {
+                            const errData = await res.json();
+                            errMsg = errData.error || errMsg;
+                        } catch(e) {}
+                        throw new Error(errMsg);
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     removeMessage(typingMsgId);
                     if (data.tokens) {

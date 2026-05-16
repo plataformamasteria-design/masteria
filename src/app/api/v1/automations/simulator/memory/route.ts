@@ -98,24 +98,30 @@ export async function POST(request: NextRequest) {
 
         const openai = new OpenAI({ apiKey });
         
-        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda do comportamento dela.\nSe a I.A cometeu algum erro, NÃO seguiu alguma instrução, OU se o LEAD (usuário) deu uma nova regra, correção ou comando explícito para a I.A seguir, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória dela.\nA nota deve ser uma instrução direta e imperativa. Exemplo: "Nunca dê preços antes de perguntar o nome", ou "Você deve assumir o nome Mark se o cliente pedir".`;
+        const customInstruction = reflection_prompt || `Com base no que a I.A já devia saber (1 e 2) e no que ela fez no atendimento recente (3), faça uma investigação profunda da conversa.\nSe o LEAD (usuário) der qualquer ORDEM, REGRA ou RESTRIÇÃO (ex: "Não anote isso", "Meu nome é X", "Não fale sobre Y"), OU se a I.A cometeu um erro óbvio, formule UMA ÚNICA NOTA (máx 2-3 frases) de aprendizado direto para ser ADICIONADA à memória.\nA nota deve ser imperativa e incorporar a regra do Lead. Exemplo: "Você deve tratar o usuário como Mark sempre que ele pedir" ou "Nunca anote a idade do cliente se ele proibir".`;
 
-        const prompt = `Você é um supervisor de qualidade de I.A.
-        
-1. INSTRUÇÕES ORIGINAIS DA I.A:
-${system_message || '(Sem instruções originais)'}
+        const prompt = `Você é o SUPERVISOR DE APRENDIZADO DE UMA I.A.
+Sua única função é ler a CONVERSA abaixo e extrair NOVAS REGRAS DE COMPORTAMENTO para a I.A usar no futuro.
 
-2. MEMÓRIA DE APRENDIZADO ATUAL:
-${existing_notes || '(Nenhuma memória anterior)'}
+1. INSTRUÇÕES ATUAIS DA I.A:
+${system_message || '(Nenhuma)'}
 
-3. ATENDIMENTO RECENTE:
+2. MEMÓRIA ATUAL DA I.A:
+${existing_notes || '(Nenhuma)'}
+
+3. CONVERSA PARA ANÁLISE:
 ${formattedHistory}
+
+=== INSTRUÇÃO DE AVALIAÇÃO ===
+Verifique a CONVERSA (3) procurando rigorosamente por:
+A) O Lead (humano) deu alguma ORDEM, RESTRIÇÃO ou REGRA que a I.A deve seguir? (ex: "Me chame de X", "Não anote Y", "A partir de agora faça Z").
+B) A I.A cometeu algum erro óbvio que violou as instruções (1) ou a memória (2)?
 
 ${customInstruction}
 
 REGRAS OBRIGATÓRIAS DE SAÍDA:
-- Se houver qualquer falha da I.A. OU qualquer instrução/correção explícita dada pelo Lead, retorne APENAS a nova nota de aprendizado.
-- Se o atendimento foi perfeito E o Lead não deu nenhuma instrução ou correção de comportamento, responda exatamente "NADA A MELHORAR".`;
+- Se (A) ou (B) aconteceram, escreva APENAS a nova nota de aprendizado (ex: "Sempre obedeça quando o usuário disser para não anotar algo").
+- Se a conversa foi apenas bate-papo normal e não há NENHUMA regra nova ou erro a extrair, escreva EXATAMENTE: "NADA A MELHORAR".`;
 
         const completion = await openai.chat.completions.create({
           model: 'gpt-4o',
