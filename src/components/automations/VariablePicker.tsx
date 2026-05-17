@@ -36,13 +36,19 @@ export function VariablePicker({ onInsert, compact = false }: VariablePickerProp
   useEffect(() => {
     if (!currentOrganization?.id) return;
     (async () => {
-      await (supabase as any).rpc('ensure_system_custom_fields', { org_id: currentOrganization.id });
-      const { data } = await (supabase as any)
-        .from('chat_custom_fields')
-        .select('id, field_key, field_label, field_type, is_system')
-        .eq('organization_id', currentOrganization.id)
-        .order('order_position');
-      if (data) setFields(data);
+      try {
+        if (typeof (supabase as any).rpc === 'function') {
+          await (supabase as any).rpc('ensure_system_custom_fields', { org_id: currentOrganization.id });
+        }
+        const { data } = await (supabase as any)
+          .from('chat_custom_fields')
+          .select('id, field_key, field_label, field_type, is_system')
+          .eq('organization_id', currentOrganization.id)
+          .order('order_position');
+        if (data) setFields(data);
+      } catch (err) {
+        console.error("Failed to load variables:", err);
+      }
     })();
   }, [currentOrganization?.id]);
 

@@ -572,6 +572,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                     nodes={nodes}
                     edges={edges}
                     automationId={flowId !== 'new' ? flowId : undefined}
+                    disableLearning={true}
                     onClose={() => setIsSimulatorOpen(false)}
                     onHighlightNode={(nodeId) => {
                         if (nodeId) {

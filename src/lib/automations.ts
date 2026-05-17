@@ -53,6 +53,49 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
             });
             if (!existingFlow) {
                 isNew = true;
+            } else {
+                // Preservar learning_notes se a UI enviar vazio, mas o DB tiver dados (Evita o overwrite por stale state do Editor)
+                if (existingFlow.visualData && parsedVisualData?.nodes) {
+                    const dbVisual = typeof existingFlow.visualData === 'string' ? JSON.parse(existingFlow.visualData as string) : existingFlow.visualData as any;
+                    if (dbVisual?.nodes) {
+                        parsedVisualData.nodes.forEach((incomingNode: any) => {
+                            if (incomingNode.type === 'ai_agent') {
+                                const dbNode = dbVisual.nodes.find((n: any) => n.id === incomingNode.id);
+                                if (dbNode) {
+                                    const dbNotes = dbNode.data?.learning_notes || dbNode.data?.config?.learning_notes;
+                                    const incomingNotes = incomingNode.data?.learning_notes || incomingNode.data?.config?.learning_notes;
+                                    
+                                    if (!incomingNotes && dbNotes) {
+                                        incomingNode.data = incomingNode.data || {};
+                                        incomingNode.data.config = incomingNode.data.config || {};
+                                        incomingNode.data.learning_notes = dbNotes;
+                                        incomingNode.data.config.learning_notes = dbNotes;
+                                        
+                                        // Update the original visualData object since parsedVisualData is what we just parsed, but visualData is saved
+                                        const origNode = visualData.nodes.find((n: any) => n.id === incomingNode.id);
+                                        if (origNode) {
+                                            origNode.data = origNode.data || {};
+                                            origNode.data.config = origNode.data.config || {};
+                                            origNode.data.learning_notes = dbNotes;
+                                            origNode.data.config.learning_notes = dbNotes;
+                                        }
+
+                                        // Update steps
+                                        if (steps && Array.isArray(steps)) {
+                                            const incomingStep = steps.find((s: any) => s.id === incomingNode.id);
+                                            if (incomingStep) {
+                                                incomingStep.data = incomingStep.data || {};
+                                                incomingStep.data.config = incomingStep.data.config || {};
+                                                incomingStep.data.learning_notes = dbNotes;
+                                                incomingStep.data.config.learning_notes = dbNotes;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
             }
         }
 

@@ -54,49 +54,56 @@ export interface FlowSimulatorUIProps {
     onCorrectionsGenerated?: (corrections: FlowCorrection[]) => void;
     onMemoryUpdated?: (nodeId: string, notes: string) => void;
     standalone?: boolean;
+    disableLearning?: boolean;
 }
 
 // -- Helpers --
 export const NODE_TYPE_LABELS: Record<string, string> = {
-    send_message: "Enviar Mensagem",
-    interactive_message: "Mensagem Interativa",
-    send_image: "Enviar Imagem",
-    send_audio: "Enviar Áudio",
-    send_document: "Enviar Documento",
-    send_video: "Enviar Vídeo",
-    condition: "Condição",
-    delay: "Aguardar",
-    ask_question: "Fazer Pergunta",
-    wait_response: "Aguardar Resposta",
-    crm_move: "Mover no CRM",
+    trigger: 'Gatilho Inicial',
+    send_message: 'Enviar Mensagem',
+    interactive_message: 'Mensagem Interativa',
+    send_image: 'Enviar Imagem',
+    send_audio: 'Enviar Áudio',
+    send_document: 'Enviar Documento',
+    send_video: 'Enviar Vídeo',
+    send_template: 'Enviar Template',
+    ask_question: 'Fazer Pergunta',
+    capture_info: 'Capturar Dado',
+    wait_response: 'Aguardar Resposta',
+    condition: 'Condição (Se)',
+    filter: 'Filtro',
+    router: 'Roteador',
+    delay: 'Atraso',
+    crm_move: 'Mover Kanban',
+    bot_toggle: 'Controlar Robô',
+    stop_bot: 'Parar Robô',
+    loop_restart: 'Reiniciar Loop',
+    ai_agent: 'Agente IA',
+    intent_router: 'Classificador IA',
+    follow_up_ai: 'Follow-Up IA',
+    send_ai_response: 'Resposta IA',
+    http_request: 'HTTP Request',
+    code: 'Executar Código',
+    edit_fields: 'Editar Campos',
+    lookup_lead: 'Buscar Lead',
+    add_note: 'Adicionar Nota',
+    internal_message: 'Mensagem Interna',
+    add_task: 'Adicionar Tarefa',
+    assign_user: 'Atribuir Lead',
+    add_tag: 'Adicionar Tag',
     action: "Ação",
-    bot_toggle: "Robô I.A",
-    stop_bot: "Parar Automação",
-    loop_restart: "Loop (Reiniciar)",
-    capture_info: "Capturar Informação",
-    ai_agent: "Agente I.A",
-    follow_up_ai: "Follow Up I.A",
-    intent_router: "Classificador de Intenções",
-    send_ai_response: "Enviar Resposta I.A",
     check_sender: "Checar Remetente",
-    http_request: "HTTP Request",
-    code: "Código",
-    edit_fields: "Edit Fields",
-    filter: "Filtro",
-    router: "Caminho",
     financeiro: "Financeiro",
     agenda: "Agendar Evento",
     marketing_data: "Dados de Marketing",
     wa_lists: "Listas WhatsApp",
-    send_meta_template: "Template Meta",
     ab_test: "Teste A/B",
     react_message: "Reagir Mensagem",
     send_email: "Enviar E-mail",
     internal_notification: "Notificação Interna",
     business_hours: "Horário Comercial",
     check_tag: "Verificar Tag",
-    add_task: "Adicionar Tarefa",
-    internal_message: "Mensagem Interna",
+    send_meta_template: "Template Meta",
 };
 
 export const MEDIA_ICONS: Record<string, React.ElementType> = {
@@ -168,7 +175,7 @@ function comparePhones(phone1: string, phone2: string): boolean {
 }
 
 // -- Component --
-export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, onMemoryUpdated }: FlowSimulatorUIProps) {
+export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, onMemoryUpdated, disableLearning }: FlowSimulatorUIProps) {
     const { currentOrganization } = useOrganization();
     const [messages, setMessages] = useState<SimMessage[]>([]);
     const [simulatorLogId, setSimulatorLogId] = useState<string | null>(null);
@@ -217,6 +224,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
     const [showLeadSelector, setShowLeadSelector] = useState(true);
     const [searchingLeads, setSearchingLeads] = useState(false);
     const [tokensUsed, setTokensUsed] = useState(0);
+    const [learningDecision, setLearningDecision] = useState<'pending' | 'generating' | 'done' | 'skipped' | null>(null);
     const [useVirtualLead, setUseVirtualLead] = useState(false);
     const [timeoutCountdown, setTimeoutCountdown] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -293,6 +301,16 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
     const handleSendInput = useCallback(() => {
         if (!userInput.trim() || !resolveInputRef.current) return;
         const text = userInput.trim();
+        
+        if (text.toLowerCase() === "pular" || text.toLowerCase() === "timeout") {
+            setUserInput("");
+            setWaitingInput(false);
+            setTimeoutCountdown(null);
+            resolveInputRef.current("__TIMEOUT__");
+            resolveInputRef.current = null;
+            return;
+        }
+
         addMessage({ type: "user", content: text });
         virtualHistoryRef.current.push({ role: "user", content: text });
         setUserInput("");
@@ -304,6 +322,15 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
     const simulateUserInput = useCallback((text: string) => {
         if (!text.trim() || !resolveInputRef.current) return;
+        
+        if (text === "__TIMEOUT__") {
+            setWaitingInput(false);
+            setTimeoutCountdown(null);
+            resolveInputRef.current("__TIMEOUT__");
+            resolveInputRef.current = null;
+            return;
+        }
+
         addMessage({ type: "user", content: text });
         virtualHistoryRef.current.push({ role: "user", content: text });
         setWaitingInput(false);
@@ -317,25 +344,63 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         const input = document.createElement("input");
         input.type = "file";
         input.accept = mediaType === "image" ? "image/*" : mediaType === "audio" ? "audio/*" : "*/*";
-        input.onchange = (e: Event) => {
+        input.onchange = async (e: Event) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (!file || !resolveInputRef.current) return;
+            
             const icon = mediaType === "image" ? "🖼️" : mediaType === "audio" ? "🎵" : "📎";
             const label = `${icon} ${file.name}`;
             const url = URL.createObjectURL(file);
+            
+            // Render user's media immediately
             addMessage({
                 type: "user",
-                content: label,
+                content: "", // Empty so no text displays below the media
                 media: { type: mediaType, url, name: file.name },
             });
-            virtualHistoryRef.current.push({ role: "user", content: `[Enviou ${mediaType}: ${file.name}]` });
+
+            const sysTypingId = addMessage({ type: "typing", content: "Extraindo dados da mídia..." });
+
+            let historyContent = `[Enviou ${mediaType}: ${file.name}]`;
+
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const res = await fetch("/api/v1/automations/simulator/transcribe", {
+                    method: "POST",
+                    body: formData,
+                });
+                
+                let data;
+                try {
+                    data = await res.json();
+                } catch (jsonErr) {
+                    throw new Error(`Erro no servidor (A rota não retornou JSON válido). Status: ${res.status}`);
+                }
+
+                removeMessage(sysTypingId);
+
+                if (data.success && data.transcription) {
+                    historyContent += `\n[Conteúdo Extraído/Transcrição: ${data.transcription}]`;
+                    addMessage({ type: "system", content: `✨ Arquivo lido (Transcrição extraída com sucesso).` });
+                } else if (data.error) {
+                    addMessage({ type: "system", content: `⚠️ Não foi possível ler o arquivo: ${data.error}` });
+                }
+            } catch (err: any) {
+                removeMessage(sysTypingId);
+                addMessage({ type: "system", content: `❌ Falha ao processar arquivo: ${err.message}` });
+            }
+
+            virtualHistoryRef.current.push({ role: "user", content: historyContent });
+            
             setWaitingInput(false);
             setTimeoutCountdown(null);
-            resolveInputRef.current(label);
+            resolveInputRef.current(historyContent);
             resolveInputRef.current = null;
         };
         input.click();
-    }, [addMessage]);
+    }, [addMessage, removeMessage]);
 
     // Wait for user input with optional timeout (in seconds)
     const waitForUserInputWithTimeout = useCallback((timeoutSeconds: number): Promise<string> => {
@@ -659,12 +724,17 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 await simDelay(1000);
                 removeMessage(typingId);
                 const mediaType = nodeType.replace("send_", "");
-                const displayContent = caption || `📎 ${NODE_TYPE_LABELS[nodeType]}`;
+                
                 addMessage({
-                    type: "bot", content: displayContent, nodeId, nodeType,
+                    type: "bot", content: caption, nodeId, nodeType,
                     media: { type: mediaType, url: config.file_url, name: config.file_name },
                 });
-                addBotToHistory(displayContent);
+                
+                if (caption) {
+                    addBotToHistory(caption);
+                } else {
+                    addBotToHistory(`[Enviou mídia: ${mediaType}]`);
+                }
                 await simDelay(400);
                 return nextNodes[0]?.targetId || null;
             }
@@ -1027,23 +1097,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
             case "follow_up_ai": {
                 addMessage({ type: "system", content: `💌 ${nodeLabel} | Modelo: ${config.model || "gpt-4o-mini"}`, nodeId, nodeType });
 
-                const timeoutAmount = parseInt(config.timeout_amount || "8");
-                const timeoutUnit = config.timeout_unit || "hours";
-                let tSec = timeoutUnit === "hours" ? timeoutAmount * 3600 : timeoutUnit === "days" ? timeoutAmount * 86400 : timeoutUnit === "minutes" ? timeoutAmount * 60 : timeoutAmount;
-                const simSec = Math.min(tSec, 60); // Cap at 60s
-                const displayT = timeoutUnit === "hours" ? `${timeoutAmount}h` : timeoutUnit === "days" ? `${timeoutAmount}d` : timeoutUnit === "minutes" ? `${timeoutAmount}min` : `${timeoutAmount}s`;
-
-                addMessage({ type: "system", content: `⏳ Aguardando se o lead não responde (${displayT}, simulação restrita a ${simSec}s)...`, nodeId, nodeType });
-
-                const response = await waitForUserInputWithTimeout(simSec);
-                if (response !== "__TIMEOUT__") {
-                    addMessage({ type: "system", content: `✅ O lead respondeu! Follow-up cancelado.`, nodeId, nodeType });
-                    const respEdge = nextNodes.find(n => n.handleId === "responded");
-                    if (respEdge) return respEdge.targetId;
-                    return showRouteChoices(nodeId, nodeType, nodeLabel, nextNodes);
-                }
-
-                addMessage({ type: "system", content: `⏱️ Tempo esgotado (lead não respondeu). Gerando Follow Up I.A...`, nodeId, nodeType });
+                addMessage({ type: "system", content: `⏱️ Gerando mensagem de Follow Up I.A...`, nodeId, nodeType });
 
                 if (isVirtual && virtualHistoryRef.current.filter(m => m.role === "user").length === 0) {
                     addMessage({ type: "system", content: `💬 Digite uma mensagem de contexto para gerar o follow-up:`, nodeId, nodeType });
@@ -1081,6 +1135,25 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 } else {
                     addMessage({ type: "bot", content: `[${nodeLabel} — Erro I.A]`, nodeId, nodeType });
                 }
+
+                // NOW wait for the response to the follow-up
+                const timeoutAmount = parseInt(config.timeout_amount || "8");
+                const timeoutUnit = config.timeout_unit || "hours";
+                let tSec = timeoutUnit === "hours" ? timeoutAmount * 3600 : timeoutUnit === "days" ? timeoutAmount * 86400 : timeoutUnit === "minutes" ? timeoutAmount * 60 : timeoutAmount;
+                const simSec = Math.min(tSec, 60); // Cap at 60s
+                const displayT = timeoutUnit === "hours" ? `${timeoutAmount}h` : timeoutUnit === "days" ? `${timeoutAmount}d` : timeoutUnit === "minutes" ? `${timeoutAmount}min` : `${timeoutAmount}s`;
+
+                addMessage({ type: "system", content: `⏳ Aguardando resposta ao Follow-Up (${displayT}, simulação restrita a ${simSec}s)...`, nodeId, nodeType });
+
+                const response = await waitForUserInputWithTimeout(simSec);
+                if (response !== "__TIMEOUT__") {
+                    addMessage({ type: "system", content: `✅ O lead respondeu ao Follow-Up!`, nodeId, nodeType });
+                    const respEdge = nextNodes.find(n => n.handleId === "responded");
+                    if (respEdge) return respEdge.targetId;
+                    return showRouteChoices(nodeId, nodeType, nodeLabel, nextNodes);
+                }
+
+                addMessage({ type: "system", content: `⏱️ Tempo esgotado (lead não respondeu ao Follow-Up).`, nodeId, nodeType });
 
                 const notRespEdge = nextNodes.find(n => n.handleId === "not_responded");
                 if (notRespEdge) return notRespEdge.targetId;
@@ -1168,6 +1241,34 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 else if (actionType === "assign_agent") actionDesc = `Atribuir Agente Fixo`;
 
                 addMessage({ type: "system", content: `⚡ Ação Simulada: ${actionDesc}`, nodeId, nodeType });
+                await simDelay(300);
+                return nextNodes[0]?.targetId || null;
+            }
+
+            case "lookup_lead": {
+                const searchBy = config.identifier_type || "telefone";
+                addMessage({ type: "system", content: `🔍 Buscando Lead por ${searchBy}...`, nodeId, nodeType });
+                await simDelay(500);
+                addMessage({ type: "system", content: `✅ Lead encontrado na base (simulação)`, nodeId, nodeType });
+                return nextNodes[0]?.targetId || null;
+            }
+
+            case "assign_user": {
+                const assignType = config.assign_type || "user";
+                addMessage({ type: "system", content: `👤 Atendimento delegado para ${assignType === 'team' ? 'equipe' : 'usuário'}`, nodeId, nodeType });
+                await simDelay(400);
+                return nextNodes[0]?.targetId || null;
+            }
+
+            case "add_note": {
+                const noteContent = interpolateWithContext(config.note || "(vazio)");
+                addMessage({ type: "internal", content: noteContent, nodeId, nodeType });
+                await simDelay(400);
+                return nextNodes[0]?.targetId || null;
+            }
+
+            case "add_tag": {
+                addMessage({ type: "system", content: `🏷️ Tag adicionada ao lead`, nodeId, nodeType });
                 await simDelay(300);
                 return nextNodes[0]?.targetId || null;
             }
@@ -1350,13 +1451,14 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 return showRouteChoices(nodeId, nodeType, nodeLabel, nextNodes);
             }
 
+            case "send_template":
             case "send_meta_template": {
                 const templateName = config.template_name || "(não selecionado)";
                 addMessage({ type: "system", content: `📲 Template Meta: ${templateName}`, nodeId, nodeType });
                 const typingId = addMessage({ type: "typing", content: "", nodeId, nodeType });
                 await simDelay(1500);
                 removeMessage(typingId);
-                addMessage({ type: "bot", content: `[Template Meta: ${templateName}]`, nodeId, nodeType });
+                addMessage({ type: "bot", content: `[Template: ${templateName}]`, nodeId, nodeType });
                 return nextNodes[0]?.targetId || null;
             }
 
@@ -1664,127 +1766,77 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
         if (!abortRef.current) {
             setSimFinished(true);
             addMessage({ type: "system", content: "✅ Simulação concluída!" });
+
+            const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
+            if (aiNode && !disableLearning && virtualHistoryRef.current.length >= 3 && !simulationContextRef.current._memory_saved) {
+                setLearningDecision('pending');
+            } else {
+                setLearningDecision(null);
+            }
         }
         setIsRunning(false);
         setCurrentNodeId(null);
         onHighlightNode?.(null);
+    }, [nodes, processNode, addMessage, removeMessage, onHighlightNode, automationId, onCorrectionsGenerated, onMemoryUpdated, disableLearning]);
 
-        // Auto-trigger learning at the end of the simulation
-        if (virtualHistoryRef.current.length >= 3 && !simulationContextRef.current._memory_saved) {
-            simulationContextRef.current._memory_saved = true;
-            const historySnapshot = [...virtualHistoryRef.current];
-            const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
-            if (aiNode) {
-                const typingMsgId = addMessage({ type: "typing", content: "🧠 I.A. refletindo sobre o atendimento para auto-aprendizado..." });
-                fetch('/api/v1/automations/simulator/memory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        ruleId: automationId || 'new',
-                        nodeId: aiNode.id,
-                        virtual_history: historySnapshot,
-                        system_message: (aiNode.data as any)?.system_message || (aiNode.data as any)?.config?.system_message || "",
-                        existing_notes: (aiNode.data as any)?.learning_notes || (aiNode.data as any)?.config?.learning_notes || "",
-                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || "",
-                        is_sandbox: useVirtualLead
-                    })
-                })
-                .then(async res => {
-                    if (!res.ok) {
-                        let errMsg = `Erro HTTP ${res.status}`;
-                        try {
-                            const errData = await res.json();
-                            errMsg = errData.error || errMsg;
-                        } catch(e) {}
-                        throw new Error(errMsg);
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    removeMessage(typingMsgId);
-                    if (data.tokens) {
-                        setTokensUsed(prev => prev + data.tokens);
-                    }
-                    if (data.success && data.fullNotes) {
-                        addMessage({ type: "system", content: `🧠 Memória da I.A. atualizada após reflexão! (${data.tokens || 0} tokens gastos na revisão)` });
-                        if (onMemoryUpdated) {
-                            onMemoryUpdated(aiNode.id, data.fullNotes);
-                        }
-                    } else if (data.message === 'Nenhum aprendizado necessário gerado') {
-                        addMessage({ type: "system", content: `🧠 I.A. revisou o atendimento e não encontrou erros. (${data.tokens || 0} tokens gastos)` });
-                    } else if (data.message) {
-                        addMessage({ type: "system", content: `⚠️ Aviso de Memória: ${data.message}` });
-                    } else if (data.error) {
-                        addMessage({ type: "system", content: `❌ Erro na Memória: ${data.error}` });
-                    }
-                })
-                .catch(err => {
-                    removeMessage(typingMsgId);
-                    console.error('Error saving simulator memory:', err);
-                    addMessage({ type: "system", content: `❌ Falha ao tentar atualizar memória: ${err.message}` });
-                });
-            }
+    const triggerLearning = useCallback(async (skip: boolean) => {
+        if (skip) {
+            setLearningDecision('skipped');
+            return;
         }
-    }, [nodes, processNode, addMessage, removeMessage, onHighlightNode, automationId, onCorrectionsGenerated, onMemoryUpdated]);
+
+        const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
+        if (!aiNode) {
+            setLearningDecision('skipped');
+            return;
+        }
+
+        setLearningDecision('generating');
+        simulationContextRef.current._memory_saved = true;
+        const historySnapshot = [...virtualHistoryRef.current];
+        
+        const typingMsgId = addMessage({ type: "typing", content: "🧠 I.A. refletindo sobre o atendimento para auto-aprendizado..." });
+        
+        try {
+            const res = await fetch('/api/v1/automations/simulator/memory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ruleId: automationId || 'new',
+                    nodeId: aiNode.id,
+                    virtual_history: historySnapshot,
+                    system_message: (aiNode.data as any)?.system_message || (aiNode.data as any)?.config?.system_message || "",
+                    existing_notes: (aiNode.data as any)?.learning_notes || (aiNode.data as any)?.config?.learning_notes || "",
+                    reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || "",
+                    is_sandbox: useVirtualLead
+                })
+            });
+            
+            if (!res.ok) throw new Error(`Erro HTTP ${res.status}`);
+            const data = await res.json();
+            
+            removeMessage(typingMsgId);
+            if (data.tokens) setTokensUsed(prev => prev + data.tokens);
+            
+            if (data.success && data.fullNotes) {
+                addMessage({ type: "system", content: `🧠 Memória da I.A. atualizada após reflexão! (${data.tokens || 0} tokens gastos na revisão)` });
+                if (onMemoryUpdated) onMemoryUpdated(aiNode.id, data.fullNotes);
+            } else if (data.message?.includes('Nenhum aprendizado')) {
+                addMessage({ type: "system", content: `🧠 I.A. revisou o atendimento e não encontrou erros. (${data.tokens || 0} tokens gastos)` });
+            } else if (data.message) {
+                addMessage({ type: "system", content: `⚠️ Aviso de Memória: ${data.message}` });
+            } else if (data.error) {
+                addMessage({ type: "system", content: `❌ Erro na Memória: ${data.error}` });
+            }
+        } catch (err: any) {
+            removeMessage(typingMsgId);
+            addMessage({ type: "system", content: `❌ Falha ao tentar atualizar memória: ${err.message}` });
+        } finally {
+            setLearningDecision('done');
+        }
+    }, [nodes, automationId, addMessage, removeMessage, onMemoryUpdated, useVirtualLead]);
 
     const fullReset = useCallback(() => {
-        // Disparar aprendizado da IA em background antes de resetar (se houver conversa)
-        if (virtualHistoryRef.current.length >= 3 && !simulationContextRef.current._memory_saved) {
-            simulationContextRef.current._memory_saved = true;
-            const historySnapshot = [...virtualHistoryRef.current];
-            const aiNode = nodes.find(n => n.type === 'ai_agent' || n.type === 'ai');
-            if (aiNode) {
-                const typingMsgId = addMessage({ type: "typing", content: "🧠 I.A. refletindo sobre o atendimento para auto-aprendizado..." });
-                fetch('/api/v1/automations/simulator/memory', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        ruleId: automationId || 'new',
-                        nodeId: aiNode.id,
-                        virtual_history: historySnapshot,
-                        system_message: (aiNode.data as any)?.system_message || (aiNode.data as any)?.config?.system_message || "",
-                        existing_notes: (aiNode.data as any)?.learning_notes || (aiNode.data as any)?.config?.learning_notes || "",
-                        reflection_prompt: (aiNode.data as any)?.reflection_prompt || (aiNode.data as any)?.config?.reflection_prompt || "",
-                        is_sandbox: useVirtualLead
-                    })
-                })
-                .then(async res => {
-                    if (!res.ok) {
-                        let errMsg = `Erro HTTP ${res.status}`;
-                        try {
-                            const errData = await res.json();
-                            errMsg = errData.error || errMsg;
-                        } catch(e) {}
-                        throw new Error(errMsg);
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    removeMessage(typingMsgId);
-                    if (data.tokens) {
-                        setTokensUsed(prev => prev + data.tokens);
-                    }
-                    if (data.success && data.fullNotes) {
-                        addMessage({ type: "system", content: `🧠 Memória da I.A. atualizada após reflexão! (${data.tokens || 0} tokens gastos na revisão)` });
-                        if (onMemoryUpdated) {
-                            onMemoryUpdated(aiNode.id, data.fullNotes);
-                        }
-                    } else if (data.message?.includes('Nenhum aprendizado')) {
-                        addMessage({ type: "system", content: `🧠 I.A. revisou o atendimento e não encontrou erros. (${data.tokens || 0} tokens gastos)` });
-                    } else if (data.message) {
-                        addMessage({ type: "system", content: `⚠️ Aviso de Memória: ${data.message}` });
-                    } else if (data.error) {
-                        addMessage({ type: "system", content: `❌ Erro na Memória: ${data.error}` });
-                    }
-                })
-                .catch(err => {
-                    removeMessage(typingMsgId);
-                    console.error('Error saving simulator memory:', err);
-                    addMessage({ type: "system", content: `❌ Falha ao tentar atualizar memória: ${err.message}` });
-                });
-            }
-        }
-
         abortRef.current = true;
         resolveInputRef.current?.("");
         resolveRouteRef.current?.("");
@@ -1907,5 +1959,7 @@ Não inclua crases markdown como \`\`\`json, retorne APENAS o JSON bruto e váli
         currentLeadName,
         selectedLeadRef,
         isVirtualRef,
+        learningDecision,
+        triggerLearning
     };
 }

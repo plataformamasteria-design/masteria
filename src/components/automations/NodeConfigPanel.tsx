@@ -473,7 +473,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
     const params = useParams();
     const [isSavingMemory, setIsSavingMemory] = useState(false);
 
-    const handleSaveMemory = useCallback(async () => {
+    const handleSaveMemory = useCallback(async (notes: string, prompt: string) => {
         const ruleId = flowId || (params?.id as string);
         if (!ruleId || ruleId === 'new') return;
         setIsSavingMemory(true);
@@ -486,7 +486,8 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                     nodeId: node.id,
                     virtual_history: [],
                     system_message: d.system_message || d.config?.system_message || '',
-                    existing_notes: d.learning_notes || '',
+                    existing_notes: notes,
+                    reflection_prompt: prompt,
                     manualUpdate: true
                 })
             });
@@ -495,7 +496,22 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
         } finally {
             setIsSavingMemory(false);
         }
-    }, [params?.id, node.id, d.system_message, d.config?.system_message, d.learning_notes]);
+    }, [params?.id, flowId, node.id, d.system_message, d.config?.system_message]);
+
+    const learningNotesRef = useRef(d.learning_notes);
+    const reflectionPromptRef = useRef(d.reflection_prompt);
+    
+    useEffect(() => {
+        if (d.learning_notes === learningNotesRef.current && d.reflection_prompt === reflectionPromptRef.current) return;
+        
+        const timeout = setTimeout(() => {
+            learningNotesRef.current = d.learning_notes;
+            reflectionPromptRef.current = d.reflection_prompt;
+            handleSaveMemory(d.learning_notes || '', d.reflection_prompt || '');
+        }, 1500);
+        
+        return () => clearTimeout(timeout);
+    }, [d.learning_notes, d.reflection_prompt, handleSaveMemory]);
 
     // Template fetching for send_template node
     const { session } = useSession();
@@ -1777,18 +1793,6 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                             className="text-xs min-h-[80px] rounded-xl bg-violet-50/50 border-violet-100 placeholder:text-violet-300 focus:border-violet-300 focus:ring-violet-200 nodrag nowheel pb-9"
                                             placeholder="Ex: Nunca dê o preço antes de perguntar o nome..."
                                         />
-                                        <div className="absolute bottom-2 right-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-6 px-2 text-[10px] bg-white text-violet-600 border-violet-200 hover:bg-violet-50 hover:text-violet-700"
-                                                onClick={handleSaveMemory}
-                                                disabled={isSavingMemory || !params?.id || params?.id === 'new'}
-                                            >
-                                                {isSavingMemory ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Settings2 className="w-3 h-3 mr-1" />}
-                                                Salvar no Banco
-                                            </Button>
-                                        </div>
                                     </div>
                                 </ConfigSection>
                                 <ConfigSection label="Prompt de Reflexão (Supervisor IA)" hint="Ordem restrita dada ao modelo que avalia a simulação para gerar a memória. Edite apenas se quiser alterar como a IA aprende.">

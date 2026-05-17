@@ -206,3 +206,71 @@ export async function getTestLeadsForSelector(q?: string) {
 export async function getSystemGlobalAiStatus() {
     return { enabled: true };
 }
+
+export async function updateAiNodeConfig(automationId: string, nodeId: string, newPrompt: string, newLearningNotes: string) {
+    const auth = await requireAuthOr401();
+    if ('status' in auth) throw new Error("Unauthorized");
+    const { companyId } = auth;
+
+    const flowV4 = await db.query.automationFlows.findFirst({
+        where: and(eq(automationFlows.id, automationId), eq(automationFlows.companyId, companyId))
+    });
+
+    if (!flowV4) throw new Error("Flow not found");
+
+    const visualData = typeof flowV4.visualData === 'string' ? JSON.parse(flowV4.visualData) : flowV4.visualData as any;
+    if (visualData && visualData.nodes) {
+        const aiNode = visualData.nodes.find((n: any) => n.id === nodeId);
+        if (aiNode) {
+            aiNode.data = aiNode.data || {};
+            aiNode.data.config = aiNode.data.config || {};
+            
+            aiNode.data.prompt = newPrompt;
+            aiNode.data.system_message = newPrompt;
+            aiNode.data.config.prompt = newPrompt;
+            aiNode.data.config.system_message = newPrompt;
+            
+            aiNode.data.learning_notes = newLearningNotes;
+            aiNode.data.config.learning_notes = newLearningNotes;
+        }
+    }
+
+    let executionLogic = typeof flowV4.executionLogic === 'string' ? JSON.parse(flowV4.executionLogic) : flowV4.executionLogic as any[];
+    if (executionLogic && Array.isArray(executionLogic)) {
+        const aiStep = executionLogic.find((s: any) => s.id === nodeId);
+        if (aiStep) {
+            aiStep.data = aiStep.data || {};
+            aiStep.data.config = aiStep.data.config || {};
+            
+            aiStep.data.prompt = newPrompt;
+            aiStep.data.system_message = newPrompt;
+            aiStep.data.config.prompt = newPrompt;
+            aiStep.data.config.system_message = newPrompt;
+            
+            aiStep.data.learning_notes = newLearningNotes;
+            aiStep.data.config.learning_notes = newLearningNotes;
+        }
+    }
+
+    await db.update(automationFlows)
+        .set({ visualData, executionLogic })
+        .where(and(eq(automationFlows.id, automationId), eq(automationFlows.companyId, companyId)));
+
+    const dbNode = await db.query.automationNodes.findFirst({
+        where: and(eq(automationNodes.automationId, automationId), eq(automationNodes.id, nodeId))
+    });
+
+    if (dbNode) {
+        const updatedConfig = { ...(dbNode.config as any) || {} };
+        updatedConfig.prompt = newPrompt;
+        updatedConfig.system_message = newPrompt;
+        updatedConfig.learning_notes = newLearningNotes;
+
+        await db.update(automationNodes)
+            .set({ config: updatedConfig })
+            .where(and(eq(automationNodes.automationId, automationId), eq(automationNodes.id, nodeId)));
+    }
+
+    revalidatePath(`/automacoes/${automationId}`);
+    return { success: true };
+}

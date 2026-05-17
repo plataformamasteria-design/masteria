@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSession } from '@/app/actions';
 import { db } from '@/lib/db';
-import { automationRules, automationFlows } from '@/lib/db/schema';
+import { automationRules, automationFlows, automationNodes } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import OpenAI from 'openai';
 import { resolveAIKeys } from '@/lib/ai-keys-resolver';
 
@@ -161,13 +162,13 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON válido com a seguinte estrutu
 
     if (!flowData.nodes || !Array.isArray(flowData.nodes)) {
         if (manualUpdate) return NextResponse.json({ message: 'Nós não encontrados no fluxo' }, { status: 404 });
-        return NextResponse.json({ success: true, learnedNote, fullNotes: newNotes, tokens: tokensUsed });
+        return NextResponse.json({ success: true, learnedNote, fullNotes: newNotes, tokens: tokensUsed, debug: 'nodes_array_missing' });
     }
 
     const targetNode = flowData.nodes.find((n: any) => n.id === nodeId);
     if (!targetNode) {
         if (manualUpdate) return NextResponse.json({ message: 'Nó do Agente IA não encontrado no banco' }, { status: 404 });
-        return NextResponse.json({ success: true, learnedNote, fullNotes: newNotes, tokens: tokensUsed });
+        return NextResponse.json({ success: true, learnedNote, fullNotes: newNotes, tokens: tokensUsed, debug: { error: 'target_node_not_found', passed_nodeId: nodeId, available_nodes: flowData.nodes.map((n:any)=>n.id) } });
     }
 
     // Atualiza o learning_notes (suporta V3 aninhado e V4 plano)
@@ -175,13 +176,65 @@ Você deve retornar EXCLUSIVAMENTE um objeto JSON válido com a seguinte estrutu
     targetNode.data.config.learning_notes = newNotes;
     targetNode.data.learning_notes = newNotes;
 
+    if (manualUpdate && reflection_prompt !== undefined) {
+        targetNode.data.config.reflection_prompt = reflection_prompt;
+        targetNode.data.reflection_prompt = reflection_prompt;
+    }
+
     // Salva no banco de dados independentemente de ser Standalone, pois o usuário deseja usar o link para treinar a IA
     const isSandboxMode = is_sandbox === true || !session?.user?.companyId;
 
     if (isV4) {
+        // Atualiza visualData
+        const setPayload: any = { visualData: flowData };
+        
+        // Atualiza também o executionLogic (steps) para garantir que a IA use em produção
+        if (flowV4.executionLogic && Array.isArray(flowV4.executionLogic)) {
+            const newSteps = [...flowV4.executionLogic];
+            const aiStep = newSteps.find((s: any) => s.id === nodeId);
+            if (aiStep) {
+                if (!aiStep.data) aiStep.data = {};
+                if (!aiStep.data.config) aiStep.data.config = {};
+                aiStep.data.learning_notes = newNotes;
+                aiStep.data.config.learning_notes = newNotes;
+                if (manualUpdate && reflection_prompt !== undefined) {
+                    aiStep.data.reflection_prompt = reflection_prompt;
+                    aiStep.data.config.reflection_prompt = reflection_prompt;
+                }
+            }
+            setPayload.executionLogic = newSteps;
+        }
+
         await db.update(automationFlows)
-            .set({ visualData: flowData })
+            .set(setPayload)
             .where(eq(automationFlows.id, ruleId));
+            
+        // IMPORTANTE: O Editor V4 agora carrega os nós da tabela automationNodes e não do visualData.
+        // Precisamos atualizar o config do nó específico na tabela relacional.
+        const dbNode = await db.query.automationNodes.findFirst({
+            where: and(
+                eq(automationNodes.automationId, ruleId),
+                eq(automationNodes.id, nodeId)
+            )
+        });
+
+        if (dbNode) {
+            const updatedConfig = { ...(dbNode.config as any) || {} };
+            updatedConfig.learning_notes = newNotes;
+            if (manualUpdate && reflection_prompt !== undefined) {
+                updatedConfig.reflection_prompt = reflection_prompt;
+            }
+            await db.update(automationNodes)
+                .set({ config: updatedConfig })
+                .where(and(
+                    eq(automationNodes.automationId, ruleId),
+                    eq(automationNodes.id, nodeId)
+                ));
+        }
+            
+        // Limpa o cache para o Editor de Automações exibir o dado fresco
+        revalidatePath(`/automacoes`, 'layout');
+        revalidatePath(`/management`, 'layout');
     } else if (ruleV3) {
         const updatedActions = [...(ruleV3.actions as any[])];
         updatedActions[0].value = JSON.stringify(flowData);
