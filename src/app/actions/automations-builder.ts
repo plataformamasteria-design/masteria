@@ -271,6 +271,6 @@ export async function updateAiNodeConfig(automationId: string, nodeId: string, n
             .where(and(eq(automationNodes.automationId, automationId), eq(automationNodes.id, nodeId)));
     }
 
-    revalidatePath(`/automacoes/${automationId}`);
+    // revalidatePath(`/automacoes/${automationId}`);
     return { success: true };
 }
