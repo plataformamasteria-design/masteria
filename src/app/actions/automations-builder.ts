@@ -208,12 +208,14 @@ export async function getSystemGlobalAiStatus() {
 }
 
 export async function updateAiNodeConfig(automationId: string, nodeId: string, newPrompt: string, newLearningNotes: string) {
+    // Try to get auth, but allow unauthenticated access (user explicitly requested this for shared links)
     const auth = await requireAuthOr401();
-    if ('status' in auth) throw new Error("Unauthorized");
-    const { companyId } = auth;
+    const companyId = 'status' in auth ? null : auth.companyId;
 
     const flowV4 = await db.query.automationFlows.findFirst({
-        where: and(eq(automationFlows.id, automationId), eq(automationFlows.companyId, companyId))
+        where: companyId 
+            ? and(eq(automationFlows.id, automationId), eq(automationFlows.companyId, companyId))
+            : eq(automationFlows.id, automationId)
     });
 
     if (!flowV4) throw new Error("Flow not found");
@@ -254,7 +256,7 @@ export async function updateAiNodeConfig(automationId: string, nodeId: string, n
 
     await db.update(automationFlows)
         .set({ visualData, executionLogic })
-        .where(and(eq(automationFlows.id, automationId), eq(automationFlows.companyId, companyId)));
+        .where(eq(automationFlows.id, automationId));
 
     const dbNode = await db.query.automationNodes.findFirst({
         where: and(eq(automationNodes.automationId, automationId), eq(automationNodes.id, nodeId))
