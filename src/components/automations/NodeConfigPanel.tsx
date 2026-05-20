@@ -2517,6 +2517,48 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                     </div>
                 );
 
+            // ---- Update Contact ----
+            case 'update_contact':
+                return (
+                    <div className="space-y-5">
+                        <InfoBanner text="Adiciona, edita ou remove campos personalizados e padrão do lead sem enviar mensagens." color="blue" />
+                        <ConfigSection label="Gerenciar Campos" hint="Defina o Nome do Campo e o Valor. Se o campo não existir, ele será criado. Para deletar um campo, deixe o valor em branco.">
+                            <DynamicListBuilder
+                                items={d.fields || []}
+                                onAdd={() => update('fields', [...(d.fields || []), { name: '', value: '' }])}
+                                onRemove={(i) => update('fields', (d.fields || []).filter((_: any, idx: number) => idx !== i))}
+                                onUpdate={(i, field, val) => {
+                                    const fields = [...(d.fields || [])];
+                                    fields[i] = { ...fields[i], [field]: val };
+                                    update('fields', fields);
+                                }}
+                                addLabel="Mapear Novo Campo"
+                                renderRow={(item, i, onUpdate) => (
+                                    <div className="flex flex-col gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg relative group">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1 block">Nome do Campo (Chave)</label>
+                                                <Input value={item.name || ''} onChange={(e) => onUpdate('name', e.target.value)} placeholder="Ex: cpf, idade" className="h-8 text-xs font-mono" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1 block">Valor a ser salvo</label>
+                                            <div className="bg-white rounded-md border border-zinc-200 shadow-sm relative">
+                                                <TextFieldWithVars 
+                                                    value={item.value || ''} 
+                                                    onChange={(v) => onUpdate('value', v)} 
+                                                    placeholder="Valor ou {{variavel}}" 
+                                                    multiline={false} 
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            />
+                        </ConfigSection>
+                    </div>
+                );
+
             // ---- CRM Move (Mover Kanban) ----
             case 'crm_move':
                 return (

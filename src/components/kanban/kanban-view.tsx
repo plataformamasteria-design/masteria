@@ -24,19 +24,48 @@ interface KanbanViewProps {
   activeFilterCount?: number;
 }
 
-export function KanbanView({ funnel, cards, onMoveCard, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount }: KanbanViewProps): JSX.Element | null {
+export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount }: KanbanViewProps): JSX.Element | null {
   const [showLossStages, setShowLossStages] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
   // Drag-to-Scroll refs and states
   const scrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const innerContentRef = useRef<HTMLDivElement>(null);
+  
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!innerContentRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      setContentWidth(entries[0].contentRect.width);
+    });
+    observer.observe(innerContentRef.current);
+    return () => observer.disconnect();
+  }, [funnel?.stages, showLossStages]);
+
+  const handleTopScroll = () => {
+    if (scrollRef.current && topScrollRef.current) {
+      if (scrollRef.current.scrollLeft !== topScrollRef.current.scrollLeft) {
+        scrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+      }
+    }
+  };
+
+  const handleBottomScroll = () => {
+    if (scrollRef.current && topScrollRef.current) {
+      if (topScrollRef.current.scrollLeft !== scrollRef.current.scrollLeft) {
+        topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
+      }
+    }
+  };
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // Ignorar cliques em botões, links, inputs, menus e CARDS (drag-and-drop nativo)
@@ -88,9 +117,21 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateLead, onDeleteLe
         onFiltersChange={onFiltersChange}
         activeFilterCount={activeFilterCount}
       />
+      
+      {/* Barra de Rolagem Superior */}
+      <div 
+        ref={topScrollRef} 
+        onScroll={handleTopScroll}
+        className="w-full overflow-x-auto custom-scrollbar border-b border-border/10 bg-muted/10 h-3"
+      >
+        <div style={{ width: contentWidth ? `${contentWidth}px` : '200%' }} className="h-1" />
+      </div>
+
       <div 
         ref={scrollRef}
-        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden custom-scrollbar ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        onScroll={handleBottomScroll}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
@@ -98,7 +139,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateLead, onDeleteLe
       >
         <div className="p-3 sm:p-4 h-full">
           <DragDropContext onDragEnd={onMoveCard}>
-            <div className="flex gap-0 h-full w-max min-w-full">
+            <div ref={innerContentRef} className="flex gap-4 h-full w-max min-w-full">
               {visibleStages.map((stage: KanbanStage, index: number) => (
                 <KanbanColumn
                   key={stage.id}
@@ -108,6 +149,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateLead, onDeleteLe
                   index={index}
                   onUpdateLead={onUpdateLead}
                   onDeleteLead={onDeleteLead}
+                  onUpdateCards={onUpdateCards}
                 />
               ))}
 

@@ -84,7 +84,8 @@ async function fetchLeadsData(companyId: string, boardId: string) {
         addressZipCode: contacts.addressZipCode,
         createdAt: contacts.createdAt,
         externalId: contacts.externalId,
-        externalProvider: contacts.externalProvider
+        externalProvider: contacts.externalProvider,
+        customFields: contacts.customFields
       },
     })
     .from(kanbanLeads)

@@ -12,6 +12,7 @@ import { AiSettingsManager } from '@/components/settings/ai-settings-manager';
 import { GoogleCalendarIntegration } from '@/components/settings/google-calendar-integration';
 import { KommoIntegration } from '@/components/settings/kommo-integration';
 import { MetaAdsIntegration } from '@/components/settings/meta-ads-integration';
+import { Api4ComIntegration } from '@/components/settings/api4com-integration';
 import { AutomationManager } from '@/components/automations/automation-manager';
 import { GalleryClient } from '@/components/gallery/gallery-client';
 import dynamic from 'next/dynamic';
@@ -104,6 +105,7 @@ export default function ManagementPage() {
         <TabsContent value="integrations" className="mt-6">
           <motion.div {...tabMotion}>
             <div className="space-y-6">
+              <Api4ComIntegration />
               <MetaAdsIntegration />
               <GoogleCalendarIntegration />
               <KommoIntegration />

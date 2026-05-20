@@ -6,7 +6,7 @@ import {
     GitBranch, Clock, MessageCircle, Signpost, Filter,
     Brain, Target, MessageSquareHeart, Send,
     Columns3, Hash, Bot, UserPlus, UserSearch, StickyNote, Database,
-    Globe, Code2, PenLine, ChevronLeft, ChevronRight, Zap, CalendarCheck, MessageSquareWarning
+    Globe, Code2, PenLine, ChevronLeft, ChevronRight, Zap, CalendarCheck, MessageSquareWarning, UserCog
 } from 'lucide-react';
 
 // ─── Definição do catálogo de nodes ─────────────────────────────────────────
@@ -55,6 +55,7 @@ const NODE_CATALOG: NodeCategory[] = [
         label: 'CRM & Ações',
         nodes: [
             { type: 'lookup_lead',   label: 'Buscar Lead',      icon: UserSearch,         color: 'text-cyan-600',    defaultData: { identifier_type: 'phone' } },
+            { type: 'update_contact',label: 'Campos Personalizados',icon: Database,           color: 'text-blue-600',    defaultData: { fields: [] } },
             { type: 'assign_user',   label: 'Atribuir',         icon: UserPlus,           color: 'text-fuchsia-600', defaultData: { assign_type: 'user' } },
             { type: 'add_note',      label: 'Adicionar Nota',   icon: StickyNote,         color: 'text-amber-600',   defaultData: { note: '' } },
             { type: 'add_tag',       label: 'Adicionar Tag',    icon: Hash,               color: 'text-rose-600',    defaultData: { tagId: '' } },

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { InboxView } from '@/components/atendimentos/inbox-view';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -28,18 +29,23 @@ interface LeadExpansiveDrawerProps {
   onOpenChange: (open: boolean) => void;
   card: KanbanCard;
   stages: KanbanStage[];
+  initialTab?: string;
   onUpdate: (leadId: string, data: any) => Promise<void>;
   onDelete: (leadId: string) => Promise<void>;
   onOpenWhatsApp?: (contactId: string) => void;
+  onUpdateCards?: () => void;
 }
 
-export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, onUpdate, onDelete, onOpenWhatsApp }: LeadExpansiveDrawerProps) {
+export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialTab, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards }: LeadExpansiveDrawerProps) {
   const { toast } = useToast();
   const notify = useMemo(() => createToastNotifier(toast), [toast]);
 
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingSection, setEditingSection] = useState<'profile' | 'address' | 'customFields' | 'segmentation' | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isChatMode, setIsChatMode] = useState(false);
+  const [isContactDetailsOpen, setIsContactDetailsOpen] = useState(false);
 
   // States for Editing Contact
   const [contactForm, setContactForm] = useState<Partial<ExtendedContact>>({});
@@ -88,9 +94,12 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, onUpdate
       setLeadNotes(card.notes || '');
       setLeadStatus(card.status || 'ACTIVE');
       setEditingSection(null);
+      setIsChatMode(initialTab === 'chat');
+      setIsContactDetailsOpen(false);
+      setActiveTab('overview');
       void fetchContactDetails();
     }
-  }, [open, card, fetchContactDetails]);
+  }, [open, card, fetchContactDetails, initialTab]);
 
   // Actions
   const handleSaveContact = async () => {
@@ -121,6 +130,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, onUpdate
       if (!response.ok) throw new Error('Falha ao salvar as alterações do contato.');
       
       await fetchContactDetails();
+      onUpdateCards?.();
       setEditingSection(null);
       notify.success('Contato atualizado!');
     } catch (e: any) {
@@ -173,9 +183,13 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, onUpdate
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col h-full bg-background/95 backdrop-blur-sm border-l border-border/50 shadow-2xl">
+      <SheetContent 
+        hideOverlay
+        className={`w-full ${isChatMode && isContactDetailsOpen ? 'sm:max-w-5xl' : 'sm:max-w-2xl'} p-0 flex flex-col h-full bg-background dark:bg-[#09090b] border-l border-border/40 shadow-2xl transition-all duration-300`}
+      >
         {/* HEADER EXPANSO */}
-        <div className="px-6 py-4 border-b bg-card">
+        {!isChatMode && (
+          <div className="px-6 py-4 border-b bg-card">
           <SheetHeader className="text-left space-y-0">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
@@ -207,8 +221,8 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, onUpdate
                     <><Play className="h-4 w-4 mr-1" /> Retomar</>
                   )}
                 </Button>
-                {onOpenWhatsApp && card.contact?.id && (
-                  <Button size="sm" onClick={() => onOpenWhatsApp(card.contact!.id)}>
+                {card.contact?.id && (
+                  <Button size="sm" onClick={() => setIsChatMode(true)}>
                     <MessageCircle className="h-4 w-4 mr-1" /> Chat
                   </Button>
                 )}
@@ -231,21 +245,67 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, onUpdate
             </div>
           </SheetHeader>
         </div>
+        )}
 
-        {/* TABS */}
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <Tabs defaultValue="overview" className="w-full h-full flex flex-col">
-            <div className="px-6 pt-2 border-b">
-              <TabsList className="bg-transparent border-b-0 space-x-4">
-                <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Resumo</TabsTrigger>
-                <TabsTrigger value="details" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Detalhes</TabsTrigger>
-                <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Histórico</TabsTrigger>
-              </TabsList>
-            </div>
+        {/* TABS OR CHAT */}
+        {isChatMode ? (
+          <div className="flex-1 overflow-hidden h-full flex flex-col">
+            {(contactDetails as any)?.activeConversations?.[0]?.id ? (() => {
+              const activeConv = (contactDetails as any).activeConversations[0];
+              const syntheticConversation = {
+                id: activeConv.id,
+                contactId: (contactDetails as any).id,
+                connectionId: activeConv.connectionId,
+                connectionName: activeConv.connectionName,
+                connectionType: activeConv.connectionType,
+                status: activeConv.status,
+                lastMessageAt: activeConv.lastMessageAt,
+                aiActive: activeConv.aiActive,
+                contactName: (contactDetails as any).name || (contactDetails as any).whatsappName,
+                contactPhone: (contactDetails as any).phone,
+                contactAvatarUrl: (contactDetails as any).avatarUrl,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                archivedAt: null,
+                archivedBy: null,
+                lastMessage: null,
+                lastMessageSenderType: null,
+              };
 
-            <ScrollArea className="flex-1 p-6">
-              {/* TAB OVERVIEW */}
-              <TabsContent value="overview" className="mt-0 space-y-6">
+              return (
+                <InboxView 
+                  preselectedConversationId={activeConv.id}
+                  preselectedConversation={syntheticConversation as any}
+                  initialConversations={[syntheticConversation as any]}
+                  hideConversationList={true}
+                  hideContactDetails={false}
+                  onBack={() => setIsChatMode(false)}
+                  forceShowBack={true}
+                  onContactDetailsToggle={(isOpen) => setIsContactDetailsOpen(isOpen)}
+                />
+              );
+            })() : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
+                <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                <p>Nenhuma conversa ativa encontrada para este contato.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+              <div className="px-6 pt-2 border-b">
+                <TabsList className="bg-transparent border-b-0 space-x-4">
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Resumo</TabsTrigger>
+                  <TabsTrigger value="details" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Detalhes</TabsTrigger>
+                  <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Histórico</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-hidden relative">
+                <ScrollArea className="h-full p-6">
+                  {/* TAB OVERVIEW */}
+                  <TabsContent value="overview" className="mt-0 space-y-6">
                 
                 {/* Lead Edit Quick Form */}
                 <Card className="border-border/50 shadow-sm">
@@ -403,17 +463,21 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, onUpdate
                 )}
               </TabsContent>
 
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           </Tabs>
-        </div>
+          </div>
+        )}
 
         {/* BOTTOM ACTIONS */}
-        <div className="px-6 py-4 border-t bg-card flex justify-between items-center">
-          <Button variant="destructive" size="sm" onClick={() => { onOpenChange(false); onDelete(card.id); }}>
-            <Trash2 className="h-4 w-4 mr-1" /> Excluir Lead
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
-        </div>
+        {!isChatMode && (
+          <div className="px-6 py-4 border-t bg-card flex justify-between items-center">
+            <Button variant="destructive" size="sm" onClick={() => { onOpenChange(false); onDelete(card.id); }}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir Lead
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );

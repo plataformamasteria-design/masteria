@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCompanyIdFromSession } from '@/app/actions';
-import { retellService } from '@/lib/retell-service';
+import { api4comService } from '@/lib/api4com-service';
 import { db } from '@/lib/db';
-import { voiceAgents, voiceDeliveryReports } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { voiceDeliveryReports } from '@/lib/db/schema';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
-
-const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER || '+553322980007';
 
 function normalizePhoneNumber(phone: string): string {
   // Remove spaces, dashes, parentheses, dots
@@ -67,12 +64,8 @@ export async function POST(request: NextRequest) {
   try {
     const companyId = await getCompanyIdFromSession();
     const body = await request.json();
-    const { phoneNumber, customerName, contactId, agentId, fromNumber } = body;
+    const { phoneNumber, customerName, contactId } = body;
     
-    const callerNumber = fromNumber && fromNumber.startsWith('+') 
-      ? fromNumber 
-      : TWILIO_PHONE_NUMBER;
-
     if (!phoneNumber) {
       return NextResponse.json(
         { error: 'Número de telefone é obrigatório' },
@@ -80,148 +73,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!retellService.isConfigured()) {
-      return NextResponse.json(
-        { error: 'Retell API não configurada. Configure RETELL_API_KEY.' },
-        { status: 500 }
-      );
-    }
-
-    let selectedAgentId = agentId;
-    if (!selectedAgentId) {
-      // Try to get agent from database first
-      const dbAgents = await db
-        .select()
-        .from(voiceAgents)
-        .where(and(
-          eq(voiceAgents.companyId, companyId),
-          eq(voiceAgents.status, 'active')
-        ))
-        .limit(1);
-
-      if (dbAgents.length > 0) {
-        const dbAgent = dbAgents[0];
-        if (dbAgent) {
-          selectedAgentId = dbAgent.retellAgentId || dbAgent.externalId || '';
-          if (!selectedAgentId) {
-            logger.warn('DB agent found but no Retell ID', { agentId: dbAgent.id });
-          } else {
-            logger.info('Using agent from database', { 
-              agentId: selectedAgentId, 
-              agentName: dbAgent.name 
-            });
-          }
-        }
-      }
-      
-      // If no agent from DB, or DB agent has no Retell ID, fetch from Retell API
-      if (!selectedAgentId) {
-        try {
-          const retellAgents = await retellService.listAgents();
-          
-          if (retellAgents.length === 0) {
-            return NextResponse.json(
-              { error: 'Nenhum agente de voz disponível na Retell API.' },
-              { status: 400 }
-            );
-          }
-          
-          // Prefer "Assistente-2" if available, otherwise use first published agent
-          let selectedAgent = retellAgents.find(a => 
-            a.agent_name === 'Assistente-2' && a.is_published
-          );
-          
-          if (!selectedAgent) {
-            // Try any published agent
-            selectedAgent = retellAgents.find(a => a.is_published);
-          }
-          
-          if (!selectedAgent) {
-            // If no published agent, use first available (might fail but will give clear error)
-            selectedAgent = retellAgents[0];
-            logger.warn('No published agent found, using first available', { 
-              agentName: selectedAgent?.agent_name,
-              agentId: selectedAgent?.agent_id,
-              isPublished: selectedAgent?.is_published
-            });
-          }
-          
-          if (selectedAgent) {
-            selectedAgentId = selectedAgent.agent_id;
-            logger.info('Using Retell agent from API', { 
-              agentId: selectedAgentId, 
-              agentName: selectedAgent.agent_name,
-              isPublished: selectedAgent.is_published
-            });
-          } else {
-            return NextResponse.json(
-              { error: 'Nenhum agente de voz disponível. Crie um agente primeiro.' },
-              { status: 400 }
-            );
-          }
-        } catch (apiError) {
-          const errorMsg = apiError instanceof Error ? apiError.message : 'Unknown error';
-          logger.error('Error fetching agents from Retell API', { error: errorMsg });
-          return NextResponse.json(
-            { error: `Erro ao buscar agentes: ${errorMsg}` },
-            { status: 500 }
-          );
-        }
-      }
-    }
-
     const formattedNumber = normalizePhoneNumber(phoneNumber);
 
-    logger.info('Initiating Retell call', {
+    logger.info('Iniciando ligação via API4COM', {
       phoneNumber: formattedNumber,
-      customerName,
-      agentId: selectedAgentId,
-      fromNumber: callerNumber,
+      customerName
     });
 
-    const call = await retellService.createPhoneCallWithVoicemailDetection({
-      from_number: callerNumber,
-      to_number: formattedNumber,
-      override_agent_id: selectedAgentId,
-      metadata: {
-        contact_id: contactId || '',
-        customer_name: customerName || '',
-        company_id: companyId,
-        source: 'contact_profile',
-      },
-    });
+    // Dispara a chamada na API4COM
+    const callResult = await api4comService.initiateClickToCall(companyId, formattedNumber);
 
-    if (contactId && call.call_id) {
+    // Registra a tentativa no banco de dados para histórico (usando null para voiceAgentId, pois agora é chamada humana)
+    if (contactId) {
       try {
         await db.insert(voiceDeliveryReports).values({
           contactId: contactId,
-          voiceAgentId: selectedAgentId,
-          providerCallId: call.call_id,
+          voiceAgentId: null, // Sem agente de IA
+          providerCallId: callResult.call_id || callResult.id || 'api4com-call', // Ajuste conforme a resposta real da api4com
           status: 'INITIATED',
           callOutcome: 'pending',
           attemptNumber: 1,
           sentAt: new Date(),
         });
-        logger.info('Voice delivery report created for direct call', { callId: call.call_id, contactId });
+        logger.info('Voice delivery report criado para chamada direta (API4COM)', { contactId });
       } catch (dbError) {
-        logger.warn('Failed to create voice delivery report', { error: dbError });
+        logger.warn('Falha ao criar voice delivery report', { error: dbError });
       }
     }
 
-    logger.info('Retell call initiated successfully', {
-      callId: call.call_id,
-      status: call.call_status,
-    });
-
     return NextResponse.json({
       success: true,
-      callId: call.call_id,
-      status: call.call_status,
-      message: `Chamada iniciada para ${customerName || phoneNumber}`,
+      data: callResult,
+      message: `Chamada iniciada para ${customerName || phoneNumber}. O ramal irá tocar.`,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro ao iniciar chamada';
-    logger.error('Error initiating Retell call', { error: errorMessage });
+    logger.error('Erro ao iniciar chamada via API4COM', { error: errorMessage });
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

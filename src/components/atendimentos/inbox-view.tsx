@@ -52,13 +52,30 @@ const NoConversationSelected = () => (
 
 interface InboxViewProps {
   preselectedConversationId?: string;
+  preselectedConversation?: Conversation;
   initialConversations?: Conversation[];
   initialTemplates?: any[];
+  hideConversationList?: boolean;
+  hideContactDetails?: boolean;
+  onBack?: () => void;
+  forceShowBack?: boolean;
+  onContactDetailsToggle?: (isOpen: boolean) => void;
 }
 
-export function InboxView({ preselectedConversationId, initialConversations, initialTemplates }: InboxViewProps) {
+export function InboxView({ 
+  preselectedConversationId, 
+  preselectedConversation,
+  initialConversations, 
+  initialTemplates,
+  hideConversationList = false,
+  hideContactDetails = false,
+  onBack,
+  forceShowBack = false,
+  onContactDetailsToggle
+}: InboxViewProps) {
   const controller = useInboxController({
     preselectedConversationId,
+    preselectedConversation,
     initialConversations,
     initialTemplates
   });
@@ -77,12 +94,17 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
 
   const isMobile = mounted ? isMobileDetected : false;
 
+  useEffect(() => {
+    onContactDetailsToggle?.(controller.showContactDetails);
+  }, [controller.showContactDetails, onContactDetailsToggle]);
+
   if (controller.initialLoading) {
     return <InboxSkeleton />;
   }
 
-  const showConversationList = !isMobile || (isMobile && !controller.selectedConversation);
-  const showActiveChat = !isMobile || (isMobile && !!controller.selectedConversation);
+  const showConversationList = !hideConversationList && (!isMobile || (isMobile && !controller.selectedConversation));
+  const showActiveChat = hideConversationList || !isMobile || (isMobile && !!controller.selectedConversation);
+  const showContactDetailsPanel = !hideContactDetails && controller.showContactDetails;
 
   return (
     <>
@@ -119,7 +141,8 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
                 templates={controller.templates}
                 onSendMessage={controller.handleSendMessage}
                 onSendMedia={controller.handleSendMedia}
-                onBack={() => controller.handleSelectConversation('')}
+                onBack={onBack || (() => controller.handleSelectConversation(''))}
+                forceShowBack={forceShowBack}
                 onToggleAi={controller.handleToggleAi}
                 onLoadMoreMessages={controller.loadMoreMessages}
                 hasMoreMessages={controller.hasMoreMessages}
@@ -138,7 +161,7 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
         ) : null}
 
         {/* Right Column: Contact Details (Desktop) */}
-        {showActiveChat && controller.selectedConversation && controller.showContactDetails && (
+        {showActiveChat && controller.selectedConversation && showContactDetailsPanel && (
           <div className="hidden lg:flex w-full max-w-[350px] flex-shrink-0 h-full border-l border-border/40 min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/50 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]">
              <ContactDetailsPanel 
               contactId={controller.selectedConversation.contactId}
@@ -152,7 +175,7 @@ export function InboxView({ preselectedConversationId, initialConversations, ini
       </div>
 
       {/* Contact Details — Glass Popup Overlay (Mobile/Tablet only) */}
-      {!isDesktop && (
+      {!isDesktop && showContactDetailsPanel && (
         <Sheet open={controller.showContactDetails && !!controller.selectedConversation} onOpenChange={(open) => {
           if (!open) controller.setShowContactDetails(false);
         }}>

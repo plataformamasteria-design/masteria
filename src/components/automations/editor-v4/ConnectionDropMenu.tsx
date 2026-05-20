@@ -35,6 +35,7 @@ const ALL_NODES: NodeEntry[] = [
     { type: 'filter',        label: 'Filtro',           icon: Filter,             color: 'text-violet-600',  category: 'Lógica',             defaultData: { conditions: [] } },
     // CRM
     { type: 'lookup_lead',   label: 'Buscar Lead',      icon: UserSearch,         color: 'text-cyan-600',    category: 'CRM & Ações',        defaultData: { identifier_type: 'phone' } },
+    { type: 'update_contact',label: 'Campos Personalizados', icon: Database,      color: 'text-blue-600',    category: 'CRM & Ações',        defaultData: { fields: [] } },
     { type: 'assign_user',   label: 'Atribuir Lead',    icon: UserPlus,           color: 'text-fuchsia-600', category: 'CRM & Ações',        defaultData: { assign_type: 'user' } },
     { type: 'add_note',      label: 'Adicionar Nota',   icon: StickyNote,         color: 'text-amber-600',   category: 'CRM & Ações',        defaultData: { note: '' } },
     { type: 'add_tag',       label: 'Adicionar Tag',    icon: Hash,               color: 'text-rose-600',    category: 'CRM & Ações',        defaultData: { tagId: '' } },

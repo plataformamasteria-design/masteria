@@ -19,11 +19,13 @@ interface KanbanCardProps {
   onUpdate: (leadId: string, data: { stageId?: string; title?: string; value?: number | null; notes?: string }) => Promise<void>;
   onDelete: (leadId: string) => Promise<void>;
   onOpenWhatsApp?: (phone: string) => void;
+  onUpdateCards?: () => void;
 }
 
-export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp }: KanbanCardProps) {
+export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards }: KanbanCardProps) {
   const router = useRouter();
   const [viewOpen, setViewOpen] = useState(false);
+  const [initialTab, setInitialTab] = useState<'overview' | 'chat'>('overview');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [meetingTimeOpen, setMeetingTimeOpen] = useState(false);
 
@@ -32,10 +34,8 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
   };
 
   const handleOpenWhatsApp = () => {
-    if (card.contact?.phone) {
-      const cleanPhone = card.contact.phone.replace(/\D/g, '');
-      router.push(`/atendimentos?phone=${cleanPhone}`);
-    }
+    setInitialTab('chat');
+    setViewOpen(true);
   };
 
   const hasMeetingTime = card.notes?.includes('📅 Reunião agendada:');
@@ -55,12 +55,19 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
 
   // Preparar dados do contato e tags
   const contact = card.contact as any;
-  const customFields = contact?.customFields || {};
+  let customFields = {};
+  try {
+    if (typeof contact?.customFields === 'string') {
+      customFields = JSON.parse(contact.customFields);
+    } else if (contact?.customFields && typeof contact.customFields === 'object') {
+      customFields = contact.customFields;
+    }
+  } catch(e) {}
   const tags = contact?.tags || [];
   const displayTags = tags.slice(0, 2);
   const remainingTags = tags.length > 2 ? tags.length - 2 : 0;
   
-  const handleText = customFields.instagram ? customFields.instagram : (contact?.phone ? `+${contact.phone.substring(0,2)}...${contact.phone.slice(-4)}` : '');
+  const hasCustomFields = Object.keys(customFields).length > 0;
   const createdAtFormatted = card.createdAt ? new Date(card.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
   return (
@@ -73,11 +80,11 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
             {...provided.dragHandleProps}
           >
             <Card
-              onClick={() => setViewOpen(true)}
-              className={`cursor-pointer transition-all duration-200 border-border/40 backdrop-blur-md rounded-lg hover:bg-muted/50 ${
+              onClick={() => { setInitialTab('overview'); setViewOpen(true); }}
+              className={`cursor-pointer transition-all duration-200 rounded-lg ${
                 snapshot.isDragging 
-                  ? 'bg-background dark:bg-zinc-900/90 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-[1.03] rotate-2 ring-1 ring-primary/40 z-50' 
-                  : 'bg-card dark:bg-black/20 shadow-sm'
+                  ? 'bg-background dark:bg-zinc-900/90 shadow-xl scale-[1.02] rotate-1 ring-1 ring-primary/20 z-50' 
+                  : 'bg-white dark:bg-zinc-950 shadow-sm border border-border/40 hover:border-border/80 hover:shadow-md'
               }`}
             >
               <div className="p-3 flex flex-col gap-2 relative group">
@@ -87,11 +94,6 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                     <span className="font-bold text-[13px] text-foreground truncate">
                       {contact?.name || 'Lead sem nome'}
                     </span>
-                    {handleText && (
-                      <span className="text-[11px] text-muted-foreground truncate flex-shrink-0">
-                        {handleText.startsWith('@') ? handleText : `@${handleText}`}
-                      </span>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -108,7 +110,7 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => setViewOpen(true)}>
+                        <DropdownMenuItem onClick={() => { setInitialTab('overview'); setViewOpen(true); }}>
                           <Pencil className="mr-2 h-4 w-4" /> Editar / Detalhes
                         </DropdownMenuItem>
                         {isCallStage && (
@@ -142,12 +144,26 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                   </div>
                 </div>
 
-                {/* Linha 2: Título da Oportunidade Azul */}
+                {/* Linha 2: Título da Oportunidade */}
                 <div className="flex items-center min-w-0">
-                  <span className="text-[12.5px] font-medium text-blue-600 dark:text-blue-400/90 truncate">
-                    {card.title || contact?.name || 'Oportunidade'}
+                  <span className="text-[12px] text-muted-foreground/90 truncate">
+                    {card.title || 'Oportunidade'}
                   </span>
                 </div>
+
+                {/* Campos Personalizados */}
+                {hasCustomFields && (
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    {Object.entries(customFields).map(([k, v]) => {
+                      if (!v) return null;
+                      return (
+                        <span key={k} className="text-[9px] bg-muted/40 text-muted-foreground px-1.5 py-0.5 rounded border border-border/40 truncate max-w-[120px]">
+                          {k}: {String(v)}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Linha 3: Tags e Status */}
                 <div className="flex items-center justify-between gap-2 mt-1">
@@ -217,6 +233,7 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
         onOpenChange={setViewOpen}
         card={card}
         stages={stages}
+        initialTab={initialTab}
         onUpdate={onUpdate}
         onDelete={onDelete}
         onOpenWhatsApp={handleOpenWhatsApp}

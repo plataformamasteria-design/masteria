@@ -15,12 +15,14 @@ import type { InboxEventCallback } from './use-inbox-websocket';
 
 interface UseInboxControllerProps {
     preselectedConversationId?: string;
+    preselectedConversation?: Conversation;
     initialConversations?: Conversation[];
     initialTemplates?: any[];
 }
 
 export function useInboxController({
     preselectedConversationId,
+    preselectedConversation,
     initialConversations = [],
     initialTemplates = []
 }: UseInboxControllerProps) {
@@ -337,26 +339,31 @@ export function useInboxController({
     // Initialization Logic
     useEffect(() => {
         const init = async () => {
-            // Only fetch if we didn't receive initial data (e.g. direct client navigation without server props, though page.tsx handles it)
-            // But usually Next.js preserves state. 
-            // We still need to handle preselectedConversation if it wasn't resolved during hydration.
+            let _fetchedConversations = initialConversations;
 
             if (initialConversations.length === 0) {
-                // Fallback for full client fetch if no server data
-                const [_data, templatesData] = await Promise.all([
-                    fetchConversations(),
-                    fetch('/api/v1/message-templates').then(r => r.json()).catch(() => ({ templates: [] }))
-                ]);
+                _fetchedConversations = await fetchConversations();
+            }
+
+            if (initialTemplates.length === 0) {
+                const templatesData = await fetch('/api/v1/message-templates').then(r => r.json()).catch(() => ({ templates: [] }));
                 setTemplates(templatesData.templates || templatesData || []);
+            } else {
+                setTemplates(initialTemplates);
             }
 
             // Fetch available connections
             const conns = await fetchAvailableConnections();
             setAvailableConnections(conns);
 
-            if (preselectedConversationId) {
-                // Find in existing (server passed) or just fetched
-                const target = (initialConversations.length > 0 ? initialConversations : conversations).find(c => c.id === preselectedConversationId);
+            if (preselectedConversation) {
+                setSelectedConversation(preselectedConversation);
+                await Promise.all([
+                    fetchAndSetMessages(preselectedConversation.id),
+                    fetchContactDetails(preselectedConversation.contactId)
+                ]);
+            } else if (preselectedConversationId) {
+                const target = _fetchedConversations.find(c => c.id === preselectedConversationId);
 
                 if (target) {
                     setSelectedConversation(target);

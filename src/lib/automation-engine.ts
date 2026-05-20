@@ -15,6 +15,8 @@ import {
     aiCredentials,
     whatsappDeliveryReports,
     aiScheduledMeetings,
+    automationFlowExecutions,
+    automationFlows
 } from './db/schema';
 import { and, eq, gte, gt, ne, or, isNull, sql, desc, inArray } from 'drizzle-orm';
 import { ensureTenantAccess } from './db/tenant-guard';

@@ -14,38 +14,46 @@ interface KanbanColumnProps {
   index: number;
   onUpdateLead: (leadId: string, data: { stageId?: string; title?: string; value?: number | null; notes?: string }) => Promise<void>;
   onDeleteLead: (leadId: string) => Promise<void>;
+  onUpdateCards?: () => void;
 }
 
-export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead }: KanbanColumnProps): JSX.Element {
+export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead, onUpdateCards }: KanbanColumnProps): JSX.Element {
   const stageCards = cards.filter(card => card.stageId === stage.id);
   const totalValue = stageCards.reduce((sum, card) => sum + (Number(card.value) || 0), 0);
   
-  const getTopBorderColor = (type: string, idx: number) => {
-    if (type === 'WIN') return 'border-t-green-500';
-    if (type === 'LOSS') return 'border-t-red-500';
+  const getHeaderColor = (type: string, idx: number) => {
+    if (type === 'WIN') return 'bg-green-500/10 text-green-700 dark:text-green-400';
+    if (type === 'LOSS') return 'bg-red-500/10 text-red-700 dark:text-red-400';
     
     const colors = [
-      'border-t-blue-500',
-      'border-t-indigo-500',
-      'border-t-purple-500',
-      'border-t-pink-500',
-      'border-t-orange-500',
-      'border-t-amber-500',
-      'border-t-teal-500',
-      'border-t-cyan-500'
+      'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+      'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
+      'bg-purple-500/10 text-purple-700 dark:text-purple-400',
+      'bg-pink-500/10 text-pink-700 dark:text-pink-400',
+      'bg-orange-500/10 text-orange-700 dark:text-orange-400',
+      'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+      'bg-teal-500/10 text-teal-700 dark:text-teal-400',
+      'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400'
     ];
     return colors[idx % colors.length];
   };
 
   return (
-    <div className="flex flex-col w-full md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] border-r border-border/40 bg-muted/30 dark:bg-zinc-950/40 backdrop-blur-md md:flex-1 md:min-h-[400px] md:max-h-full last:border-r-0 transition-colors">
-      <div className={`p-3 border-b border-border/40 flex-shrink-0 border-t-[3px] ${getTopBorderColor(stage.type, index)} bg-card/80 dark:bg-black/20 backdrop-blur-xl shadow-sm z-10`}>
-        <h3 className="font-bold text-[12px] uppercase tracking-widest text-foreground/90 truncate text-center mb-1">
-          {stage.title}
-        </h3>
-        <p className="text-[11px] text-muted-foreground/80 text-center font-medium">
-          {stageCards.length} {stageCards.length === 1 ? 'lead' : 'leads'} • R$ {totalValue.toLocaleString('pt-BR')}
-        </p>
+    <div className="flex flex-col w-full md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] bg-zinc-50 dark:bg-zinc-900/40 rounded-xl md:flex-1 md:min-h-[400px] md:max-h-full transition-colors border border-border/40">
+      <div className={`p-3 m-2 rounded-lg flex-shrink-0 flex flex-col gap-1 ${getHeaderColor(stage.type, index)}`}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-[13px] uppercase tracking-wide truncate">
+            {stage.title}
+          </h3>
+          <Badge variant="secondary" className="bg-white/60 dark:bg-black/40 text-current hover:bg-white/60 border-0 text-[10px] px-1.5 py-0 h-4">
+            {stageCards.length}
+          </Badge>
+        </div>
+        {totalValue > 0 && (
+          <p className="text-[10px] opacity-80 font-medium">
+            R$ {totalValue.toLocaleString('pt-BR')}
+          </p>
+        )}
       </div>
       
       <Droppable droppableId={stage.id}>
@@ -72,6 +80,7 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
                     stages={stages}
                     onUpdate={onUpdateLead}
                     onDelete={onDeleteLead}
+                    onUpdateCards={onUpdateCards}
                   />
                 ))}
                 {provided.placeholder}

@@ -91,6 +91,7 @@ export const NODE_TYPE_LABELS: Record<string, string> = {
     add_task: 'Adicionar Tarefa',
     assign_user: 'Atribuir Lead',
     add_tag: 'Adicionar Tag',
+    update_contact: 'Atualizar Contato',
     action: "Ação",
     check_sender: "Checar Remetente",
     financeiro: "Financeiro",
@@ -1287,9 +1288,23 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
             case "edit_fields": {
                 const fields = config.fields || [];
-                const fieldNames = fields.map((f: { field: string }) => f.field).join(", ") || "(nenhum)";
-                addMessage({ type: "system", content: `✏️ Editando campos: ${fieldNames}`, nodeId, nodeType });
+                const fieldNames = fields.map((f: { name: string, field: string }) => f.name || f.field).join(", ") || "(nenhum)";
+                addMessage({ type: "system", content: `✏️ Editando variáveis: ${fieldNames}`, nodeId, nodeType });
                 await simDelay(300);
+                return nextNodes[0]?.targetId || null;
+            }
+
+            case "update_contact": {
+                const fields = config.fields || [];
+                const fieldNames = fields.map((f: { name: string }) => f.name).join(", ") || "(nenhum)";
+                addMessage({ type: "system", content: `💾 Atualizando Campos do Lead: ${fieldNames}`, nodeId, nodeType });
+                
+                // Simulate updating the CRM auto-save
+                if (fields.length > 0) {
+                    addMessage({ type: "system", content: `✅ Valores salvos no CRM com sucesso.`, nodeId, nodeType });
+                }
+
+                await simDelay(400);
                 return nextNodes[0]?.targetId || null;
             }
 

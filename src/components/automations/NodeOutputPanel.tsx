@@ -36,10 +36,10 @@ export const NodeOutputPanel = memo(({
     const [activeTab, setActiveTab] = useState<ViewTab>('schema');
     const [copied, setCopied] = useState(false);
 
-    const canTest = ['http_request', 'code', 'condition', 'filter', 'edit_fields', 'ai_agent', 'send_message', 'message', 'delay', 'router', 'action', 'trigger'].includes(nodeType);
+    const canTest = ['http_request', 'code', 'condition', 'filter', 'edit_fields', 'update_contact', 'ai_agent', 'send_message', 'message', 'delay', 'router', 'action', 'trigger'].includes(nodeType);
 
     // Detect webhook trigger
-    const isWebhookTrigger = nodeType === 'trigger' && ['webhook', 'webhook_pix', 'webhook_sale', 'manual'].includes(nodeData?.triggerType || '');
+    const isWebhookTrigger = nodeType === 'trigger' && ['webhook', 'webhook_pix', 'webhook_sale', 'manual', 'webhook_external'].includes(nodeData?.triggerType || nodeData?.trigger_type || '');
 
     const tabs: { id: ViewTab; label: string; icon: React.ReactNode }[] = [
         { id: 'schema', label: 'Schema', icon: <List className="h-3 w-3" /> },

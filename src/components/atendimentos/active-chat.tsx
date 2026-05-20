@@ -70,6 +70,7 @@ interface ActiveChatProps {
   isLoadingMoreMessages?: boolean;
   showContactDetails?: boolean;
   onToggleContactDetails?: () => void;
+  forceShowBack?: boolean;
   availableConnections?: Array<{ id: string; config_name: string; connectionType: string; phoneNumber?: string; phone?: string; status?: string }>;
   onSwitchConnection?: (connectionId: string) => Promise<void>;
   onRefreshConversations?: () => void;
@@ -91,6 +92,7 @@ export function ActiveChat({
   isLoadingMoreMessages = false,
   showContactDetails = false,
   onToggleContactDetails,
+  forceShowBack = false,
   availableConnections = [],
   onSwitchConnection,
   onRefreshConversations,
@@ -284,7 +286,7 @@ export function ActiveChat({
       {/* Premium Chat Header */}
       <div className="flex items-center gap-3 p-3 lg:p-4 shrink-0 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl border-b border-border/30 z-10">
         <div className="flex items-center gap-3 shrink-0">
-          {isMobile && (
+          {(isMobile || forceShowBack) && onBack && (
             <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 hover:bg-white/[0.04]">
               <ArrowLeft className="h-5 w-5" />
             </Button>

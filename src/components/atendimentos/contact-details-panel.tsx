@@ -295,12 +295,21 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Falha ao iniciar chamada');
+                let errorMessage = 'Falha ao iniciar chamada';
+                try {
+                    const textData = await response.text();
+                    try {
+                        const errorData = JSON.parse(textData);
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = textData.substring(0, 100) + '... (Resposta inválida do servidor)';
+                    }
+                } catch (e) {}
+                throw new Error(errorMessage);
             }
 
-            const result = await response.json();
-            notify.success('Chamada Iniciada!', `Ligando para ${contact.name}. ID: ${result.callId}`);
+            await response.json();
+            notify.success('Chamada Iniciada!', `O seu ramal irá tocar para falar com ${contact.name}.`);
         } catch (error) {
             notify.error('Erro ao Iniciar Chamada', (error as Error).message);
         } finally {
@@ -618,7 +627,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                                                     <SelectContent>
                                                         {funnel.boardStages.map((stage: any) => (
                                                             <SelectItem key={stage.id} value={stage.id} className="text-xs">
-                                                                {stage.name}
+                                                                {stage.title || stage.name}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
@@ -646,7 +655,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                                             <SelectTrigger className="h-7 text-xs bg-background"><SelectValue placeholder="Selecione a Etapa" /></SelectTrigger>
                                             <SelectContent>
                                                 {availableBoards.find(b => b.id === newFunnelBoardId)?.stages?.map((s: any) => (
-                                                    <SelectItem key={s.id} value={s.id} className="text-xs">{s.name}</SelectItem>
+                                                    <SelectItem key={s.id} value={s.id} className="text-xs">{s.title || s.name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -818,12 +827,12 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                             {isCalling ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Iniciando chamada...
+                                    Conectando ramal...
                                 </>
                             ) : (
                                 <>
                                     <Phone className="h-4 w-4 mr-2" />
-                                    Iniciar Chamada de Voz
+                                    Ligar para o Contato
                                 </>
                             )}
                         </Button>

@@ -51,6 +51,7 @@ import { SendAiResponseNodeV4 } from './nodes/SendAiResponseNodeV4';
 import { CrmMoveNodeV4 } from './nodes/CrmMoveNodeV4';
 import { AddTagNodeV4 } from './nodes/AddTagNodeV4';
 import { BotToggleNodeV4 } from './nodes/BotToggleNodeV4';
+import { UpdateContactNodeV4 } from './nodes/UpdateContactNodeV4';
 import { LookupLeadNodeV4 } from './nodes/LookupLeadNodeV4';
 import { AssignUserNodeV4 } from './nodes/AssignUserNodeV4';
 import { AddNoteNodeV4 } from './nodes/AddNoteNodeV4';
@@ -113,6 +114,7 @@ const NODE_TYPES: NodeTypes = {
     http_request:     HttpRequestNodeV4,
     code:             CodeNodeV4,
     edit_fields:      EditFieldsNodeV4,
+    update_contact:   UpdateContactNodeV4,
     add_task:         AddTaskNodeV4,
     internal_message: InternalMessageNodeV4,
     // Legado (backward compat)

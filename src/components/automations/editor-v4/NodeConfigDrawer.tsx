@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, Settings2 } from 'lucide-react';
 import type { Node } from '@xyflow/react';
 import { NodeConfigPanel } from '../NodeConfigPanel';
+import { NodeOutputPanel } from '../NodeOutputPanel';
 import type { NodeTestOutput } from '@/hooks/useNodeTestOutputs';
 
 interface NodeConfigDrawerProps {
@@ -53,6 +54,7 @@ const NODE_TYPE_LABELS: Record<string, string> = {
     add_task: 'Adicionar Tarefa',
     assign_user: 'Atribuir Lead',
     add_tag: 'Adicionar Tag',
+    update_contact: 'Atualizar Contato',
 };
 
 export function NodeConfigDrawer({
@@ -69,6 +71,12 @@ export function NodeConfigDrawer({
     flowId,
 }: NodeConfigDrawerProps) {
     const drawerRef = useRef<HTMLDivElement>(null);
+    const [showTestPanel, setShowTestPanel] = useState(false);
+
+    // Reset test panel when node changes
+    useEffect(() => {
+        setShowTestPanel(false);
+    }, [node?.id]);
 
     // Fechar com ESC
     useEffect(() => {
@@ -132,6 +140,46 @@ export function NodeConfigDrawer({
                         </div>
                     )}
                 </div>
+
+                {/* Painel de Teste / Output em Tempo Real */}
+                {node && !showTestPanel && (
+                    <div className="p-4 border-t border-zinc-200 bg-zinc-50 shrink-0">
+                        <button
+                            onClick={() => setShowTestPanel(true)}
+                            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg hover:bg-zinc-50 transition-colors shadow-sm"
+                        >
+                            <Settings2 className="w-3.5 h-3.5" />
+                            Abrir Painel de Teste
+                        </button>
+                    </div>
+                )}
+
+                {node && showTestPanel && (
+                    <div className="h-[280px] shrink-0 border-t border-zinc-200 bg-white flex flex-col relative shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <button
+                                onClick={() => setShowTestPanel(false)}
+                                className="bg-zinc-100 hover:bg-zinc-200 text-zinc-500 border border-zinc-200 rounded-full p-1 transition-colors shadow-sm"
+                                title="Fechar Painel de Teste"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <NodeOutputPanel
+                                nodeId={node.id}
+                                nodeType={node.type || ''}
+                                nodeData={node.data}
+                                output={testOutput}
+                                isLoading={!!isTestingNode}
+                                onTest={onTestNode || (() => {})}
+                                isListening={isListening}
+                                onListen={onListen}
+                                onCancelListen={onCancelListen}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );
