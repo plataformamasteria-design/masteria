@@ -2985,7 +2985,8 @@ REGRAS RÍGIDAS:
             }
         }
 
-        // ---- Edit Fields ----
+        // ---- Edit Fields / Update Contact ----
+        case 'update_contact':
         case 'edit_fields': {
             const fields = step.data.fields || [];
             const mode = step.data.mode || 'pairs';

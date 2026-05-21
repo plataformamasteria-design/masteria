@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { connections, conversations, messages, contacts } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 import { resumeFlowForContact } from '@/lib/flow-engine';
+import { canonicalizeBrazilPhone, getPhoneVariations } from '@/lib/utils';
 import { emitToCompany } from '@/lib/socket';
 import { uploadFileToS3 } from '@/lib/s3';
 import { evolutionApiService } from '@/services/evolution-api.service';
@@ -135,7 +136,9 @@ export async function POST(req: NextRequest) {
 
         // 2. Transação: Criar Contato, Conversa e Mensagem atomicamente
         const txResult = await db.transaction(async (tx) => {
-            let [contact] = await tx.select().from(contacts).where(and(eq(contacts.companyId, companyId), eq(contacts.phone, phone)));
+            const phoneVariations = getPhoneVariations(phone);
+            
+            let [contact] = await tx.select().from(contacts).where(and(eq(contacts.companyId, companyId), inArray(contacts.phone, phoneVariations)));
             
             if (!contact) {
                 let avatarUrl: string | null = null;
@@ -145,11 +148,12 @@ export async function POST(req: NextRequest) {
                     console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar para ${phone}`);
                 }
 
+                const canonicalPhone = canonicalizeBrazilPhone(phone);
                 [contact] = await tx.insert(contacts).values({
                     companyId,
                     name: pushName,
                     whatsappName: pushName,
-                    phone: phone,
+                    phone: canonicalPhone,
                     avatarUrl,
                     status: 'ACTIVE'
                 }).returning();
@@ -184,8 +188,7 @@ export async function POST(req: NextRequest) {
                     status: 'NEW',
                 }).returning();
             } else {
-                const updatePayload: any = { lastMessageAt: new Date() };
-                if (!conversation.connectionId) updatePayload.connectionId = connection.id;
+                const updatePayload: any = { lastMessageAt: new Date(), connectionId: connection.id };
                 [conversation] = await tx.update(conversations).set(updatePayload).where(eq(conversations.id, conversation.id)).returning();
             }
 
@@ -215,6 +218,7 @@ export async function POST(req: NextRequest) {
             const [newMsg] = await tx.insert(messages).values({
                 companyId,
                 conversationId,
+                connectionId: connection.id,
                 providerMessageId: messageId,
                 senderType: fromMe ? 'AGENT' : 'CONTACT',
                 content: content,

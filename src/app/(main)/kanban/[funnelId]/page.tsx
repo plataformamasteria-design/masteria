@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { DropResult } from '@hello-pangea/dnd';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateLeadDialog } from '@/components/kanban/lead-dialogs';
+import { getCompanyUsers, getTeams } from '@/app/actions/teams';
+import { fetchAvailableConnections } from '@/app/actions/chat';
 
 export interface KanbanFilters {
   stages: string[];
@@ -17,6 +19,9 @@ export interface KanbanFilters {
   valueMin: number | null;
   valueMax: number | null;
   dateRange: 'all' | '7d' | '30d' | '90d';
+  assignedUsers: string[];
+  teams: string[];
+  connections: string[];
 }
 
 const DEFAULT_FILTERS: KanbanFilters = {
@@ -25,6 +30,9 @@ const DEFAULT_FILTERS: KanbanFilters = {
   valueMin: null,
   valueMax: null,
   dateRange: 'all',
+  assignedUsers: [],
+  teams: [],
+  connections: [],
 };
 
 export default function FunnelPage({ params }: { params: Promise<{ funnelId: string }> }) {
@@ -35,14 +43,22 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
   const [createOpen, setCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<KanbanFilters>(DEFAULT_FILTERS);
+  
+  const [companyUsers, setCompanyUsers] = useState<any[]>([]);
+  const [companyTeams, setCompanyTeams] = useState<any[]>([]);
+  const [connections, setConnections] = useState<any[]>([]);
+  
   const { toast } = useToast();
 
   const fetchFunnelData = async () => {
     try {
       setLoading(true);
-      const [funnelRes, leadsRes] = await Promise.all([
+      const [funnelRes, leadsRes, usersData, teamsData, connsData] = await Promise.all([
         fetch(`/api/v1/kanbans/${funnelId}`),
         fetch(`/api/v1/leads?boardId=${funnelId}`),
+        getCompanyUsers(),
+        getTeams(),
+        fetchAvailableConnections()
       ]);
 
       if (!funnelRes.ok || !leadsRes.ok) throw new Error('Falha ao carregar dados do funil.');
@@ -52,6 +68,9 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
 
       setFunnel(funnelData);
       setCards(leadsData);
+      setCompanyUsers(usersData);
+      setCompanyTeams(teamsData);
+      setConnections(connsData);
 
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro', description: (error as Error).message });
@@ -98,6 +117,28 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     }
     if (filters.valueMax !== null) {
       result = result.filter(card => Number(card.value || 0) <= (filters.valueMax || Infinity));
+    }
+
+    // Filtro de Atribuição (Usuário, Equipe, Conexão) na conversa atrelada
+    if (filters.assignedUsers.length > 0) {
+      result = result.filter(card => {
+         const assignedTo = (card as any).conversation?.assignedTo;
+         return assignedTo && filters.assignedUsers.includes(assignedTo);
+      });
+    }
+
+    if (filters.teams.length > 0) {
+      result = result.filter(card => {
+         const teamId = (card as any).conversation?.teamId;
+         return teamId && filters.teams.includes(teamId);
+      });
+    }
+
+    if (filters.connections.length > 0) {
+      result = result.filter(card => {
+         const connId = (card as any).conversation?.connectionId;
+         return connId && filters.connections.includes(connId);
+      });
     }
 
     // Filtro por data de criação
@@ -216,6 +257,9 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     let count = 0;
     if (filters.stages.length > 0) count++;
     if (filters.priority.length > 0) count++;
+    if (filters.assignedUsers.length > 0) count++;
+    if (filters.teams.length > 0) count++;
+    if (filters.connections.length > 0) count++;
     if (filters.valueMin !== null || filters.valueMax !== null) count++;
     if (filters.dateRange !== 'all') count++;
     return count;
@@ -262,6 +306,9 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
             filters={filters}
             onFiltersChange={setFilters}
             activeFilterCount={activeFilterCount}
+            companyUsers={companyUsers}
+            companyTeams={companyTeams}
+            connections={connections}
           />
         </TabsContent>
 

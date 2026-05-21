@@ -372,7 +372,7 @@ async function processIncomingMessage(
             let [conversation] = await tx.select().from(conversations).where(
                 and(
                     eq(conversations.contactId, contact.id),
-                    eq(conversations.connectionId, connection.id)
+                    eq(conversations.companyId, companyId)
                 )
             );
 
@@ -385,7 +385,7 @@ async function processIncomingMessage(
                 if (newConversation) conversation = newConversation;
             } else {
                 const [updatedConversation] = await tx.update(conversations)
-                    .set({ lastMessageAt: new Date(), status: 'IN_PROGRESS' })
+                    .set({ lastMessageAt: new Date(), status: 'IN_PROGRESS', connectionId: connection.id })
                     .where(eq(conversations.id, conversation.id))
                     .returning();
                 if (updatedConversation) conversation = updatedConversation;
@@ -433,6 +433,7 @@ async function processIncomingMessage(
             // Save message IMMEDIATELY (no media URL yet — will be updated after S3 upload)
             const [insertedMessage] = await tx.insert(messages).values({
                 conversationId: conversation.id,
+                connectionId: connection.id,
                 providerMessageId: messageData.id,
                 repliedToMessageId: repliedToInternalId,
                 senderType: 'CONTACT',
@@ -514,6 +515,7 @@ async function processIncomingMessage(
             timestamp: new Date().toISOString(),
             contactName: triggerContactName,
             contactPhone: triggerContactPhone,
+            connectionId: null, // For simplicity unless we explicitly export it
         });
         // Slow-path backup: força re-render da lista completa
         emitToCompany(coId, 'inbox:update', { timestamp: Date.now() });

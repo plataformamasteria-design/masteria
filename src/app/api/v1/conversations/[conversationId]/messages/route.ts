@@ -212,7 +212,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 return NextResponse.json({ error: 'A janela de 24 horas para resposta livre expirou. Use um modelo.' }, { status: 403 });
             }
 
-            if (connection.connectionType === 'baileys') {
+            if (['baileys', 'evolution'].includes(connection.connectionType)) {
                 const result = await evolutionApiService.sendMessage(
                     conversation.connectionId, 
                     contact.phone, 
@@ -257,7 +257,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 return NextResponse.json({ error: 'Tipo de conexão não suportado.' }, { status: 400 });
             }
         } else {
-            if (connection.connectionType === 'baileys' || connection.connectionType === 'instagram') {
+            if (['baileys', 'evolution'].includes(connection.connectionType) || connection.connectionType === 'instagram') {
                 return NextResponse.json({ error: 'Envio de templates não suportado para esta conexão. Use mensagens de texto.' }, { status: 400 });
             }
 
@@ -284,6 +284,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const [savedMessage] = await db.insert(messages).values({
             companyId,
             conversationId: conversation.id,
+            connectionId: conversation.connectionId,
             providerMessageId,
             senderType: 'AGENT',
             senderId: agentId,
@@ -295,6 +296,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             set: {
                 status: 'SENT',
                 senderId: agentId,
+                connectionId: conversation.connectionId,
             }
         }).returning();
 

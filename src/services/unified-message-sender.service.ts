@@ -263,7 +263,7 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
           const mediaBase64 = finalBuffer ? `data:${getMimeType(mediaType, mediaUrl)};base64,${finalBuffer.toString('base64')}` : mediaUrl!;
 
           const result = await evolutionApiService.sendMedia(
-             connectionId,
+             connection.sessionName || connection.id,
              number,
              mediaType,
              mediaBase64,
@@ -285,7 +285,7 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
           return { success: false, error: 'Nenhuma mensagem fornecida' };
         }
 
-        const result = await evolutionApiService.sendMessage(connectionId, number, message);
+        const result = await evolutionApiService.sendMessage(connection.sessionName || connection.id, number, message);
         
         if (!result?.key?.id) {
           console.error(`[UNIFIED-SENDER] ❌ Evolution sendMessage returned no ID for ${connectionId} — session may not be connected`);

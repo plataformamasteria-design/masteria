@@ -120,20 +120,24 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
                         {/* API/WA Label */}
                         {conversation.connectionType && (
                             <span className={cn(
-                                "text-[9px] font-bold px-1 rounded-sm uppercase tracking-wider",
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider max-w-[60px] truncate",
                                 conversation.connectionType === 'meta_api' ? "text-emerald-500 bg-emerald-500/10" : 
                                 conversation.connectionType === 'instagram' ? "text-pink-500 bg-pink-500/10" : "text-blue-500 bg-blue-500/10"
-                            )}>{conversation.connectionType === 'meta_api' ? 'API' : conversation.connectionType === 'instagram' ? 'IG' : 'WA'}</span>
+                            )} title={conversation.connectionName || undefined}>
+                                {conversation.connectionName ? conversation.connectionName : (conversation.connectionType === 'meta_api' ? 'API' : conversation.connectionType === 'instagram' ? 'IG' : 'WA')}
+                            </span>
                         )}
 
                         {/* Assignment */}
                         {conversation.assignedTo ? (
-                            <span className="text-[10px] text-muted-foreground flex items-center" title={`Atribuído a ${conversation.assignedUserName}`}>
-                                <User className="h-3.5 w-3.5" />
+                            <span className="text-[9px] font-medium text-muted-foreground flex items-center gap-0.5 bg-muted/50 px-1.5 py-0.5 rounded-sm max-w-[70px] truncate" title={`Atribuído a ${conversation.assignedUserName}`}>
+                                <User className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{conversation.assignedUserName?.split(' ')[0] || 'User'}</span>
                             </span>
                         ) : conversation.teamId ? (
-                            <span className="text-[10px] text-muted-foreground flex items-center" title="Atribuído a equipe">
-                                <Users className="h-3.5 w-3.5" />
+                            <span className="text-[9px] font-medium text-muted-foreground flex items-center gap-0.5 bg-muted/50 px-1.5 py-0.5 rounded-sm max-w-[70px] truncate" title={`Atribuído a equipe: ${conversation.teamName}`}>
+                                <Users className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{conversation.teamName || 'Equipe'}</span>
                             </span>
                         ) : null}
 

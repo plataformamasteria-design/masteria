@@ -22,6 +22,7 @@ import {
   ChevronDown,
   UserPlus,
   FileText,
+  Filter,
 } from 'lucide-react';
 import { format, isToday, isYesterday, differenceInDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -106,6 +107,7 @@ export function ActiveChat({
   const [isAssigning, setIsAssigning] = React.useState(false);
   const [replyToMessage, setReplyToMessage] = React.useState<Message | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
+  const [messageFilter, setMessageFilter] = React.useState<'all' | 'connection'>('all');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const connectionDropdownRef = React.useRef<HTMLDivElement>(null);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
@@ -367,8 +369,8 @@ export function ActiveChat({
                   )}
                 >
                   <Wifi className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">
-                    {['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API'}
+                  <span className="hidden sm:inline max-w-[100px] truncate">
+                    {conversation.connectionName ? conversation.connectionName : (['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API')}
                   </span>
                   <ChevronDown className={cn(
                     "h-3 w-3 transition-transform duration-300",
@@ -428,6 +430,31 @@ export function ActiveChat({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {/* Message Filter Toggle */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMessageFilter(f => f === 'all' ? 'connection' : 'all')}
+                  className={cn(
+                    "shrink-0 h-9 w-9 rounded-lg transition-all duration-200",
+                    messageFilter === 'connection'
+                      ? "bg-primary/10 text-primary hover:bg-primary/15"
+                      : "hover:bg-white/[0.04] text-muted-foreground"
+                  )}
+                >
+                  <Filter className="h-[18px] w-[18px]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-card/95 backdrop-blur-md border-white/[0.08]">
+                <p>{messageFilter === 'all' ? 'Filtrar por esta conexão' : 'Mostrar todas as conexões'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           {/* AI Toggle */}
           <TooltipProvider>
@@ -544,9 +571,9 @@ export function ActiveChat({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/30" />
               </div>
             ) : (
-              messages.map((msg, index) => {
+              (messageFilter === 'all' ? messages : messages.filter((m: any) => m.connectionId === conversation?.connectionId)).map((msg, index, arr) => {
                 const currentDate = new Date(msg.sentAt);
-                const prevMsg = index > 0 ? messages[index - 1] : null;
+                const prevMsg = index > 0 ? arr[index - 1] : null;
                 const prevDate = prevMsg ? new Date(prevMsg.sentAt) : null;
                 
                 const showDivider = !prevDate || !isSameDay(currentDate, prevDate);
@@ -568,6 +595,7 @@ export function ActiveChat({
                       allMessages={messages as any} 
                       contactName={contact.name}
                       templates={templates}
+                      connections={availableConnections}
                       onReply={(m) => setReplyToMessage(m as Message)}
                       onCopy={(text) => navigator.clipboard.writeText(text)}
                     />

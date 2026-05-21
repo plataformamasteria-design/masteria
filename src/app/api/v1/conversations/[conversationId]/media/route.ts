@@ -105,7 +105,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             metaMimeType = 'audio/ogg'; // Mesma regra.
         }
 
-        if (connection.connectionType === 'baileys') {
+        if (['baileys', 'evolution'].includes(connection.connectionType)) {
             const base64Media = `data:${metaMimeType};base64,${finalBuffer.toString('base64')}`;
             const result = await evolutionApiService.sendMedia(
                 connection.sessionName || connection.id,

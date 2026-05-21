@@ -73,7 +73,7 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
 
         // 3. Send
         // Determinar provedor com base no tipo de conexão
-        const provider = conversation.connection?.connectionType === 'baileys' ? 'baileys' : 'apicloud';
+        const provider = ['baileys', 'evolution'].includes(conversation.connection?.connectionType || '') ? 'baileys' : 'apicloud';
 
         const result = await sendUnifiedMessage({
             provider: provider,
@@ -91,6 +91,7 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
             const [inserted] = await tx.insert(messages).values({
                 companyId: companyId,
                 conversationId: conversation.id,
+                connectionId: conversation.connectionId,
                 providerMessageId: result.messageId,
                 senderType: 'AGENT',
                 senderId: userId,

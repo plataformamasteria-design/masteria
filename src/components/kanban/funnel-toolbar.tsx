@@ -22,9 +22,12 @@ interface FunnelToolbarProps {
   filters?: KanbanFilters;
   onFiltersChange?: (filters: KanbanFilters) => void;
   activeFilterCount?: number;
+  companyUsers?: any[];
+  companyTeams?: any[];
+  connections?: any[];
 }
 
-export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount }: FunnelToolbarProps): JSX.Element {
+export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections }: FunnelToolbarProps): JSX.Element {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const handleStageToggle = (stageId: string) => {
@@ -33,6 +36,30 @@ export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersC
       ? filters.stages.filter(s => s !== stageId)
       : [...filters.stages, stageId];
     onFiltersChange({ ...filters, stages: newStages });
+  };
+
+  const handleUserToggle = (userId: string) => {
+    if (!filters || !onFiltersChange) return;
+    const newUsers = filters.assignedUsers.includes(userId)
+      ? filters.assignedUsers.filter(u => u !== userId)
+      : [...filters.assignedUsers, userId];
+    onFiltersChange({ ...filters, assignedUsers: newUsers });
+  };
+
+  const handleTeamToggle = (teamId: string) => {
+    if (!filters || !onFiltersChange) return;
+    const newTeams = filters.teams.includes(teamId)
+      ? filters.teams.filter(t => t !== teamId)
+      : [...filters.teams, teamId];
+    onFiltersChange({ ...filters, teams: newTeams });
+  };
+
+  const handleConnectionToggle = (connectionId: string) => {
+    if (!filters || !onFiltersChange) return;
+    const newConns = filters.connections.includes(connectionId)
+      ? filters.connections.filter(c => c !== connectionId)
+      : [...filters.connections, connectionId];
+    onFiltersChange({ ...filters, connections: newConns });
   };
 
   const handleDateRangeChange = (range: 'all' | '7d' | '30d' | '90d') => {
@@ -58,6 +85,9 @@ export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersC
       valueMin: null,
       valueMax: null,
       dateRange: 'all',
+      assignedUsers: [],
+      teams: [],
+      connections: [],
     });
   };
 
@@ -126,6 +156,71 @@ export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersC
                 </div>
 
                 <Separator />
+
+                {/* Filtro por Usuário Atribuído */}
+                {companyUsers && companyUsers.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase">Usuário Atribuído</Label>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
+                      {companyUsers.map((user: any) => (
+                        <div key={user.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`filter-user-${user.id}`}
+                            checked={filters?.assignedUsers.includes(user.id) ?? false}
+                            onCheckedChange={() => handleUserToggle(user.id)}
+                          />
+                          <label htmlFor={`filter-user-${user.id}`} className="text-sm cursor-pointer flex-1 truncate">
+                            {user.name || user.email}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Filtro por Equipe */}
+                {companyTeams && companyTeams.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase">Equipe</Label>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
+                      {companyTeams.map((team: any) => (
+                        <div key={team.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`filter-team-${team.id}`}
+                            checked={filters?.teams.includes(team.id) ?? false}
+                            onCheckedChange={() => handleTeamToggle(team.id)}
+                          />
+                          <label htmlFor={`filter-team-${team.id}`} className="text-sm cursor-pointer flex-1 truncate">
+                            {team.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Filtro por Conexão */}
+                {connections && connections.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase">Conexão</Label>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
+                      {connections.map((conn: any) => (
+                        <div key={conn.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`filter-conn-${conn.id}`}
+                            checked={filters?.connections.includes(conn.id) ?? false}
+                            onCheckedChange={() => handleConnectionToggle(conn.id)}
+                          />
+                          <label htmlFor={`filter-conn-${conn.id}`} className="text-sm cursor-pointer flex-1 truncate">
+                            {conn.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Separator className="my-4" />
 
                 {/* Filtro por Valor */}
                 <div className="space-y-2">

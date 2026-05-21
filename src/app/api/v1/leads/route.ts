@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { kanbanLeads, contacts, contactsToTags, tags, kanbanBoards } from '@/lib/db/schema';
+import { kanbanLeads, contacts, contactsToTags, tags, kanbanBoards, conversations } from '@/lib/db/schema';
 import { asc, eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
@@ -116,6 +116,26 @@ async function fetchLeadsData(companyId: string, boardId: string) {
       return acc;
   }, {} as Record<string, any[]>);
 
+  // Busca conversas dos contatos
+  let allConversations: any[] = [];
+  if (contactIds.length > 0) {
+    allConversations = await db
+      .select({
+        contactId: conversations.contactId,
+        assignedTo: conversations.assignedTo,
+        teamId: conversations.teamId,
+        connectionId: conversations.connectionId,
+      })
+      .from(conversations)
+      .where(inArray(conversations.contactId, contactIds));
+  }
+
+  const convosByContactId = allConversations.reduce((acc, row) => {
+      // Pega a primeira conversa (ou sobrescreve, caso haja lixo, mas devem ser únicas agora)
+      acc[row.contactId] = row;
+      return acc;
+  }, {} as Record<string, any>);
+
   // Post-process to add tags
   const leads = flatLeadsAndContacts.map((row) => {
     const { lead, contact } = row;
@@ -126,7 +146,8 @@ async function fetchLeadsData(companyId: string, boardId: string) {
       contact: {
         ...contact,
         tags: tagsByContactId[contact.id] || []
-      }
+      },
+      conversation: convosByContactId[contact.id] || null
     };
   });
 

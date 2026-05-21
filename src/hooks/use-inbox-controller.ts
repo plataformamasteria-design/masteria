@@ -194,6 +194,7 @@ export function useInboxController({
         const optimisticMessage: Message = {
             id: tempId,
             conversationId: selectedConversation.id,
+            connectionId: selectedConversation.connectionId,
             senderType: 'AGENT',
             senderId: session.userId,
             content: text,
@@ -236,6 +237,7 @@ export function useInboxController({
         const optimisticMessage: Message = {
             id: tempId,
             conversationId: selectedConversation.id,
+            connectionId: selectedConversation.connectionId,
             senderType: 'AGENT',
             senderId: session.userId,
             content: caption || file.name,
@@ -316,7 +318,7 @@ export function useInboxController({
                     : c
             ));
 
-            const label = result.connectionType === 'baileys' ? 'Baileys (Gratuito)' : 'API Oficial';
+            const label = ['baileys', 'evolution'].includes(result.connectionType) ? 'Baileys (Gratuito)' : 'API Oficial';
             notify.success('Conexão Alterada', `Usando: ${label}`);
         } catch (error) {
             notify.error('Erro', (error as Error).message);
@@ -411,11 +413,15 @@ export function useInboxController({
                 // Determinar senderType correto para exibir na lista
                 const effectiveSenderType = payload.senderType
                     || (isFromMe ? 'AGENT' : 'CONTACT');
+                const newConn = payload.connectionId ? availableConnections.find(c => c.id === payload.connectionId) : null;
                 const updated = {
                     ...prev[idx],
                     lastMessage: content || '',
                     lastMessageAt: new Date(timestamp || Date.now()),
                     lastMessageSenderType: effectiveSenderType,
+                    connectionId: payload.connectionId || prev[idx].connectionId,
+                    connectionName: newConn ? newConn.config_name : prev[idx].connectionName,
+                    connectionType: newConn ? newConn.connectionType : prev[idx].connectionType,
                 };
                 // Move para o topo
                 return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
@@ -433,6 +439,7 @@ export function useInboxController({
                 const newMsg: Message = {
                     id: messageId || `ws-${Date.now()}`,
                     conversationId,
+                    connectionId: payload.connectionId || null,
                     senderType: resolvedSenderType,
                     senderId: null,
                     content: content || '',
@@ -453,6 +460,16 @@ export function useInboxController({
                         (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
                     );
                 });
+
+                if (payload.connectionId && selectedConversation.connectionId !== payload.connectionId) {
+                    const newConn = availableConnections.find(c => c.id === payload.connectionId);
+                    setSelectedConversation(prev => prev ? { 
+                        ...prev, 
+                        connectionId: payload.connectionId,
+                        connectionName: newConn ? newConn.config_name : prev.connectionName,
+                        connectionType: newConn ? newConn.connectionType : prev.connectionType
+                    } as Conversation : prev);
+                }
             }
 
             // Marcar esta conversa como "fast-path ativo" por 2s

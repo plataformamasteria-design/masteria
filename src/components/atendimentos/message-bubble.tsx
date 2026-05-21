@@ -303,7 +303,7 @@ const MeetingIndicator = ({ text }: { text: string }) => {
     );
 };
 
-export function MessageBubble({ message, allMessages, contactName, templates }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null, templates?: any[] }) {
+export function MessageBubble({ message, allMessages, contactName, templates, connections }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null, templates?: any[], connections?: any[] }) {
     if (message.senderType === 'SYSTEM') {
         return (
             <div id={`message-${message.id}`} className="flex w-full justify-center my-3">
@@ -495,10 +495,15 @@ export function MessageBubble({ message, allMessages, contactName, templates }: 
                     </div>
 
                     <div className={cn(
-                        "flex items-center gap-1 self-end float-right mt-1 ml-2",
+                        "flex items-center gap-1.5 self-end float-right mt-1 ml-2",
                         "text-[10px] leading-none shrink-0",
                         isMe ? "text-white/60" : "text-muted-foreground/50"
                     )}>
+                        {message.connectionId && connections && (
+                            <span className="truncate max-w-[60px] opacity-70" title={connections.find(c => c.id === message.connectionId)?.config_name || 'Conexão'}>
+                                {connections.find(c => c.id === message.connectionId)?.config_name || ''}
+                            </span>
+                        )}
                         <span className="font-medium">
                             {message.sentAt && !isNaN(new Date(message.sentAt).getTime())
                                 ? new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

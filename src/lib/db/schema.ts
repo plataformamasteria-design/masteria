@@ -576,6 +576,7 @@ export const messages = pgTable('messages', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
   companyId: text('company_id').references(() => companies.id, { onDelete: 'cascade' }),
   conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  connectionId: text('connection_id').references(() => connections.id, { onDelete: 'set null' }),
   providerMessageId: text('provider_message_id').unique(),
   repliedToMessageId: text('replied_to_message_id'),
   senderType: text('sender_type').notNull(),

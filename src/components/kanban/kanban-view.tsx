@@ -22,9 +22,12 @@ interface KanbanViewProps {
   filters?: KanbanFilters;
   onFiltersChange?: (filters: KanbanFilters) => void;
   activeFilterCount?: number;
+  companyUsers?: any[];
+  companyTeams?: any[];
+  connections?: any[];
 }
 
-export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount }: KanbanViewProps): JSX.Element | null {
+export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections }: KanbanViewProps): JSX.Element | null {
   const [showLossStages, setShowLossStages] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -116,6 +119,9 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         filters={filters}
         onFiltersChange={onFiltersChange}
         activeFilterCount={activeFilterCount}
+        companyUsers={companyUsers}
+        companyTeams={companyTeams}
+        connections={connections}
       />
       
       {/* Barra de Rolagem Superior */}
