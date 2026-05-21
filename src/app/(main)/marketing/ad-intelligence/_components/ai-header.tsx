@@ -5,10 +5,11 @@ import { useAdAccount } from "@/contexts/ad-account-context";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { RefreshCw, Filter, CalendarDays, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { useState, useEffect } from "react";
 import { ALL_PROVIDERS, AI_LABELS, getAIProvider, setAIProvider } from "@/lib/ai-config";
 import type { AIProvider } from "@/lib/ai-client";
+import { toast } from "sonner";
 
 export function AdIntelligenceHeader() {
   const { account } = useAdAccount();
@@ -39,6 +40,25 @@ export function AdIntelligenceHeader() {
   const [confirmModal, setConfirmModal] = useState(false);
   const [lastUsedProvider, setLastUsedProvider] = useState<AIProvider | null>(null);
   const [lastDuration, setLastDuration] = useState<number | null>(null);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetch("/api/meta/cache-clear", { method: "POST" });
+      await mutate(
+        (key) => typeof key === "string" && (key.includes("/api/meta/") || key.includes("/api/marketing/audit-data")),
+        undefined,
+        { revalidate: true }
+      );
+      toast.success("Dados sincronizados com o Meta Ads.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao sincronizar dados.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem(AI_LS_KEY);
@@ -74,7 +94,7 @@ export function AdIntelligenceHeader() {
 
   return (
     <>
-    <SpotlightCard className="p-4 flex flex-col gap-4 border-white/5 bg-black/20">
+    <SpotlightCard className="p-4 flex flex-col gap-4 border-border bg-black/5 dark:bg-black/20">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-black tracking-tighter flex items-center gap-2">
@@ -88,7 +108,7 @@ export function AdIntelligenceHeader() {
             <select
               value={selectedProvider}
               onChange={(e) => handleProviderChange(e.target.value as AIProvider)}
-              className="bg-black/40 border border-white/10 rounded-lg text-xs px-3 py-1.5 outline-none text-foreground/90 font-medium min-w-[180px]"
+              className="bg-black/5 dark:bg-black/40 border border-border rounded-lg text-xs px-3 py-1.5 outline-none text-foreground/90 font-medium min-w-[180px]"
             >
               {ALL_PROVIDERS.map((p) => (
                 <option key={p} value={p}>
@@ -97,6 +117,14 @@ export function AdIntelligenceHeader() {
               ))}
             </select>
           </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-primary/30 hover:bg-primary/10 text-xs font-bold text-foreground/80 transition-colors"
+          >
+            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin text-primary")} />
+            {isRefreshing ? "Sincronizando..." : "Sincronizar Meta"}
+          </button>
           <button
             onClick={() => setConfirmModal(true)}
             disabled={isGenerating}
@@ -108,7 +136,7 @@ export function AdIntelligenceHeader() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4 items-center pt-4 border-t border-white/5">
+      <div className="flex flex-wrap gap-4 items-center pt-4 border-t border-border">
 
         {/* Period is now controlled by the global selector in the layout */}
         <div className="flex items-center gap-2 text-xs text-foreground/50">
@@ -122,7 +150,7 @@ export function AdIntelligenceHeader() {
           <select 
             value={objectiveFilter} 
             onChange={(e) => setObjectiveFilter(e.target.value)}
-            className="bg-black/40 border border-white/10 rounded-lg text-xs px-3 py-1.5 outline-none text-foreground/90 font-medium"
+            className="bg-black/5 dark:bg-black/40 border border-border rounded-lg text-xs px-3 py-1.5 outline-none text-foreground/90 font-medium"
           >
             <option value="all">🚀 Todos os Objetivos</option>
             <option value="LEAD_GENERATION">🎯 Leads</option>
@@ -134,7 +162,7 @@ export function AdIntelligenceHeader() {
           <select 
             value={statusFilter} 
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-black/40 border border-white/10 rounded-lg text-xs px-3 py-1.5 outline-none text-foreground/90 font-medium"
+            className="bg-black/5 dark:bg-black/40 border border-border rounded-lg text-xs px-3 py-1.5 outline-none text-foreground/90 font-medium"
           >
             <option value="all">🟢 Todos os Status</option>
             <option value="ACTIVE">🟢 Apenas Ativos</option>
@@ -147,7 +175,7 @@ export function AdIntelligenceHeader() {
     </SpotlightCard>
     
     {lastUsedProvider && fullReport && !isGenerating && (
-      <div className="mt-2 px-4 py-2 bg-black/30 border border-white/5 rounded-lg flex items-center justify-center gap-3 text-[11px] text-zinc-500 font-mono">
+      <div className="mt-2 px-4 py-2 bg-black/30 border border-border rounded-lg flex items-center justify-center gap-3 text-[11px] text-zinc-500 font-mono">
         <span>Analisado com <strong className="text-foreground/70">{AI_LABELS[lastUsedProvider].nome}</strong></span>
         {lastDuration !== null && (
           <>
@@ -159,18 +187,18 @@ export function AdIntelligenceHeader() {
     )}
 
     {confirmModal && (
-      <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-         <div className="bg-zinc-950 border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col items-center text-center">
+      <div className="fixed inset-0 z-[200] bg-black/5 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+         <div className="bg-background border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col items-center text-center">
             <Sparkles className="h-10 w-10 text-primary mb-4" />
             <h3 className="text-lg font-black text-foreground">Sincronizar Inteligência de Conta?</h3>
             <p className="text-sm text-zinc-400 mt-2">
                Você está prestes a processar toda a base dessa conta usando <strong className="text-foreground">{AI_LABELS[selectedProvider].nome}</strong>. O relatório servirá todas as abas.
             </p>
             <div className="flex gap-3 w-full mt-6">
-              <button onClick={() => setConfirmModal(false)} className="flex-1 bg-white/5 text-zinc-400 py-3 rounded-lg font-bold text-xs">Cancelar</button>
+              <button onClick={() => setConfirmModal(false)} className="flex-1 bg-black/5 dark:bg-white/5 text-zinc-400 py-3 rounded-lg font-bold text-xs">Cancelar</button>
               <button 
                  onClick={handleGenerateAI}
-                 className="flex-1 bg-accent hover:bg-accent text-white shadow-lg shadow-primary/20 py-3 rounded-lg font-bold text-xs"
+                 className="flex-1 bg-accent hover:bg-accent text-foreground shadow-lg shadow-primary/20 py-3 rounded-lg font-bold text-xs"
               >
                  Executar Análise IA
               </button>

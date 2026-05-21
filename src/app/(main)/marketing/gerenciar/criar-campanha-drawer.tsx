@@ -53,7 +53,7 @@ function StepModeSelection({ onSelect }: { onSelect: (m: "scratch" | "duplicate"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => onSelect("duplicate")}
-        className="cursor-pointer group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 hover:border-accent/50 hover:bg-white/10 transition-all flex flex-col items-center text-center"
+        className="cursor-pointer group relative overflow-hidden rounded-2xl border border-border bg-black/5 dark:bg-white/5 p-8 hover:border-accent/50 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 transition-all flex flex-col items-center text-center"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="h-16 w-16 rounded-2xl bg-primary/20 text-primary flex items-center justify-center mb-6">
@@ -69,7 +69,7 @@ function StepModeSelection({ onSelect }: { onSelect: (m: "scratch" | "duplicate"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => onSelect("scratch")}
-        className="cursor-pointer group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 hover:border-primary/20 hover:bg-white/10 transition-all flex flex-col items-center text-center"
+        className="cursor-pointer group relative overflow-hidden rounded-2xl border border-border bg-black/5 dark:bg-white/5 p-8 hover:border-primary/20 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 transition-all flex flex-col items-center text-center"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="h-16 w-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
@@ -104,7 +104,7 @@ function StepSelectCampaign({
         <Input
           value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Filtrar campanhas..."
-          className="pl-9 bg-white/8 border-white/15 text-foreground"
+          className="pl-9 bg-black/5 dark:bg-white/8 border-border text-foreground"
         />
       </div>
 
@@ -117,7 +117,7 @@ function StepSelectCampaign({
               key={c.id} onClick={() => onSelect(c)}
               whileHover={{ scale: 1.005 }} whileTap={{ scale: 0.99 }}
               className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all ${
-                selected?.id === c.id ? "border-accent/60 bg-primary/10" : "border-white/8 bg-white/4 hover:border-white/20"
+                selected?.id === c.id ? "border-accent/60 bg-primary/10" : "border-border bg-white/4 border-border"
               }`}
             >
               <div className={`h-2 w-2 rounded-full shrink-0 ${c.status === "ACTIVE" ? "bg-accent" : "bg-zinc-600"}`} />
@@ -194,15 +194,15 @@ export function CriarCampanhaDrawer({ onClose, onCreated }: { onClose: () => voi
 
   return createPortal(
     <>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999]" onClick={onClose} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="fixed inset-0 bg-black/5 dark:bg-black/5 dark:bg-black/60 backdrop-blur-md z-[9999]" onClick={onClose} />
       <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className="w-full max-w-[1240px] max-h-[92vh] bg-[#09090b] rounded-2xl border border-white/10 shadow-2xl flex flex-col pointer-events-auto overflow-hidden"
+          className="w-full max-w-[1240px] max-h-[92vh] bg-background rounded-2xl border border-border shadow-2xl flex flex-col pointer-events-auto overflow-hidden"
         >
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-5 border-b border-white/5 bg-zinc-950 flex items-start justify-between">
+        <div className="flex-shrink-0 px-6 py-5 border-b border-border bg-background flex items-start justify-between">
           <div>
             {!mode ? (
               <h2 className="text-xl font-bold text-foreground tracking-tight">Nova Campanha</h2>
@@ -222,24 +222,24 @@ export function CriarCampanhaDrawer({ onClose, onCreated }: { onClose: () => voi
               </div>
             )}
           </div>
-          <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-foreground/90 hover:text-foreground transition-colors flex-shrink-0 focus:outline-none">
+          <button onClick={onClose} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 rounded-full text-foreground/90 hover:text-foreground transition-colors flex-shrink-0 focus:outline-none">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content */}
         {!mode ? (
-          <div className="p-6 flex-1 bg-[#09090b]">
+          <div className="p-6 flex-1 bg-background">
             <p className="text-foreground/90 text-sm">Escolha seu fluxo de trabalho preferido.</p>
             <StepModeSelection onSelect={setMode} />
           </div>
         ) : isScratch ? (
-          <div className="flex-1 min-h-0 bg-[#09090b] flex flex-col items-stretch overflow-hidden">
+          <div className="flex-1 min-h-0 bg-background flex flex-col items-stretch overflow-hidden">
             <TreeBuilder onFinish={() => { onCreated(); onClose(); }} />
           </div>
         ) : (
           // ── Duplicate flow ──
-          <div className="flex flex-col flex-1 bg-[#09090b] overflow-hidden">
+          <div className="flex flex-col flex-1 bg-background overflow-hidden">
             {/* Error banner */}
             <AnimatePresence>
               {errorMsg && (
@@ -259,7 +259,7 @@ export function CriarCampanhaDrawer({ onClose, onCreated }: { onClose: () => voi
                   <p className="text-sm text-foreground/90 mb-4">Selecione a campanha que deseja duplicar e editar:</p>
                   <StepSelectCampaign selected={source} onSelect={setSource} />
                 </div>
-                <div className="p-5 border-t border-white/5 bg-zinc-950 flex justify-end items-center flex-shrink-0">
+                <div className="p-5 border-t border-border bg-background flex justify-end items-center flex-shrink-0">
                   <Button
                     onClick={handleDuplicate}
                     disabled={!source}

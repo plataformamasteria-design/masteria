@@ -54,7 +54,7 @@ function CriativosWithParams() {
         </div>
         <Link
           href="/marketing/anuncios"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent transition-colors"
         >
           Ir para Anuncios <ArrowRight size={12} />
         </Link>

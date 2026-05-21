@@ -45,7 +45,7 @@ export function CanalNichoCard() {
 
   if (isLoading) {
     return (
-      <SpotlightCard className="p-6 border-white/5">
+      <SpotlightCard className="p-6 border-border">
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <span className="text-xs text-zinc-500">Carregando inteligência por canal...</span>
@@ -87,7 +87,7 @@ export function CanalNichoCard() {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-white/5">
+            <tr className="border-b border-border">
               <th className="text-left py-2 pr-4 text-zinc-500 font-medium" />
               {rows.map((r) => (
                 <th key={r.nome} className="text-right py-2 px-3 text-zinc-400 font-semibold">
@@ -98,7 +98,7 @@ export function CanalNichoCard() {
           </thead>
           <tbody>
             {activeCols.map((col) => (
-              <tr key={col.key} className="border-b border-white/5 last:border-0">
+              <tr key={col.key} className="border-b border-border last:border-0">
                 <td className="py-2 pr-4 text-zinc-400 font-medium">{col.label}</td>
                 {rows.map((r) => (
                   <td key={r.nome} className="text-right py-2 px-3 font-mono text-zinc-200">
@@ -119,7 +119,7 @@ export function CanalNichoCard() {
         <h3 className="text-sm font-bold text-primary uppercase tracking-widest">
           Inteligência por Canal e Nicho
         </h3>
-        <div className="flex gap-1 bg-zinc-900 rounded-lg p-0.5">
+        <div className="flex gap-1 bg-card rounded-lg p-0.5">
           {(["midia", "funil", "receita"] as ViewMode[]).map((mode) => (
             <button
               key={mode}
@@ -139,7 +139,7 @@ export function CanalNichoCard() {
       <div className="space-y-6">
         {canais.length > 0 && renderTable("Comparativo por Canal (Pagos)", incluirNaoPagos ? [...canais, ...canaisNaoPagos] : canais)}
         {totalLeadsNaoPagos > 0 && (
-          <div className="flex items-center justify-between bg-zinc-800/40 border border-zinc-700/30 rounded-lg px-4 py-3">
+          <div className="flex items-center justify-between bg-muted/40 border border-zinc-700/30 rounded-lg px-4 py-3">
             <div className="text-xs text-zinc-400">
               <span className="font-semibold text-zinc-300">Leads não pagos ({totalLeadsNaoPagos})</span> — {incluirNaoPagos ? "incluídos na tabela acima" : "excluídos do CPL médio"}
               {!incluirNaoPagos && canaisNaoPagos.map((c) => (
@@ -148,7 +148,7 @@ export function CanalNichoCard() {
             </div>
             <button
               onClick={() => setIncluirNaoPagos(!incluirNaoPagos)}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluirNaoPagos ? "bg-primary" : "bg-zinc-700"}`}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${incluirNaoPagos ? "bg-primary" : "bg-muted-foreground/20"}`}
             >
               <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${incluirNaoPagos ? "translate-x-4" : "translate-x-1"}`} />
             </button>

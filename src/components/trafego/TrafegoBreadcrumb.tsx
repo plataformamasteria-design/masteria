@@ -18,8 +18,6 @@ export function TrafegoBreadcrumb() {
         Marketing
       </Link>
       <ChevronRight size={10} className="shrink-0" />
-      <span className={active.area.colorClass}>{active.area.label}</span>
-      <ChevronRight size={10} className="shrink-0" />
       <span className="text-foreground">{active.item.label}</span>
     </div>
   );

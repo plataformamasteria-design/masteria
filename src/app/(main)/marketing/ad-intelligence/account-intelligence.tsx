@@ -14,7 +14,7 @@
  */
 
 import { useState, useCallback, useId } from "react";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -85,10 +85,10 @@ interface AdAlert {
 // ── Severity config ────────────────────────────────────────────────────────────
 
 const SEVERITY_CONFIG: Record<string, { label: string; cls: string; icon: LucideIcon }> = {
-  critical: { label: "Crítico", cls: "text-red-400 border-red-500/20 bg-red-500/10",     icon: Flame },
+  critical: { label: "Crítico", cls: "text-destructive border-destructive/20 bg-destructive/10",     icon: Flame },
   high:     { label: "Alto",    cls: "text-primary border-primary/20 bg-primary/10", icon: AlertTriangle },
   medium:   { label: "Médio",   cls: "text-amber-400 border-amber-500/20 bg-amber-500/10",  icon: Clock },
-  low:      { label: "Baixo",   cls: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10", icon: CheckCircle2 },
+  low:      { label: "Baixo",   cls: "text-primary border-primary/20 bg-primary/10", icon: CheckCircle2 },
 };
 
 const FORMAT_ICON: Record<string, LucideIcon> = {
@@ -99,10 +99,10 @@ const FORMAT_ICON: Record<string, LucideIcon> = {
 
 function ScoreBadge({ score }: { score: number }) {
   const cls = score >= 70
-    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+    ? "text-primary bg-primary/10 border-primary/20"
     : score >= 40
     ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
-    : "text-red-400 bg-red-500/10 border-red-500/20";
+    : "text-destructive bg-destructive/10 border-destructive/20";
   const label = score >= 70 ? "Top" : score >= 40 ? "Médio" : "Crítico";
   return (
     <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-black uppercase tracking-widest shrink-0", cls)}>
@@ -141,7 +141,7 @@ function DeltaBadge({ delta }: { delta: number | null }) {
   if (delta === null) return null;
   const up = delta > 0;
   return (
-    <span className={cn("flex items-center gap-0.5 text-[10px] font-bold", up ? "text-red-400" : "text-emerald-400")}>
+    <span className={cn("flex items-center gap-0.5 text-[10px] font-bold", up ? "text-destructive" : "text-primary")}>
       {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
       {Math.abs(delta).toFixed(0)}%
     </span>
@@ -152,7 +152,7 @@ function StatusDot({ status }: { status?: string }) {
   if (!status) return null;
   return (
     <span className={cn("w-1.5 h-1.5 rounded-full shrink-0",
-      status === "ACTIVE" ? "bg-emerald-400" : "bg-zinc-600"
+      status === "ACTIVE" ? "bg-primary" : "bg-zinc-600"
     )} title={status} />
   );
 }
@@ -219,7 +219,7 @@ function FunnelTab({ accountId, since, until }: { accountId: string; since: stri
         const campAdsets = adsets.filter(a => a.parent_id === c.id);
 
         return (
-          <div key={c.id} className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden">
+          <div key={c.id} className="rounded-xl border border-border bg-white/[0.01] overflow-hidden">
             {/* Campanha */}
             <button
               onClick={() => setExpanded(prev => {
@@ -270,7 +270,7 @@ function FunnelTab({ accountId, since, until }: { accountId: string; since: stri
                       const adsetAds = ads.filter(a => a.parent_id === as.id);
 
                       return (
-                        <div key={as.id} className="border-t border-white/5">
+                        <div key={as.id} className="border-t border-border">
                           <button
                             onClick={() => setExpandedAdsets(prev => {
                               const s = new Set(prev);
@@ -317,7 +317,7 @@ function FunnelTab({ accountId, since, until }: { accountId: string; since: stri
                                   adsetAds.map(ad => (
                                     <div
                                       key={ad.id}
-                                      className="flex items-center gap-3 pl-16 pr-4 py-2.5 border-t border-white/5 hover:bg-white/[0.02] transition-colors"
+                                      className="flex items-center gap-3 pl-16 pr-4 py-2.5 border-t border-border hover:bg-white/[0.02] transition-colors"
                                     >
                                       <Zap className="h-3 w-3 text-zinc-600 shrink-0" />
                                       <StatusDot status={ad.status} />
@@ -380,7 +380,7 @@ function CreativesTab({ accountId }: { accountId: string }) {
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex bg-black/40 border border-white/10 rounded-lg p-1">
+        <div className="flex bg-black/5 dark:bg-black/40 border border-border rounded-lg p-1">
           {(["all", "image", "video", "carousel"] as const).map(f => {
             const FmtIcon = f === "all" ? LayoutGrid : f === "image" ? ImageIcon : f === "video" ? VideoIcon : Layers;
             return (
@@ -389,7 +389,7 @@ function CreativesTab({ accountId }: { accountId: string }) {
                 onClick={() => setFilterFormat(f)}
                 className={cn(
                   "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded transition-all flex items-center gap-1",
-                  filterFormat === f ? "bg-accent text-white" : "text-zinc-500 hover:text-zinc-300"
+                  filterFormat === f ? "bg-accent text-foreground" : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
                 <FmtIcon className="h-3 w-3" />
@@ -404,7 +404,7 @@ function CreativesTab({ accountId }: { accountId: string }) {
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value)}
-          className="bg-zinc-950 border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-accent/50 text-foreground"
+          className="bg-background border border-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-accent/50 text-foreground"
         >
           <option value="score_desc">Score ↓</option>
           <option value="score_asc">Score ↑</option>
@@ -427,8 +427,8 @@ function CreativesTab({ accountId }: { accountId: string }) {
             <motion.div key={cr.ad_id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <SpotlightCard
                 className={cn(
-                  "flex flex-col h-full p-4 border-white/5 hover:border-white/10 transition-colors",
-                  cr.worst_severity === "critical" && "border-red-500/20",
+                  "flex flex-col h-full p-4 border-border transition-colors",
+                  cr.worst_severity === "critical" && "border-destructive/20",
                   cr.worst_severity === "high" && "border-primary/20"
                 )}
               >
@@ -438,10 +438,10 @@ function CreativesTab({ accountId }: { accountId: string }) {
                     <img
                       src={cr.thumbnail_url}
                       alt=""
-                      className="h-14 w-14 rounded-lg object-cover shrink-0 border border-white/10"
+                      className="h-14 w-14 rounded-lg object-cover shrink-0 border border-border"
                     />
                   ) : (
-                    <div className="h-14 w-14 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <div className="h-14 w-14 rounded-lg bg-black/5 dark:bg-white/5 border border-border flex items-center justify-center shrink-0">
                       <FmtIcon className="h-6 w-6 text-zinc-600" />
                     </div>
                   )}
@@ -466,7 +466,7 @@ function CreativesTab({ accountId }: { accountId: string }) {
                 {(cr.title || cr.body) && (
                   <div
                     className={cn(
-                      "bg-white/[0.02] border border-white/5 rounded-lg p-3 mb-3 cursor-pointer hover:border-white/10 transition-colors",
+                      "bg-white/[0.02] border border-border rounded-lg p-3 mb-3 cursor-pointer border-border transition-colors",
                       isBodyOpen && "border-primary/20"
                     )}
                     onClick={() => setExpandedBody(isBodyOpen ? null : cr.ad_id)}
@@ -560,7 +560,7 @@ function TargetingTab({ accountId }: { accountId: string }) {
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
             {topInterests.slice(0, 12).map((interest, i) => (
-              <div key={i} className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+              <div key={i} className="bg-white/[0.02] border border-border rounded-xl p-3">
                 <p className="text-[11px] font-semibold truncate mb-2">{interest.name}</p>
                 <div className="flex justify-between text-[10px] text-zinc-500">
                   <span>{interest.total_leads} leads</span>
@@ -568,7 +568,7 @@ function TargetingTab({ accountId }: { accountId: string }) {
                     <span>CPL R${interest.avg_cpl.toFixed(0)}</span>
                   )}
                 </div>
-                <div className="mt-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                <div className="mt-1 h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-accent rounded-full"
                     style={{
@@ -591,7 +591,7 @@ function TargetingTab({ accountId }: { accountId: string }) {
           </h3>
           <div className="flex gap-3">
             {Object.entries(genderAnalysis).map(([gender, d]) => (
-              <div key={gender} className="flex-1 bg-white/[0.02] border border-white/5 rounded-xl p-4">
+              <div key={gender} className="flex-1 bg-white/[0.02] border border-border rounded-xl p-4">
                 <p className="text-xs font-bold mb-2">{gender}</p>
                 <p className="text-2xl font-black text-foreground/90">{d.total_leads}</p>
                 <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-0.5">leads totais</p>
@@ -616,7 +616,7 @@ function TargetingTab({ accountId }: { accountId: string }) {
             const isOpen = expanded === t.adset_id;
             const allPositions = [...(t.facebook_positions || []), ...(t.instagram_positions || [])];
             return (
-              <div key={t.adset_id} className="rounded-xl border border-white/5 bg-white/[0.01] overflow-hidden">
+              <div key={t.adset_id} className="rounded-xl border border-border bg-white/[0.01] overflow-hidden">
                 <button
                   onClick={() => setExpanded(isOpen ? null : t.adset_id)}
                   className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.03] transition-colors text-left"
@@ -645,7 +645,7 @@ function TargetingTab({ accountId }: { accountId: string }) {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="border-t border-white/5 p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
+                      className="border-t border-border p-4 grid grid-cols-1 md:grid-cols-3 gap-4"
                     >
                       {t.interests && t.interests.length > 0 && (
                         <div>
@@ -664,7 +664,7 @@ function TargetingTab({ accountId }: { accountId: string }) {
                           <p className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2">Audiências Customizadas</p>
                           <div className="flex flex-wrap gap-1">
                             {t.custom_audiences.map((a, idx) => (
-                              <span key={idx} className="text-[10px] bg-white/5 border border-white/10 text-zinc-300 px-2 py-0.5 rounded-full">
+                              <span key={idx} className="text-[10px] bg-black/5 dark:bg-white/5 border border-border text-zinc-300 px-2 py-0.5 rounded-full">
                                 {a.name}
                               </span>
                             ))}
@@ -676,7 +676,7 @@ function TargetingTab({ accountId }: { accountId: string }) {
                           <p className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2">Posicionamentos</p>
                           <div className="flex flex-wrap gap-1">
                             {allPositions.map((pos, idx) => (
-                              <span key={idx} className="text-[10px] bg-white/5 border border-white/10 text-zinc-400 px-2 py-0.5 rounded-full capitalize">
+                              <span key={idx} className="text-[10px] bg-black/5 dark:bg-white/5 border border-border text-zinc-400 px-2 py-0.5 rounded-full capitalize">
                                 {pos.replace(/_/g, " ")}
                               </span>
                             ))}
@@ -724,27 +724,27 @@ function PlacementsTab({ accountId }: { accountId: string }) {
       {(best || worst) && (
         <div className="grid grid-cols-2 gap-4">
           {best && (
-            <SpotlightCard className="p-5 border-emerald-500/20 bg-emerald-500/5">
-              <p className="text-[9px] uppercase tracking-widest text-emerald-400 font-bold mb-2 flex items-center gap-1.5">
+            <SpotlightCard className="p-5 border-primary/20 bg-primary/5">
+              <p className="text-[9px] uppercase tracking-widest text-primary font-bold mb-2 flex items-center gap-1.5">
                 <TrendingDown className="h-3 w-3" /> Menor CPL (Melhor)
               </p>
               <p className="text-base font-bold">
                 {best.placement} <span className="text-zinc-500 text-sm">({best.platform})</span>
               </p>
-              <p className="text-2xl font-black text-emerald-400 mt-1">
+              <p className="text-2xl font-black text-primary mt-1">
                 R${best.cpl.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
             </SpotlightCard>
           )}
           {worst && (
-            <SpotlightCard className="p-5 border-red-500/20 bg-red-500/5">
-              <p className="text-[9px] uppercase tracking-widest text-red-400 font-bold mb-2 flex items-center gap-1.5">
+            <SpotlightCard className="p-5 border-destructive/20 bg-destructive/5">
+              <p className="text-[9px] uppercase tracking-widest text-destructive font-bold mb-2 flex items-center gap-1.5">
                 <TrendingUp className="h-3 w-3" /> Maior CPL (Pior)
               </p>
               <p className="text-base font-bold">
                 {worst.placement} <span className="text-zinc-500 text-sm">({worst.platform})</span>
               </p>
-              <p className="text-2xl font-black text-red-400 mt-1">
+              <p className="text-2xl font-black text-destructive mt-1">
                 R${worst.cpl.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
             </SpotlightCard>
@@ -753,10 +753,10 @@ function PlacementsTab({ accountId }: { accountId: string }) {
       )}
 
       {/* Tabela com overflow-x em mobile */}
-      <div className="rounded-xl border border-white/5 overflow-hidden overflow-x-auto">
+      <div className="rounded-xl border border-border overflow-hidden overflow-x-auto">
         <table className="w-full text-sm min-w-[700px]">
           <thead>
-            <tr className="border-b border-white/5 bg-white/[0.02]">
+            <tr className="border-b border-border bg-white/[0.02]">
               {["Posicionamento", "Plataforma", "Investimento", "Leads", "CPL", "CTR%", "Δ CPL", "Share"].map(h => (
                 <th key={h} className="text-left py-3 px-4 text-[9px] font-bold uppercase tracking-widest text-zinc-500 whitespace-nowrap">
                   {h}
@@ -766,7 +766,7 @@ function PlacementsTab({ accountId }: { accountId: string }) {
           </thead>
           <tbody>
             {placements.map((p, i) => (
-              <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+              <tr key={i} className="border-b border-border hover:bg-white/[0.02] transition-colors">
                 <td className="py-3 px-4">
                   <span className="text-xs font-semibold whitespace-nowrap">{p.placement_label}</span>
                 </td>
@@ -775,7 +775,7 @@ function PlacementsTab({ accountId }: { accountId: string }) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-14 h-1 bg-white/5 rounded-full overflow-hidden shrink-0">
+                    <div className="w-14 h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden shrink-0">
                       <div className="h-full bg-accent rounded-full" style={{ width: `${(p.spend / maxSpend) * 100}%` }} />
                     </div>
                     <span className="text-xs font-mono whitespace-nowrap">
@@ -785,8 +785,8 @@ function PlacementsTab({ accountId }: { accountId: string }) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-10 h-1 bg-white/5 rounded-full overflow-hidden shrink-0">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(p.leads / maxLeads) * 100}%` }} />
+                    <div className="w-10 h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden shrink-0">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${(p.leads / maxLeads) * 100}%` }} />
                     </div>
                     <span className="text-xs font-mono">{p.leads}</span>
                   </div>
@@ -794,7 +794,7 @@ function PlacementsTab({ accountId }: { accountId: string }) {
                 <td className="py-3 px-4">
                   <span className={cn(
                     "text-xs font-mono font-bold whitespace-nowrap",
-                    p.cpl && p.cpl > 60 ? "text-red-400" : p.cpl && p.cpl < 30 ? "text-emerald-400" : ""
+                    p.cpl && p.cpl > 60 ? "text-destructive" : p.cpl && p.cpl < 30 ? "text-primary" : ""
                   )}>
                     {p.cpl ? `R$${p.cpl.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "—"}
                   </span>
@@ -807,7 +807,7 @@ function PlacementsTab({ accountId }: { accountId: string }) {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="w-12 h-1.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
                       <div className="h-full bg-accent/60 rounded-full" style={{ width: `${p.share_spend}%` }} />
                     </div>
                     <span className="text-[10px] text-zinc-500 whitespace-nowrap">{p.share_spend.toFixed(0)}%</span>
@@ -873,7 +873,7 @@ function AlertsTab({ accountId }: { accountId: string }) {
           );
         })}
         {alerts.length === 0 && (
-          <div className="flex items-center gap-2 text-emerald-400 text-sm">
+          <div className="flex items-center gap-2 text-primary text-sm">
             <CheckCircle2 className="h-4 w-4" /> Nenhum alerta ativo para esta conta
           </div>
         )}
@@ -927,7 +927,7 @@ function AlertsTab({ accountId }: { accountId: string }) {
                   <button
                     onClick={() => handleAction(a.id, "resolve")}
                     disabled={isActioning}
-                    className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/20 hover:text-emerald-400 transition-all disabled:opacity-40"
+                    className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-border hover:bg-primary/10 hover:border-primary/20 hover:text-primary transition-all disabled:opacity-40"
                   >
                     {isActioning
                       ? <RefreshCw className="h-3 w-3 animate-spin" />
@@ -938,7 +938,7 @@ function AlertsTab({ accountId }: { accountId: string }) {
                   <button
                     onClick={() => handleAction(a.id, "dismiss")}
                     disabled={isActioning}
-                    className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors text-zinc-500 hover:text-white disabled:opacity-40"
+                    className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 transition-colors text-zinc-500 hover:text-foreground disabled:opacity-40"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -978,6 +978,10 @@ export function AccountIntelligence({ accountId, since, until }: AccountIntellig
     if (!accountId) return;
     setSyncing(true);
     try {
+      // 1. Limpa o cache Meta primeiro (Padrão estabelecido no módulo Gerenciar)
+      await fetch("/api/meta/cache-clear", { method: "POST" });
+      
+      // 2. Executa a sincronização específica de Ad Intelligence
       const res = await fetch("/api/ad-intelligence/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -985,6 +989,14 @@ export function AccountIntelligence({ accountId, since, until }: AccountIntellig
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      
+      // 3. Invalida o cache do SWR para forçar o re-fetch dos dados novos
+      await mutate(
+        (key) => typeof key === "string" && (key.includes("/api/ad-intelligence/") || key.includes("/api/meta/")),
+        undefined,
+        { revalidate: true }
+      );
+      
       toast.success(
         `Sync completo — ${data.synced_creatives ?? 0} criativos · ${data.synced_targeting ?? 0} targeting · ${data.alerts_generated ?? 0} alertas`
       );
@@ -1015,7 +1027,7 @@ export function AccountIntelligence({ accountId, since, until }: AccountIntellig
     <div className="space-y-5">
       {/* Tab bar + Sync */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex bg-black/40 border border-white/10 rounded-xl p-1 flex-wrap gap-0.5">
+        <div className="flex bg-black/5 dark:bg-black/40 border border-border rounded-xl p-1 flex-wrap gap-0.5">
           {TABS.map(t => (
             <button
               key={t.key}
@@ -1023,14 +1035,14 @@ export function AccountIntelligence({ accountId, since, until }: AccountIntellig
               className={cn(
                 "flex items-center gap-1.5 px-4 py-2 text-[11px] font-bold tracking-widest uppercase rounded-lg transition-all",
                 tab === t.key
-                  ? "bg-accent text-white shadow-[0_0_15px_rgba(0,153,255,0.2)]"
+                  ? "bg-accent text-foreground shadow-[0_0_15px_rgba(0,153,255,0.2)]"
                   : "text-zinc-500 hover:text-zinc-300"
               )}
             >
               <t.icon className="h-3.5 w-3.5" />
               {t.label}
               {t.badge !== undefined && t.badge > 0 && (
-                <span className="ml-1 bg-red-500 text-white text-[9px] rounded-full px-1.5 py-0.5 font-black">
+                <span className="ml-1 bg-destructive text-foreground text-[9px] rounded-full px-1.5 py-0.5 font-black">
                   {t.badge}
                 </span>
               )}
@@ -1041,7 +1053,7 @@ export function AccountIntelligence({ accountId, since, until }: AccountIntellig
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest bg-card border border-zinc-800 hover:bg-muted transition-colors disabled:opacity-50"
         >
           <RefreshCw className={cn("h-3.5 w-3.5", syncing && "animate-spin")} />
           {syncing ? "Sincronizando..." : "Sync Dados"}

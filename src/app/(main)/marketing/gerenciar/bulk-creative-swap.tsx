@@ -81,7 +81,7 @@ function MediaLibraryPicker({
         <button
           key={img.hash}
           onClick={() => onSelect(img.hash, img.url)}
-          className="group relative aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-accent/60 transition-all bg-zinc-900"
+          className="group relative aspect-square rounded-lg overflow-hidden border border-border hover:border-accent/60 transition-all bg-card"
           title={img.name}
         >
           <img
@@ -90,7 +90,7 @@ function MediaLibraryPicker({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           <div className="absolute inset-0 bg-accent/0 group-hover:bg-primary/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-            <CheckCircle2 className="h-5 w-5 text-white drop-shadow" />
+            <CheckCircle2 className="h-5 w-5 text-foreground drop-shadow" />
           </div>
         </button>
       ))}
@@ -135,7 +135,7 @@ function UploadPanel({
     <div className="space-y-3">
       <div
         onClick={() => inputRef.current?.click()}
-        className="flex flex-col items-center justify-center gap-3 h-36 rounded-xl border-2 border-dashed border-white/15 hover:border-accent/50 cursor-pointer transition-all bg-white/[0.02] hover:bg-white/[0.04]"
+        className="flex flex-col items-center justify-center gap-3 h-36 rounded-xl border-2 border-dashed border-border hover:border-accent/50 cursor-pointer transition-all bg-white/[0.02] hover:bg-white/[0.04]"
       >
         {preview ? (
           <img src={preview} alt="preview" className="h-28 w-auto rounded object-contain" />
@@ -277,10 +277,10 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 16 }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="w-full max-w-3xl max-h-[90vh] bg-zinc-950 border border-white/10 rounded-2xl flex flex-col overflow-hidden shadow-2xl"
+        className="w-full max-w-3xl max-h-[90vh] bg-background border border-border rounded-2xl flex flex-col overflow-hidden shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-black/20 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-black/5 dark:bg-black/20 flex-shrink-0">
           <div>
             <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
               {confirmStep && (
@@ -298,7 +298,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
           </div>
           <button
             onClick={onClose}
-            className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-foreground/60 hover:text-foreground transition-colors"
+            className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 rounded-full text-foreground/60 hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -315,8 +315,8 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                   <p className="text-xs text-foreground/60 mt-1">Sucesso</p>
                 </div>
                 {failCount > 0 && (
-                  <div className="flex-1 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center">
-                    <p className="text-2xl font-bold text-red-400">{failCount}</p>
+                  <div className="flex-1 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-center">
+                    <p className="text-2xl font-bold text-destructive">{failCount}</p>
                     <p className="text-xs text-foreground/60 mt-1">Com erros</p>
                   </div>
                 )}
@@ -330,15 +330,15 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                       className={`flex items-start gap-3 p-3 rounded-xl border text-sm ${
                         r.success
                           ? "border-primary/20 bg-accent/8"
-                          : "border-red-500/20 bg-red-500/5"
+                          : "border-destructive/20 bg-destructive/5"
                       }`}
                     >
                       {r.success
                         ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                        : <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />}
+                        : <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />}
                       <div>
                         <p className="font-semibold text-foreground">{adName}</p>
-                        {r.error && <p className="text-xs text-red-400 mt-1">{r.error}</p>}
+                        {r.error && <p className="text-xs text-destructive mt-1">{r.error}</p>}
                       </div>
                     </div>
                   );
@@ -353,7 +353,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
           {/* ── Confirmation Step ── */}
           {!results && confirmStep && (
             <div className="space-y-5">
-              <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/8 space-y-4">
+              <div className="p-5 rounded-2xl bg-white/[0.02] border border-border space-y-4">
                 <h3 className="text-sm font-bold text-foreground">Resumo da Troca</h3>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
@@ -370,7 +370,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                     <div className="col-span-2">
                       <p className="text-foreground/50 uppercase tracking-widest mb-1">Mídia Selecionada</p>
                       {imagePreviewUrl ? (
-                        <img src={imagePreviewUrl} alt="" className="h-20 rounded-lg object-cover border border-white/10" />
+                        <img src={imagePreviewUrl} alt="" className="h-20 rounded-lg object-cover border border-border" />
                       ) : (
                         <p className="font-mono text-xs text-primary">{imageHash}</p>
                       )}
@@ -404,7 +404,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
               </div>
 
               {errorMsg && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive">
                   <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   {errorMsg}
                 </div>
@@ -445,7 +445,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                           className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                             isSelected
                               ? "border-accent/50 bg-primary/10"
-                              : "border-white/8 bg-white/4 hover:border-white/20"
+                              : "border-border bg-white/4 border-border"
                           }`}
                         >
                           <span className="shrink-0 text-primary">
@@ -455,7 +455,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                           </span>
                           {ad.thumbnailUrl
                             ? <img src={ad.thumbnailUrl} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
-                            : <div className="h-8 w-8 rounded bg-white/5 flex items-center justify-center shrink-0">
+                            : <div className="h-8 w-8 rounded bg-black/5 dark:bg-white/5 flex items-center justify-center shrink-0">
                                 <ImageIcon className="h-4 w-4 text-foreground/40" />
                               </div>}
                           <div className="flex-1 min-w-0">
@@ -475,8 +475,8 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
               </div>
 
               {/* Creative Fields */}
-              <div className="border border-white/8 rounded-2xl overflow-hidden">
-                <div className="px-5 pt-4 pb-3 border-b border-white/5">
+              <div className="border border-border rounded-2xl overflow-hidden">
+                <div className="px-5 pt-4 pb-3 border-b border-border">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Novo Criativo</h3>
                   <p className="text-[11px] text-foreground/50 mt-1">Os campos preenchidos substituirão o criativo nos anúncios selecionados.</p>
                 </div>
@@ -489,7 +489,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                     </Label>
                     {pages.length > 0 ? (
                       <Select value={pageId || "__NONE__"} onValueChange={(v) => setPageId(v === "__NONE__" ? "" : v)}>
-                        <SelectTrigger className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 text-xs">
+                        <SelectTrigger className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 text-xs">
                           <SelectValue placeholder="Selecionar página..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -506,7 +506,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                         value={pageId}
                         onChange={(e) => setPageId(e.target.value)}
                         placeholder="ID da Página do Facebook"
-                        className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 font-mono"
+                        className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 font-mono"
                       />
                     )}
                   </div>
@@ -518,12 +518,12 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                         <ImageIcon className="h-3.5 w-3.5" /> Mídia
                       </Label>
                       {/* Tab toggle */}
-                      <div className="flex gap-0.5 bg-white/5 rounded-lg p-0.5 border border-white/8">
+                      <div className="flex gap-0.5 bg-black/5 dark:bg-white/5 rounded-lg p-0.5 border border-border">
                         <button
                           onClick={() => setMediaTab("biblioteca")}
                           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
                             mediaTab === "biblioteca"
-                              ? "bg-accent text-white"
+                              ? "bg-accent text-foreground"
                               : "text-foreground/60 hover:text-foreground"
                           }`}
                         >
@@ -533,7 +533,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                           onClick={() => setMediaTab("upload")}
                           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
                             mediaTab === "upload"
-                              ? "bg-accent text-white"
+                              ? "bg-accent text-foreground"
                               : "text-foreground/60 hover:text-foreground"
                           }`}
                         >
@@ -546,7 +546,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                     {imageHash && (
                       <div className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/20">
                         {imagePreviewUrl && (
-                          <img src={imagePreviewUrl} alt="" className="h-10 w-10 rounded object-cover border border-white/10" />
+                          <img src={imagePreviewUrl} alt="" className="h-10 w-10 rounded object-cover border border-border" />
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-[11px] text-foreground/60">Imagem selecionada</p>
@@ -591,7 +591,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                           if (e.target.value) { setImageHash(""); setImagePreviewUrl(""); }
                         }}
                         placeholder="ID numérico do vídeo no Meta"
-                        className="bg-black/50 border-white/10 text-foreground rounded-xl h-10 font-mono text-sm"
+                        className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-10 font-mono text-sm"
                       />
                     </div>
                   </div>
@@ -603,7 +603,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                       value={copy}
                       onChange={(e) => setCopy(e.target.value)}
                       placeholder="Copy do anúncio..."
-                      className="bg-black/40 border-white/10 text-foreground min-h-[80px] text-sm rounded-xl resize-none"
+                      className="bg-black/5 dark:bg-black/40 border-border text-foreground min-h-[80px] text-sm rounded-xl resize-none"
                     />
                   </div>
 
@@ -615,7 +615,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                         value={headline}
                         onChange={(e) => setHeadline(e.target.value)}
                         placeholder="Título do anúncio"
-                        className="bg-black/50 border-white/10 text-foreground rounded-xl h-10"
+                        className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-10"
                       />
                     </div>
                     <div className="space-y-2">
@@ -624,7 +624,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         placeholder="https://..."
-                        className="bg-black/50 border-white/10 text-foreground rounded-xl h-10 font-mono text-xs"
+                        className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-10 font-mono text-xs"
                       />
                     </div>
                   </div>
@@ -633,7 +633,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                   <div className="space-y-2">
                     <Label className="text-foreground/60 font-semibold text-xs">Botão de Ação (CTA)</Label>
                     <Select value={ctaType} onValueChange={setCtaType}>
-                      <SelectTrigger className="bg-black/50 border-white/10 text-foreground rounded-xl h-11">
+                      <SelectTrigger className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -651,10 +651,10 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 flex items-start gap-3"
+                        className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 flex items-start gap-3"
                       >
-                        <AlertCircle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
-                        <p className="text-sm text-red-400">{errorMsg}</p>
+                        <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                        <p className="text-sm text-destructive">{errorMsg}</p>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -666,7 +666,7 @@ export function BulkCreativeSwap({ campaignId, campaignName, onClose }: BulkCrea
 
         {/* Footer */}
         {!results && (
-          <div className="flex items-center justify-between p-5 border-t border-white/5 bg-black/20 flex-shrink-0">
+          <div className="flex items-center justify-between p-5 border-t border-border bg-black/5 dark:bg-black/20 flex-shrink-0">
             <p className="text-xs text-foreground/50">
               {selected.size} anúncio(s) selecionado(s)
             </p>

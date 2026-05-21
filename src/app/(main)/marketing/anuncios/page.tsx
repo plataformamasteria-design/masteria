@@ -421,8 +421,8 @@ function AnunciosTab() {
   const toggleSort = (col: string) => { if (sortCol === col) setSortDir((d) => d === "asc" ? "desc" : "asc"); else { setSortCol(col); setSortDir("desc"); } };
   const sorted = [...adRows].sort((a, b) => { const va = (a as unknown as Record<string, number>)[sortCol] ?? 0; const vb = (b as unknown as Record<string, number>)[sortCol] ?? 0; return sortDir === "asc" ? va - vb : vb - va; });
 
-  const scoreColor = (s: number) => s >= 70 ? "text-emerald-500 dark:text-emerald-400" : s >= 40 ? "text-amber-500 dark:text-amber-400" : "text-red-500 dark:text-red-400";
-  const scoreBg = (s: number) => s >= 70 ? "bg-emerald-500/10" : s >= 40 ? "bg-amber-500/10" : "bg-red-500/10";
+  const scoreColor = (s: number) => s >= 70 ? "text-primary dark:text-primary" : s >= 40 ? "text-amber-500 dark:text-amber-400" : "text-destructive dark:text-destructive";
+  const scoreBg = (s: number) => s >= 70 ? "bg-primary/10" : s >= 40 ? "bg-amber-500/10" : "bg-destructive/10";
 
   // Determine if ad can have copy analyzed (video or image with text)
   const canAnalyzeCopy = (ad: typeof adRows[0]) => {
@@ -446,13 +446,13 @@ function AnunciosTab() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode("cards")}
-              className={cn("px-3 py-1.5 text-xs rounded-lg transition-all", viewMode === "cards" ? "gradient-primary text-white" : "border border-border dark:border-white/[0.08] text-muted-foreground hover:text-foreground")}
+              className={cn("px-3 py-1.5 text-xs rounded-lg transition-all", viewMode === "cards" ? "gradient-primary text-foreground" : "border border-border text-muted-foreground hover:text-foreground")}
             >
               Cards
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={cn("px-3 py-1.5 text-xs rounded-lg transition-all", viewMode === "table" ? "gradient-primary text-white" : "border border-border dark:border-white/[0.08] text-muted-foreground hover:text-foreground")}
+              className={cn("px-3 py-1.5 text-xs rounded-lg transition-all", viewMode === "table" ? "gradient-primary text-foreground" : "border border-border text-muted-foreground hover:text-foreground")}
             >
               Tabela
             </button>
@@ -472,7 +472,7 @@ function AnunciosTab() {
                 <div className="h-[2px] w-full gradient-primary opacity-30 group-hover/card:opacity-70 transition-opacity duration-300" />
                 <CardContent className="p-0">
                   <div className="flex gap-0">
-                    <div className="w-[120px] min-h-[140px] shrink-0 bg-muted/30 dark:bg-white/[0.03] flex items-center justify-center overflow-hidden border-r border-border dark:border-white/[0.06]">
+                    <div className="w-[120px] min-h-[140px] shrink-0 bg-muted/30 dark:bg-white/[0.03] flex items-center justify-center overflow-hidden border-r border-border">
                       {thumb ? (
                         <img src={thumb} alt={ad.ad_name || ""} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="flex items-center justify-center w-full h-full"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted-foreground/30"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>'; }} />
                       ) : (
@@ -506,14 +506,14 @@ function AnunciosTab() {
                         <div className="flex items-center gap-1.5">
                           <TrendingDown size={10} className="text-muted-foreground/50" />
                           <span className="text-[11px] text-muted-foreground">CPL</span>
-                          <span className={cn("text-[11px] font-medium ml-auto", ad.cpl > 0 && ad.cpl < globalCpl ? "text-emerald-500 dark:text-emerald-400" : ad.cpl > globalCpl * 1.3 ? "text-red-500 dark:text-red-400" : "")}>
+                          <span className={cn("text-[11px] font-medium ml-auto", ad.cpl > 0 && ad.cpl < globalCpl ? "text-primary dark:text-primary" : ad.cpl > globalCpl * 1.3 ? "text-destructive dark:text-destructive" : "")}>
                             {ad.totalLeads > 0 ? formatCurrency(ad.cpl) : "\u2014"}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <MousePointerClick size={10} className="text-muted-foreground/50" />
                           <span className="text-[11px] text-muted-foreground">CTR</span>
-                          <span className={cn("text-[11px] font-medium ml-auto", ad.ctr >= 1.5 ? "text-emerald-500 dark:text-emerald-400" : ad.ctr > 0 && ad.ctr < 0.8 ? "text-red-500 dark:text-red-400" : "")}>
+                          <span className={cn("text-[11px] font-medium ml-auto", ad.ctr >= 1.5 ? "text-primary dark:text-primary" : ad.ctr > 0 && ad.ctr < 0.8 ? "text-destructive dark:text-destructive" : "")}>
                             {formatPercent(ad.ctr)}
                           </span>
                         </div>
@@ -525,13 +525,13 @@ function AnunciosTab() {
                         <div className="flex items-center gap-1.5">
                           <TrendingUp size={10} className="text-muted-foreground/50" />
                           <span className="text-[11px] text-muted-foreground">Qualif.</span>
-                          <span className={cn("text-[11px] font-medium ml-auto", ad.taxaQualif >= 40 ? "text-emerald-500 dark:text-emerald-400" : ad.taxaQualif >= 20 ? "text-amber-500 dark:text-amber-400" : ad.totalLeads > 0 ? "text-red-500 dark:text-red-400" : "text-muted-foreground")}>
+                          <span className={cn("text-[11px] font-medium ml-auto", ad.taxaQualif >= 40 ? "text-primary dark:text-primary" : ad.taxaQualif >= 20 ? "text-amber-500 dark:text-amber-400" : ad.totalLeads > 0 ? "text-destructive dark:text-destructive" : "text-muted-foreground")}>
                             {ad.totalLeads > 0 ? formatPercent(ad.taxaQualif) : "\u2014"}
                           </span>
                         </div>
                       </div>
                       {/* Funnel metrics */}
-                      <div className="grid grid-cols-3 gap-x-3 gap-y-1 mt-1 pt-1 border-t border-border/30 dark:border-white/[0.04]">
+                      <div className="grid grid-cols-3 gap-x-3 gap-y-1 mt-1 pt-1 border-t border-border/30 border-border">
                         <div className="text-center">
                           <p className="text-[9px] text-muted-foreground">Reun. Feitas</p>
                           <p className="text-[11px] font-semibold">{ad.reunioesRealizadas || "\u2014"}</p>
@@ -542,12 +542,12 @@ function AnunciosTab() {
                         </div>
                         <div className="text-center">
                           <p className="text-[9px] text-muted-foreground">Fechados</p>
-                          <p className={cn("text-[11px] font-semibold", ad.fechados > 0 ? "text-emerald-500 dark:text-emerald-400" : "")}>{ad.fechados || "\u2014"}</p>
+                          <p className={cn("text-[11px] font-semibold", ad.fechados > 0 ? "text-primary dark:text-primary" : "")}>{ad.fechados || "\u2014"}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border dark:border-white/[0.06]">
-                        <Badge className={cn("text-[9px]", ad.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-muted text-muted-foreground")}>
+                      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border">
+                        <Badge className={cn("text-[9px]", ad.status === "ACTIVE" ? "bg-primary/10 text-primary dark:text-primary" : "bg-muted text-muted-foreground")}>
                           {ad.status === "ACTIVE" ? "Ativo" : (ad.status || "").replace(/_/g, " ")}
                         </Badge>
                         <div className="flex items-center gap-2">
@@ -578,7 +578,7 @@ function AnunciosTab() {
           <CardContent className="p-0">
             <div className="overflow-auto">
               <table className="w-full text-sm">
-                <thead><tr className="border-b border-border dark:border-white/[0.06] text-muted-foreground">
+                <thead><tr className="border-b border-border text-muted-foreground">
                   {[
                     { key: "ad_name", label: "Anúncio" },
                     { key: "score", label: "Score" },
@@ -601,7 +601,7 @@ function AnunciosTab() {
                 </tr></thead>
                 <tbody>
                   {sorted.map((ad) => (
-                    <tr key={ad.ad_id} className="border-b border-border dark:border-white/[0.06] hover:bg-muted/30 dark:hover:bg-white/[0.02]">
+                    <tr key={ad.ad_id} className="border-b border-border hover:bg-muted/30 dark:hover:bg-white/[0.02]">
                       <td className="px-3 py-2 max-w-[220px]">
                         <div className="flex items-center gap-2.5">
                           {ad.creative?.thumbnail_url || ad.creative?.image_url ? (
@@ -619,15 +619,15 @@ function AnunciosTab() {
                       <td className="px-3 py-2 text-xs font-medium">{formatCurrency(ad.spend)}</td>
                       <td className="px-3 py-2 text-xs font-bold">{ad.totalLeads}{ad.metaLeads > 0 && ad.metaLeads !== ad.totalLeads ? <span className="text-[10px] text-muted-foreground ml-1">({ad.metaLeads} Meta)</span> : null}</td>
                       <td className="px-3 py-2 text-xs">{ad.totalLeads > 0 ? formatCurrency(ad.cpl) : "\u2014"}</td>
-                      <td className={cn("px-3 py-2 text-xs font-medium", ad.ctr >= 1.5 ? "text-emerald-500 dark:text-emerald-400" : ad.ctr >= 0.8 ? "" : ad.ctr > 0 ? "text-red-500 dark:text-red-400" : "text-muted-foreground")}>{formatPercent(ad.ctr)}</td>
+                      <td className={cn("px-3 py-2 text-xs font-medium", ad.ctr >= 1.5 ? "text-primary dark:text-primary" : ad.ctr >= 0.8 ? "" : ad.ctr > 0 ? "text-destructive dark:text-destructive" : "text-muted-foreground")}>{formatPercent(ad.ctr)}</td>
                       <td className="px-3 py-2 text-xs">{ad.qualificados > 0 ? ad.qualificados : "\u2014"}</td>
-                      <td className={cn("px-3 py-2 text-xs font-medium", ad.taxaQualif >= 40 ? "text-emerald-500 dark:text-emerald-400" : ad.taxaQualif >= 20 ? "text-amber-500 dark:text-amber-400" : ad.totalLeads > 0 ? "text-red-500 dark:text-red-400" : "text-muted-foreground")}>{ad.totalLeads > 0 ? formatPercent(ad.taxaQualif) : "\u2014"}</td>
+                      <td className={cn("px-3 py-2 text-xs font-medium", ad.taxaQualif >= 40 ? "text-primary dark:text-primary" : ad.taxaQualif >= 20 ? "text-amber-500 dark:text-amber-400" : ad.totalLeads > 0 ? "text-destructive dark:text-destructive" : "text-muted-foreground")}>{ad.totalLeads > 0 ? formatPercent(ad.taxaQualif) : "\u2014"}</td>
                       <td className="px-3 py-2 text-xs">{ad.reunioes > 0 ? ad.reunioes : "\u2014"}</td>
                       <td className="px-3 py-2 text-xs">{ad.reunioesRealizadas > 0 ? ad.reunioesRealizadas : "\u2014"}</td>
                       <td className="px-3 py-2 text-xs">{ad.cprf > 0 ? formatCurrency(ad.cprf) : "\u2014"}</td>
                       <td className="px-3 py-2 text-xs">{ad.fechados > 0 ? ad.fechados : "\u2014"}</td>
-                      <td className={cn("px-3 py-2 text-xs font-medium", ad.taxaFechamento >= 10 ? "text-emerald-500 dark:text-emerald-400" : ad.taxaFechamento >= 5 ? "text-amber-500 dark:text-amber-400" : ad.fechados > 0 ? "text-red-500 dark:text-red-400" : "text-muted-foreground")}>{ad.fechados > 0 ? formatPercent(ad.taxaFechamento) : "\u2014"}</td>
-                      <td className="px-3 py-2"><Badge className={cn("text-[10px]", ad.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400" : "bg-muted text-muted-foreground")}>{ad.status === "ACTIVE" ? "Ativo" : (ad.status || "").replace(/_/g, " ")}</Badge></td>
+                      <td className={cn("px-3 py-2 text-xs font-medium", ad.taxaFechamento >= 10 ? "text-primary dark:text-primary" : ad.taxaFechamento >= 5 ? "text-amber-500 dark:text-amber-400" : ad.fechados > 0 ? "text-destructive dark:text-destructive" : "text-muted-foreground")}>{ad.fechados > 0 ? formatPercent(ad.taxaFechamento) : "\u2014"}</td>
+                      <td className="px-3 py-2"><Badge className={cn("text-[10px]", ad.status === "ACTIVE" ? "bg-primary/10 text-primary dark:text-primary" : "bg-muted text-muted-foreground")}>{ad.status === "ACTIVE" ? "Ativo" : (ad.status || "").replace(/_/g, " ")}</Badge></td>
                       <td className="px-3 py-2">
                         {canAnalyzeCopy(ad) && (
                           <button onClick={() => openCopySheet(ad)} className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-0.5">
@@ -946,9 +946,9 @@ function CopyTab() {
 function CopyScoreBadge({ score }: { score: number }) {
   const n = Math.round(score);
   const cls =
-    n <= 30 ? "bg-red-500/15 text-red-400 border-red-500/30" :
+    n <= 30 ? "bg-destructive/15 text-destructive border-destructive/30" :
     n <= 60 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" :
-    n <= 80 ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
+    n <= 80 ? "bg-accent/15 text-accent border-accent/30" :
               "bg-green-500/15 text-green-400 border-green-500/30";
   return <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-bold ${cls}`}>{n}</span>;
 }
@@ -956,9 +956,9 @@ function CopyScoreBadge({ score }: { score: number }) {
 function NotaCopyBadge({ nota }: { nota?: number }) {
   if (nota === undefined || nota === null) return null;
   const cls =
-    nota <= 3 ? "bg-red-500/15 text-red-400 border-red-500/30" :
+    nota <= 3 ? "bg-destructive/15 text-destructive border-destructive/30" :
     nota <= 5 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" :
-    nota <= 7 ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
+    nota <= 7 ? "bg-accent/15 text-accent border-accent/30" :
                "bg-green-500/15 text-green-400 border-green-500/30";
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-semibold ${cls}`}>
@@ -990,7 +990,7 @@ function InlineAnaliseCard({ analise }: { analise: AnaliseResult }) {
             <div>
               <p className="text-[10px] font-medium text-muted-foreground mb-1">Pontos fracos</p>
               {(d.pontos_fracos || []).map((p, i) => (
-                <p key={i} className="text-[11px] text-red-400 flex items-start gap-1"><AlertTriangle size={10} className="mt-0.5 shrink-0" /> {p}</p>
+                <p key={i} className="text-[11px] text-destructive flex items-start gap-1"><AlertTriangle size={10} className="mt-0.5 shrink-0" /> {p}</p>
               ))}
             </div>
           </div>

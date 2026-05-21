@@ -17,7 +17,7 @@ export function AudiencesTab() {
   ];
 
   return (
-    <SpotlightCard className="border-white/5 bg-black/20 p-5 overflow-hidden flex flex-col">
+    <SpotlightCard className="border-border bg-black/5 dark:bg-black/20 p-5 overflow-hidden flex flex-col">
        <div className="flex justify-between items-center mb-6">
          <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
            <Users className="h-4 w-4 text-primary" /> Audience Intelligence
@@ -26,7 +26,7 @@ export function AudiencesTab() {
 
        <div className="overflow-x-auto">
          <table className="w-full text-left text-sm whitespace-nowrap min-w-[900px]">
-           <thead className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider border-b border-white/5">
+           <thead className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider border-b border-border">
              <tr>
                <th className="px-4 py-3">Público / Conjunto</th>
                <th className="px-4 py-3 text-center">Tipo</th>
@@ -42,21 +42,21 @@ export function AudiencesTab() {
                <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
                  <td className="px-4 py-4 max-w-[200px] truncate">{a.name}</td>
                  <td className="px-4 py-4 text-center">
-                    <span className="px-2 py-0.5 rounded border border-white/10 text-xs text-zinc-400 bg-white/5">{a.type}</span>
+                    <span className="px-2 py-0.5 rounded border border-border text-xs text-zinc-400 bg-black/5 dark:bg-white/5">{a.type}</span>
                  </td>
                  <td className="px-4 py-4 text-right text-zinc-400">{a.size}</td>
                  <td className="px-4 py-4 text-right">R$ {a.cpm.toFixed(2)}</td>
-                 <td className={cn("px-4 py-4 text-right", a.warning && "text-red-400 font-bold")}>{a.freq.toFixed(1)}x</td>
+                 <td className={cn("px-4 py-4 text-right", a.warning && "text-destructive font-bold")}>{a.freq.toFixed(1)}x</td>
                  <td className="px-4 py-4 text-center">
                     <span className={cn("px-2 py-1 flex items-center justify-center gap-1 mx-auto w-12 rounded-lg text-xs font-black", 
-                        a.score > 70 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : 
-                        a.score < 50 ? "bg-red-500/20 text-red-400 border border-red-500/30" : 
+                        a.score > 70 ? "bg-primary/20 text-primary border border-primary/30" : 
+                        a.score < 50 ? "bg-destructive/20 text-destructive border border-destructive/30" : 
                         "bg-amber-500/20 text-amber-400 border border-amber-500/30"
                     )}>{a.score}</span>
                  </td>
                  <td className="px-4 py-4 min-w-[300px]">
                    <div className="flex items-start gap-2 text-xs">
-                     {a.warning ? <AlertTriangle className="h-4 w-4 shrink-0 text-red-400 mt-0.5"/> : <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500 mt-0.5"/>}
+                     {a.warning ? <AlertTriangle className="h-4 w-4 shrink-0 text-destructive mt-0.5"/> : <CheckCircle2 className="h-4 w-4 shrink-0 text-primary mt-0.5"/>}
                      <span className="text-zinc-400 leading-tight whitespace-normal">{a.diagnosis}</span>
                    </div>
                  </td>
@@ -72,13 +72,21 @@ export function AudiencesTab() {
 export function AlertsTab() {
   const { fullReport } = useAdIntelligence();
   
-  const alerts = fullReport ? [{ 
-    id: "alt_ai1", 
-    sev: fullReport.priority === 'critical' ? 'critical' : fullReport.priority === 'high' ? 'important' : 'attention', 
-    type: "IA Global", 
-    text: fullReport.diagnosis, 
-    action: fullReport.recommendation 
-  }] : [
+  const alerts = fullReport ? (
+    fullReport.error ? [{
+      id: "alt_ai_err",
+      sev: "critical",
+      type: "Erro IA",
+      text: fullReport.error,
+      action: "Verifique sua configuração ou tente novamente."
+    }] : [{ 
+      id: "alt_ai1", 
+      sev: fullReport.priority === 'critical' ? 'critical' : fullReport.priority === 'high' ? 'important' : 'attention', 
+      type: "IA Global", 
+      text: fullReport.diagnosis, 
+      action: fullReport.recommendation 
+    }]
+  ) : [
     { id: "alt1", sev: "critical", type: "Sistema", text: "Nenhuma Análise Recente Gerada. Clique em Gerar Análise Profunda no Topo para popular com inteligência verdadeira da Meta.", action: "Gerar Inteligência" }
   ];
 
@@ -91,7 +99,7 @@ export function AlertsTab() {
         {alerts.map(a => (
           <SpotlightCard key={a.id} className={cn(
             "p-5 border-l-4 rounded-xl flex items-center justify-between",
-            a.sev === "critical" ? "border-l-red-500 bg-red-950/10" :
+            a.sev === "critical" ? "border-l-red-500 bg-destructive/10" :
             a.sev === "important" ? "border-l-accent bg-accent-foreground/10" :
             "border-l-amber-500 bg-amber-950/10"
           )}>
@@ -99,9 +107,9 @@ export function AlertsTab() {
                <div className="flex items-center gap-2 mb-1">
                  <span className={cn(
                     "uppercase text-[9px] font-black tracking-widest px-1.5 py-0.5 rounded",
-                    a.sev === "critical" ? "bg-red-500 text-white" :
-                    a.sev === "important" ? "bg-accent text-white" :
-                    "bg-amber-500 text-white"
+                    a.sev === "critical" ? "bg-destructive text-foreground" :
+                    a.sev === "important" ? "bg-accent text-foreground" :
+                    "bg-amber-500 text-foreground"
                  )}>{a.sev}</span>
                  <span className="text-zinc-500 text-xs font-mono">{a.type}</span>
                </div>
@@ -124,7 +132,7 @@ export function RecommendationsTab() {
         <Cpu className="h-4 w-4 text-primary" /> Plano de Ação IA
       </h3>
       <div className="grid grid-cols-1 gap-4">
-        <SpotlightCard className="p-5 border-white/5 flex flex-col items-start bg-gradient-to-b from-transparent to-accent-foreground/5">
+        <SpotlightCard className="p-5 border-border flex flex-col items-start bg-gradient-to-b from-transparent to-accent-foreground/5">
           <div className="w-full flex justify-between items-start mb-3">
              <div className="bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest">
                Intervenção Estratégica
@@ -133,6 +141,15 @@ export function RecommendationsTab() {
           </div>
 
           {fullReport ? (
+            fullReport.error ? (
+              <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl flex items-center gap-3 w-full">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                <div>
+                  <h4 className="text-sm font-bold text-destructive">Falha na Inteligência Artificial</h4>
+                  <p className="text-xs text-zinc-400 mt-1">{fullReport.error}</p>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-4 w-full">
               <div>
                 <h4 className="text-sm font-bold text-foreground">Diagnóstico</h4>
@@ -165,6 +182,7 @@ export function RecommendationsTab() {
                 </div>
               )}
             </div>
+            )
           ) : (
             <div className="text-center w-full py-8">
               <Cpu className="h-10 w-10 text-zinc-600 mx-auto mb-3" />
@@ -185,7 +203,7 @@ export function BenchmarkTab() {
   const { period } = useAdIntelligence();
 
   // Current month data
-  const bParams = new URLSearchParams({ since: period.since, until: period.until, breakdown: "none" });
+  const bParams = new URLSearchParams({ since: period.since, until: period.until, breakdown: "none", level: "campaign" });
   if (accountId) bParams.set("account_id", accountId);
   const { data: currentData, isLoading } = useSWR(`/api/meta/insights?${bParams.toString()}`, url => fetch(url).then(r => r.json()), { revalidateOnFocus: false });
 
@@ -193,13 +211,13 @@ export function BenchmarkTab() {
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
   const histSince = sixMonthsAgo.toISOString().slice(0, 10);
-  const hParams = new URLSearchParams({ since: histSince, until: period.until, breakdown: "none" });
+  const hParams = new URLSearchParams({ since: histSince, until: period.until, breakdown: "none", level: "campaign" });
   if (accountId) hParams.set("account_id", accountId);
   const { data: histData } = useSWR(`/api/meta/insights?${hParams.toString()}`, url => fetch(url).then(r => r.json()), { revalidateOnFocus: false });
 
   if (isLoading) {
     return (
-      <SpotlightCard className="border-white/5 bg-black/20 p-6 flex flex-col min-h-[300px] justify-center items-center">
+      <SpotlightCard className="border-border bg-black/5 dark:bg-black/20 p-6 flex flex-col min-h-[300px] justify-center items-center">
         <div className="h-8 w-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
         <p className="text-zinc-500 text-xs mt-4">Carregando benchmark...</p>
       </SpotlightCard>
@@ -224,7 +242,7 @@ export function BenchmarkTab() {
   const hasData = current && current.spend > 0;
 
   return (
-    <SpotlightCard className="border-white/5 bg-black/20 p-6 flex flex-col min-h-[300px]">
+    <SpotlightCard className="border-border bg-black/5 dark:bg-black/20 p-6 flex flex-col min-h-[300px]">
        <div className="flex justify-between items-center mb-6">
          <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
            <Target className="h-4 w-4 text-primary" /> Benchmark da Conta (Periodo vs Historico 6m)
@@ -237,11 +255,11 @@ export function BenchmarkTab() {
          </div>
        ) : (
          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-           <div className="col-span-1 border border-white/5 bg-black/40 rounded-xl p-5 text-center">
+           <div className="col-span-1 border border-border bg-black/5 dark:bg-black/40 rounded-xl p-5 text-center">
               <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">Seu CPL Atual</span>
-              <p className="text-4xl font-black text-foreground mt-2 border-b border-white/10 pb-4 mb-4">{fmtMoney(currentCpl)}</p>
+              <p className="text-4xl font-black text-foreground mt-2 border-b border-border pb-4 mb-4">{fmtMoney(currentCpl)}</p>
               {deltaVsHist !== 0 && (
-                <span className={cn("text-xs font-bold px-2 py-1 rounded", deltaVsHist > 0 ? "text-red-400 bg-red-500/10" : "text-emerald-400 bg-emerald-500/10")}>
+                <span className={cn("text-xs font-bold px-2 py-1 rounded", deltaVsHist > 0 ? "text-destructive bg-destructive/10" : "text-primary bg-primary/10")}>
                   {deltaVsHist > 0 ? "+" : ""}{deltaVsHist}% vs Media 6m
                 </span>
               )}
@@ -250,8 +268,8 @@ export function BenchmarkTab() {
            <div className="col-span-1 md:col-span-2 space-y-4">
               <div className="relative pt-6">
                  <span className="absolute top-0 left-0 text-xs text-zinc-400">Benchmark Interno (Historico 6 meses)</span>
-                 <div className="h-4 bg-white/5 rounded-full overflow-hidden w-full relative">
-                   <div className="absolute top-0 left-0 h-full bg-emerald-500 transition-all duration-700" style={{ width: `${100 - positionPct}%` }}></div>
+                 <div className="h-4 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden w-full relative">
+                   <div className="absolute top-0 left-0 h-full bg-primary transition-all duration-700" style={{ width: `${100 - positionPct}%` }}></div>
                  </div>
                  <div className="flex justify-between mt-1 text-[10px] font-mono text-zinc-500">
                    <span>{fmtMoney(0)} (Melhor)</span>
@@ -261,11 +279,11 @@ export function BenchmarkTab() {
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-black/40 border border-white/5 rounded-lg p-3 text-center">
+                <div className="bg-black/5 dark:bg-black/40 border border-border rounded-lg p-3 text-center">
                   <span className="text-[9px] text-zinc-500 uppercase font-bold">CTR Atual</span>
                   <p className="text-lg font-bold text-foreground mt-1">{currentCtr.toFixed(2)}%</p>
                 </div>
-                <div className="bg-black/40 border border-white/5 rounded-lg p-3 text-center">
+                <div className="bg-black/5 dark:bg-black/40 border border-border rounded-lg p-3 text-center">
                   <span className="text-[9px] text-zinc-500 uppercase font-bold">CTR Hist. 6m</span>
                   <p className="text-lg font-bold text-zinc-400 mt-1">
                     {histCtr > 0 ? `${histCtr.toFixed(2)}%` : (
@@ -273,7 +291,7 @@ export function BenchmarkTab() {
                     )}
                   </p>
                 </div>
-                <div className="bg-black/40 border border-white/5 rounded-lg p-3 text-center">
+                <div className="bg-black/5 dark:bg-black/40 border border-border rounded-lg p-3 text-center">
                   <span className="text-[9px] text-zinc-500 uppercase font-bold">Leads Periodo</span>
                   <p className="text-lg font-bold text-foreground mt-1">{current?.leads || 0}</p>
                 </div>
@@ -314,17 +332,17 @@ export function TimelineTab() {
     spend: row.spend || 0
   })).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
-  if (isLoading) return <SpotlightCard className="border-white/5 bg-black/20 p-6 min-h-[400px] flex justify-center items-center"><div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full"></div></SpotlightCard>;
+  if (isLoading) return <SpotlightCard className="border-border bg-black/5 dark:bg-black/20 p-6 min-h-[400px] flex justify-center items-center"><div className="animate-spin h-8 w-8 border-2 border-accent border-t-transparent rounded-full"></div></SpotlightCard>;
 
   return (
-    <SpotlightCard className="border-white/5 bg-black/20 p-6 min-h-[400px] flex flex-col">
+    <SpotlightCard className="border-border bg-black/5 dark:bg-black/20 p-6 min-h-[400px] flex flex-col">
        <div className="flex justify-between items-center mb-6">
          <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-2">
            <LineChart className="h-4 w-4 text-primary" /> Evolução Temporal
          </h3>
        </div>
        
-       <div className="flex-1 w-full h-[250px] bg-black/40 rounded-xl border border-white/5 p-4 relative">
+       <div className="flex-1 w-full h-[250px] bg-black/5 dark:bg-black/40 rounded-xl border border-border p-4 relative">
          <ResponsiveContainer width="100%" height="100%">
             <RechartsLineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />

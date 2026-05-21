@@ -72,7 +72,7 @@ type StatusFilter = "ALL" | "ACTIVE" | "PAUSED" | "RECENT";
 type MetricPreset = "PERFORMANCE" | "PERFORMANCE_CLICKS" | "ENGAGEMENT";
 type DatePreset = "7d" | "30d" | "3m" | "custom";
 type PrimaryMetric = "LEADS" | "COMPRAS" | "MENSAGENS" | "CLIQUES" | "THRUPLAY" | "VISITAS_PERFIL";
-type MetricColumn = { key: string; label: string; fmt: (v: any) => string };
+type MetricColumn = { key: string; label: string; fmt: (v: any, row?: any) => React.ReactNode };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const OBJECTIVE_PT: Record<string, string> = {
@@ -95,42 +95,34 @@ function getDateRange(preset: DatePreset, customSince: string, customUntil: stri
 }
 
 // ── Metric column definitions ───────────────────────────────────────────────────
-function getMetricCols(preset: MetricPreset, primaryMetric: PrimaryMetric) {
-  const pmKey = primaryMetric === "COMPRAS" ? "purchases" :
-                primaryMetric === "MENSAGENS" ? "messages" :
-                primaryMetric === "CLIQUES" ? "link_clicks" :
-                primaryMetric === "THRUPLAY" ? "thruplays" :
-                primaryMetric === "VISITAS_PERFIL" ? "profile_visits" : "leads";
-  
-  const cprKey = primaryMetric === "COMPRAS" ? "cpp" :
-                 primaryMetric === "MENSAGENS" ? "cost_per_message" :
-                 primaryMetric === "CLIQUES" ? "cpc_link" :
-                 primaryMetric === "THRUPLAY" ? "cost_per_thruplay" :
-                 primaryMetric === "VISITAS_PERFIL" ? "cost_per_profile_visit" : "cpl";
+function getMetricCols(preset: MetricPreset) {
+  const pmKey = "results";
+  const cprKey = "cost_per_result";
 
-  const resLabel = primaryMetric === "COMPRAS" ? "Compras" :
-                   primaryMetric === "MENSAGENS" ? "Mensagens" :
-                   primaryMetric === "CLIQUES" ? "Cliques (Link)" :
-                   primaryMetric === "THRUPLAY" ? "Thruplays" :
-                   primaryMetric === "VISITAS_PERFIL" ? "Visitas" : "Resultados";
+  const resLabel = "Resultados";
+  const resCostLabel = "Custo por Resultado";
 
-  const resCostLabel = "Custo / " + (
-                   primaryMetric === "COMPRAS" ? "Compra" :
-                   primaryMetric === "MENSAGENS" ? "Mensagem" :
-                   primaryMetric === "CLIQUES" ? "Clique" :
-                   primaryMetric === "THRUPLAY" ? "Thruplay" :
-                   primaryMetric === "VISITAS_PERFIL" ? "Visita" : "Result.");
+  const resultsFmt = (v: any, row?: any) => {
+    const num = fmtNum(v || 0);
+    if (!row || num === "0") return num;
+    const obj = row.objective || "";
+    if (obj.includes("LEAD")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">leads</span></span>;
+    if (obj.includes("SALE") || obj.includes("CONVERSION") || obj.includes("PURCHASE")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">compras</span></span>;
+    if (obj.includes("ENGAGEMENT") || obj.includes("MESSAGE")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">msg</span></span>;
+    if (obj.includes("TRAFFIC") || obj.includes("LINK_CLICK")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">cliques</span></span>;
+    return num;
+  };
 
   const cols: Record<MetricPreset, MetricColumn[]> = {
     PERFORMANCE: [
       { key: "spend", label: "Valor Gasto", fmt: (v) => fmtExact(v || 0) },
-      { key: pmKey, label: resLabel, fmt: (v) => fmtNum(v || 0) },
+      { key: pmKey, label: resLabel, fmt: resultsFmt },
       { key: cprKey, label: resCostLabel, fmt: (v) => v ? fmtExact(v) : "—" },
       { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
       { key: "impressions", label: "Impressões", fmt: (v) => fmtNum(v || 0) },
     ],
     PERFORMANCE_CLICKS: [
-      { key: pmKey, label: resLabel, fmt: (v) => fmtNum(v || 0) },
+      { key: pmKey, label: resLabel, fmt: resultsFmt },
       { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
       { key: "frequency", label: "Frequência", fmt: (v) => v ? v.toFixed(2) : "—" },
       { key: cprKey, label: resCostLabel, fmt: (v) => v ? fmtExact(v) : "—" },
@@ -158,13 +150,23 @@ function getMetricCols(preset: MetricPreset, primaryMetric: PrimaryMetric) {
 
 // ── Status Badge ───────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
-  const active = status === "ACTIVE";
+  const upper = status?.toUpperCase() || "";
+  const active = upper === "ACTIVE";
+  const completed = upper === "COMPLETED";
+  const archived = upper === "ARCHIVED";
+  
+  let bg = "bg-muted text-muted-foreground border-border";
+  let dot = "bg-muted-foreground";
+  let label = "PAUSADO";
+
+  if (active) { bg = "bg-primary/10 text-primary border-primary/20"; dot = "bg-primary animate-pulse"; label = "ATIVO"; }
+  else if (completed) { bg = "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"; dot = "bg-emerald-500"; label = "CONCLUÍDO"; }
+  else if (archived) { bg = "bg-orange-500/10 text-orange-500 border-orange-500/20"; dot = "bg-orange-500"; label = "ARQUIVADO"; }
+
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider ${
-      active ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-muted text-muted-foreground border border-border"
-    }`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-      {active ? "ATIVO" : "PAUSADO"}
+    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider border ${bg}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      {label}
     </div>
   );
 }
@@ -172,18 +174,18 @@ function StatusBadge({ status }: { status: string }) {
 // ── Pace Badge + Budget Bar ────────────────────────────────────────────────────
 function PaceBadge({ pace, expected }: { pace?: string; expected?: number | null }) {
   if (!pace || pace === "unknown" || !expected) return <Minus  className="h-3.5 w-3.5 text-foreground/90" />;
-  if (pace === "overpacing") return <TrendingUp  className="h-3.5 w-3.5 text-red-400" title="Gastando acima do ritmo esperado" />;
+  if (pace === "overpacing") return <TrendingUp  className="h-3.5 w-3.5 text-destructive" title="Gastando acima do ritmo esperado" />;
   if (pace === "underpacing") return <TrendingDown  className="h-3.5 w-3.5 text-amber-400" title="Gastando abaixo do ritmo esperado" />;
-  return <CheckCircle2  className="h-3.5 w-3.5 text-emerald-400" title="No ritmo ideal" />;
+  return <CheckCircle2  className="h-3.5 w-3.5 text-primary" title="No ritmo ideal" />;
 }
 
 function BudgetBar({ spend, budget }: { spend: number; budget: number | null }) {
   if (!budget) return <span className="text-xs text-foreground/90">—</span>;
   const pct = Math.min((spend / budget) * 100, 100);
-  const color = pct > 90 ? "bg-red-500" : pct > 70 ? "bg-amber-500" : "bg-emerald-500";
+  const color = pct > 90 ? "bg-destructive" : pct > 70 ? "bg-amber-500" : "bg-primary";
   return (
     <div className="flex items-center gap-2 min-w-[100px]">
-      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+      <div className="flex-1 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
         <motion.div className={`h-full rounded-full ${color}`} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, ease: "easeOut" }} />
       </div>
       <span className="text-[10px] text-foreground/90 tabular-nums w-8 text-right">{pct.toFixed(0)}%</span>
@@ -204,11 +206,11 @@ function AdRow({
 }) {
   const isActive = ad.status === "ACTIVE";
   return (
-    <tr className="border-b border-white/5 bg-black/40 hover:bg-white/[0.03] transition-colors duration-200 group">
+    <tr className="border-b border-border bg-black/5 dark:bg-black/5 dark:bg-black/40 hover:bg-black/[0.03] dark:bg-white/[0.03] transition-colors duration-200 group">
       {/* Name + thumbnail */}
       <td className="px-4 py-2.5 pl-[72px] max-w-[220px]">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-md overflow-hidden bg-zinc-800 border border-white/8 flex-shrink-0 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-md overflow-hidden bg-muted border border-border flex-shrink-0 flex items-center justify-center">
             {ad.creative?.thumbnail_url
               ? <img src={ad.creative.thumbnail_url} className="w-full h-full object-cover" alt="" />
               : <Eye  className="h-3.5 w-3.5 text-foreground/90" />}
@@ -221,7 +223,7 @@ function AdRow({
       </td>
       <td className="px-4 py-2.5">
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onEdit({ id: ad.id, type: "ad", name: ad.name })} className="h-6 px-2 flex items-center gap-1.5 rounded bg-white/5 text-foreground/90 hover:text-foreground hover:bg-white/10 transition-colors text-[10px] font-medium border border-white/5">
+          <button onClick={() => onEdit({ id: ad.id, type: "ad", name: ad.name })} className="h-6 px-2 flex items-center gap-1.5 rounded bg-black/5 dark:bg-white/5 text-foreground/90 hover:text-foreground hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 transition-colors text-[10px] font-medium border border-border">
             <Pencil className="h-3 w-3" /> Editar
           </button>
           <button
@@ -235,7 +237,7 @@ function AdRow({
             onClick={() => onToggleStatus(ad.id, ad.status)}
             disabled={loadingId}
             title={isActive ? "Pausar anúncio" : "Ativar anúncio"}
-            className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isActive ? "text-emerald-400 hover:bg-emerald-500/10" : "text-muted-foreground hover:bg-muted/30"}`}
+            className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isActive ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-muted/30"}`}
           >
             {loadingId ? <RefreshCw className="h-3 w-3 animate-spin" /> : isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           </button>
@@ -245,7 +247,7 @@ function AdRow({
       <td className="px-4 py-2.5 text-xs text-foreground/90">—</td>
       {metricCols.map(col => (
         <td key={col.key} className="px-4 py-2.5 text-xs text-foreground/90 tabular-nums">
-          {col.fmt((ad as Record<string, unknown>)[col.key])}
+          {col.fmt((ad as Record<string, unknown>)[col.key], ad)}
         </td>
       ))}
     </tr>
@@ -270,11 +272,11 @@ function AdSetRow({
   const isActive = adset.status === "ACTIVE";
   return (
     <>
-      <tr className="border-b border-white/5 bg-zinc-900/50 hover:bg-white/[0.03] transition-colors duration-200 group">
+      <tr className="border-b border-border bg-muted/50 hover:bg-black/[0.03] dark:bg-white/[0.03] transition-colors duration-200 group">
         <td className="px-4 py-2.5 pl-10 max-w-[220px]">
           <div className="flex items-center gap-2">
-            <button onClick={() => toggleAd(adset.id)} className="h-5 w-5 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-foreground/90 flex-shrink-0">
-              {ads.length > 0 ? (isExp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />) : <div className="h-1 w-1 rounded-full bg-zinc-700" />}
+            <button onClick={() => toggleAd(adset.id)} className="h-5 w-5 flex items-center justify-center rounded bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 text-foreground/90 flex-shrink-0">
+              {ads.length > 0 ? (isExp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />) : <div className="h-1 w-1 rounded-full bg-muted-foreground/20" />}
             </button>
             <div className="min-w-0">
                <div className="font-medium text-accent/70 text-xs truncate max-w-[140px]">{adset.name}</div>
@@ -286,14 +288,14 @@ function AdSetRow({
         </td>
         <td className="px-4 py-2.5">
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => onEdit({ id: adset.id, type: "adset", name: adset.name })} className="h-6 px-2 flex items-center gap-1.5 rounded bg-white/5 text-foreground/90 hover:text-foreground hover:bg-white/10 transition-colors text-[10px] font-medium border border-white/5">
+            <button onClick={() => onEdit({ id: adset.id, type: "adset", name: adset.name })} className="h-6 px-2 flex items-center gap-1.5 rounded bg-black/5 dark:bg-white/5 text-foreground/90 hover:text-foreground hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 transition-colors text-[10px] font-medium border border-border">
               <Pencil className="h-3 w-3" /> Editar
             </button>
             <button
               onClick={() => onToggleStatus(adset.id, adset.status, "adset")}
               disabled={loadingId}
               title={isActive ? "Pausar conjunto" : "Ativar conjunto"}
-              className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isActive ? "text-emerald-400 hover:bg-emerald-500/10" : "text-muted-foreground hover:bg-muted/30"}`}
+              className={`h-6 w-6 flex items-center justify-center rounded transition-colors ${isActive ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-muted/30"}`}
             >
               {loadingId ? <RefreshCw className="h-3 w-3 animate-spin" /> : isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
             </button>
@@ -305,7 +307,7 @@ function AdSetRow({
         </td>
         {metricCols.map(col => (
           <td key={col.key} className="px-4 py-2.5 text-xs text-foreground/90 tabular-nums">
-            {col.fmt((adset as Record<string, unknown>)[col.key])}
+            {col.fmt((adset as Record<string, unknown>)[col.key], adset)}
           </td>
         ))}
       </tr>
@@ -411,8 +413,8 @@ export default function TrafegoGerenciarPage() {
     if (!loadedAdsets[id]) {
       setLoadingTree(s => new Set([...s, id]));
       try {
-        // Trazendo dados com base nos filtros de data atuais, incluindo revalidator para reset de cache
-        const res = await fetch(`/api/meta/campaign-tree?campaign_id=${id}&since=${since}&until=${until}&t=${revalidate}${acct}`);
+        // Trazendo dados com base nos filtros de data atuais, usando Date.now() para reset de cache
+        const res = await fetch(`/api/meta/campaign-tree?campaign_id=${id}&since=${since}&until=${until}&t=${Date.now()}${acct}`);
         const json = await res.json();
         if (res.ok && json.data) {
           setLoadedAdsets(prev => ({ ...prev, [id]: json.data }));
@@ -423,7 +425,7 @@ export default function TrafegoGerenciarPage() {
         setLoadingTree(s => { const n = new Set(s); n.delete(id); return n; });
       }
     }
-  }, [loadedAdsets, since, until, revalidate]);
+  }, [loadedAdsets, since, until, acct]);
   const toggleAd = (id: string) => {
     setExpandedAds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
@@ -457,11 +459,11 @@ export default function TrafegoGerenciarPage() {
     }
   }, [refresh]);
 
-  const metricCols = getMetricCols(metricPreset, primaryMetric);
+  const metricCols = getMetricCols(metricPreset);
   const colHeaders = ["Estrutura", "Ações", "Status", "Budget/Dia", ...metricCols.map(c => c.label)];
 
   const metricOptions: { key: PrimaryMetric; label: string; value: number; icon: any }[] = [
-    { key: "LEADS", label: "Leads Gerados", value: totalLeads, icon: Users },
+    { key: "LEADS", label: "Leads Gerados", value: totalLeads + totalMessages, icon: Users },
     { key: "COMPRAS", label: "Compras", value: totalPurchases, icon: ShoppingCart },
     { key: "MENSAGENS", label: "Mensagens", value: totalMessages, icon: MessageCircle },
     { key: "CLIQUES", label: "Cliques no Link", value: totalInlineLinkClicks, icon: MousePointer },
@@ -492,12 +494,12 @@ export default function TrafegoGerenciarPage() {
             size="sm"
             onClick={refresh}
             disabled={isRefreshing}
-            className="gap-1.5 border-white/10 bg-transparent text-foreground/90 hover:text-foreground hover:bg-white/5 transition-all h-9 px-4 rounded-xl font-medium"
+            className="gap-1.5 border-border bg-transparent text-foreground/90 hover:text-foreground hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-all h-9 px-4 rounded-xl font-medium"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             {isRefreshing ? "Sincronizando..." : "Sincronizar Meta"}
           </Button>
-          <Button  size="sm" className="gap-1.5 bg-foreground text-background hover:bg-foreground/90 border-0 h-9 px-5 rounded-xl font-bold tracking-tight transition-all" onClick={() => setIsCreating(true)}>
+          <Button  size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 border-0 h-9 px-5 rounded-xl font-bold tracking-tight transition-all" onClick={() => setIsCreating(true)}>
             Nova Campanha
           </Button>
         </div>
@@ -542,7 +544,7 @@ export default function TrafegoGerenciarPage() {
                   className="appearance-none bg-transparent text-[10px] uppercase tracking-[0.15em] font-bold text-foreground/90 cursor-pointer outline-none hover:text-foreground transition-colors pr-5"
                 >
                   {metricOptions.map(o => (
-                    <option key={o.key} value={o.key} className="bg-zinc-900 text-foreground">{o.label}</option>
+                    <option key={o.key} value={o.key} className="bg-card text-foreground">{o.label}</option>
                   ))}
                 </select>
                 <div className="absolute right-0 top-[2px] pointer-events-none">
@@ -567,7 +569,7 @@ export default function TrafegoGerenciarPage() {
         <div className="hidden md:block w-px h-6 bg-gradient-to-b from-transparent via-white/10 to-transparent mx-1" />
 
         {/* Metric Presets */}
-        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/[0.05] rounded-xl p-1 backdrop-blur-md">
+        <div className="flex items-center gap-1 bg-black/5 dark:bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 border-border rounded-xl p-1 backdrop-blur-md">
           <BarChart3  className="h-3.5 w-3.5 text-foreground/50 ml-2 mr-1" />
           {([
             { key: "PERFORMANCE", label: "Desempenho" },
@@ -577,7 +579,7 @@ export default function TrafegoGerenciarPage() {
             <button
               key={key}
               onClick={() => setMetricPreset(key as MetricPreset)}
-              className={`px-3 py-1.5 text-[11px] uppercase tracking-[0.05em] rounded-lg font-bold transition-all ${metricPreset === key ? "bg-white/10 text-foreground shadow-sm" : "text-foreground/60 hover:text-foreground hover:bg-white/5"}`}
+              className={`px-3 py-1.5 text-[11px] uppercase tracking-[0.05em] rounded-lg font-bold transition-all ${metricPreset === key ? "bg-black/10 dark:bg-white/10 text-foreground shadow-sm" : "text-foreground/60 hover:text-foreground hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5"}`}
             >
               {label}
             </button>
@@ -589,14 +591,14 @@ export default function TrafegoGerenciarPage() {
         {/* Status filter */}
         <div className="flex items-center gap-1">
         {(["ALL", "ACTIVE", "PAUSED", "RECENT"] as StatusFilter[]).map(f => (
-          <button key={f} onClick={() => setStatusFilter(f)} className={`px-3 py-1.5 text-[11px] tracking-[0.05em] rounded-lg font-bold uppercase transition-all ${statusFilter === f ? "bg-foreground/10 text-foreground/90 border border-white/10" : "text-foreground/60 hover:text-foreground hover:bg-white/5 border border-transparent"}`}>
+          <button key={f} onClick={() => setStatusFilter(f)} className={`px-3 py-1.5 text-[11px] tracking-[0.05em] rounded-lg font-bold uppercase transition-all ${statusFilter === f ? "bg-foreground/10 text-foreground/90 border border-border" : "text-foreground/60 hover:text-foreground hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 border border-transparent"}`}>
             {f === "ALL" ? "Todas" : f === "ACTIVE" ? "Ativas" : f === "PAUSED" ? "Pausadas" : "Recentes (14d)"}
           </button>
         ))}
         </div>
 
         {/* Search */}
-        <div className="ml-auto flex flex-1 md:flex-none items-center gap-2 bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/[0.05] rounded-xl px-3 py-2 backdrop-blur-md focus-within:border-white/20 transition-all">
+        <div className="ml-auto flex flex-1 md:flex-none items-center gap-2 bg-black/5 dark:bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 border-border rounded-xl px-3 py-2 backdrop-blur-md border-border transition-all">
           <Filter  className="h-3.5 w-3.5 text-foreground/50" />
           <input
             type="text"
@@ -629,7 +631,7 @@ export default function TrafegoGerenciarPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 bg-transparent sticky top-0 z-10 backdrop-blur-md">
+                <tr className="border-b border-border bg-transparent sticky top-0 z-10 backdrop-blur-md">
                   {colHeaders.map((h) => (
                     <th key={h} className="px-6 py-4 text-left text-[9px] font-bold tracking-[0.15em] uppercase text-foreground/60 whitespace-nowrap">
                       {h}
@@ -647,11 +649,11 @@ export default function TrafegoGerenciarPage() {
                   const isDuping = loadingIds.has(c.id + "-dup");
                   return (
                     <React.Fragment key={c.id}>
-                      <tr className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group">
+                      <tr className="border-b border-border hover:bg-black/[0.02] dark:bg-white/[0.02] transition-colors group">
                         {/* Campaign Name */}
                         <td className="px-6 py-4 max-w-[280px]">
                           <div className="flex items-center gap-2">
-                            <button onClick={() => toggleCamp(c.id)} className="h-5 w-5 flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-foreground flex-shrink-0">
+                            <button onClick={() => toggleCamp(c.id)} className="h-5 w-5 flex items-center justify-center rounded bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 text-foreground flex-shrink-0">
                               {isTreeLoading
                                 ? <RefreshCw  className="h-3 w-3 animate-spin text-primary" />
                                 : isExp
@@ -670,7 +672,7 @@ export default function TrafegoGerenciarPage() {
                                   </span>
                                 )}
                                 {c.leads === 0 && c.spend > 50 && c.status === "ACTIVE" && (
-                                  <span className="text-red-400 shrink-0 cursor-help group/alert relative">
+                                  <span className="text-destructive shrink-0 cursor-help group/alert relative">
                                     <AlertTriangle className="h-3.5 w-3.5" />
                                     <span className="invisible group-hover/alert:visible absolute left-full ml-1 top-1/2 -translate-y-1/2 z-50 w-48 p-2 text-[10px] text-muted-foreground bg-card border rounded-lg shadow-lg leading-relaxed whitespace-normal">
                                       Campanha ativa com R${c.spend.toFixed(0)} gastos e zero leads. Verificar configuracao do formulario ou segmentacao.
@@ -698,7 +700,7 @@ export default function TrafegoGerenciarPage() {
                           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => setEditTarget({ id: c.id, type: "campaign", name: c.name })}
-                              className="h-7 px-2.5 flex items-center gap-1.5 rounded-md bg-white/5 text-foreground/90 hover:text-foreground hover:bg-primary/20 transition-all font-medium text-[10px] uppercase tracking-wide border border-white/5"
+                              className="h-7 px-2.5 flex items-center gap-1.5 rounded-md bg-black/5 dark:bg-white/5 text-foreground/90 hover:text-foreground hover:bg-primary/20 transition-all font-medium text-[10px] uppercase tracking-wide border border-border"
                             >
                               <Pencil className="h-3.5 w-3.5" /> Editar
                             </button>
@@ -712,7 +714,7 @@ export default function TrafegoGerenciarPage() {
                                 status: c.status,
                               })}
                               title="Duplicar e editar campanha"
-                              className="h-7 px-2 flex items-center gap-1.5 rounded-md bg-white/5 text-foreground/90 hover:text-foreground hover:bg-primary/20 transition-all font-medium text-[10px] uppercase border border-white/5"
+                              className="h-7 px-2 flex items-center gap-1.5 rounded-md bg-black/5 dark:bg-white/5 text-foreground/90 hover:text-foreground hover:bg-primary/20 transition-all font-medium text-[10px] uppercase border border-border"
                             >
                               <Copy className="h-3.5 w-3.5" /><span className="hidden xl:inline">Dup.</span>
                             </button>
@@ -720,7 +722,7 @@ export default function TrafegoGerenciarPage() {
                               onClick={() => toggleStatus(c.id, c.status)}
                               disabled={isSaving}
                               title={isActive ? "Pausar" : "Ativar"}
-                              className={`h-7 w-7 flex items-center justify-center rounded-md border border-white/5 transition-colors ${isActive ? "text-emerald-400 hover:bg-emerald-500/10" : "text-muted-foreground hover:bg-muted/30"}`}
+                              className={`h-7 w-7 flex items-center justify-center rounded-md border border-border transition-colors ${isActive ? "text-primary hover:bg-primary/10" : "text-muted-foreground hover:bg-muted/30"}`}
                             >
                             {isSaving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                             </button>
@@ -729,14 +731,14 @@ export default function TrafegoGerenciarPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               title="Abrir no Ads Manager"
-                              className="h-7 w-7 flex items-center justify-center rounded-md border border-white/5 text-foreground/90 hover:text-foreground/90 hover:bg-white/5 transition-colors ml-1"
+                              className="h-7 w-7 flex items-center justify-center rounded-md border border-border text-foreground/90 hover:text-foreground/90 hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors ml-1"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                             </a>
                             <button
                               onClick={() => setBulkSwapTarget({ id: c.id, name: c.name })}
                               title="Troca de Criativos em Massa"
-                              className="h-7 px-2.5 flex items-center gap-1.5 rounded-md bg-white/5 text-foreground/90 hover:text-foreground hover:bg-primary/20 transition-all font-medium text-[10px] uppercase tracking-wide border border-white/5 ml-1"
+                              className="h-7 px-2.5 flex items-center gap-1.5 rounded-md bg-black/5 dark:bg-white/5 text-foreground/90 hover:text-foreground hover:bg-primary/20 transition-all font-medium text-[10px] uppercase tracking-wide border border-border ml-1"
                             >
                               <Zap className="h-3.5 w-3.5 text-primary" /><span className="hidden xl:inline">Criativos</span>
                             </button>
@@ -747,7 +749,7 @@ export default function TrafegoGerenciarPage() {
                         {/* Budget + Pace */}
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="space-y-1">
-                            <div className="text-xs text-foreground/90 font-mono">{c.daily_budget ? fmt(c.daily_budget) + "/dia" : "—"}</div>
+                            <div className="text-xs text-foreground/90 font-mono">{c.daily_budget ? fmt(c.daily_budget) + "/dia" : c.lifetime_budget ? fmt(c.lifetime_budget) + "/total" : "—"}</div>
                             <div className="flex items-center gap-1.5">
                               <PaceBadge pace={c.pace_status} expected={c.expected_spend_today} />
                               <BudgetBar spend={c.spend_today || 0} budget={c.daily_budget} />
@@ -757,13 +759,13 @@ export default function TrafegoGerenciarPage() {
                         {/* Dynamic Metric Cols */}
                         {metricCols.map(col => (
                           <td key={col.key} className="px-4 py-3 whitespace-nowrap text-xs font-semibold text-foreground tabular-nums">
-                            {col.fmt((c as Record<string, unknown>)[col.key])}
+                            {col.fmt((c as Record<string, unknown>)[col.key], c)}
                           </td>
                         ))}
                       </tr>
                       {/* Expanded AdSets (lazy loaded) */}
                       {isExp && isTreeLoading && (
-                        <tr className="border-b border-white/5">
+                        <tr className="border-b border-border">
                           <td colSpan={colHeaders.length} className="px-12 py-3">
                             <div className="flex items-center gap-2 text-xs text-foreground/90">
                               <RefreshCw className="h-3 w-3 animate-spin text-primary" />
@@ -795,7 +797,7 @@ export default function TrafegoGerenciarPage() {
 
         {/* Pagination footer */}
         {campaigns.length > 0 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-white/5">
+          <div className="flex items-center justify-between px-6 py-3 border-t border-border">
             <p className="text-[11px] text-foreground/50">
               Mostrando 1–{Math.min(visibleCount, campaigns.length)} de {campaigns.length} campanhas
             </p>

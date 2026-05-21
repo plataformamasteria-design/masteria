@@ -20,6 +20,7 @@ interface AdWithPerf {
   ad_body: string | null; ad_title: string | null; status: string;
   spend: number; leads: number; cpl: number; ctr: number; impressoes: number; cliques: number;
   composite_score: number | null;
+  thumbnail_url?: string | null;
 }
 
 interface VariacaoAB { versao: string; titulo: string; copy_completo: string; hipotese: string; gatilho_principal: string; }
@@ -37,13 +38,13 @@ function CopyCheckbox({ checked, onCheckedChange }: { checked: boolean; onChecke
 
 function CopyScoreBadge({ score }: { score: number }) {
   const n = Math.round(score);
-  const cls = n <= 30 ? "bg-red-500/15 text-red-400 border-red-500/30" : n <= 60 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" : n <= 80 ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-green-500/15 text-green-400 border-green-500/30";
+  const cls = n <= 30 ? "bg-destructive/15 text-destructive border-destructive/30" : n <= 60 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" : n <= 80 ? "bg-accent/15 text-accent border-accent/30" : "bg-green-500/15 text-green-400 border-green-500/30";
   return <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-bold ${cls}`}>{n}</span>;
 }
 
 function NotaCopyBadge({ nota }: { nota?: number }) {
   if (nota === undefined || nota === null) return null;
-  const cls = nota <= 3 ? "bg-red-500/15 text-red-400 border-red-500/30" : nota <= 5 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" : nota <= 7 ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-green-500/15 text-green-400 border-green-500/30";
+  const cls = nota <= 3 ? "bg-destructive/15 text-destructive border-destructive/30" : nota <= 5 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30" : nota <= 7 ? "bg-accent/15 text-accent border-accent/30" : "bg-green-500/15 text-green-400 border-green-500/30";
   return <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-semibold ${cls}`}><span className="text-sm font-bold">{nota}</span>/10</span>;
 }
 
@@ -65,7 +66,7 @@ function InlineAnaliseCard({ analise }: { analise: AnaliseResult }) {
             </div>
             <div>
               <p className="text-[10px] font-medium text-muted-foreground mb-1">Pontos fracos</p>
-              {(d.pontos_fracos || []).map((p, i) => <p key={i} className="text-[11px] text-red-400 flex items-start gap-1"><AlertTriangle size={10} className="mt-0.5 shrink-0" /> {p}</p>)}
+              {(d.pontos_fracos || []).map((p, i) => <p key={i} className="text-[11px] text-destructive flex items-start gap-1"><AlertTriangle size={10} className="mt-0.5 shrink-0" /> {p}</p>)}
             </div>
           </div>
           {(d.gatilhos_mentais || []).length > 0 && <div className="flex flex-wrap gap-1">{d.gatilhos_mentais.map((g, i) => <Badge key={i} className="text-[9px] bg-purple-500/15 text-purple-400">{g}</Badge>)}</div>}
@@ -130,37 +131,40 @@ export default function CopyTab() {
 
   async function loadData() {
     setLoading(true);
-    const [{ data: meta }, { data: perf }, { data: sc }] = await Promise.all([
-      supabase.from("ads_metadata").select("*"),
-      supabase.from("ads_performance").select("ad_id, spend, leads, cpl, ctr, impressoes, cliques").limit(10000),
-      supabase.from("creative_scores").select("ad_id, composite_score"),
-    ]);
-    setMetadata((meta || []) as AdsMetadata[]);
-    setPerformance((perf || []) as AdsPerformance[]);
-    setScores((sc || []) as { ad_id: string; composite_score: number }[]);
+    try {
+      const res = await fetch("/api/marketing/criativos-enriched");
+      const data = await res.json();
+      
+      if (!data.error && data.data) {
+        // Adapt mapping to match what _copy-tab expects
+        const mappedAds: AdWithPerf[] = data.data.map((ad: any) => ({
+          ad_id: ad.ad_id,
+          ad_name: ad.ad_name,
+          campaign_name: ad.campaign_name,
+          adset_name: ad.adset_name || "Conjunto Padrão",
+          ad_body: ad.ad_body,
+          ad_title: ad.ad_title,
+          status: ad.status,
+          spend: ad.spend,
+          leads: ad.leads_totais,
+          cpl: ad.cpl || 0,
+          ctr: ad.ctr || 0,
+          impressoes: ad.impressoes || 0,
+          cliques: ad.cliques || 0,
+          composite_score: ad.composite_score,
+          thumbnail_url: ad.thumbnail_url
+        }));
+        setMetadata(mappedAds as any); // We can store the mapped directly in a state, but for simplicity, we use metadata
+      } else {
+        toast.error("Erro ao carregar dados da API.");
+      }
+    } catch {
+      toast.error("Erro de conexão ao carregar criativos.");
+    }
     setLoading(false);
   }
 
-  const perfMap = useMemo(() => {
-    const map: Record<string, { spend: number; leads: number; impressoes: number; cliques: number }> = {};
-    for (const row of performance) {
-      if (!map[row.ad_id]) map[row.ad_id] = { spend: 0, leads: 0, impressoes: 0, cliques: 0 };
-      map[row.ad_id].spend += Number(row.spend || 0);
-      map[row.ad_id].leads += Number(row.leads || 0);
-      map[row.ad_id].impressoes += Number(row.impressoes || 0);
-      map[row.ad_id].cliques += Number(row.cliques || 0);
-    }
-    return map;
-  }, [performance]);
-
-  const scoreMap = useMemo(() => new Map(scores.map((s) => [s.ad_id, s.composite_score])), [scores]);
-
-  const ads: AdWithPerf[] = useMemo(() => metadata.map((m) => {
-    const perf = perfMap[m.ad_id] || { spend: 0, leads: 0, impressoes: 0, cliques: 0 };
-    const cpl = perf.leads > 0 ? perf.spend / perf.leads : 0;
-    const ctr = perf.impressoes > 0 ? (perf.cliques / perf.impressoes) * 100 : 0;
-    return { ad_id: m.ad_id, ad_name: m.ad_name, campaign_name: m.campaign_name, adset_name: m.adset_name, ad_body: m.ad_body || null, ad_title: m.ad_title || null, status: m.status, spend: perf.spend, leads: perf.leads, cpl, ctr, impressoes: perf.impressoes, cliques: perf.cliques, composite_score: scoreMap.get(m.ad_id) ?? null };
-  }), [metadata, perfMap, scoreMap]);
+  const ads: AdWithPerf[] = useMemo(() => metadata as unknown as AdWithPerf[], [metadata]);
 
   const campanhas = useMemo(() => { const set = new Map<string, string>(); for (const ad of ads) { if (ad.campaign_name && !set.has(ad.campaign_name)) set.set(ad.campaign_name, ad.campaign_name); } return Array.from(set.values()).sort(); }, [ads]);
 
@@ -244,7 +248,22 @@ export default function CopyTab() {
                 {filtered.map((ad) => (
                   <tr key={ad.ad_id} className="border-b border-border/30 hover:bg-muted/30">
                     <td className="py-2 px-2"><CopyCheckbox checked={selected.has(ad.ad_id)} onCheckedChange={() => toggleSelect(ad.ad_id)} /></td>
-                    <td className="py-2 px-2 max-w-[180px]"><p className="text-xs font-medium truncate">{ad.ad_name || ad.ad_id}</p><p className="text-[10px] text-muted-foreground truncate">{ad.campaign_name}</p></td>
+                    <td className="py-2 px-2 max-w-[180px]">
+                      <div className="flex items-center gap-2">
+                        {ad.thumbnail_url ? (
+                          <div className="relative w-8 h-8 shrink-0">
+                            <div className="absolute inset-0 rounded bg-muted flex items-center justify-center z-0 text-[8px] font-medium text-muted-foreground">AD</div>
+                            <img src={ad.thumbnail_url} alt="" className="absolute inset-0 w-8 h-8 rounded object-cover z-10" onError={(e) => e.currentTarget.style.display = 'none'} />
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 shrink-0 rounded bg-muted flex items-center justify-center text-[8px] font-medium text-muted-foreground">AD</div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate" title={ad.ad_name || ad.ad_id}>{ad.ad_name || ad.ad_id}</p>
+                          <p className="text-[10px] text-muted-foreground truncate" title={ad.campaign_name || ""}>{ad.campaign_name}</p>
+                        </div>
+                      </div>
+                    </td>
                     <td className="py-2 px-2 max-w-[200px]">{ad.ad_body ? <p className="text-[11px] text-muted-foreground line-clamp-2">{ad.ad_body}</p> : (
                       <div className="group relative inline-block">
                         <Badge className="text-[9px] bg-yellow-500/15 text-yellow-400 cursor-help">sem copy</Badge>

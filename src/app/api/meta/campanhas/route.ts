@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const account = accountParam ? (accountParam.startsWith("act_") ? accountParam : `act_${accountParam}`) : auth.accountId;
 
     // 1. Estrutura de campanhas
-    const campaignFields = "id,name,status,effective_status,objective,buying_type,daily_budget,lifetime_budget,budget_remaining,start_time,stop_time,created_time";
+    const campaignFields = "id,name,status,effective_status,objective,buying_type,daily_budget,lifetime_budget,budget_remaining,start_time,stop_time,created_time,adsets{status,daily_budget,lifetime_budget}";
     const structureRes = await getCachedMetaData<{ data: any[] }>(
       `campaigns-structure-${auth.companyId}`,
       { account, limit: "500" },
@@ -138,7 +138,26 @@ export async function GET(req: NextRequest) {
     const campaigns = ((structureRes.data as any)?.data || []).map((c: any) => {
       const kpi = campMap.get(c.id) || emptyKPI;
       const cMetrics = injectDerivedMetrics(kpi);
-      const dailyBudget = c.daily_budget ? parseInt(c.daily_budget) / 100 : null;
+      
+      // Calculate daily budget including ABO (adsets)
+      let dailyBudget = c.daily_budget ? parseInt(c.daily_budget) / 100 : null;
+      if (dailyBudget === null && c.adsets && c.adsets.data) {
+        // sum active adsets daily budget
+        let aboBudget = 0;
+        let hasAbo = false;
+        for (const as of c.adsets.data) {
+          if (as.status === "ACTIVE" && as.daily_budget) {
+            aboBudget += parseInt(as.daily_budget) / 100;
+            hasAbo = true;
+          }
+        }
+        if (hasAbo) dailyBudget = aboBudget;
+      }
+      
+      let computedStatus = c.effective_status || c.status;
+      if (c.stop_time && new Date(c.stop_time).getTime() < Date.now() && computedStatus !== "ARCHIVED" && computedStatus !== "DELETED") {
+        computedStatus = "COMPLETED";
+      }
       const spendToday = todaySpendMap.get(c.id) || 0;
       const expToday = dailyBudget ? dailyBudget * elapsedPct : null;
       const paceStatus = dailyBudget && expToday !== null && expToday > 0
@@ -147,8 +166,19 @@ export async function GET(req: NextRequest) {
           : "no_pace"
         : "unknown";
 
+      let dynamicResults = 0;
+      const obj = c.objective || "";
+      if (obj.includes("LEAD")) dynamicResults = cMetrics.leads;
+      else if (obj.includes("SALE") || obj.includes("CONVERSION") || obj.includes("PURCHASE")) dynamicResults = cMetrics.purchases;
+      else if (obj.includes("ENGAGEMENT") || obj.includes("MESSAGE")) dynamicResults = cMetrics.messages;
+      else if (obj.includes("TRAFFIC") || obj.includes("LINK_CLICK")) dynamicResults = cMetrics.link_clicks;
+      else if (obj.includes("AWARENESS") || obj.includes("REACH")) dynamicResults = cMetrics.reach;
+      else dynamicResults = cMetrics.total_actions > 0 ? cMetrics.total_actions : cMetrics.leads;
+
+      const dynamicCpr = dynamicResults > 0 ? kpi.spend / dynamicResults : null;
+
       return {
-        id: c.id, name: c.name, status: c.status,
+        id: c.id, name: c.name, status: computedStatus,
         effective_status: c.effective_status || c.status,
         objective: c.objective, buying_type: c.buying_type,
         daily_budget: dailyBudget,
@@ -159,6 +189,8 @@ export async function GET(req: NextRequest) {
         pace_status: paceStatus, expected_spend_today: expToday, spend_today: spendToday,
         adsets: null,
         ...cMetrics,
+        results: dynamicResults,
+        cost_per_result: dynamicCpr,
       };
     });
 

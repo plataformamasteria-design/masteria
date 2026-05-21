@@ -448,7 +448,7 @@ function FunilClienteContent() {
                             <span className="text-xs font-bold text-amber-400">
                               -{dropPct.toFixed(0)}% de perda · {taxaConversao.toFixed(0)}% passam
                             </span>
-                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[9px] font-bold">GARGALO</Badge>
+                            <Badge className="bg-destructive/20 text-destructive border-destructive/30 text-[9px] font-bold">GARGALO</Badge>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
@@ -476,7 +476,7 @@ function FunilClienteContent() {
 
                     <div className="flex-1 relative z-10">
                       <div
-                        className={`relative h-16 rounded-xl flex items-center justify-between px-5 text-white transition-all ${
+                        className={`relative h-16 rounded-xl flex items-center justify-between px-5 text-foreground transition-all ${
                           isGargalo ? "ring-2 ring-amber-400/60 ring-offset-2 ring-offset-background shadow-[0_0_20px_rgba(245,158,11,0.15)]" : ""
                         }`}
                         style={{
@@ -624,7 +624,7 @@ function FunilClienteContent() {
                         </td>
                         <td className="px-4 py-2 text-xs text-right font-bold">{c.leads}</td>
                         <td className="px-4 py-2 text-xs text-right">{c.qualif}</td>
-                        <td className={`px-4 py-2 text-xs text-right font-medium ${taxaQ >= 40 ? "text-emerald-400" : taxaQ >= 20 ? "text-amber-400" : "text-red-400"}`}>
+                        <td className={`px-4 py-2 text-xs text-right font-medium ${taxaQ >= 40 ? "text-primary" : taxaQ >= 20 ? "text-amber-400" : "text-destructive"}`}>
                           {formatPercent(taxaQ)}
                         </td>
                         <td className="px-4 py-2 text-xs text-right">{c.reunioes}</td>
@@ -651,7 +651,7 @@ function DeltaBadge({ delta }: { delta: number }) {
   if (!isFinite(delta) || delta === 0) return null;
   const isPositive = delta > 0;
   return (
-    <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+    <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? "text-primary" : "text-destructive"}`}>
       {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
       <span>{isPositive ? "+" : ""}{delta.toFixed(0)}%</span>
     </div>
@@ -683,7 +683,7 @@ function MetricaCard({
         <p className={`text-xl font-black ${destaque ? "text-primary" : ""}`}>{value}</p>
         <p className="text-[10px] text-muted-foreground mt-0.5">{sublabel}</p>
         {prev > 0 && curr > 0 && (
-          <div className={`mt-2 flex items-center gap-1 text-[11px] font-medium ${isGood ? "text-emerald-400" : "text-red-400"}`}>
+          <div className={`mt-2 flex items-center gap-1 text-[11px] font-medium ${isGood ? "text-primary" : "text-destructive"}`}>
             {rawDelta > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
             <span>{rawDelta > 0 ? "+" : ""}{rawDelta.toFixed(0)}% vs anterior</span>
           </div>

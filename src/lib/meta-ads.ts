@@ -72,19 +72,21 @@ export function extractActionsData(actions: any[], actionValues: any[]) {
   let ld = 0, pur = 0, rev = 0, chk = 0, lpv = 0, msg = 0, thruplay = 0, profile_visits = 0, link_clicks = 0, total_actions = 0;
   for (const a of (actions || [])) {
     const val = parseFloat(a.value || "0");
+    const t = a.action_type || "";
     total_actions += val;
     
-    if (a.action_type === "lead" || a.action_type === "offsite_conversion.fb_pixel_lead") ld += val;
-    else if (a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase") pur += val;
-    else if (a.action_type === "initiate_checkout") chk += val;
-    else if (a.action_type === "landing_page_view" || a.action_type === "offsite_conversion.custom.landing_page_view") lpv += val;
-    else if (a.action_type === "onsite_conversion.messaging_conversation_started_7d" || a.action_type === "onsite_conversion.messaging_first_reply" || a.action_type === "messaging_conversation_started_7d" || a.action_type === "onsite_conversion.messaging_conversation_started_14d") msg += val;
-    else if (a.action_type === "thruplay" || a.action_type === "video_view_thruplay") thruplay += val;
-    else if (a.action_type === "onsite_conversion.ig_profile_visits" || a.action_type === "instagram_profile_visits" || a.action_type === "profile_visit") profile_visits += val;
-    else if (a.action_type === "link_click") link_clicks += val;
+    if (t === "lead" || t === "omni_lead" || t.includes("pixel_lead")) ld += val;
+    else if (t === "purchase" || t === "omni_purchase" || t.includes("pixel_purchase")) pur += val;
+    else if (t === "initiate_checkout" || t === "omni_initiated_checkout") chk += val;
+    else if (t === "landing_page_view" || t.includes("landing_page_view")) lpv += val;
+    else if (t.includes("messaging_conversation_started") || t.includes("messaging_first_reply") || t === "onsite_conversion.messaging_conversation_started_7d") msg += val;
+    else if (t === "thruplay" || t === "video_view_thruplay") thruplay += val;
+    else if (t.includes("profile_visit")) profile_visits += val;
+    else if (t === "link_click" || t === "outbound_click") link_clicks += val;
   }
   for (const v of (actionValues || [])) {
-    if (v.action_type === "purchase" || v.action_type === "offsite_conversion.fb_pixel_purchase") rev += parseFloat(v.value || "0");
+    const t = v.action_type || "";
+    if (t === "purchase" || t === "omni_purchase" || t.includes("pixel_purchase")) rev += parseFloat(v.value || "0");
   }
   return { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions };
 }

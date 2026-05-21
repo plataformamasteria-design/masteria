@@ -141,7 +141,7 @@ function PreviewIframe({ adId, format }: { adId: string; format: AdPreviewFormat
       >
         {loading && (
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 rounded-2xl z-10 gap-3"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-background rounded-2xl z-10 gap-3"
             style={{ minHeight: 300 }}
           >
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -150,7 +150,7 @@ function PreviewIframe({ adId, format }: { adId: string; format: AdPreviewFormat
         )}
         {error && !loading && (
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 rounded-2xl z-10 gap-3 p-6 text-center"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-background rounded-2xl z-10 gap-3 p-6 text-center"
             style={{ minHeight: 300 }}
           >
             <AlertTriangle  className="h-8 w-8 text-primary" />
@@ -218,8 +218,8 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
   return (
     <div className="space-y-4 text-sm">
       {/* Type badge */}
-      <div className="flex items-center gap-3 pb-3 border-b border-white/5">
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.04]`}>
+      <div className="flex items-center gap-3 pb-3 border-b border-border">
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-white/[0.04]`}>
           <typeConf.icon className={`h-4 w-4 ${typeConf.color}`} />
           <span className="text-xs font-bold text-foreground/90">{typeConf.label}</span>
         </div>
@@ -243,7 +243,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
               {copiedKey === "copy" ? "Copiado!" : "Copiar"}
             </button>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-foreground/90 text-xs leading-relaxed whitespace-pre-wrap">
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-border text-foreground/90 text-xs leading-relaxed whitespace-pre-wrap">
             {d.copy}
           </div>
         </div>
@@ -258,7 +258,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
               <Copy className="h-3 w-3" /> {copiedKey === "headline" ? "Copiado!" : "Copiar"}
             </button>
           </div>
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-foreground text-sm font-semibold">
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-border text-foreground text-sm font-semibold">
             {d.headline}
           </div>
         </div>
@@ -268,7 +268,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
       {d.description && (
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/90">Descrição</label>
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-foreground/90 text-xs">
+          <div className="p-3 rounded-xl bg-white/[0.03] border border-border text-foreground/90 text-xs">
             {d.description}
           </div>
         </div>
@@ -282,7 +282,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
             href={d.cta_link || d.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/5 text-primary text-xs hover:text-accent/70 hover:border-primary/20 transition-colors truncate"
+            className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-border text-primary text-xs hover:text-accent/70 hover:border-primary/20 transition-colors truncate"
           >
             <Link2 className="h-3.5 w-3.5 flex-shrink-0" />
             <span className="truncate">{d.cta_link || d.link}</span>
@@ -295,7 +295,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
       {creative_type === "VIDEO" && (d.thumbnail_url || d.image_url) && (
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/90">Thumbnail do Vídeo</label>
-          <div className="relative rounded-xl overflow-hidden border border-white/8 bg-zinc-900">
+          <div className="relative rounded-xl overflow-hidden border border-border bg-card">
             <img
               src={d.thumbnail_url || d.image_url}
               alt="Thumbnail"
@@ -303,7 +303,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
               style={{ maxHeight: 140 }}
             />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-12 w-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center border border-white/20">
+              <div className="h-12 w-12 rounded-full bg-black/5 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center border border-border">
                 <Play  className="h-5 w-5 text-foreground fill-white" />
               </div>
             </div>
@@ -318,7 +318,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
       {creative_type === "IMAGE" && d.image_url && (
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-widest text-foreground/90">Imagem do Anúncio</label>
-          <div className="rounded-xl overflow-hidden border border-white/8 bg-zinc-900">
+          <div className="rounded-xl overflow-hidden border border-border bg-card">
             <img
               src={d.image_url}
               alt="Creative"
@@ -340,7 +340,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
               <button
                 onClick={() => setCarouselIdx(i => Math.max(0, i - 1))}
                 disabled={carouselIdx === 0}
-                className="h-6 w-6 flex items-center justify-center rounded-md bg-white/5 text-foreground/90 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="h-6 w-6 flex items-center justify-center rounded-md bg-black/5 dark:bg-white/5 text-foreground/90 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -348,7 +348,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
               <button
                 onClick={() => setCarouselIdx(i => Math.min(cards.length - 1, i + 1))}
                 disabled={carouselIdx === cards.length - 1}
-                className="h-6 w-6 flex items-center justify-center rounded-md bg-white/5 text-foreground/90 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="h-6 w-6 flex items-center justify-center rounded-md bg-black/5 dark:bg-white/5 text-foreground/90 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -361,7 +361,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
               <button
                 key={i}
                 onClick={() => setCarouselIdx(i)}
-                className={`h-1.5 rounded-full transition-all ${i === carouselIdx ? "w-5 bg-white" : "w-1.5 bg-white/20"}`}
+                className={`h-1.5 rounded-full transition-all ${i === carouselIdx ? "w-5 bg-white" : "w-1.5 bg-black/5 dark:bg-black/20 dark:bg-white/20"}`}
               />
             ))}
           </div>
@@ -371,15 +371,15 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
               key={carouselIdx}
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="rounded-xl border border-white/8 bg-white/[0.02] overflow-hidden"
+              className="rounded-xl border border-border bg-white/[0.02] overflow-hidden"
             >
               {(currentCard.image_url || currentCard.video_id) && (
-                <div className="relative bg-zinc-900">
+                <div className="relative bg-card">
                   {currentCard.image_url && (
                     <img src={currentCard.image_url} alt={`Card ${carouselIdx + 1}`} className="w-full object-cover" style={{ maxHeight: 120 }} />
                   )}
                   {currentCard.video_id && !currentCard.image_url && (
-                    <div className="h-24 flex items-center justify-center bg-zinc-800">
+                    <div className="h-24 flex items-center justify-center bg-muted">
                       <Video  className="h-8 w-8 text-foreground/90" />
                       <p className="text-xs text-foreground/90 ml-2">Vídeo #{currentCard.video_id}</p>
                     </div>
@@ -404,7 +404,7 @@ function CreativePanel({ data }: { data: AdCreativeData }) {
       )}
 
       {/* IDs técnicos */}
-      <div className="pt-2 border-t border-white/5 space-y-1">
+      <div className="pt-2 border-t border-border space-y-1">
         <p className="text-[10px] text-foreground/90">Creative ID: <span className="font-mono text-foreground/90">{data.creative_id}</span></p>
         {d.page_id && <p className="text-[10px] text-foreground/90">Page ID: <span className="font-mono text-foreground/90">{d.page_id}</span></p>}
         {d.instagram_actor_id && <p className="text-[10px] text-foreground/90">Instagram Account: <span className="font-mono text-foreground/90">{d.instagram_actor_id}</span></p>}
@@ -467,7 +467,7 @@ export function AdPreviewModal({ adId, adName, onClose }: AdPreviewModalProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[2000] bg-black/80 backdrop-blur-md"
+        className="fixed inset-0 z-[2000] bg-black/10 dark:bg-black/80 backdrop-blur-md"
         onClick={onClose}
       />
 
@@ -480,12 +480,12 @@ export function AdPreviewModal({ adId, adName, onClose }: AdPreviewModalProps) {
         className="fixed inset-0 z-[2001] flex items-center justify-center p-4 pointer-events-none"
       >
         <div
-          className="pointer-events-auto w-full bg-[#09090b] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="pointer-events-auto w-full bg-background border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           style={{ maxWidth: 1100, maxHeight: "95vh" }}
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-zinc-950">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-border bg-background">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-transparent flex items-center justify-center flex-shrink-0">
                 <Maximize2  className="h-4 w-4 text-foreground" />
@@ -496,22 +496,21 @@ export function AdPreviewModal({ adId, adName, onClose }: AdPreviewModalProps) {
               </div>
               {data && (
                 <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                  TYPE_CONFIG[data.creative_type].color === "text-primary" ? "bg-primary/10 border-primary/20 text-accent/70" :
                   TYPE_CONFIG[data.creative_type].color === "text-primary" ? "bg-primary/10 border-primary/20 text-primary" :
-                  "bg-primary/10 border-primary/20 text-primary"
+                  "bg-black/5 dark:bg-white/5 border-border text-foreground/90"
                 }`}>
                   {React.createElement(TYPE_CONFIG[data.creative_type].icon, { className: "h-3 w-3" })}
                   {TYPE_CONFIG[data.creative_type].label}
                 </div>
               )}
             </div>
-            <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-foreground/90 hover:text-foreground transition-colors flex-shrink-0">
+            <button onClick={onClose} className="p-2 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 text-foreground/90 hover:text-foreground transition-colors flex-shrink-0">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Body - ÚNICA barra de rolagem em todo o modal */}
-          <div className="flex-1 overflow-y-auto flex bg-zinc-950/50">
+          <div className="flex-1 overflow-y-auto flex bg-background/50">
             {/* Left: Format selector + Preview */}
             <div className="flex-1 flex flex-col">
               {/* Platform filter tabs */}
@@ -526,7 +525,7 @@ export function AdPreviewModal({ adId, adName, onClose }: AdPreviewModalProps) {
                     onClick={() => setActivePlatform(tab.key)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                       activePlatform === tab.key
-                        ? "border-white/20 bg-white/10 text-foreground"
+                        ? "border-border bg-black/10 dark:bg-white/10 text-foreground"
                         : "border-transparent text-foreground/90 hover:text-foreground/90"
                     }`}
                   >
@@ -546,8 +545,8 @@ export function AdPreviewModal({ adId, adName, onClose }: AdPreviewModalProps) {
                       onClick={() => setSelectedFormat(fmt.value)}
                       className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${
                         isActive
-                          ? "border-white/25 bg-white/10 text-foreground"
-                          : "border-white/5 bg-white/[0.02] text-foreground/90 hover:border-white/10 hover:text-foreground/90"
+                          ? "border-border bg-black/10 dark:bg-white/10 text-foreground"
+                          : "border-border bg-white/[0.02] text-foreground/90 border-border hover:text-foreground/90"
                       }`}
                     >
                       <div
@@ -584,8 +583,8 @@ export function AdPreviewModal({ adId, adName, onClose }: AdPreviewModalProps) {
             </div>
 
             {/* Right: Creative Details */}
-            <div className="w-80 flex-shrink-0 border-l border-white/5 flex flex-col bg-[#09090b]">
-              <div className="flex-shrink-0 px-5 py-4 border-b border-white/5">
+            <div className="w-80 flex-shrink-0 border-l border-border flex flex-col bg-background">
+              <div className="flex-shrink-0 px-5 py-4 border-b border-border">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/90">Detalhes do Criativo</h3>
               </div>
               <div className="flex-1 px-5 py-4">
@@ -603,12 +602,12 @@ export function AdPreviewModal({ adId, adName, onClose }: AdPreviewModalProps) {
               </div>
 
               {/* Footer actions */}
-              <div className="flex-shrink-0 p-4 border-t border-white/5 space-y-2">
+              <div className="flex-shrink-0 p-4 border-t border-border space-y-2">
                 <a
                   href={`https://business.facebook.com/adsmanager/manage/ads?selected_ad_ids=${adId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-xl border border-white/10 text-xs font-medium text-foreground/90 hover:text-foreground hover:border-white/20 hover:bg-white/5 transition-all"
+                  className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-xl border border-border text-xs font-medium text-foreground/90 hover:text-foreground border-border hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-all"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Abrir no Meta Ads Manager

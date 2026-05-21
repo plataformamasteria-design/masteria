@@ -69,14 +69,14 @@ function navigateMonth(mes: string, dir: number): string {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  verde: "bg-emerald-500",
+  verde: "bg-primary",
   amarelo: "bg-amber-400",
   vermelho: "bg-rose-500",
-  cinza: "bg-zinc-700",
+  cinza: "bg-muted-foreground/20",
 };
 
 const STATUS_RING: Record<string, string> = {
-  verde: "ring-emerald-500/30",
+  verde: "ring-primary/30",
   amarelo: "ring-amber-400/30",
   vermelho: "ring-rose-500/30",
   cinza: "ring-zinc-600/30",
@@ -238,10 +238,10 @@ function HeatmapGrid({ data }: { data: HeatmapSlot[] }) {
   const maxCpl = cpls.length > 0 ? Math.max(...cpls) : 1;
 
   function getCellColor(slot: HeatmapSlot | undefined): string {
-    if (!slot || slot.leads === 0 || slot.cpl == null) return "bg-zinc-800/50";
+    if (!slot || slot.leads === 0 || slot.cpl == null) return "bg-muted/50";
     const ratio = maxCpl > minCpl ? (slot.cpl - minCpl) / (maxCpl - minCpl) : 0.5;
     // Inverted: low CPL = green, high CPL = red
-    if (ratio <= 0.33) return "bg-emerald-500/60";
+    if (ratio <= 0.33) return "bg-primary/60";
     if (ratio <= 0.66) return "bg-amber-400/40";
     return "bg-rose-500/50";
   }
@@ -284,7 +284,7 @@ function HeatmapGrid({ data }: { data: HeatmapSlot[] }) {
                     onMouseLeave={() => setHoveredSlot(null)}
                   >
                     {slot && slot.leads > 0 && (
-                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white/80">
+                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-foreground/80">
                         {slot.leads}
                       </span>
                     )}
@@ -316,10 +316,10 @@ function HeatmapGrid({ data }: { data: HeatmapSlot[] }) {
       {/* Legend */}
       <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
         <span>CPL:</span>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-emerald-500/60" /> Baixo</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-primary/60" /> Baixo</div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-amber-400/40" /> Médio</div>
         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-rose-500/50" /> Alto</div>
-        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-zinc-800/50" /> Sem dados</div>
+        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-muted/50" /> Sem dados</div>
       </div>
     </div>
   );
@@ -427,7 +427,7 @@ export default function CalendarioPage() {
 
       {/* Summary badges */}
       <div className="flex flex-wrap gap-3">
-        <StatusBadge color="bg-emerald-500" label="CPL abaixo da meta" count={diasVerdes} />
+        <StatusBadge color="bg-primary" label="CPL abaixo da meta" count={diasVerdes} />
         <StatusBadge color="bg-amber-400" label="CPL entre meta e 130%" count={diasAmarelos} />
         <StatusBadge color="bg-rose-500" label="CPL acima de 130%" count={diasVermelhos} />
       </div>
@@ -465,7 +465,7 @@ export default function CalendarioPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedDay(null)}
-            className="fixed inset-0 bg-black/40 z-[9998]"
+            className="fixed inset-0 bg-black/5 dark:bg-black/40 z-[9998]"
           />
         )}
       </AnimatePresence>

@@ -1,15 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { usePeriodoTrafego } from "@/contexts/periodo-trafego-context";
 import { useAccountSpend } from "@/hooks/use-account-spend";
 import { useAdAccount } from "@/contexts/ad-account-context";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   DollarSign, Users, TrendingUp, BarChart3, Target,
-  Layers, ArrowRight, Loader2, Megaphone, MousePointerClick, Eye,
+  Layers, ArrowRight, Loader2, Megaphone, MousePointerClick, Eye, RefreshCw
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -57,7 +59,7 @@ function QuickAction({ href, label, description, icon: Icon, color }: {
       <Card className="bg-card/30 border hover:border-primary/30 hover:bg-card/50 transition-all group cursor-pointer">
         <CardContent className="p-4 flex items-center gap-4">
           <div className={`p-2.5 rounded-xl ${color} shrink-0`}>
-            <Icon size={18} className="text-white" />
+            <Icon size={18} className="text-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-foreground">{label}</p>
@@ -74,6 +76,7 @@ function QuickAction({ href, label, description, icon: Icon, color }: {
 export default function VisaoGeralPage() {
   const { dataInicio, dataFim } = usePeriodoTrafego();
   const { account } = useAdAccount();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const {
     totalSpend, totalLeads, totalImpressions, totalClicks,
@@ -98,10 +101,27 @@ export default function VisaoGeralPage() {
   const cpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
   const cpm = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetch("/api/meta/cache-clear", { method: "POST" });
+      await mutate(
+        (key) => typeof key === "string" && key.includes("/api/meta/"),
+        undefined,
+        { revalidate: true }
+      );
+      toast.success("Dados sincronizados com o Meta Ads.");
+    } catch (e) {
+      toast.error("Falha ao sincronizar dados.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 animate-in fade-in zoom-in">
-        <div className="w-8 h-8 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-4 border-accent border-t-transparent animate-spin" />
         <p className="text-muted-foreground text-sm font-medium animate-pulse">Carregando dados de tráfego...</p>
       </div>
     );
@@ -113,13 +133,24 @@ export default function VisaoGeralPage() {
       <div className="flex flex-col md:flex-row items-center justify-between bg-card/40 border border-border/50 p-5 rounded-2xl">
         <div>
           <h1 className="text-3xl font-black tracking-tighter">Cockpit Executivo</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{dataInicio} → {dataFim}</p>
+          <p className="text-muted-foreground text-sm mt-0.5">Visão Global · Sincronização de <span className="text-foreground font-bold">{dataInicio}</span> a <span className="text-foreground font-bold">{dataFim}</span></p>
         </div>
         <div className="flex items-center gap-3 mt-3 md:mt-0">
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 border-primary/20 hover:bg-primary/10 transition-colors"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-primary" : "text-muted-foreground"}`} />
+            {isRefreshing ? "Sincronizando..." : "Sincronizar Meta"}
+          </Button>
+
           {activeCamps > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-bold text-emerald-400">{activeCamps} ativa{activeCamps > 1 ? "s" : ""}</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-bold text-primary">{activeCamps} ativa{activeCamps > 1 ? "s" : ""}</span>
             </div>
           )}
         </div>
@@ -133,7 +164,7 @@ export default function VisaoGeralPage() {
           subtitle={`${dataInicio} a ${dataFim}`}
           icon={DollarSign}
           isPrimary
-          color="text-blue-400"
+          color="text-accent"
         />
         <KPICard
           label="Leads"
@@ -141,7 +172,7 @@ export default function VisaoGeralPage() {
           subtitle={cpl > 0 ? `CPL: ${fmt(cpl, "currency")}` : undefined}
           icon={Users}
           isPrimary
-          color="text-emerald-400"
+          color="text-primary"
         />
         <KPICard
           label="Impressões"
@@ -164,7 +195,7 @@ export default function VisaoGeralPage() {
         <KPICard label="CPL" value={cpl > 0 ? fmt(cpl, "currency") : "—"} icon={Target} color="text-rose-400" />
         <KPICard label="CTR" value={ctr > 0 ? fmt(ctr, "percent") : "—"} icon={TrendingUp} color="text-cyan-400" />
         <KPICard label="CPC" value={cpc > 0 ? fmt(cpc, "currency") : "—"} icon={MousePointerClick} color="text-orange-400" />
-        <KPICard label="Campanhas Ativas" value={String(activeCamps)} icon={Layers} color="text-indigo-400" />
+        <KPICard label="Campanhas Ativas" value={String(activeCamps)} icon={Layers} color="text-accent" />
       </div>
 
       {/* Quick Actions */}
@@ -176,7 +207,7 @@ export default function VisaoGeralPage() {
             label="Gerenciar Campanhas"
             description="Pausar, ativar, editar e criar campanhas"
             icon={Megaphone}
-            color="bg-blue-600"
+            color="bg-accent"
           />
           <QuickAction
             href="/marketing/campanhas"
@@ -190,7 +221,7 @@ export default function VisaoGeralPage() {
             label="Análise de Criativos"
             description="Performance por criativo e formato"
             icon={Target}
-            color="bg-emerald-600"
+            color="bg-primary"
           />
         </div>
       </div>
@@ -216,7 +247,7 @@ export default function VisaoGeralPage() {
                   <CardContent className="p-3 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${
-                        c.effective_status === "ACTIVE" ? "bg-emerald-500" : "bg-zinc-500"
+                        c.effective_status === "ACTIVE" ? "bg-primary" : "bg-zinc-500"
                       }`} />
                       <span className="text-xs font-medium text-foreground truncate">{c.name}</span>
                     </div>
@@ -235,3 +266,4 @@ export default function VisaoGeralPage() {
     </div>
   );
 }
+

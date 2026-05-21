@@ -33,7 +33,7 @@ const fmtN   = (n: number | null) => n == null ? "—" : fmt(n);
 function DeltaBadge({ pct, sem = "higher" }: { pct: number | null; sem?: "higher" | "lower" | "neutral" }) {
   if (pct === null) return <span className="text-foreground/90 text-xs">—</span>;
   const isGood = sem === "neutral" ? null : sem === "higher" ? pct >= 0 : pct <= 0;
-  const color  = isGood === null ? "text-foreground/90" : isGood ? "text-emerald-400" : "text-rose-400";
+  const color  = isGood === null ? "text-foreground/90" : isGood ? "text-primary" : "text-rose-400";
   const Icon   = pct > 0 ? TrendingUp : pct < 0 ? TrendingDown : Minus;
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold ${color}`}>
@@ -43,7 +43,7 @@ function DeltaBadge({ pct, sem = "higher" }: { pct: number | null; sem?: "higher
 }
 
 function ScoreBadge({ score, label }: { score: number; label: string }) {
-  const cfg = label === "good"    ? { color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", icon: "✓" }
+  const cfg = label === "good"    ? { color: "bg-primary/10 text-primary border-primary/20", icon: "✓" }
             : label === "average" ? { color: "bg-amber-500/10 text-amber-400 border-amber-500/20",     icon: "~" }
             :                       { color: "bg-rose-500/10 text-rose-400 border-rose-500/20",             icon: "!" };
   return (
@@ -112,7 +112,7 @@ function FilterBar({
     <div className="flex flex-col gap-3">
       {/* Linha 1: datas + presets */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 bg-white/5 rounded-lg border border-white/10 px-3 py-1.5">
+        <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 rounded-lg border border-border px-3 py-1.5">
           <input type="date" value={since} onChange={e => setSince(e.target.value)}
             className="bg-transparent text-foreground text-sm focus:outline-none" />
           <span className="text-foreground/90 text-sm">→</span>
@@ -122,32 +122,32 @@ function FilterBar({
         <div className="flex gap-1">
           {presets.map(p => (
             <button key={p.days} onClick={() => applyPreset(p.days)}
-              className="text-xs px-2.5 py-1.5 rounded-md bg-white/5 hover:bg-white/10 border border-white/8 text-foreground/90 hover:text-foreground transition-colors">
+              className="text-xs px-2.5 py-1.5 rounded-md bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 border border-border text-foreground/90 hover:text-foreground transition-colors">
               {p.label}
             </button>
           ))}
         </div>
         <Button  variant="outline" size="sm" onClick={onRefresh}
-          className="ml-auto gap-1.5 border-white/10 bg-transparent text-foreground/90 hover:text-foreground">
+          className="ml-auto gap-1.5 border-border bg-transparent text-foreground/90 hover:text-foreground">
           <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} /> Atualizar
         </Button>
       </div>
 
       {/* Linha 2: nivel + status + busca */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg border border-white/10 overflow-hidden">
+        <div className="flex rounded-lg border border-border overflow-hidden">
           {levels.map(l => (
             <button key={l.id} onClick={() => setLevel(l.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${level === l.id ? "bg-accent text-foreground" : "bg-white/4 text-foreground/90 hover:text-foreground hover:bg-white/8"}`}>
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${level === l.id ? "bg-accent text-foreground" : "bg-white/4 text-foreground/90 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/8"}`}>
               <l.icon className="h-3.5 w-3.5" />{l.label}
             </button>
           ))}
         </div>
 
-        <div className="flex rounded-lg border border-white/10 overflow-hidden text-xs">
+        <div className="flex rounded-lg border border-border overflow-hidden text-xs">
           {(["all","ACTIVE","PAUSED"] as const).map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 font-semibold transition-colors ${statusFilter === s ? "bg-white/15 text-foreground" : "bg-white/4 text-foreground/90 hover:text-foreground"}`}>
+              className={`px-3 py-1.5 font-semibold transition-colors ${statusFilter === s ? "bg-black/10 dark:bg-white/15 text-foreground" : "bg-white/4 text-foreground/90 hover:text-foreground"}`}>
               {s === "all" ? "Todos" : s === "ACTIVE" ? "Ativo" : "Pausado"}
             </button>
           ))}
@@ -157,7 +157,7 @@ function FilterBar({
           <Search  className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/90" />
           <Input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nome..."
-            className="pl-8 h-8 text-xs bg-white/5 border-white/10 text-foreground w-52" />
+            className="pl-8 h-8 text-xs bg-black/5 dark:bg-white/5 border-border text-foreground w-52" />
         </div>
       </div>
     </div>
@@ -252,7 +252,7 @@ function TrendChart({ trendData }: { trendData: any[] }) {
       <div className="flex flex-wrap gap-2">
         {METRIC_OPTS.map(m => (
           <button key={m.key} onClick={() => toggleMetric(m.key)}
-            className={`text-[11px] px-3 py-1 rounded-full border transition-all font-semibold ${activeMetrics.includes(m.key) ? "border-transparent text-foreground" : "border-white/10 text-foreground/90 bg-transparent hover:text-foreground"}`}
+            className={`text-[11px] px-3 py-1 rounded-full border transition-all font-semibold ${activeMetrics.includes(m.key) ? "border-transparent text-foreground" : "border-border text-foreground/90 bg-transparent hover:text-foreground"}`}
             style={activeMetrics.includes(m.key) ? { backgroundColor: m.color + "25", borderColor: m.color + "60", color: m.color } : {}}>
             {m.label}
           </button>
@@ -302,10 +302,10 @@ function RankingTable({ rows, level, sortMetric, sortDir, toggleSort }: any) {
   ];
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-white/8">
+    <div className="overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm min-w-[900px]">
         <thead>
-          <tr className="border-b border-white/8 bg-white/3">
+          <tr className="border-b border-border bg-white/3">
             <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-foreground/90 min-w-[220px]">
               {level === "campaign" ? "Campanha" : level === "adset" ? "Conjunto" : "Anúncio"}
             </th>
@@ -321,7 +321,7 @@ function RankingTable({ rows, level, sortMetric, sortDir, toggleSort }: any) {
             const freqHigh = row.frequency > 3.5;
             return (
               <tr key={row.id}
-                className="border-b border-white/5 hover:bg-white/3 transition-colors animate-in fade-in duration-300"
+                className="border-b border-border hover:bg-white/3 transition-colors animate-in fade-in duration-300"
                 style={{ animationDelay: `${Math.min(i, 15) * 20}ms`, animationFillMode: "both" }}>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2 min-w-0">
@@ -365,6 +365,19 @@ export default function RelatoriosPage() {
   const { filters, setSince, setUntil, setLevel, toggleSort, setStatusFilter, setSearch } = useReportFilters();
   const { rows, totals, totalsPrev, trendData, isLoading, period, mutate: mutateRelatorio } = useRelatorioData(filters);
   const accountId = useAccountId();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetch("/api/meta/cache-clear", { method: "POST" });
+      await mutateRelatorio();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   if (isLoading && !rows.length) {
     return <TabLoading message="Sincronizando Relatórios..." />;
@@ -393,10 +406,10 @@ export default function RelatoriosPage() {
       <FilterBar
         since={filters.since} until={filters.until} level={filters.level}
         statusFilter={filters.statusFilter} search={filters.search}
-        isLoading={isLoading}
+        isLoading={isLoading || isRefreshing}
         setSince={setSince} setUntil={setUntil} setLevel={setLevel}
         setStatusFilter={setStatusFilter} setSearch={setSearch}
-        onRefresh={() => mutateRelatorio()}
+        onRefresh={handleRefresh}
       />
 
       {/* Seção 2: KPIs */}
@@ -455,7 +468,7 @@ function SectionTitle({ icon: Icon, label, color, count }: { icon: any; label: s
       <Icon className={`h-4 w-4 ${color}`} />
       <h2 className="text-sm font-bold text-foreground/90 tracking-tight">{label}</h2>
       {count !== undefined && (
-        <span className="text-[10px] text-foreground/90 font-mono bg-white/5 px-2 py-0.5 rounded-full">{count}</span>
+        <span className="text-[10px] text-foreground/90 font-mono bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">{count}</span>
       )}
     </div>
   );

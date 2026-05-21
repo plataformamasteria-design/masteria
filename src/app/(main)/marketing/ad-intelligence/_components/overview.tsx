@@ -50,7 +50,7 @@ export function OverviewTab() {
 
   if (error || rawData?.error) {
     return (
-      <div className="p-8 text-center text-red-500 bg-red-500/10 rounded-xl border border-red-500/20">
+      <div className="p-8 text-center text-destructive bg-destructive/10 rounded-xl border border-destructive/20">
         <p className="font-bold">Erro ao carregar inteligência</p>
         <p className="text-xs opacity-70 mt-1">{rawData?.error || "Serviço Indisponível"}</p>
       </div>
@@ -132,9 +132,9 @@ export function OverviewTab() {
       {auditData && (
         <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium ${
           auditData.status === "consistent"
-            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+            ? "bg-primary/10 border border-primary/20 text-primary"
             : auditData.status === "critical"
-              ? "bg-red-500/10 border border-red-500/20 text-red-400"
+              ? "bg-destructive/10 border border-destructive/20 text-destructive"
               : "bg-yellow-500/10 border border-yellow-500/20 text-yellow-400"
         }`}>
           {auditData.status === "consistent" ? (
@@ -169,10 +169,10 @@ export function OverviewTab() {
           // Para CPL, delta positivo = ruim (custo subiu)
           const isGood = k.invertDelta ? k.delta <= 0 : k.delta >= 0;
           const scoreColor = (k as any).isScore && typeof k.val === "number"
-            ? k.val >= 70 ? "text-emerald-400" : k.val >= 40 ? "text-yellow-400" : "text-rose-400"
+            ? k.val >= 70 ? "text-primary" : k.val >= 40 ? "text-yellow-400" : "text-rose-400"
             : "";
           return (
-            <SpotlightCard key={i} className="p-5 border-white/5">
+            <SpotlightCard key={i} className="p-5 border-border">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 flex items-center gap-1">
                   {k.label}
@@ -209,11 +209,11 @@ export function OverviewTab() {
               {k.delta !== 0 && (
                 <div className="mt-2 flex items-center gap-1.5 text-xs font-medium">
                   {isGood ? (
-                    <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
                   ) : (
-                    <TrendingDown className="h-3.5 w-3.5 text-red-400" />
+                    <TrendingDown className="h-3.5 w-3.5 text-destructive" />
                   )}
-                  <span className={isGood ? "text-emerald-400" : "text-red-400"}>
+                  <span className={isGood ? "text-primary" : "text-destructive"}>
                     {k.delta > 0 ? "+" : ""}{k.delta}% vs periodo anterior
                   </span>
                 </div>
@@ -229,26 +229,26 @@ export function OverviewTab() {
         <div className="col-span-1 lg:col-span-2">
           <SpotlightCard className="p-5 h-full border-accent/10 bg-gradient-to-br from-black to-accent-foreground/10">
             <h3 className="text-sm font-bold text-primary mb-4 uppercase tracking-widest flex items-center gap-2">
-              {criticalAlerts.length > 0 && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"/>}
+              {criticalAlerts.length > 0 && <span className="h-2 w-2 rounded-full bg-destructive animate-pulse"/>}
               Ações Críticas
             </h3>
 
             <div className="space-y-3">
               {criticalAlerts.length === 0 && fatigueWarnings.length === 0 ? (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex items-center gap-3">
-                  <TrendingUp className="h-5 w-5 text-emerald-400 shrink-0" />
+                <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex items-center gap-3">
+                  <TrendingUp className="h-5 w-5 text-primary shrink-0" />
                   <div>
-                    <h4 className="text-sm font-bold text-emerald-400">Tudo sob controle</h4>
+                    <h4 className="text-sm font-bold text-primary">Tudo sob controle</h4>
                     <p className="text-xs text-zinc-400 mt-1">Nenhuma campanha com CPL critico ou frequencia excessiva no periodo.</p>
                   </div>
                 </div>
               ) : (
                 <>
                   {criticalAlerts.slice(0, 3).map((a, i) => (
-                    <div key={i} className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl">
-                      <h4 className="text-sm font-bold text-red-400">CPL {a.pctAbove}% acima da media</h4>
+                    <div key={i} className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl">
+                      <h4 className="text-sm font-bold text-destructive">CPL {a.pctAbove}% acima da media</h4>
                       <p className="text-xs text-zinc-400 mt-1">
-                        "{a.name}" com CPL {fmtMoney(a.cpl)} (media: {fmtMoney(avgCpl)}). Score: <span className={a.score >= 70 ? "text-emerald-400" : a.score >= 40 ? "text-yellow-400" : "text-rose-400"}>{a.score}/100</span>.
+                        "{a.name}" com CPL {fmtMoney(a.cpl)} (media: {fmtMoney(avgCpl)}). Score: <span className={a.score >= 70 ? "text-primary" : a.score >= 40 ? "text-yellow-400" : "text-rose-400"}>{a.score}/100</span>.
                       </p>
                     </div>
                   ))}
@@ -256,7 +256,7 @@ export function OverviewTab() {
                     <div key={`f${i}`} className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl">
                       <h4 className="text-sm font-bold text-amber-400">Fadiga: frequencia {w.frequency.toFixed(1)}x</h4>
                       <p className="text-xs text-zinc-400 mt-1">
-                        "{w.name}" — publico vendo o anuncio muitas vezes. Score: <span className={w.score >= 70 ? "text-emerald-400" : w.score >= 40 ? "text-yellow-400" : "text-rose-400"}>{w.score}/100</span>.
+                        "{w.name}" — publico vendo o anuncio muitas vezes. Score: <span className={w.score >= 70 ? "text-primary" : w.score >= 40 ? "text-yellow-400" : "text-rose-400"}>{w.score}/100</span>.
                       </p>
                     </div>
                   ))}
@@ -268,27 +268,37 @@ export function OverviewTab() {
 
         {/* Plano de Ação — dados reais ou IA */}
         <div className="col-span-1">
-           <SpotlightCard className="p-5 h-full border-white/5 bg-black/40">
+           <SpotlightCard className="p-5 h-full border-border bg-black/5 dark:bg-black/40">
             <h3 className="text-sm font-bold text-zinc-300 mb-4 uppercase tracking-widest">
               {fullReport ? "Plano IA" : "Oportunidades"}
             </h3>
             {fullReport ? (
-              <div className="space-y-3">
-                <p className="text-xs text-zinc-400">{fullReport.diagnosis}</p>
-                <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg">
-                  <p className="text-xs font-bold text-primary">Recomendação:</p>
-                  <p className="text-[11px] text-zinc-300 mt-1">{fullReport.recommendation}</p>
+              fullReport.error ? (
+                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl flex items-center gap-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-bold text-destructive">Falha na Inteligência Artificial</h4>
+                    <p className="text-xs text-zinc-400 mt-1">{fullReport.error}</p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-zinc-400">{fullReport.diagnosis}</p>
+                  <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg">
+                    <p className="text-xs font-bold text-primary">Recomendação:</p>
+                    <p className="text-[11px] text-zinc-300 mt-1">{fullReport.recommendation}</p>
+                  </div>
+                </div>
+              )
             ) : (
               <ul className="space-y-4">
                 {scaleOpportunities.slice(0, 2).map((o, i) => (
                   <li key={i} className="flex gap-3">
-                    <div className="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                      <span className="text-emerald-400 text-xs font-black">{i + 1}</span>
+                    <div className="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+                      <span className="text-primary text-xs font-black">{i + 1}</span>
                     </div>
                     <div>
-                      <h5 className="text-xs font-bold text-emerald-400">Escalar</h5>
+                      <h5 className="text-xs font-bold text-primary">Escalar</h5>
                       <p className="text-[10px] text-zinc-500 mt-0.5">"{o.name}" — CPL {fmtMoney(o.cpl)}, Score {o.score}.</p>
                     </div>
                   </li>
@@ -298,11 +308,11 @@ export function OverviewTab() {
                 )}
                 {criticalAlerts.length > 0 && scaleOpportunities.length === 0 && (
                   <li className="flex gap-3">
-                    <div className="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/30">
-                      <span className="text-red-400 text-xs font-black">!</span>
+                    <div className="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-destructive/20 flex items-center justify-center border border-destructive/30">
+                      <span className="text-destructive text-xs font-black">!</span>
                     </div>
                     <div>
-                      <h5 className="text-xs font-bold text-red-400">Revisar</h5>
+                      <h5 className="text-xs font-bold text-destructive">Revisar</h5>
                       <p className="text-[10px] text-zinc-500 mt-0.5">{criticalAlerts.length} campanha(s) com CPL critico. Considere pausar ou ajustar.</p>
                     </div>
                   </li>
@@ -332,7 +342,7 @@ export function OverviewTab() {
                     <span className="font-medium text-zinc-300">{dim.label}</span>
                     <span className="text-zinc-500">Peso: {dim.peso}%</span>
                   </div>
-                  <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary/60 rounded-full transition-all"
                       style={{ width: `${barWidth}%` }}
@@ -344,7 +354,7 @@ export function OverviewTab() {
                 </div>
               );
             })}
-            <div className="bg-zinc-800/50 border border-zinc-700/30 rounded-lg p-3 mt-3">
+            <div className="bg-muted/50 border border-zinc-700/30 rounded-lg p-3 mt-3">
               <p className="text-[10px] text-zinc-400">
                 <strong className="text-zinc-300">Score final: {accountScore ?? "—"}/100</strong>
                 {" — "}

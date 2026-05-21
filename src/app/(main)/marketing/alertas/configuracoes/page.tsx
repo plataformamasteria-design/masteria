@@ -127,7 +127,7 @@ export default function ConfiguracoesAlertasPage() {
                         className={cn(
                           "text-[10px]",
                           t.active
-                            ? "text-emerald-500 border-emerald-500/20"
+                            ? "text-primary border-primary/20"
                             : "text-muted-foreground"
                         )}
                       >
@@ -174,7 +174,7 @@ export default function ConfiguracoesAlertasPage() {
                       {saving[t.id] ? (
                         <Loader2 size={14} className="animate-spin" />
                       ) : saved[t.id] ? (
-                        <Check size={14} className="text-emerald-500" />
+                        <Check size={14} className="text-primary" />
                       ) : (
                         <Save size={14} />
                       )}

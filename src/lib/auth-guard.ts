@@ -7,7 +7,8 @@
  *   // user contém SessionPayload com employeeId, role, nome, etc.
  */
 import { NextResponse } from "next/server";
-import { getSession, type SessionPayload } from "@/lib/session";
+import { getUserSession } from "@/app/actions";
+import type { SessionPayload } from "@/lib/session";
 
 interface VerifyResult {
   user: SessionPayload | null;
@@ -15,17 +16,13 @@ interface VerifyResult {
 }
 
 /**
- * Verifica se o usuário está autenticado via cookie JWT.
- * Retorna { user, error } — se error !== null, retornar direto na rota.
- *
- * O token JWT é verificado por jose (assinatura + expiração).
- * Se o token estiver expirado, jose retorna null e o usuário recebe 401.
+ * Verifica se o usuário está autenticado via cookie JWT usando o getUserSession real.
  */
 export async function verifySession(): Promise<VerifyResult> {
   try {
-    const session = await getSession();
+    const session = await getUserSession();
 
-    if (!session) {
+    if (session.error || !session.user) {
       return {
         user: null,
         error: NextResponse.json(
@@ -35,7 +32,7 @@ export async function verifySession(): Promise<VerifyResult> {
       };
     }
 
-    if (!session.employeeId) {
+    if (!session.user.id) {
       return {
         user: null,
         error: NextResponse.json(
@@ -45,7 +42,15 @@ export async function verifySession(): Promise<VerifyResult> {
       };
     }
 
-    return { user: session, error: null };
+    // Map the user to SessionPayload to avoid breaking dependent code
+    const mappedUser: SessionPayload = {
+      employeeId: session.user.id,
+      role: (session.user.role as any) || "admin",
+      entityId: session.user.companyId || null,
+      nome: session.user.name || "Usuário",
+    };
+
+    return { user: mappedUser, error: null };
   } catch {
     return {
       user: null,

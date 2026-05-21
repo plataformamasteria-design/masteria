@@ -20,6 +20,24 @@ const fetcher = (u: string) => fetch(u).then((r) => r.json());
 
 import { Section, MediaPicker, CarouselEditor, ChatPreview, MessageTemplateEditor } from "./ad-components";
 
+const CTA_OPTIONS = [
+  { value: "LEARN_MORE", label: "Saiba Mais" },
+  { value: "SHOP_NOW", label: "Comprar Agora" },
+  { value: "SIGN_UP", label: "Cadastre-se" },
+  { value: "DOWNLOAD", label: "Baixar" },
+  { value: "GET_QUOTE", label: "Obter Cotação" },
+  { value: "SUBSCRIBE", label: "Assinar" },
+  { value: "CONTACT_US", label: "Entre em Contato" },
+  { value: "WATCH_MORE", label: "Assistir Mais" },
+  { value: "BOOK_NOW", label: "Reserve Agora" },
+  { value: "APPLY_NOW", label: "Candidatar-se" },
+  { value: "GET_OFFER", label: "Ver Oferta" },
+  { value: "SEND_MESSAGE", label: "Enviar Mensagem" },
+  { value: "WHATSAPP_MESSAGE", label: "WhatsApp" },
+  { value: "CALL_NOW", label: "Ligar Agora" },
+  { value: "SEE_MORE", label: "Ver Mais" },
+];
+
 // ── Main AdPanel ──
 export function AdPanel({
   ad, pages, loadingPages, onChange,
@@ -56,7 +74,7 @@ export function AdPanel({
               type="checkbox" 
               checked={manualIds} 
               onChange={(e) => setManualIds(e.target.checked)} 
-              className="h-3 w-3 bg-black border-white/10 rounded accent-accent" 
+              className="h-3 w-3 bg-black border-border rounded accent-accent" 
             />
             Inserir IDs Manualmente (Override)
           </label>
@@ -70,7 +88,7 @@ export function AdPanel({
                    value={ad.page_id} 
                    onChange={(e) => onChange({ page_id: e.target.value })} 
                    placeholder="Ex: 1029384756" 
-                   className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 font-mono focus-visible:ring-primary/50" 
+                   className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 font-mono focus-visible:ring-primary/50" 
                  />
               </div>
               <div className="space-y-2">
@@ -79,7 +97,7 @@ export function AdPanel({
                    value={ad.instagram_actor_id} 
                    onChange={(e) => onChange({ instagram_actor_id: e.target.value })} 
                    placeholder="Ex: 129384756123 (Em branco para vazio)" 
-                   className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 font-mono focus-visible:ring-primary/50" 
+                   className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 font-mono focus-visible:ring-primary/50" 
                  />
               </div>
            </div>
@@ -94,7 +112,7 @@ export function AdPanel({
                     // Clear the IG when page changes — will be re-populated via endpoint
                     onChange({ page_id: v, instagram_actor_id: "" });
                   }}>
-                  <SelectTrigger  className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 focus-visible:ring-primary/50"><SelectValue placeholder="Selecionar Página..." /></SelectTrigger>
+                  <SelectTrigger  className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 focus-visible:ring-primary/50"><SelectValue placeholder="Selecionar Página..." /></SelectTrigger>
                   <SelectContent>{pages.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
                 </Select>
               )}
@@ -108,7 +126,7 @@ export function AdPanel({
                   </div>
                 ) : (
                   <Select value={ad.instagram_actor_id || "NONE"} onValueChange={(v) => onChange({ instagram_actor_id: v === "NONE" ? "" : v })}>
-                    <SelectTrigger  className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 focus-visible:ring-primary/50">
+                    <SelectTrigger  className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 focus-visible:ring-primary/50">
                       <SelectValue placeholder="Selecionar perfil do Instagram..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -135,9 +153,9 @@ export function AdPanel({
           <div className="flex flex-col gap-4">
             {(["MANUAL", "CATALOG"] as const).map((src) => (
               <button key={src} onClick={() => onChange({ creative_source: src })}
-                className={`px-4 py-3 rounded-2xl border text-left transition-all ${ad.creative_source === src ? "border-accent/60 bg-primary/10 shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "border-white/10 bg-black/40 hover:bg-black/60 hover:border-white/20"}`}>
+                className={`px-4 py-3 rounded-2xl border text-left transition-all ${ad.creative_source === src ? "border-accent/60 bg-primary/10 shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "border-border bg-black/5 dark:bg-black/5 dark:bg-black/40 hover:bg-black/5 dark:hover:bg-black/5 dark:bg-black/60 border-border"}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${ad.creative_source === src ? "bg-primary/20 text-primary" : "bg-white/5 text-foreground/90"}`}>
+                  <div className={`p-2 rounded-lg ${ad.creative_source === src ? "bg-primary/20 text-primary" : "bg-black/5 dark:bg-white/5 text-foreground/90"}`}>
                      {src === "MANUAL" ? <Upload className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
                   </div>
                   <div>
@@ -156,7 +174,7 @@ export function AdPanel({
 
         {/* Format */}
         {ad.creative_source === "MANUAL" && (
-          <div className="space-y-2 pt-2 border-t border-white/5">
+          <div className="space-y-2 pt-2 border-t border-border">
             <Label  className="text-foreground/90 font-semibold text-xs">Arquitetura Estrutural</Label>
             <div className="grid grid-cols-3 gap-3">
               {([
@@ -165,7 +183,7 @@ export function AdPanel({
                 { v: "CAROUSEL", icon: <LayoutGrid className="h-5 w-5" />, label: "Carrossel Extendido" },
               ] as const).map(({ v, icon, label }) => (
                 <button key={v} onClick={() => onChange({ format: v })}
-                  className={`py-6 px-3 rounded-2xl border flex flex-col items-center gap-3 transition-all ${ad.format === v ? "border-accent/60 bg-primary/10 text-primary shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-primary/20" : "border-white/10 bg-black/40 text-foreground/90 hover:border-white/20 hover:text-foreground/90"}`}>
+                  className={`py-6 px-3 rounded-2xl border flex flex-col items-center gap-3 transition-all ${ad.format === v ? "border-accent/60 bg-primary/10 text-primary shadow-[0_0_15px_rgba(59,130,246,0.15)] ring-1 ring-primary/20" : "border-border bg-black/5 dark:bg-black/5 dark:bg-black/40 text-foreground/90 border-border hover:text-foreground/90"}`}>
                   {icon}
                   <span className="text-xs font-bold text-center uppercase tracking-widest">{label}</span>
                 </button>
@@ -179,7 +197,7 @@ export function AdPanel({
             <p className="text-[10px] text-foreground/90 mt-0.5">Seu anúncio pode aparecer junto de outros para promover descoberta.</p>
           </div>
           <button onClick={() => onChange({ multi_advertiser: !ad.multi_advertiser })}
-            className={`w-10 h-5 rounded-full transition-colors flex items-center p-0.5 flex-shrink-0 ml-4 ${ad.multi_advertiser ? "bg-accent" : "bg-zinc-700"}`}>
+            className={`w-10 h-5 rounded-full transition-colors flex items-center p-0.5 flex-shrink-0 ml-4 ${ad.multi_advertiser ? "bg-accent" : "bg-muted-foreground/20"}`}>
             <div className={`bg-white w-4 h-4 rounded-full transition-transform ${ad.multi_advertiser ? "translate-x-5" : "translate-x-0"}`} />
           </button>
         </div>
@@ -197,8 +215,8 @@ export function AdPanel({
               <div className="space-y-2">
                 <div className="flex gap-4">
                   <Input value={ad.image_hash} onChange={(e) => onChange({ image_hash: e.target.value })}
-                    placeholder="Hash de criptografia local gerado" className="bg-black/50 border-white/10 text-foreground font-mono text-sm h-12 rounded-xl flex-1 focus-visible:ring-primary/50" />
-                  <Button onClick={() => setImagePicker(true)} variant="outline" className="border-white/10 bg-zinc-800 text-foreground/90 hover:text-foreground hover:bg-zinc-700 h-12 rounded-xl shrink-0 px-6 gap-2 font-bold shadow-md">
+                    placeholder="Hash de criptografia local gerado" className="bg-black/5 dark:bg-black/50 border-border text-foreground font-mono text-sm h-12 rounded-xl flex-1 focus-visible:ring-primary/50" />
+                  <Button onClick={() => setImagePicker(true)} variant="outline" className="border-border bg-muted text-foreground/90 hover:text-foreground hover:bg-muted-foreground/20 h-12 rounded-xl shrink-0 px-6 gap-2 font-bold shadow-md">
                     <ImageIcon className="h-4 w-4" /> Importar Nuvem
                   </Button>
                 </div>
@@ -210,8 +228,8 @@ export function AdPanel({
               <div className="space-y-3">
                 <div className="flex gap-4">
                   <Input value={ad.video_id} onChange={(e) => onChange({ video_id: e.target.value })}
-                    placeholder="ID Numérico do Meta File" className="bg-black/50 border-white/10 text-foreground font-mono text-sm h-12 rounded-xl flex-1 focus-visible:ring-primary/50" />
-                  <Button onClick={() => setVideoPicker(true)} variant="outline" className="border-white/10 bg-zinc-800 text-foreground/90 hover:text-foreground hover:bg-zinc-700 h-12 rounded-xl shrink-0 px-6 gap-2 font-bold shadow-md">
+                    placeholder="ID Numérico do Meta File" className="bg-black/5 dark:bg-black/50 border-border text-foreground font-mono text-sm h-12 rounded-xl flex-1 focus-visible:ring-primary/50" />
+                  <Button onClick={() => setVideoPicker(true)} variant="outline" className="border-border bg-muted text-foreground/90 hover:text-foreground hover:bg-muted-foreground/20 h-12 rounded-xl shrink-0 px-6 gap-2 font-bold shadow-md">
                     <Film className="h-4 w-4" /> Importar Nuvem
                   </Button>
                 </div>
@@ -226,7 +244,7 @@ export function AdPanel({
                     value={(ad as any).video_thumbnail_url || ""}
                     onChange={(e) => onChange({ video_thumbnail_url: e.target.value } as any)}
                     placeholder="https://... (imagem de capa do vídeo)"
-                    className="bg-black/50 border-white/10 text-foreground font-mono text-xs h-9 rounded-xl focus-visible:ring-primary/50"
+                    className="bg-black/5 dark:bg-black/50 border-border text-foreground font-mono text-xs h-9 rounded-xl focus-visible:ring-primary/50"
                   />
                 </div>
               </div>
@@ -236,19 +254,19 @@ export function AdPanel({
 
         {/* ── Carousel copy (message above cards) ── */}
         {ad.format === "CAROUSEL" && ad.creative_source === "MANUAL" && (
-          <div className="pt-2 border-t border-white/5 mt-4 space-y-2">
+          <div className="pt-2 border-t border-border mt-4 space-y-2">
             <Label  className="text-foreground/90 font-semibold text-xs flex items-center gap-1">
               <AlignLeft  className="h-3.5 w-3.5 text-primary" /> Texto Principal (exibido acima dos cards)
             </Label>
             <Textarea value={ad.copy} onChange={(e) => onChange({ copy: e.target.value })}
-              className="bg-black/40 border-white/10 text-foreground min-h-[80px] text-sm rounded-2xl resize-none focus-visible:ring-primary/50 p-4 leading-relaxed"
+              className="bg-black/5 dark:bg-black/5 dark:bg-black/40 border-border text-foreground min-h-[80px] text-sm rounded-2xl resize-none focus-visible:ring-primary/50 p-4 leading-relaxed"
               placeholder="Mensagem exibida acima dos cards do carrossel..." />
           </div>
         )}
 
         {/* Carousel Editor */}
         {ad.format === "CAROUSEL" && ad.creative_source === "MANUAL" && (
-          <div className="space-y-2 pt-2 border-t border-white/5 mt-4">
+          <div className="space-y-2 pt-2 border-t border-border mt-4">
             <Label  className="text-foreground/90 font-semibold text-xs">Cartões Interativos Associados</Label>
             <CarouselEditor cards={ad.carousel_cards} onChange={(c) => onChange({ carousel_cards: c })} />
           </div>
@@ -256,7 +274,7 @@ export function AdPanel({
 
         {/* Text fields — non-carousel formats only */}
         {ad.format !== "CAROUSEL" && (
-          <div className="space-y-5 pt-4 border-t border-white/5 mt-4">
+          <div className="space-y-5 pt-4 border-t border-border mt-4">
             {/* Copy */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -267,7 +285,7 @@ export function AdPanel({
                 }`}>{ad.copy?.length || 0}/125</span>
               </div>
               <Textarea value={ad.copy} onChange={(e) => onChange({ copy: e.target.value })}
-                className="bg-black/40 border-white/10 text-foreground min-h-[120px] text-sm rounded-2xl resize-none focus-visible:ring-primary/50 p-4 leading-relaxed" placeholder="A mensagem hipnótica destinada a provocar as ações predefinidas..." />
+                className="bg-black/5 dark:bg-black/5 dark:bg-black/40 border-border text-foreground min-h-[120px] text-sm rounded-2xl resize-none focus-visible:ring-primary/50 p-4 leading-relaxed" placeholder="A mensagem hipnótica destinada a provocar as ações predefinidas..." />
               {(ad.copy?.length || 0) > 125 && (
                 <p className="text-[10px] text-primary font-semibold">Texto acima do limite recomendado pela Meta (125 car.). Pode ser truncado nos posicionamentos.</p>
               )}
@@ -283,8 +301,8 @@ export function AdPanel({
                   }`}>{ad.headline?.length || 0}/40</span>
                 </div>
                 <Input value={ad.headline} onChange={(e) => onChange({ headline: e.target.value })}
-                  placeholder="Chamada de ação forte e aguda." className={`bg-black/50 text-foreground text-sm h-11 rounded-xl focus-visible:ring-primary/50 ${
-                    (ad.headline?.length || 0) > 40 ? "border-primary/20" : "border-white/10"
+                  placeholder="Chamada de ação forte e aguda." className={`bg-black/5 dark:bg-black/50 text-foreground text-sm h-11 rounded-xl focus-visible:ring-primary/50 ${
+                    (ad.headline?.length || 0) > 40 ? "border-primary/20" : "border-border"
                   }`} />
               </div>
               {/* Description */}
@@ -297,33 +315,33 @@ export function AdPanel({
                   }`}>{ad.description?.length || 0}/30</span>
                 </div>
                 <Input value={ad.description} onChange={(e) => onChange({ description: e.target.value })}
-                  placeholder="Explicação auxiliar sutil (Opcional)." className={`bg-black/50 text-foreground text-sm h-11 rounded-xl focus-visible:ring-primary/50 ${
-                    (ad.description?.length || 0) > 30 ? "border-primary/20" : "border-white/10"
+                  placeholder="Explicação auxiliar sutil (Opcional)." className={`bg-black/5 dark:bg-black/50 text-foreground text-sm h-11 rounded-xl focus-visible:ring-primary/50 ${
+                    (ad.description?.length || 0) > 30 ? "border-primary/20" : "border-border"
                   }`} />
               </div>
             </div>
             {/* Caption (Legenda) */}
-            <div className="space-y-2 pt-2 border-t border-white/5">
+            <div className="space-y-2 pt-2 border-t border-border">
               <Label  className="text-foreground/90 font-semibold text-xs flex items-center gap-1.5">
                 <FileText  className="h-3.5 w-3.5 text-foreground/90" /> Legenda da Publicação (Caption — opcional, Facebook)
               </Label>
               <Input value={ad.caption || ""} onChange={(e) => onChange({ caption: e.target.value })}
-                placeholder="Texto de legenda exibido no post do Facebook (ex: acesse o link)" className="bg-black/50 border-white/10 text-foreground text-sm h-11 rounded-xl focus-visible:ring-primary/50" />
+                placeholder="Texto de legenda exibido no post do Facebook (ex: acesse o link)" className="bg-black/5 dark:bg-black/50 border-border text-foreground text-sm h-11 rounded-xl focus-visible:ring-primary/50" />
             </div>
           </div>
         )}
 
         {/* URL + CTA (always visible) */}
-        <div className="flex flex-col gap-4 pt-4 border-t border-white/5 mt-4">
+        <div className="flex flex-col gap-4 pt-4 border-t border-border mt-4">
           <div className="space-y-2">
               <Label  className="text-foreground/90 font-semibold text-xs flex items-center gap-1"><Link  className="h-4 w-4 text-primary" /> URL de Destino</Label>
             <Input value={ad.url} onChange={(e) => onChange({ url: e.target.value })}
-              placeholder="https://comarka.com.br/lp-secreta" className="bg-black/50 border-white/10 text-foreground text-sm h-11 rounded-xl font-mono focus-visible:ring-primary/50" />
+              placeholder="https://comarka.com.br/lp-secreta" className="bg-black/5 dark:bg-black/50 border-border text-foreground text-sm h-11 rounded-xl font-mono focus-visible:ring-primary/50" />
           </div>
           <div className="space-y-2">
               <Label  className="text-foreground/90 font-semibold text-xs flex items-center gap-1"><Tag  className="h-4 w-4 text-primary" /> Botão de Ação (CTA)</Label>
             <Select value={ad.cta_type} onValueChange={(v) => onChange({ cta_type: v })}>
-              <SelectTrigger  className="bg-black/50 border-white/10 text-foreground h-11 rounded-xl focus-visible:ring-primary/50"><SelectValue /></SelectTrigger>
+              <SelectTrigger  className="bg-black/5 dark:bg-black/50 border-border text-foreground h-11 rounded-xl focus-visible:ring-primary/50"><SelectValue /></SelectTrigger>
               <SelectContent>{CTA_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value} className="focus:bg-primary/20">{o.label}</SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -341,7 +359,7 @@ export function AdPanel({
               value={ad.url_tags || ""}
               onChange={(e) => onChange({ url_tags: e.target.value })}
               placeholder="utm_source=meta&utm_medium=cpc&utm_campaign={{campaign.name}}"
-              className="bg-black/50 border-white/10 text-foreground text-xs h-11 rounded-xl font-mono focus-visible:ring-primary/50"
+              className="bg-black/5 dark:bg-black/50 border-border text-foreground text-xs h-11 rounded-xl font-mono focus-visible:ring-primary/50"
             />
             <p className="text-[10px] text-foreground/90 leading-relaxed">
               Parâmetros adicionados ao final da URL de destino. Use variáveis da Meta: <code className="text-primary bg-primary/10 px-1 rounded">{'{{campaign.name}}'}</code>, <code className="text-primary bg-primary/10 px-1 rounded">{'{{adset.name}}'}</code>, <code className="text-primary bg-primary/10 px-1 rounded">{'{{ad.name}}'}</code>
@@ -349,7 +367,7 @@ export function AdPanel({
           </div>
           {/* URL Preview */}
           {ad.url && ad.url_tags && (
-            <div className="p-3 bg-black/40 border border-white/5 rounded-xl">
+            <div className="p-3 bg-black/5 dark:bg-black/5 dark:bg-black/40 border border-border rounded-xl">
               <p className="text-[10px] text-foreground/90 font-bold uppercase tracking-widest mb-1">URL Final (Preview)</p>
               <p className="text-xs text-accent/70 font-mono break-all leading-relaxed">{ad.url}?{ad.url_tags}</p>
             </div>
@@ -385,7 +403,7 @@ export function AdPanel({
           <button
             onClick={() => onChange({ advantage_creative: !ad.advantage_creative })}
             className={`w-12 h-6 rounded-full transition-colors flex items-center p-1 flex-shrink-0 mt-1 ${
-              ad.advantage_creative ? "bg-primary/10" : "bg-zinc-700"
+              ad.advantage_creative ? "bg-primary/10" : "bg-muted-foreground/20"
             }`}
           >
             <div className={`bg-white w-4 h-4 rounded-full transition-transform ${ad.advantage_creative ? "translate-x-6" : "translate-x-0"}`} />

@@ -45,7 +45,7 @@ function MediaBlock({ format, imageHash, imageUrl, videoId, carouselCards, mode 
   if (format === "CAROUSEL" && carouselCards && carouselCards.length > 0) {
     const card = carouselCards[cardIdx];
     return (
-      <div className={`relative w-full ${aspectClass} bg-zinc-900 flex items-center justify-center`}>
+      <div className={`relative w-full ${aspectClass} bg-card flex items-center justify-center`}>
         <div className="absolute inset-0 flex items-center justify-center opacity-70">
           {card?.image_url ? (
             <img src={card.image_url} alt="Carousel Media" className="w-full h-full object-cover" />
@@ -59,12 +59,12 @@ function MediaBlock({ format, imageHash, imageUrl, videoId, carouselCards, mode 
           </div>
           <div className="flex items-center gap-1 ml-2">
             <button onClick={() => setCardIdx((i) => Math.max(0, i - 1))} disabled={cardIdx === 0}
-              className="w-6 h-6 bg-black/50 rounded-full flex items-center justify-center disabled:opacity-30">
+              className="w-6 h-6 bg-black/5 dark:bg-black/50 rounded-full flex items-center justify-center disabled:opacity-30">
               <ChevronLeft  className="h-3 w-3 text-foreground" />
             </button>
             <span className="text-[10px] text-foreground/90">{cardIdx + 1}/{carouselCards.length}</span>
             <button onClick={() => setCardIdx((i) => Math.min(carouselCards.length - 1, i + 1))} disabled={cardIdx === carouselCards.length - 1}
-              className="w-6 h-6 bg-black/50 rounded-full flex items-center justify-center disabled:opacity-30">
+              className="w-6 h-6 bg-black/5 dark:bg-black/50 rounded-full flex items-center justify-center disabled:opacity-30">
               <ChevronRight  className="h-3 w-3 text-foreground" />
             </button>
           </div>
@@ -83,10 +83,10 @@ function MediaBlock({ format, imageHash, imageUrl, videoId, carouselCards, mode 
     <div className={`relative w-full ${aspectClass} bg-gradient-to-br from-zinc-800 via-zinc-750 to-zinc-900 flex items-center justify-center overflow-hidden`}>
       {format === "SINGLE_VIDEO" ? (
         <div className="flex flex-col items-center gap-2 z-20">
-          <div className="w-16 h-16 border-[3px] border-white/60 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer hover:scale-105 transition-transform shadow-2xl">
+          <div className="w-16 h-16 border-[3px] border-border bg-black/5 dark:bg-black/40 rounded-full flex items-center justify-center backdrop-blur-md cursor-pointer hover:scale-105 transition-transform shadow-2xl">
             <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[16px] border-l-white border-b-[10px] border-b-transparent ml-1" />
           </div>
-          <span className="text-white/80 text-[10px] font-bold tracking-widest uppercase drop-shadow-md">Trailer</span>
+          <span className="text-foreground/80 text-[10px] font-bold tracking-widest uppercase drop-shadow-md">Trailer</span>
           {imageUrl && <img src={imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-60 z-0" />}
         </div>
       ) : imageUrl ? (
@@ -110,10 +110,10 @@ export function AdPreview({ pageName, instagramHandle, copy, headline, descripti
   return (
     <div className="space-y-3">
       {/* Mode Switcher */}
-      <div className="flex gap-1 bg-black/20 p-1 rounded-lg">
+      <div className="flex gap-1 bg-black/5 dark:bg-black/20 p-1 rounded-lg">
         {(["feed", "stories"] as PreviewMode[]).map((m) => (
           <button key={m} onClick={() => setMode(m)}
-            className={`flex-1 text-xs py-1 rounded-md capitalize transition-all ${mode === m ? "bg-white/10 text-foreground" : "text-foreground/90 hover:text-foreground/90"}`}>
+            className={`flex-1 text-xs py-1 rounded-md capitalize transition-all ${mode === m ? "bg-black/10 dark:bg-white/10 text-foreground" : "text-foreground/90 hover:text-foreground/90"}`}>
             {m === "feed" ? "Feed" : "Stories"}
           </button>
         ))}
@@ -125,7 +125,7 @@ export function AdPreview({ pageName, instagramHandle, copy, headline, descripti
           <div className="relative">
             <MediaBlock format={format} imageHash={imageHash} imageUrl={imageUrl} videoId={videoId} carouselCards={carouselCards} mode={mode} />
             <div className="absolute top-2 left-2 right-2 flex items-center gap-1.5">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent to-primary flex-shrink-0 border border-white/30" />
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent to-primary flex-shrink-0 border border-border" />
               <span className="text-foreground text-[10px] font-semibold drop-shadow">{displayName}</span>
               <span className="text-foreground/90 text-[9px] ml-1">· Pub.</span>
             </div>
@@ -149,17 +149,17 @@ export function AdPreview({ pageName, instagramHandle, copy, headline, descripti
             </div>
             {copy && <div className="px-3 pb-2 text-foreground text-xs leading-relaxed line-clamp-3">{copy}</div>}
             <MediaBlock format={format} imageHash={imageHash} imageUrl={imageUrl} videoId={videoId} carouselCards={carouselCards} mode={mode} />
-            <div className="px-3 py-2 border-t border-white/10 flex items-center justify-between bg-zinc-900/50">
+            <div className="px-3 py-2 border-t border-border flex items-center justify-between bg-muted/50">
               <div className="min-w-0 flex-1 mr-3">
                 {url && <div className="text-foreground/90 text-[9px] uppercase truncate">{url.replace(/https?:\/\//, "")}</div>}
                 {headline && <div className="text-foreground text-xs font-semibold leading-tight truncate">{headline}</div>}
                 {description && <div className="text-foreground/90 text-[10px] truncate">{description}</div>}
               </div>
-              <button className="flex-shrink-0 text-[11px] font-semibold bg-zinc-600 hover:bg-zinc-500 text-foreground px-2.5 py-1 rounded transition-colors whitespace-nowrap">
+              <button className="flex-shrink-0 text-[11px] font-semibold bg-primary/20 text-primary hover:bg-primary/30 text-foreground px-2.5 py-1 rounded transition-colors whitespace-nowrap">
                 {CTA_LABELS[ctaType] || "Saiba Mais"}
               </button>
             </div>
-            <div className="px-3 py-2 flex items-center gap-4 border-t border-white/5">
+            <div className="px-3 py-2 flex items-center gap-4 border-t border-border">
               {[{ icon: Heart, label: "Curtir" }, { icon: MessageCircle, label: "Comentar" }, { icon: Send, label: "Enviar" }].map(({ icon: Icon, label }) => (
                 <button key={label} className="flex items-center gap-1 text-foreground/90 hover:text-foreground transition-colors">
                   <Icon className="h-3.5 w-3.5" /> <span className="text-[10px]">{label}</span>

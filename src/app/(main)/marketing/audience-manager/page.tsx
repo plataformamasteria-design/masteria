@@ -76,7 +76,7 @@ function NameInput({ value, onChange, placeholder }: { value: string; onChange: 
   return (
     <div className="space-y-1.5">
       <Label  className="text-xs font-semibold text-foreground/70">Nome do Público *</Label>
-      <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder || "Ex: Público VV 30d"} className="bg-black/30 border-white/10 text-sm h-9" />
+      <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder || "Ex: Público VV 30d"} className="bg-black/30 border-border text-sm h-9" />
     </div>
   );
 }
@@ -89,7 +89,7 @@ function RetentionPicker({ value, onChange }: { value: string; onChange: (v: str
       <div className="flex gap-1.5 flex-wrap">
         {RETENTION_OPTS.map(d => (
           <button key={d} onClick={() => onChange(d)} className={cn("px-2.5 py-1 rounded-md text-xs font-bold border transition-all",
-            value === d ? "bg-accent border-accent text-white" : "bg-white/[0.03] border-white/10 text-foreground/60 hover:border-white/20 hover:text-foreground")}>
+            value === d ? "bg-accent border-accent text-foreground" : "bg-white/[0.03] border-border text-foreground/60 border-border hover:text-foreground")}>
             {d}d
           </button>
         ))}
@@ -152,19 +152,19 @@ function TabHub({ audiences, isLoading, onRefresh }: { audiences: CustomAudience
             const count = t === "ALL" ? audiences.length : audiences.filter(a => a.subtype === t).length;
             return (
               <button key={t} onClick={() => setTypeFilter(t)} className={cn("px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all",
-                typeFilter === t ? "bg-primary/15 border-accent/40 text-accent/70" : "bg-white/[0.03] border-white/10 text-foreground/60 hover:text-foreground")}>
+                typeFilter === t ? "bg-primary/15 border-accent/40 text-accent/70" : "bg-white/[0.03] border-border text-foreground/60 hover:text-foreground")}>
                 {t === "ALL" ? `Todos (${count})` : `${meta?.label || t} (${count})`}
               </button>
             );
           })}
         </div>
-        <Button  variant="outline" size="sm" onClick={onRefresh} className="gap-1.5 border-white/15 text-foreground/70 hover:text-foreground bg-transparent text-xs h-8">
+        <Button  variant="outline" size="sm" onClick={onRefresh} className="gap-1.5 border-border text-foreground/70 hover:text-foreground bg-transparent text-xs h-8">
           <RefreshCw className={cn("h-3 w-3", isLoading && "animate-spin")} /> Atualizar
         </Button>
       </div>
       <div className="relative max-w-sm">
         <Search  className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/40" />
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome ou ID..." className="pl-9 bg-white/[0.03] border-white/10 text-sm h-9" />
+        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome ou ID..." className="pl-9 bg-white/[0.03] border-border text-sm h-9" />
       </div>
 
       {/* Grid */}
@@ -174,11 +174,11 @@ function TabHub({ audiences, isLoading, onRefresh }: { audiences: CustomAudience
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           <AnimatePresence>
             {filtered.map((a, i) => {
-              const meta = SUBTYPE_META[a.subtype] ?? { label: a.subtype, color: "text-foreground/60", bg: "bg-white/5 border-white/10" };
+              const meta = SUBTYPE_META[a.subtype] ?? { label: a.subtype, color: "text-foreground/60", bg: "bg-black/5 dark:bg-white/5 border-border" };
               const ready = a.delivery_status?.code === 200;
               return (
                 <motion.div key={a.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 30) * 0.02 }}
-                  className="rounded-xl border border-white/8 bg-white/[0.02] p-4 space-y-3 hover:border-white/15 transition-colors">
+                  className="rounded-xl border border-border bg-white/[0.02] p-4 space-y-3 border-border transition-colors">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold truncate">{a.name}</p>
@@ -217,18 +217,18 @@ function TabHub({ audiences, isLoading, onRefresh }: { audiences: CustomAudience
 // TAB 2 — VIDEO VIEW
 // ═══════════════════════════════════════════════════════════════════════════════
 function VideoCard({ video, selected, onToggle }: { video: MetaVideo; selected: boolean; onToggle: () => void }) {
-  const src = SOURCE_CONFIG[video.source] ?? { label: video.source_label || "Vídeo", icon: Film, color: "text-foreground/50", bg: "bg-white/5", border: "border-white/10" };
+  const src = SOURCE_CONFIG[video.source] ?? { label: video.source_label || "Vídeo", icon: Film, color: "text-foreground/50", bg: "bg-black/5 dark:bg-white/5", border: "border-border" };
   const SrcIcon = src.icon;
   return (
     <motion.button onClick={onToggle} whileTap={{ scale: 0.97 }} className={cn("relative w-full text-left rounded-xl border transition-all overflow-hidden",
-      selected ? "border-accent/60 bg-accent/8 shadow-[0_0_12px_rgba(0,153,255,0.15)]" : "border-white/8 bg-white/[0.02] hover:border-white/15")}>
-      <div className="relative aspect-video bg-black/40">
+      selected ? "border-accent/60 bg-accent/8 shadow-[0_0_12px_rgba(0,153,255,0.15)]" : "border-border bg-white/[0.02] border-border")}>
+      <div className="relative aspect-video bg-black/5 dark:bg-black/40">
         {video.picture ? <img src={video.picture} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Film  className="h-8 w-8 text-foreground/20" /></div>}
         <span className={cn("absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold border", src.bg, src.color, src.border)}>
           <SrcIcon className="h-2.5 w-2.5" />{src.label}
         </span>
-        {selected && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center"><CheckCircle2 className="h-5 w-5 text-white" /></div></div>}
-        {video.length && <span className="absolute bottom-2 right-2 text-[10px] font-mono bg-black/70 text-white px-1.5 py-0.5 rounded">{Math.floor(video.length / 60)}:{String(Math.floor(video.length % 60)).padStart(2, "0")}</span>}
+        {selected && <div className="absolute inset-0 bg-primary/20 flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center"><CheckCircle2 className="h-5 w-5 text-foreground" /></div></div>}
+        {video.length && <span className="absolute bottom-2 right-2 text-[10px] font-mono bg-black/70 text-foreground px-1.5 py-0.5 rounded">{Math.floor(video.length / 60)}:{String(Math.floor(video.length % 60)).padStart(2, "0")}</span>}
       </div>
       <div className="p-2">
         <p className="text-[11px] font-medium truncate">{video.title || `Vídeo ${video.id}`}</p>
@@ -305,10 +305,10 @@ function TabVideoView({ audiences }: { audiences: CustomAudience[] }) {
             const count = sourceCounts[s] || 0;
             return (
               <button key={s} onClick={() => setSourceFilter(s)} className={cn("inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                sourceFilter === s ? "bg-primary/15 border-accent/40 text-accent/70" : "bg-white/[0.03] border-white/10 text-foreground/60 hover:text-foreground")}>
+                sourceFilter === s ? "bg-primary/15 border-accent/40 text-accent/70" : "bg-white/[0.03] border-border text-foreground/60 hover:text-foreground")}>
                 {Icon && <Icon className="h-3 w-3" />}
                 {s === "all" ? "Todos" : cfg!.label}
-                <span className={cn("text-[9px] font-mono px-1 rounded", sourceFilter === s ? "bg-primary/20 text-accent/70" : "bg-white/5 text-foreground/40")}>{count}</span>
+                <span className={cn("text-[9px] font-mono px-1 rounded", sourceFilter === s ? "bg-primary/20 text-accent/70" : "bg-black/5 dark:bg-white/5 text-foreground/40")}>{count}</span>
               </button>
             );
           })}
@@ -318,10 +318,10 @@ function TabVideoView({ audiences }: { audiences: CustomAudience[] }) {
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search  className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground/40" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar vídeos..." className="pl-9 bg-white/[0.03] border-white/10 text-sm h-9" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar vídeos..." className="pl-9 bg-white/[0.03] border-border text-sm h-9" />
           </div>
-          <Button  variant="outline" size="sm" onClick={selectAll} className="text-xs h-9 border-white/15 text-foreground/70 hover:text-foreground bg-transparent px-3">Selecionar Todos</Button>
-          {selectedIds.size > 0 && <Button  variant="outline" size="sm" onClick={clearAll} className="text-xs h-9 border-white/15 text-foreground/70 px-3 bg-transparent">Limpar</Button>}
+          <Button  variant="outline" size="sm" onClick={selectAll} className="text-xs h-9 border-border text-foreground/70 hover:text-foreground bg-transparent px-3">Selecionar Todos</Button>
+          {selectedIds.size > 0 && <Button  variant="outline" size="sm" onClick={clearAll} className="text-xs h-9 border-border text-foreground/70 px-3 bg-transparent">Limpar</Button>}
         </div>
 
         {selectedIds.size > 0 && (
@@ -356,7 +356,7 @@ function TabVideoView({ audiences }: { audiences: CustomAudience[] }) {
             <div className="space-y-1">
               {VIDEO_EVENTS.map(ev => (
                 <button key={ev.value} onClick={() => setVideoEvent(ev.value)} className={cn("w-full flex items-start gap-2.5 px-3 py-2 rounded-lg border text-left transition-all",
-                  videoEvent === ev.value ? "border-accent/40 bg-accent/8" : "border-white/[0.06] bg-black/20 text-foreground/60 hover:text-foreground hover:border-white/15")}>
+                  videoEvent === ev.value ? "border-accent/40 bg-accent/8" : "border-border bg-black/5 dark:bg-black/20 text-foreground/60 hover:text-foreground border-border")}>
                   <div className={cn("w-3 h-3 rounded-full border-2 shrink-0 mt-0.5 transition-colors", videoEvent === ev.value ? "border-accent bg-accent" : "border-foreground/30")} />
                   <div><p className="text-xs font-semibold">{ev.label}</p><p className="text-[10px] text-foreground/50">{ev.desc}</p></div>
                 </button>
@@ -368,7 +368,7 @@ function TabVideoView({ audiences }: { audiences: CustomAudience[] }) {
           <Button onClick={handleCreate} disabled={creating || !audienceName.trim() || selectedIds.size === 0} className="w-full bg-primary/10 hover:bg-primary/10 border-0 font-bold gap-2">
             {creating ? <><Loader2 className="h-4 w-4 animate-spin" />Criando...</> : <><Plus className="h-4 w-4" />Criar ({selectedIds.size} vídeo{selectedIds.size !== 1 ? "s" : ""})</>}
           </Button>
-          <div className="flex gap-2 p-2.5 rounded-lg bg-white/[0.02] border border-white/5"><Info  className="h-3.5 w-3.5 text-foreground/30 shrink-0 mt-0.5" /><p className="text-[10px] text-foreground/40 leading-relaxed">Selecione vídeos ao lado. O Meta levará minutos a horas para estimar o tamanho.</p></div>
+          <div className="flex gap-2 p-2.5 rounded-lg bg-white/[0.02] border border-border"><Info  className="h-3.5 w-3.5 text-foreground/30 shrink-0 mt-0.5" /><p className="text-[10px] text-foreground/40 leading-relaxed">Selecione vídeos ao lado. O Meta levará minutos a horas para estimar o tamanho.</p></div>
         </SpotlightCard>
 
         {/* Existing VIDEO audiences */}
@@ -477,7 +477,7 @@ function TabEngagement({ audiences }: { audiences: CustomAudience[] }) {
             { title: "Instagram Business", desc: "Quem engajou com posts, Reels, Stories ou perfil do IG", icon: Camera, color: "text-primary" },
             { title: "Página do Facebook", desc: "Quem curtiu, comentou ou clicou em botões da Página FB", icon: Globe2, color: "text-primary" },
           ].map(c => (
-            <div key={c.title} className="rounded-xl border border-white/8 bg-white/[0.02] p-4 space-y-2">
+            <div key={c.title} className="rounded-xl border border-border bg-white/[0.02] p-4 space-y-2">
               <c.icon className={cn("h-5 w-5", c.color)} />
               <p className="font-semibold text-sm">{c.title}</p>
               <p className="text-xs text-foreground/50">{c.desc}</p>
@@ -490,7 +490,7 @@ function TabEngagement({ audiences }: { audiences: CustomAudience[] }) {
           <div className="space-y-2 pt-2">
             <p className="text-xs font-bold uppercase tracking-wider text-primary">Públicos Existentes</p>
             {audiences.filter(a => a.subtype === "ENGAGEMENT" || a.subtype === "IG_BUSINESS").map(a => (
-              <div key={a.id} className="flex items-center justify-between rounded-lg border border-white/8 bg-white/[0.02] px-3 py-2 gap-2">
+              <div key={a.id} className="flex items-center justify-between rounded-lg border border-border bg-white/[0.02] px-3 py-2 gap-2">
                 <p className="text-xs font-medium truncate">{a.name}</p>
                 <span className={cn("text-[9px] font-bold shrink-0", a.delivery_status?.code === 200 ? "text-primary" : "text-primary")}>{a.delivery_status?.code === 200 ? "Pronto" : "Processando"}</span>
               </div>
@@ -511,7 +511,7 @@ function TabEngagement({ audiences }: { audiences: CustomAudience[] }) {
             <div className="grid grid-cols-2 gap-2">
               {[{ id: "ig", label: "Instagram", icon: Camera },{ id: "fb", label: "Facebook", icon: Globe2 }].map(s => (
                 <button key={s.id} onClick={() => setEngSource(s.id as "ig" | "fb")} className={cn("flex items-center justify-center gap-2 py-2 rounded-lg border text-xs font-semibold transition-all",
-                  engSource === s.id ? "border-primary/20 bg-primary/10 text-primary" : "border-white/10 bg-white/[0.02] text-foreground/60 hover:text-foreground")}>
+                  engSource === s.id ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-white/[0.02] text-foreground/60 hover:text-foreground")}>
                   <s.icon className="h-3.5 w-3.5" />{s.label}
                 </button>
               ))}
@@ -526,7 +526,7 @@ function TabEngagement({ audiences }: { audiences: CustomAudience[] }) {
                 <div className="space-y-1">
                   {igOptions.map(opt => (
                     <button key={opt.id} onClick={() => setIgActorId(opt.id)} className={cn("w-full text-left px-3 py-2 rounded-lg border text-xs transition-all",
-                      igActorId === opt.id ? "border-primary/20 bg-primary/10 text-primary" : "border-white/8 bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
+                      igActorId === opt.id ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
                       {opt.label}
                     </button>
                   ))}
@@ -539,7 +539,7 @@ function TabEngagement({ audiences }: { audiences: CustomAudience[] }) {
               <div className="space-y-1">
                 {pages.map(p => (
                   <button key={p.id} onClick={() => setSelectedPageId(p.id)} className={cn("w-full text-left px-3 py-2 rounded-lg border text-xs transition-all",
-                    selectedPageId === p.id ? "border-primary/20 bg-primary/10 text-primary" : "border-white/8 bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
+                    selectedPageId === p.id ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
                     {p.name}
                   </button>
                 ))}
@@ -553,7 +553,7 @@ function TabEngagement({ audiences }: { audiences: CustomAudience[] }) {
             <div className="space-y-1">
               {(engSource === "ig" ? IG_EVENTS : FB_EVENTS).map(ev => (
                 <button key={ev.value} onClick={() => setEngEvent(ev.value)} className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left text-xs transition-all",
-                  engEvent === ev.value ? "border-primary/20 bg-primary/10 text-foreground" : "border-white/[0.06] bg-black/20 text-foreground/60 hover:text-foreground hover:border-white/15")}>
+                  engEvent === ev.value ? "border-primary/20 bg-primary/10 text-foreground" : "border-border bg-black/5 dark:bg-black/20 text-foreground/60 hover:text-foreground border-border")}>
                   <div className={cn("w-2.5 h-2.5 rounded-full border-2 shrink-0", engEvent === ev.value ? "border-primary/20 bg-primary/10" : "border-foreground/30")} />
                   {ev.label}
                 </button>
@@ -608,7 +608,7 @@ function TabPixel({ audiences }: { audiences: CustomAudience[] }) {
         <div className="flex items-center gap-2"><Globe2  className="h-5 w-5 text-primary" /><h2 className="font-bold">Público de Site (Pixel)</h2></div>
         <p className="text-sm text-foreground/60">Crie públicos de pessoas que visitaram seu site, páginas específicas ou realizaram ações rastreadas pelo seu Pixel do Meta.</p>
         {pixels.length > 0 && (
-          <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
+          <div className="rounded-xl border border-border bg-white/[0.02] p-4">
             <p className="text-xs font-bold text-primary mb-2">Pixels disponíveis nesta conta</p>
             {pixels.map(p => <div key={p.id} className="flex justify-between text-xs py-1"><span className="font-medium">{p.name}</span><span className="font-mono text-foreground/40">{p.id}</span></div>)}
           </div>
@@ -617,7 +617,7 @@ function TabPixel({ audiences }: { audiences: CustomAudience[] }) {
           <div className="space-y-2 pt-2">
             <p className="text-xs font-bold uppercase tracking-wider text-primary">Públicos de Site Existentes</p>
             {audiences.filter(a => a.subtype === "WEBSITE").map(a => (
-              <div key={a.id} className="flex items-center justify-between rounded-lg border border-white/8 bg-white/[0.02] px-3 py-2">
+              <div key={a.id} className="flex items-center justify-between rounded-lg border border-border bg-white/[0.02] px-3 py-2">
                 <p className="text-xs font-medium truncate">{a.name}</p>
                 <span className={cn("text-[9px] font-bold shrink-0", a.delivery_status?.code === 200 ? "text-primary" : "text-primary")}>{a.delivery_status?.code === 200 ? "Pronto" : "Processando"}</span>
               </div>
@@ -637,7 +637,7 @@ function TabPixel({ audiences }: { audiences: CustomAudience[] }) {
               <div className="space-y-1">
                 {pixels.map(p => (
                   <button key={p.id} onClick={() => setPixelId(p.id)} className={cn("w-full text-left px-3 py-2 rounded-lg border text-xs transition-all",
-                    pixelId === p.id ? "border-primary/20 bg-primary/10 text-primary" : "border-white/8 bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
+                    pixelId === p.id ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
                     <span className="font-medium">{p.name}</span>
                     <span className="text-foreground/40 ml-2 font-mono text-[10px]">{p.id}</span>
                   </button>
@@ -651,7 +651,7 @@ function TabPixel({ audiences }: { audiences: CustomAudience[] }) {
             <div className="grid grid-cols-2 gap-2">
               {[{ v: "ALL_VISITORS", l: "Todos os visitantes" }, { v: "SPECIFIC_PAGE", l: "Página específica" }].map(o => (
                 <button key={o.v} onClick={() => setEventFilter(o.v as any)} className={cn("py-2 px-3 rounded-lg border text-xs font-semibold transition-all",
-                  eventFilter === o.v ? "border-primary/20 bg-primary/10 text-primary" : "border-white/10 bg-white/[0.02] text-foreground/60 hover:text-foreground")}>
+                  eventFilter === o.v ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-white/[0.02] text-foreground/60 hover:text-foreground")}>
                   {o.l}
                 </button>
               ))}
@@ -661,7 +661,7 @@ function TabPixel({ audiences }: { audiences: CustomAudience[] }) {
           {eventFilter === "SPECIFIC_PAGE" && (
             <div className="space-y-1.5">
               <Label  className="text-xs font-semibold text-foreground/70">URL contém (texto)</Label>
-              <Input value={urlMatch} onChange={e => setUrlMatch(e.target.value)} placeholder="Ex: /obrigado, /checkout" className="bg-black/30 border-white/10 text-sm h-9" />
+              <Input value={urlMatch} onChange={e => setUrlMatch(e.target.value)} placeholder="Ex: /obrigado, /checkout" className="bg-black/30 border-border text-sm h-9" />
             </div>
           )}
 
@@ -721,7 +721,7 @@ function TabCustomerList({ audiences }: { audiences: CustomAudience[] }) {
         <NameInput value={audienceName} onChange={setAudienceName} placeholder="Ex: Clientes Ativos Comarka" />
         <div className="space-y-1.5">
           <Label  className="text-xs font-semibold text-foreground/70">Descrição (opcional)</Label>
-          <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Lista de emails dos clientes ativos" className="bg-black/30 border-white/10 text-sm h-9" />
+          <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Lista de emails dos clientes ativos" className="bg-black/30 border-border text-sm h-9" />
         </div>
         <div className="rounded-lg border border-primary/20 bg-primary/10 p-3 text-xs text-foreground/60">
           Após criar, use <strong className="text-foreground">Sincronizar CRM</strong> ao lado para enviar os emails automaticamente.
@@ -739,12 +739,12 @@ function TabCustomerList({ audiences }: { audiences: CustomAudience[] }) {
         <div className="space-y-1.5">
           <Label  className="text-xs font-semibold text-foreground/70">Público de Destino</Label>
           {customAudiences.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-white/10 p-4 text-center text-xs text-foreground/40">Crie uma lista primeiro →</div>
+            <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-foreground/40">Crie uma lista primeiro →</div>
           ) : (
             <div className="space-y-1 max-h-48 overflow-y-auto">
               {customAudiences.map(a => (
                 <button key={a.id} onClick={() => setSyncId(a.id)} className={cn("w-full text-left px-3 py-2 rounded-lg border text-xs transition-all",
-                  syncId === a.id ? "border-primary/20 bg-primary/10 text-primary" : "border-white/8 bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
+                  syncId === a.id ? "border-primary/20 bg-primary/10 text-primary" : "border-border bg-white/[0.02] text-foreground/70 hover:text-foreground")}>
                   {a.name}
                 </button>
               ))}
@@ -801,7 +801,7 @@ export default function AudienceManagerPage() {
           </h1>
           <p className="text-sm text-foreground/60 mt-1">Central de públicos personalizados — crie, gerencie e sincronize todos os tipos.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => mutate("/api/meta/custom-audiences")} className="gap-1.5 border-white/15 text-foreground/70 hover:text-foreground bg-transparent shrink-0">
+        <Button variant="outline" size="sm" onClick={() => mutate("/api/meta/custom-audiences")} className="gap-1.5 border-border text-foreground/70 hover:text-foreground bg-transparent shrink-0">
           <RefreshCw className={cn("h-3.5 w-3.5", audiencesLoading && "animate-spin")} />
         </Button>
       </div>
@@ -824,7 +824,7 @@ export default function AudienceManagerPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-xl bg-black/30 border border-white/[0.06] overflow-x-auto">
+      <div className="flex gap-1 p-1 rounded-xl bg-black/30 border border-border overflow-x-auto">
         {TABS.map(t => {
           const Icon = t.icon;
           return (

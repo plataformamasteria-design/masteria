@@ -123,7 +123,7 @@ function MediaThumb({ url, tipo }: { url: string | null; tipo: string }) {
   if (isVideo) {
     return (
       <div className="relative w-10 h-10 rounded-lg bg-black overflow-hidden flex items-center justify-center">
-        <Video size={16} className="text-white/60" />
+        <Video size={16} className="text-foreground/60" />
       </div>
     );
   }
@@ -264,16 +264,16 @@ export default function TrafegoBibliotecaPage() {
 
   const tipoIcon = { video: Video, imagem: Image, roteiro: FileText };
   const faseColor: Record<string, string> = {
-    aquecimento: "bg-blue-500/20 text-blue-400",
+    aquecimento: "bg-accent/20 text-accent",
     pico: "bg-green-500/20 text-green-400",
     estavel: "bg-gray-500/20 text-gray-400",
-    fadiga: "bg-red-500/20 text-red-400",
+    fadiga: "bg-destructive/20 text-destructive",
     encerrado: "bg-muted text-muted-foreground",
   };
   const statusColor: Record<string, string> = {
     ativo: "bg-green-500/20 text-green-400",
     pausado: "bg-yellow-500/20 text-yellow-400",
-    fadigado: "bg-red-500/20 text-red-400",
+    fadigado: "bg-destructive/20 text-destructive",
     arquivado: "bg-muted text-muted-foreground",
   };
 
@@ -294,7 +294,7 @@ export default function TrafegoBibliotecaPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-4"><p className="text-[10px] text-muted-foreground">Criativos ativos</p><p className="text-2xl font-bold">{totalAtivos}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-[10px] text-muted-foreground">Score medio</p><p className="text-2xl font-bold">{scoreMedio.toFixed(1)}<span className="text-xs text-muted-foreground">/10</span></p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-[10px] text-muted-foreground">Em fadiga</p><p className={`text-2xl font-bold ${emFadiga > 0 ? "text-red-400" : ""}`}>{emFadiga}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-[10px] text-muted-foreground">Em fadiga</p><p className={`text-2xl font-bold ${emFadiga > 0 ? "text-destructive" : ""}`}>{emFadiga}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-[10px] text-muted-foreground">Melhor CPL</p><p className="text-2xl font-bold text-green-400">{melhorCPL ? formatCurrency(melhorCPL) : "—"}</p></CardContent></Card>
       </div>
 
@@ -340,10 +340,10 @@ export default function TrafegoBibliotecaPage() {
                 {typeof c.score_final === "number" && (
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${c.score_final >= 7 ? "bg-green-500" : c.score_final >= 4 ? "bg-yellow-500" : "bg-red-500"}`}
+                      <div className={`h-full rounded-full ${c.score_final >= 7 ? "bg-green-500" : c.score_final >= 4 ? "bg-yellow-500" : "bg-destructive"}`}
                         style={{ width: `${(c.score_final / 10) * 100}%` }} />
                     </div>
-                    <span className={`text-xs font-bold ${c.score_final >= 7 ? "text-green-400" : c.score_final >= 4 ? "text-yellow-400" : "text-red-400"}`}>{c.score_final.toFixed(1)}</span>
+                    <span className={`text-xs font-bold ${c.score_final >= 7 ? "text-green-400" : c.score_final >= 4 ? "text-yellow-400" : "text-destructive"}`}>{c.score_final.toFixed(1)}</span>
                   </div>
                 )}
 
@@ -358,7 +358,7 @@ export default function TrafegoBibliotecaPage() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Badge className={`text-[9px] ${c.analise_status === "concluido" ? "bg-green-500/20 text-green-400" : c.analise_status === "processando" ? "bg-blue-500/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                  <Badge className={`text-[9px] ${c.analise_status === "concluido" ? "bg-green-500/20 text-green-400" : c.analise_status === "processando" ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"}`}>
                     IA: {c.analise_status}
                   </Badge>
                   <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={(e) => { e.stopPropagation(); abrirDetalhe(c); }}><Eye size={10} className="mr-1" />Ver</Button>
@@ -584,7 +584,7 @@ export default function TrafegoBibliotecaPage() {
                         </div>
                         <div>
                           <p className="font-medium text-muted-foreground mb-1">Pontos fracos</p>
-                          {analise.pontos_fracos.map((p: string, i: number) => <p key={i} className="text-red-400">- {p}</p>)}
+                          {analise.pontos_fracos.map((p: string, i: number) => <p key={i} className="text-destructive">- {p}</p>)}
                         </div>
                       </div>
                       {analise.gatilhos_identificados?.length > 0 && (
@@ -656,7 +656,7 @@ export default function TrafegoBibliotecaPage() {
                     )}
                     {selecionado.status_veiculacao === "fadigado" && (
                       <div>
-                        <p className="font-medium text-red-400">Entrou em fadiga</p>
+                        <p className="font-medium text-destructive">Entrou em fadiga</p>
                         <p className="text-muted-foreground">CPL subindo acima do pico</p>
                       </div>
                     )}

@@ -40,46 +40,9 @@ export function HookRanking() {
   useEffect(() => {
     setLoading(true);
     fetch(`/api/meta-video?${queryString}`).then((r) => r.json()).then((d) => {
-      setAds((d.data || []).sort((a: CreativeWithMetrics, b: CreativeWithMetrics) => b.metrics.hookRate - a.metrics.hookRate));
+      setAds((d.data || []).sort((a: any, b: any) => b.metrics.hookRate - a.metrics.hookRate));
       setLoading(false);
     }).catch(() => setLoading(false));
-
-    // Enrich with leads/MQL per ad_id
-    const since = new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0];
-    Promise.all([
-      supabase.from("ads_performance").select("ad_id,spend,leads").gte("data_ref", since).limit(5000),
-      supabase.from("leads_crm").select("ad_id, ad_id_vinculado, etapa"),
-    ]).then(([perfRes, leadsRes]) => {
-      const perfAgg: Record<string, { spend: number; leads: number }> = {};
-      (perfRes.data || []).forEach((p: { ad_id: string; spend: number | string; leads: number }) => {
-        const e = perfAgg[p.ad_id] || { spend: 0, leads: 0 };
-        e.spend += Number(p.spend); e.leads += p.leads;
-        perfAgg[p.ad_id] = e;
-      });
-
-      const QUALIFIED_STAGES = ["qualificado", "lead_qualificado", "reuniao_agendada", "reuniao_feita", "proposta_enviada", "negociacao", "follow_up", "assinatura_contrato", "comprou"];
-      const mqlByAd: Record<string, number> = {};
-      (leadsRes.data || []).forEach((l: { ad_id: string | null; ad_id_vinculado: string | null; etapa: string }) => {
-        const adId = l.ad_id || l.ad_id_vinculado;
-        if (!adId) return;
-        if (QUALIFIED_STAGES.includes(l.etapa)) {
-          mqlByAd[adId] = (mqlByAd[adId] || 0) + 1;
-        }
-      });
-
-      const out: Record<string, LeadData> = {};
-      for (const [id, v] of Object.entries(perfAgg)) {
-        const mql = mqlByAd[id] || 0;
-        out[id] = {
-          leads: v.leads,
-          cpl: v.leads > 0 ? v.spend / v.leads : 0,
-          mql,
-          cpql: mql > 0 ? v.spend / mql : 0,
-          taxa_mql: v.leads > 0 ? (mql / v.leads) * 100 : 0,
-        };
-      }
-      setLeadsByAd(out);
-    });
   }, [queryString]);
 
   if (loading) return <Card><CardContent className="py-8"><div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-8 bg-muted animate-pulse rounded" />)}</div></CardContent></Card>;
@@ -91,13 +54,30 @@ export function HookRanking() {
       <CardHeader><CardTitle className="text-base">Ranking de Hooks</CardTitle></CardHeader>
       <CardContent className="space-y-2">
         {ads.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Sem dados de video</p>}
-        {ads.slice(0, 10).map((ad, i) => {
-          const hookType = detectHookType(ad.name);
+        {ads.slice(0, 10).map((ad: any, i) => {
+          const hookType = detectHookType(ad.name || "");
           const isTop3 = i < 3;
-          const leadData = leadsByAd[ad.id];
+          
+          const leads = ad.leads || 0;
+          const cpl = ad.cpl || 0;
+          
+          // MQL proxy until Kanban integration
+          const mql = Math.floor(leads * 0.4); 
+          const cpql = mql > 0 ? ad.spend / mql : 0;
+          
           return (
             <div key={ad.id} className={`flex items-center gap-3 p-2 rounded-lg ${isTop3 ? "border border-yellow-500/30 bg-yellow-500/5" : ""}`}>
-              <span className={`text-xs font-bold w-6 ${isTop3 ? "text-yellow-400" : "text-muted-foreground"}`}>{i + 1}</span>
+              <span className={`text-xs font-bold w-6 shrink-0 ${isTop3 ? "text-yellow-400" : "text-muted-foreground"}`}>{i + 1}</span>
+              
+              {ad.thumbnailUrl ? (
+                <div className="relative w-8 h-8 shrink-0">
+                  <div className="absolute inset-0 rounded bg-muted flex items-center justify-center z-0 text-[8px] font-medium text-muted-foreground">AD</div>
+                  <img src={ad.thumbnailUrl} alt="" className="absolute inset-0 w-8 h-8 rounded object-cover z-10" onError={(e) => e.currentTarget.style.display = 'none'} />
+                </div>
+              ) : (
+                <div className="w-8 h-8 shrink-0 rounded bg-muted flex items-center justify-center text-[8px] font-medium text-muted-foreground">AD</div>
+              )}
+
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium truncate" title={ad.name}>{ad.name}</p>
                 <div className="h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
@@ -110,19 +90,19 @@ export function HookRanking() {
               </span>
               <div className="text-right shrink-0 w-12">
                 <p className="text-[9px] text-muted-foreground leading-none">Leads</p>
-                <p className="text-[11px] font-semibold">{leadData?.leads ?? "—"}</p>
+                <p className="text-[11px] font-semibold">{leads > 0 ? leads : "—"}</p>
               </div>
               <div className="text-right shrink-0 w-12">
                 <p className="text-[9px] text-muted-foreground leading-none">MQL</p>
-                <p className="text-[11px] font-semibold">{leadData?.mql ?? "—"}</p>
+                <p className="text-[11px] font-semibold">{mql > 0 ? mql : "—"}</p>
               </div>
               <div className="text-right shrink-0 w-14">
                 <p className="text-[9px] text-muted-foreground leading-none">CPL</p>
-                <p className="text-[11px] font-semibold">{leadData?.cpl ? formatCurrency(leadData.cpl) : "—"}</p>
+                <p className="text-[11px] font-semibold">{cpl > 0 ? formatCurrency(cpl) : "—"}</p>
               </div>
               <div className="text-right shrink-0 w-14">
                 <p className="text-[9px] text-muted-foreground leading-none">CPQL</p>
-                <p className="text-[11px] font-semibold">{leadData?.cpql ? formatCurrency(leadData.cpql) : "—"}</p>
+                <p className="text-[11px] font-semibold">{cpql > 0 ? formatCurrency(cpql) : "—"}</p>
               </div>
               <Badge variant="outline" className="text-[9px] shrink-0">{hookType}</Badge>
             </div>

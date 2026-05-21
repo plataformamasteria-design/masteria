@@ -30,6 +30,7 @@ export interface TrafegoData {
     attrStartIso: string;
     /** Leads da view canônica vw_atribuicao_lead_mes (qualificação correta) */
     attrLeads: AttrLead[];
+    liveCampanhas?: any[];
 }
 
 export function useTrafegoData(dataInicio: string, dataFim: string, statusFiltro: string) {
@@ -63,58 +64,122 @@ export function useTrafegoData(dataInicio: string, dataFim: string, statusFiltro
                 curDate.setMonth(curDate.getMonth() + 1);
             }
 
-            const [{ data: m }, { data: p }, { data: l }, { data: pp }, { data: pl }, { data: al }, metaInsights] = await Promise.all([
+            const [{ data: m }, { data: l }, { data: pl }, { data: al }, liveCampanhas, prevLiveCampanhas, liveInsights, prevLiveInsights] = await Promise.all([
                 metaQuery,
-                supabase.from("ads_performance").select("*").gte("data_ref", dataInicio).lte("data_ref", dataFim).order("data_ref").limit(10000),
                 supabase.from("leads_ads_attribution").select("*").gte("created_at", leadsStart).lte("created_at", dataFim + "T23:59:59").limit(5000),
-                supabase.from("ads_performance").select("*").gte("data_ref", pi).lte("data_ref", pf).order("data_ref").limit(10000),
                 supabase.from("leads_ads_attribution").select("*").gte("created_at", prevLeadsStart).lte("created_at", pf + "T23:59:59").limit(5000),
                 supabase.from("vw_atribuicao_lead_mes").select("lead_id, ad_id, adset_id, campanha_id, campanha_nome, foi_qualificado, teve_reuniao_agendada, teve_reuniao_realizada, foi_no_show, virou_cliente, mrr_gerado, closer_id, mes_lead").in("mes_lead", mesesRef).limit(10000),
-                // Meta API: spend real por campanha (corrige ads_performance stale)
-                fetch(`/api/meta/insights?since=${dataInicio}&until=${dataFim}&level=campaign&breakdown=none`).then(r => r.ok ? r.json() : null).catch(() => null),
+                // Live Meta API (replaces stale ads_performance)
+                fetch(`/api/meta/campanhas?since=${dataInicio}&until=${dataFim}`).then(r => r.ok ? r.json() : null).catch(() => null),
+                fetch(`/api/meta/campanhas?since=${pi}&until=${pf}`).then(r => r.ok ? r.json() : null).catch(() => null),
+                fetch(`/api/meta/insights?since=${dataInicio}&until=${dataFim}&level=ad`).then(r => r.ok ? r.json() : null).catch(() => null),
+                fetch(`/api/meta/insights?since=${pi}&until=${pf}&level=ad`).then(r => r.ok ? r.json() : null).catch(() => null),
             ]);
 
-            // Corrigir spend do ads_performance com valores reais da Meta API
-            let perfData = (p || []) as AdsPerformance[];
-            if (metaInsights?.data) {
-                // Map: campaign_id → spend real da Meta API
-                const metaSpendByCampaign = new Map<string, number>();
-                for (const row of metaInsights.data) {
-                    if (row.campaign_id && row.spend > 0) {
-                        metaSpendByCampaign.set(row.campaign_id, row.spend);
+            const perfData: AdsPerformance[] = [];
+            const prevPerfData: AdsPerformance[] = [];
+            const mappedMetadata = (m || []) as AdsMetadata[];
+            const existingAdIds = new Set(mappedMetadata.map(row => row.ad_id));
+            const metaOverride = new Map<string, any>();
+
+            // 1. Traverse campaigns to get objectives and budgets
+            const traverseTree = (camps: any[], isPrev: boolean) => {
+                for (const c of camps) {
+                    if (!isPrev) {
+                        metaOverride.set(c.id, {
+                            status: c.effective_status || c.status,
+                            objetivo: c.objective,
+                            campaign_name: c.name,
+                            daily_budget: c.daily_budget,
+                            spend: c.spend
+                        });
+                    }
+                    for (const as of c.adsets?.data || []) {
+                        if (!isPrev) {
+                            metaOverride.set(as.id, {
+                                status: as.effective_status || as.status,
+                                adset_name: as.name,
+                                daily_budget: as.daily_budget,
+                                campaign_id: c.id,
+                                campaign_name: c.name,
+                                objetivo: c.objective
+                            });
+                        }
                     }
                 }
-                // Map: campaign_id → spend total no banco (para calcular fator de correção)
-                const metaMap = new Map<string, string>();
-                for (const meta of (m || [])) {
-                    if (meta.ad_id && meta.campaign_id) metaMap.set(meta.ad_id, meta.campaign_id);
+            };
+
+            if (liveCampanhas?.data) traverseTree(liveCampanhas.data, false);
+            if (prevLiveCampanhas?.data) traverseTree(prevLiveCampanhas.data, true);
+
+            // 2. Map actual ad-level performance from insights
+            const mapInsights = (insights: any[], isPrev: boolean) => {
+                const targetPerf = isPrev ? prevPerfData : perfData;
+                const refDate = isPrev ? pi : dataInicio;
+                
+                for (const ad of insights) {
+                    if (!isPrev) {
+                        // Inject ad into metadata if it doesn't exist
+                        if (!existingAdIds.has(ad.id)) {
+                            const campOver = metaOverride.get(ad.parent_id || "") || {};
+                            mappedMetadata.push({
+                                ad_id: ad.id,
+                                ad_name: ad.name,
+                                adset_id: ad.parent_id,
+                                adset_name: campOver.adset_name || "Unknown",
+                                campaign_id: campOver.campaign_id,
+                                campaign_name: campOver.campaign_name || "Unknown",
+                                objetivo: campOver.objetivo || "CONVERSIONS",
+                                status: ad.status || "ACTIVE",
+                                updated_at: new Date().toISOString(),
+                            });
+                            existingAdIds.add(ad.id);
+                        }
+                    }
+                    
+                    targetPerf.push({
+                        id: ad.id + (isPrev ? "_prev" : "_curr"),
+                        ad_id: ad.id,
+                        data_ref: refDate,
+                        spend: ad.spend || 0,
+                        leads: ad.leads || 0,
+                        impressoes: ad.impressions || 0,
+                        cliques: ad.clicks || 0,
+                        cpl: ad.cpl || 0,
+                        ctr: ad.ctr || 0,
+                        cpc: ad.clicks > 0 ? ad.spend / ad.clicks : 0,
+                        frequencia: ad.frequency || 0,
+                        created_at: new Date().toISOString(),
+                    });
                 }
-                const dbSpendByCampaign = new Map<string, number>();
-                for (const perf of perfData) {
-                    const cid = metaMap.get(perf.ad_id);
-                    if (cid) dbSpendByCampaign.set(cid, (dbSpendByCampaign.get(cid) || 0) + Number(perf.spend));
-                }
-                // Aplicar fator de correção proporcional por ad dentro de cada campanha
-                perfData = perfData.map(perf => {
-                    const cid = metaMap.get(perf.ad_id);
-                    if (!cid) return perf;
-                    const metaTotal = metaSpendByCampaign.get(cid);
-                    const dbTotal = dbSpendByCampaign.get(cid);
-                    if (!metaTotal || !dbTotal || dbTotal === 0) return perf;
-                    const fator = metaTotal / dbTotal;
-                    if (Math.abs(fator - 1) < 0.005) return perf; // Diferença < 0.5% — não ajustar
-                    return { ...perf, spend: Number(perf.spend) * fator };
-                });
-            }
+            };
+
+            if (liveInsights?.data) mapInsights(liveInsights.data, false);
+            if (prevLiveInsights?.data) mapInsights(prevLiveInsights.data, true);
+
+            // Apply overrides
+            const finalMetadata = mappedMetadata.map(row => {
+                const adOver = metaOverride.get(row.ad_id) || {};
+                const campOver = metaOverride.get(row.campaign_id || "") || {};
+                return {
+                    ...row,
+                    status: adOver.status || campOver.status || row.status,
+                    objetivo: adOver.objetivo || campOver.objetivo || row.objetivo,
+                    campaign_name: campOver.campaign_name || row.campaign_name,
+                    ad_name: adOver.ad_name || row.ad_name,
+                    daily_budget: campOver.daily_budget
+                };
+            });
 
             return {
-                metadata: (m || []) as AdsMetadata[],
+                metadata: finalMetadata as AdsMetadata[],
                 performance: perfData,
                 leads: (l || []) as LeadAdsAttribution[],
-                prevPerformance: (pp || []) as AdsPerformance[],
+                prevPerformance: prevPerfData,
                 prevLeads: (pl || []) as LeadAdsAttribution[],
                 attrStartIso,
                 attrLeads: (al || []) as AttrLead[],
+                liveCampanhas: liveCampanhas?.data || [],
             };
         },
         {

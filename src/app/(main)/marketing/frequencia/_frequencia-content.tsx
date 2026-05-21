@@ -264,9 +264,9 @@ export default function TrafegoFrequenciaPage() {
           {/* Toggle */}
           <div className="flex items-center gap-1 bg-muted/30 dark:bg-white/[0.03] rounded-lg p-1 w-fit">
             {([
-              { id: "leads" as const, label: "Leads", color: "bg-blue-500" },
+              { id: "leads" as const, label: "Leads", color: "bg-accent" },
               { id: "qualificados" as const, label: "Qualificados", color: "bg-green-500" },
-              { id: "cpl" as const, label: "CPL", color: "bg-gradient-to-r from-green-500 to-red-500" },
+              { id: "cpl" as const, label: "CPL", color: "bg-gradient-to-r from-green-500 to-destructive" },
             ]).map((opt) => (
               <button
                 key={opt.id}

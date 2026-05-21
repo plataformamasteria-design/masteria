@@ -21,28 +21,38 @@ export async function GET(req: NextRequest) {
     const until = searchParams.get("until") || new Date().toISOString().slice(0, 10);
     const accountParam = searchParams.get("account_id");
     const level = searchParams.get("level") || "account";
+    const breakdown = searchParams.get("breakdown") || "none";
     const account = accountParam ? (accountParam.startsWith("act_") ? accountParam : `act_${accountParam}`) : auth.accountId;
 
     const fields = level === "account" 
       ? "spend,impressions,clicks,reach,inline_link_clicks,actions,action_values"
-      : "campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,status,spend,impressions,clicks,reach,actions,action_values";
+      : "campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,spend,impressions,clicks,reach,actions,action_values";
 
-    const insightsParams = new URLSearchParams({
+    const insightsParamsObj: any = {
       access_token: auth.token,
       fields,
       time_range: JSON.stringify({ since, until }),
       level,
-      limit: level === "account" ? "1" : "500",
-    });
+      limit: level === "account" && breakdown !== "daily" ? "1" : "500",
+    };
 
-    const cacheKey = `account-insights-${auth.companyId}-${account}-${since}-${until}-${level}`;
+    if (breakdown === "daily") {
+      insightsParamsObj.time_increment = "1";
+    }
+
+    const insightsParams = new URLSearchParams(insightsParamsObj);
+
+    const cacheKey = `account-insights-${auth.companyId}-${account}-${since}-${until}-${level}-${breakdown}`;
     const result = await getCachedMetaData<{ data: any[] }>(
       cacheKey,
-      { since, until, level },
+      { since, until, level, breakdown },
       TTL_REALTIME,
       async () => {
         const r = await fetch(`${META_BASE}/${account}/insights?${insightsParams.toString()}`);
-        if (!r.ok) return { data: [] };
+        if (!r.ok) {
+          const errBody = await r.text();
+          throw new Error(`Meta API Error: ${r.status} - ${errBody}`);
+        }
         return r.json();
       }
     );
@@ -58,7 +68,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         totals: {
           spend: parseFloat(row.spend || "0"),
-          leads: ld,
+          leads: ld + msg,
           impressions: parseInt(row.impressions || "0"),
           clicks: parseInt(row.clicks || "0"),
           reach: parseInt(row.reach || "0"),
@@ -73,12 +83,17 @@ export async function GET(req: NextRequest) {
 
     // Se for campaign, adset, ad
     const mappedData = (result.data?.data || []).map((row: any) => {
-      const { ld } = extractActionsData(row.actions || [], row.action_values || []);
+      const { ld, msg } = extractActionsData(row.actions || [], row.action_values || []);
+      const totalLeads = ld + msg;
       const spend = parseFloat(row.spend || "0");
-      const cpl = ld > 0 ? spend / ld : null;
+      const cpl = totalLeads > 0 ? spend / totalLeads : null;
       const impressions = parseInt(row.impressions || "0");
       const clicks = parseInt(row.clicks || "0");
       const ctr = impressions > 0 ? (clicks / impressions) * 100 : null;
+      
+      const reach = parseInt(row.reach || "0");
+      const cpm = impressions > 0 ? (spend / impressions) * 1000 : null;
+      const frequency = reach > 0 ? impressions / reach : null;
       
       let id = "";
       let name = "";
@@ -110,15 +125,30 @@ export async function GET(req: NextRequest) {
         name,
         status: row.status || "ACTIVE", // API might not return status properly in insights without ad-level request, fallback to ACTIVE
         spend,
-        leads: ld,
+        impressions,
+        clicks,
+        leads: totalLeads,
         cpl,
         ctr,
+        cpm,
+        reach,
+        frequency,
         score,
-        parent_id
+        parent_id,
+        date: row.date_start || undefined
       };
     });
 
-    return NextResponse.json({ data: mappedData });
+    const totals = mappedData.reduce((acc: any, row: any) => {
+      acc.spend += row.spend || 0;
+      acc.leads += row.leads || 0;
+      acc.impressions += row.impressions || 0;
+      acc.clicks += row.clicks || 0;
+      acc.reach += row.reach || 0;
+      return acc;
+    }, { spend: 0, leads: 0, impressions: 0, clicks: 0, reach: 0 });
+
+    return NextResponse.json({ data: mappedData, totals });
 
   } catch (e: any) {
     console.error("[api/meta/insights]", e);

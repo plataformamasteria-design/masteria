@@ -122,10 +122,10 @@ function SlideResumo({ data, mesRef, periodo, metaCpl, ultimaAtualizacao }: {
     : null;
 
   const items = [
-    { icon: DollarSign, label: "Investimento em Tráfego", value: formatCurrency(data.investimento), color: "text-blue-500" },
+    { icon: DollarSign, label: "Investimento em Tráfego", value: formatCurrency(data.investimento), color: "text-accent" },
     { icon: Users, label: "Leads Gerados", value: String(data.leads), color: "text-violet-500" },
     { icon: CalendarCheck, label: "Reuniões com o Closer", value: String(data.reunioes_realizadas), color: "text-amber-500" },
-    { icon: Handshake, label: "Novos Clientes Fechados", value: data.clientes_fechados > 0 ? String(data.clientes_fechados) : "—", color: "text-emerald-500" },
+    { icon: Handshake, label: "Novos Clientes Fechados", value: data.clientes_fechados > 0 ? String(data.clientes_fechados) : "—", color: "text-primary" },
   ];
 
   return (
@@ -144,9 +144,9 @@ function SlideResumo({ data, mesRef, periodo, metaCpl, ultimaAtualizacao }: {
         )}
         {cplStatus && (
           <span className={`inline-flex items-center gap-1 mt-2 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-            cplStatus === "dentro" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400" :
+            cplStatus === "dentro" ? "bg-primary text-primary dark:bg-primary/15 dark:text-primary" :
             cplStatus === "atencao" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400" :
-            "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400"
+            "bg-destructive text-destructive dark:bg-destructive/15 dark:text-destructive"
           }`}>
             {cplStatus === "dentro" ? "🟢 Dentro da meta" : cplStatus === "atencao" ? "🟡 Atenção" : "🔴 Acima da meta"}
           </span>
@@ -186,7 +186,7 @@ function SlideResumo({ data, mesRef, periodo, metaCpl, ultimaAtualizacao }: {
         {items.map((_, i) => (
           <div key={i} className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-            {i < items.length - 1 && <div className="w-16 h-0.5 bg-zinc-200 dark:bg-zinc-700" />}
+            {i < items.length - 1 && <div className="w-16 h-0.5 bg-zinc-200 dark:bg-muted-foreground/20" />}
           </div>
         ))}
       </div>
@@ -198,10 +198,10 @@ function SlideResumo({ data, mesRef, periodo, metaCpl, ultimaAtualizacao }: {
 
 function SlideFunil({ data }: { data: FunilData }) {
   const etapas = [
-    { label: "Leads Gerados", valor: data.leads, color: "bg-blue-500", width: 100 },
+    { label: "Leads Gerados", valor: data.leads, color: "bg-accent", width: 100 },
     { label: "Leads Qualificados pelo SDR", valor: data.qualificados, color: "bg-violet-500", width: data.leads > 0 ? Math.max(20, (data.qualificados / data.leads) * 100) : 20 },
     { label: "Reuniões com o Closer", valor: data.reunioes, color: "bg-amber-500", width: data.leads > 0 ? Math.max(15, (data.reunioes / data.leads) * 100) : 15 },
-    { label: "Novos Clientes Fechados", valor: data.clientes, color: "bg-emerald-500", width: data.leads > 0 ? Math.max(10, (data.clientes / data.leads) * 100) : 10 },
+    { label: "Novos Clientes Fechados", valor: data.clientes, color: "bg-primary", width: data.leads > 0 ? Math.max(10, (data.clientes / data.leads) * 100) : 10 },
   ];
 
   const taxas = [
@@ -227,14 +227,14 @@ function SlideFunil({ data }: { data: FunilData }) {
               style={{ width: `${etapa.width}%`, originX: 0.5 }}
               className="mx-auto"
             >
-              <div className={`${etapa.color} rounded-xl py-4 px-6 flex items-center justify-between text-white`}>
+              <div className={`${etapa.color} rounded-xl py-4 px-6 flex items-center justify-between text-foreground`}>
                 <span className="font-semibold text-sm md:text-base">{etapa.label}</span>
                 <span className="text-2xl md:text-3xl font-black tabular-nums">{etapa.valor}</span>
               </div>
             </motion.div>
             {i < etapas.length - 1 && (
               <div className="flex items-center justify-center py-1">
-                <span className="text-xs font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
+                <span className="text-xs font-bold text-zinc-400 bg-zinc-100 dark:bg-muted px-3 py-1 rounded-full">
                   {taxas[i]?.valor != null && taxas[i].valor! > 0
                     ? `${fmtPct(taxas[i].valor)} converteram`
                     : "—"
@@ -432,8 +432,8 @@ function SlideEvolucao({ data, meta, metaCpl, metaLeads, periodo }: {
             onClick={() => setMode(tab.id)}
             className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
               mode === tab.id
-                ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                ? "bg-card dark:bg-zinc-100 text-foreground dark:text-zinc-900"
+                : "bg-zinc-100 dark:bg-muted text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             }`}
           >
             {tab.label}
@@ -470,9 +470,9 @@ function SlideProximosPassos({ acoes, fallbackValue, onFallbackChange }: {
   onFallbackChange: (v: string) => void;
 }) {
   const ACAO_CONFIG: Record<string, { icon: typeof AlertTriangle; color: string; bg: string; label: string }> = {
-    urgente: { icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20", label: "🔴" },
+    urgente: { icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive dark:bg-destructive/10 border-destructive dark:border-destructive/20", label: "🔴" },
     atencao: { icon: Target, color: "text-yellow-500", bg: "bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/20", label: "🟡" },
-    oportunidade: { icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20", label: "🟢" },
+    oportunidade: { icon: TrendingUp, color: "text-primary", bg: "bg-primary dark:bg-primary/10 border-primary dark:border-primary/20", label: "🟢" },
   };
 
   return (
@@ -512,7 +512,7 @@ function SlideProximosPassos({ acoes, fallbackValue, onFallbackChange }: {
             value={fallbackValue}
             onChange={(e) => onFallbackChange(e.target.value)}
             rows={8}
-            className="w-full rounded-xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 p-6 text-lg leading-relaxed resize-none focus:outline-none focus:border-blue-400 transition-colors print:border-0"
+            className="w-full rounded-xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-card text-zinc-900 dark:text-zinc-100 p-6 text-lg leading-relaxed resize-none focus:outline-none focus:border-accent transition-colors print:border-0"
             placeholder="Nenhuma ação automática gerada. Digite as recomendações aqui..."
           />
         </div>
@@ -628,14 +628,14 @@ export default function ApresentacaoPage() {
         }
       `}</style>
 
-      <div ref={containerRef} className={`apresentacao-container ${isFullscreen ? "fixed inset-0 z-[99999] bg-white dark:bg-zinc-950" : ""}`}>
+      <div ref={containerRef} className={`apresentacao-container ${isFullscreen ? "fixed inset-0 z-[99999] bg-white dark:bg-background" : ""}`}>
         {/* Controls bar */}
         <div className={`no-print flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 ${isFullscreen ? "absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-white/90 dark:from-zinc-950/90 to-transparent" : ""}`}>
           <div className="flex items-center gap-3 flex-wrap">
             <select
               value={mesRef}
               onChange={(e) => { setMesRef(e.target.value); setSlideIdx(0); }}
-              className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none"
+              className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-card text-sm px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none"
             >
               {monthOpts.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -645,7 +645,7 @@ export default function ApresentacaoPage() {
               <select
                 value={clienteId}
                 onChange={(e) => { setClienteId(e.target.value); setSlideIdx(0); }}
-                className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none max-w-[200px] truncate"
+                className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-card text-sm px-3 py-2 font-medium text-zinc-900 dark:text-zinc-100 focus:outline-none max-w-[200px] truncate"
               >
                 <option value="">Todos os clientes</option>
                 {clientes.map((c) => (
@@ -696,7 +696,7 @@ export default function ApresentacaoPage() {
             <button
               onClick={goPrev}
               disabled={slideIdx === 0}
-              className="ml-2 w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-20 transition-all"
+              className="ml-2 w-10 h-10 rounded-full bg-zinc-100 dark:bg-muted flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-muted-foreground/20 disabled:opacity-20 transition-all"
             >
               <ChevronLeft size={20} />
             </button>
@@ -705,7 +705,7 @@ export default function ApresentacaoPage() {
             <button
               onClick={goNext}
               disabled={slideIdx === totalSlides - 1}
-              className="mr-2 w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-20 transition-all"
+              className="mr-2 w-10 h-10 rounded-full bg-zinc-100 dark:bg-muted flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-muted-foreground/20 disabled:opacity-20 transition-all"
             >
               <ChevronRight size={20} />
             </button>
@@ -720,8 +720,8 @@ export default function ApresentacaoPage() {
               onClick={() => setSlideIdx(i)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 i === slideIdx
-                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  ? "bg-card dark:bg-zinc-100 text-foreground dark:text-zinc-900"
+                  : "bg-zinc-100 dark:bg-muted text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
             >
               {name}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, Fragment, lazy, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { TabelaInteligencia } from "@/components/trafego/TabelaInteligencia";
 import { DrillDownEntidade } from "@/components/trafego/DrillDownEntidade";
 import type { MetricaEntidade } from "@/lib/metricas/por-entidade";
@@ -19,7 +19,7 @@ import { formatCurrency, formatPercent, formatRoas } from "@/lib/format";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts";
 import { usePeriodoTrafego } from "@/contexts/periodo-trafego-context";
 import {
-  ChevronDown, ChevronRight, Trophy, Brain, Loader2,
+  ChevronDown, ChevronRight, Trophy, Brain, Loader2, RefreshCw,
   Users, Target, Sparkles, Globe, UserCheck, TrendingUp, DollarSign, ArrowUpDown,
   Smartphone, Monitor, Tablet, MapPin, Calendar, Radio,
   Image as ImageIcon, Video, Layers as LayersIcon,
@@ -30,6 +30,7 @@ import { useAccountSpend } from "@/hooks/use-account-spend";
 import { useAudiencesEngine } from "@/hooks/use-audiences-engine";
 import { IAModelSelector } from "@/components/ia-model-selector";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/trafego/FunilCampanhaConfig";
 import { AdDetailDrawer } from "@/components/trafego/AdDetailDrawer";
 import type { AdDetailData } from "@/components/trafego/AdDetailDrawer";
@@ -93,7 +94,7 @@ interface DemographicRow { label: string; sublabel?: string; spend: number; impr
 const TIPO_CONFIG: Record<string, { label: string; icon: typeof Users; color: string; bg: string }> = {
   interest: { label: "Interesse", icon: Sparkles, color: "text-violet-400", bg: "bg-violet-500/10" },
   behavior: { label: "Comportamento", icon: TrendingUp, color: "text-sky-400", bg: "bg-sky-500/10" },
-  custom_audience: { label: "Público Personalizado", icon: UserCheck, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+  custom_audience: { label: "Público Personalizado", icon: UserCheck, color: "text-primary", bg: "bg-primary/10" },
   lookalike: { label: "Lookalike", icon: Users, color: "text-amber-400", bg: "bg-amber-500/10" },
 };
 
@@ -107,7 +108,6 @@ const SUB_TABS = [
 ] as const;
 type SubTab = typeof SUB_TABS[number]["id"];
 
-/* ========== HELPER: Horizontal Bar ========== */
 function BarRow({ label, value, max, color, extra }: { label: string; sublabel?: string; value: number; max: number; color: string; extra?: React.ReactNode }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
@@ -117,7 +117,7 @@ function BarRow({ label, value, max, color, extra }: { label: string; sublabel?:
       </div>
       <div className="flex-1 h-7 bg-muted/20 dark:bg-white/[0.03] rounded-md overflow-hidden relative">
         <div className={cn("h-full rounded-md transition-all duration-500 flex items-center px-2", color)} style={{ width: `${Math.max(pct, 2)}%` }}>
-          {pct > 15 && <span className="text-[10px] text-white font-bold">{pct.toFixed(1)}%</span>}
+          {pct > 15 && <span className="text-[10px] text-foreground font-bold">{pct.toFixed(1)}%</span>}
         </div>
       </div>
       <div className="w-[200px] shrink-0 flex gap-3 justify-end">
@@ -125,6 +125,23 @@ function BarRow({ label, value, max, color, extra }: { label: string; sublabel?:
       </div>
     </div>
   );
+}
+
+function renderLeadsWithObjective(num: number, objective?: string | null) {
+  if (!num || num === 0) return "0";
+  const obj = (objective || "").toUpperCase();
+  if (obj.includes("LEAD")) return <span className="flex justify-end items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">leads</span></span>;
+  if (obj.includes("SALE") || obj.includes("CONVERSION") || obj.includes("PURCHASE")) return <span className="flex justify-end items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">compras</span></span>;
+  if (obj.includes("ENGAGEMENT") || obj.includes("MESSAGE")) return <span className="flex justify-end items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">msg</span></span>;
+  if (obj.includes("TRAFFIC") || obj.includes("LINK_CLICK")) return <span className="flex justify-end items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">cliques</span></span>;
+  return num;
+}
+
+function renderStatusBadge(status: string) {
+  const upper = (status || "").toUpperCase();
+  if (upper === "ACTIVE") return <Badge className="text-[10px] bg-green-500/20 text-green-400">Ativo</Badge>;
+  if (upper === "COMPLETED") return <Badge className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20 border">Concluído</Badge>;
+  return <Badge className="text-[10px] bg-muted text-muted-foreground">{upper.replace(/_/g, " ")}</Badge>;
 }
 
 function MetricCell({ label, value }: { label: string; value: string }) {
@@ -167,11 +184,12 @@ function AnunciosInline({ adsetId, metadata, performance, attrLeads, somenteComD
       const mql = lds.filter((l) => l.foi_qualificado).length; // simplified MQL
       const pctMql = leadsCount > 0 ? (mql / leadsCount) * 100 : 0;
       const status = ad.status || "";
+      const objetivo = ad.objetivo || "";
       const thumbnail = ad.thumbnail_url || ad.image_url || null;
       return {
         ad_id: ad.ad_id, ad_name: ad.ad_name, campaign_name: ad.campaign_name,
         campaign_id: ad.campaign_id, adset_name: ad.adset_name, adset_id: ad.adset_id,
-        status, thumbnail_url: thumbnail,
+        status, objetivo, thumbnail_url: thumbnail,
         spend, leads: leadsCount, cpl, ctr, impressoes, alcance, frequencia,
         qualificados, taxaQualif, reunioesAgendadas, reunioesFeitas, showRate, cprf,
         mql, pctMql,
@@ -220,12 +238,12 @@ function AnunciosInline({ adsetId, metadata, performance, attrLeads, somenteComD
               </button>
             </div>
           </td>
-          <td className="px-3 py-2 text-right text-xs font-bold">{ad.leads}</td>
+          <td className="px-3 py-2 text-right text-xs font-bold">{renderLeadsWithObjective(ad.leads, ad.objetivo)}</td>
           <td className="px-3 py-2 text-right text-xs">{ad.leads > 0 ? formatCurrency(ad.cpl) : "—"}</td>
           <td className="px-3 py-2 text-right text-xs">{formatCurrency(ad.spend)}</td>
           <td className="px-3 py-2 text-right text-xs">{ad.qualificados > 0 ? ad.qualificados : <CrmDash />}</td>
           <td className={cn("px-3 py-2 text-right text-xs font-medium",
-            ad.taxaQualif >= 50 ? "text-green-400" : ad.taxaQualif >= 30 ? "text-yellow-400" : ad.leads > 0 ? "text-red-400" : "text-muted-foreground"
+            ad.taxaQualif >= 50 ? "text-green-400" : ad.taxaQualif >= 30 ? "text-yellow-400" : ad.leads > 0 ? "text-destructive" : "text-muted-foreground"
           )}>
             {ad.leads > 0 ? formatPercent(ad.taxaQualif) : <CrmDash />}
           </td>
@@ -235,9 +253,7 @@ function AnunciosInline({ adsetId, metadata, performance, attrLeads, somenteComD
           <td className="px-3 py-2 text-right text-xs">{ad.mql > 0 ? ad.mql : "—"}</td>
           <td className="px-3 py-2 text-right text-xs">{/* alerta: n/a para anúncios */}</td>
           <td className="px-3 py-2 text-center">
-            <Badge className={`text-[10px] ${ad.status === "ACTIVE" ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
-              {ad.status === "ACTIVE" ? "Ativo" : (ad.status || "—").replace(/_/g, " ")}
-            </Badge>
+            {renderStatusBadge(ad.status)}
           </td>
         </tr>
       ))}
@@ -297,9 +313,10 @@ function ConjuntosInline({ campaignId, campaignName, metadata, performance, attr
       const cprf = reunioesFeitas > 0 ? spend / reunioesFeitas : 0;
       const mql = qualificados; // MQL = qualificados for now
       const status = ads[0]?.status || "";
+      const objetivo = ads[0]?.objetivo || "";
       const adsCount = ads.length;
       const alert = calcConjuntoAlert(spend, leadsCount, qualificados, cpl, metaCpl, taxaQualif, mediaContaTaxaQualif);
-      return { id: asid, nome: ads[0]?.adset_name || asid, spend, leadsCount, qualificados, cpl, ctr, taxaQualif, reunioesAgendadas, reunioesFeitas, cprf, fechados, taxaFechamento, mql, status, adsCount, alert };
+      return { id: asid, nome: ads[0]?.adset_name || asid, spend, leadsCount, qualificados, cpl, ctr, taxaQualif, reunioesAgendadas, reunioesFeitas, cprf, fechados, taxaFechamento, mql, status, objetivo, adsCount, alert };
     }).filter((as) => !somenteComDados || as.spend > 0).sort((a, b) => b.spend - a.spend);
 
     return { adsetData: data, alerts: data.map(d => d.alert) };
@@ -346,12 +363,12 @@ function ConjuntosInline({ campaignId, campaignName, metadata, performance, attr
                       <span className="text-[9px] text-muted-foreground shrink-0">({as.adsCount})</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-right text-xs font-bold">{as.leadsCount}</td>
+                  <td className="px-3 py-2 text-right text-xs font-bold">{renderLeadsWithObjective(as.leadsCount, as.objetivo)}</td>
                   <td className="px-3 py-2 text-right text-xs">{as.leadsCount > 0 ? formatCurrency(as.cpl) : "—"}</td>
                   <td className="px-3 py-2 text-right text-xs">{formatCurrency(as.spend)}</td>
                   <td className="px-3 py-2 text-right text-xs">{as.qualificados || <CrmDash />}</td>
                   <td className={cn("px-3 py-2 text-right text-xs font-medium",
-                    as.taxaQualif >= 50 ? "text-green-400" : as.taxaQualif >= 30 ? "text-yellow-400" : as.leadsCount > 0 ? "text-red-400" : "text-muted-foreground"
+                    as.taxaQualif >= 50 ? "text-green-400" : as.taxaQualif >= 30 ? "text-yellow-400" : as.leadsCount > 0 ? "text-destructive" : "text-muted-foreground"
                   )}>
                     {as.leadsCount > 0 ? formatPercent(as.taxaQualif) : <CrmDash />}
                   </td>
@@ -361,9 +378,7 @@ function ConjuntosInline({ campaignId, campaignName, metadata, performance, attr
                   <td className="px-3 py-2 text-right text-xs">{as.mql > 0 ? as.mql : "—"}</td>
                   <td className="px-3 py-2 text-right text-xs"><ConjuntoAlertBadge alert={as.alert} /></td>
                   <td className="px-3 py-2 text-center">
-                    <Badge className={`text-[10px] ${as.status === "ACTIVE" ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
-                      {as.status === "ACTIVE" ? "Ativo" : (as.status || "—").replace(/_/g, " ")}
-                    </Badge>
+                    {renderStatusBadge(as.status)}
                   </td>
                 </tr>
                 {/* Level 3: Anuncios */}
@@ -440,7 +455,7 @@ function CoverageAndInsights({ rows, totalLeads, totalSpend, avgCpl, breakdown }
     <div className="space-y-3">
       {/* Auto insight */}
       {best.cpl > 0 && worst.cpl > 0 && worst.cpl > avgCpl * 1.3 && (
-        <div className="p-3 rounded-lg border bg-blue-500/5 border-blue-500/20 text-[11px] text-blue-300 leading-relaxed">
+        <div className="p-3 rounded-lg border bg-accent/5 border-accent/20 text-[11px] text-accent leading-relaxed">
           <span className="font-semibold">Insight:</span> {bestLabel} tem CPL {formatCurrency(best.cpl)} ({((1 - best.cpl / avgCpl) * 100).toFixed(0)}% abaixo da media) com {best.leads} leads.
           {worstBudgetPct > 5 && ` ${worstLabel} consome ${worstBudgetPct.toFixed(0)}% do budget com CPL ${((worst.cpl / avgCpl - 1) * 100).toFixed(0)}% acima da media.`}
           {best.cpl < avgCpl * 0.7 && ` Considere concentrar mais budget em ${bestLabel}.`}
@@ -505,9 +520,9 @@ function DemographicPanel({ rows, loading, breakdown, somenteComDados, permiteCo
   // Coverage warning — Meta may not have data for all leads
   const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
 
-  const barColor = breakdown === "age_gender" ? "bg-gradient-to-r from-violet-500 to-indigo-500" :
-    breakdown === "region" ? "bg-gradient-to-r from-emerald-500 to-teal-500" :
-      breakdown === "device" ? "bg-gradient-to-r from-sky-500 to-blue-500" :
+  const barColor = breakdown === "age_gender" ? "bg-gradient-to-r from-violet-500 to-accent" :
+    breakdown === "region" ? "bg-gradient-to-r from-primary to-teal-500" :
+      breakdown === "device" ? "bg-gradient-to-r from-sky-500 to-accent" :
         "bg-gradient-to-r from-amber-500 to-accent";
 
   const deviceIcon = (label: string) => {
@@ -569,7 +584,7 @@ function DemographicPanel({ rows, loading, breakdown, somenteComDados, permiteCo
           <div className="overflow-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border dark:border-white/[0.06] text-muted-foreground">
+                <tr className="border-b border-border text-muted-foreground">
                   <th className="px-3 py-2.5 text-left font-medium text-xs">
                     {breakdown === "age_gender" ? "Faixa Etária" : breakdown === "region" ? "Região" : breakdown === "device" ? "Dispositivo" : breakdown === "placement" ? "Posicionamento" : "Plataforma"}
                   </th>
@@ -608,7 +623,7 @@ function DemographicPanel({ rows, loading, breakdown, somenteComDados, permiteCo
                   const budgetPct = totalSpend > 0 ? (row.spend / totalSpend) * 100 : 0;
                   const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
                   return (
-                    <tr key={`${row.label}-${row.sublabel}-${i}`} className="border-b border-border dark:border-white/[0.06] hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
+                    <tr key={`${row.label}-${row.sublabel}-${i}`} className="border-b border-border hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
                       <td className="px-3 py-2.5 text-xs font-medium">
                         <div className="flex items-center gap-2">
                           {breakdown === "device" && <span className="text-muted-foreground">{deviceIcon(row.label)}</span>}
@@ -634,13 +649,13 @@ function DemographicPanel({ rows, loading, breakdown, somenteComDados, permiteCo
                       </td>
                       <td className="px-3 py-2.5 text-right text-xs font-bold">{row.leads}</td>
                       <td className={cn("px-3 py-2.5 text-right text-xs font-medium",
-                        row.cpl > 0 && row.cpl < avgCpl * 0.8 ? "text-emerald-400" :
-                          row.cpl > avgCpl * 1.3 ? "text-red-400" : ""
+                        row.cpl > 0 && row.cpl < avgCpl * 0.8 ? "text-primary" :
+                          row.cpl > avgCpl * 1.3 ? "text-destructive" : ""
                       )}>
                         {row.leads > 0 ? formatCurrency(row.cpl) : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-right text-xs">{row.impressions.toLocaleString("pt-BR")}</td>
-                      <td className={cn("px-3 py-2.5 text-right text-xs font-medium", row.ctr >= 1.5 ? "text-emerald-400" : row.ctr < 0.8 && row.ctr > 0 ? "text-red-400" : "")}>
+                      <td className={cn("px-3 py-2.5 text-right text-xs font-medium", row.ctr >= 1.5 ? "text-primary" : row.ctr < 0.8 && row.ctr > 0 ? "text-destructive" : "")}>
                         {formatPercent(row.ctr)}
                       </td>
                       {/* Colunas de funil estimadas */}
@@ -829,7 +844,9 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
       const entityMqlSql = mqlSqlByEntity[cid] || { mql: 0, sql: 0 };
       const cpql = qualificados > 0 ? spend / qualificados : 0;
       const mrrGerado = lds.filter((l) => l.virou_cliente && l.mrr_gerado).reduce((s, l) => s + (l.mrr_gerado || 0), 0);
-      return { id: cid, nome, status, spend, leadsCount: totalLeads, qualificados, reunioesAgendadas, reunioesFeitas, fechados, taxaQualif, taxaFechamento, cpl, cpql, cprf, ctr, cpa, custoReuniao, custoFechamento, cplPorDia, adsCount: ads.length, mrrGerado, mql: entityMqlSql.mql, sql: entityMqlSql.sql, custoMql: entityMqlSql.mql > 0 ? spend / entityMqlSql.mql : 0, custoSql: entityMqlSql.sql > 0 ? spend / entityMqlSql.sql : 0, taxaMql: totalLeads > 0 ? (entityMqlSql.mql / totalLeads) * 100 : 0, taxaSql: totalLeads > 0 ? (entityMqlSql.sql / totalLeads) * 100 : 0 };
+      const objetivo = ads[0]?.objetivo || "";
+      const budgetRemaining = ads[0]?.daily_budget || null;
+      return { id: cid, nome, status, objetivo, budgetRemaining, spend, leadsCount: totalLeads, qualificados, reunioesAgendadas, reunioesFeitas, fechados, taxaQualif, taxaFechamento, cpl, cpql, cprf, ctr, cpa, custoReuniao, custoFechamento, cplPorDia, adsCount: ads.length, mrrGerado, mql: entityMqlSql.mql, sql: entityMqlSql.sql, custoMql: entityMqlSql.mql > 0 ? spend / entityMqlSql.mql : 0, custoSql: entityMqlSql.sql > 0 ? spend / entityMqlSql.sql : 0, taxaMql: totalLeads > 0 ? (entityMqlSql.mql / totalLeads) * 100 : 0, taxaSql: totalLeads > 0 ? (entityMqlSql.sql / totalLeads) * 100 : 0 };
     }).filter((c) => !filters.somenteComDados || c.spend > 0).sort((a, b) => b.spend - a.spend);
 
     // Melhor CPL: mínimo 3 leads para ser elegível
@@ -914,6 +931,25 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
     setAiLoading(false);
   };
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetch("/api/meta/cache-clear", { method: "POST" });
+      await mutate(
+        (key) => typeof key === "string" && key.includes("/api/meta/"),
+        undefined,
+        { revalidate: true }
+      );
+      toast.success("Dados sincronizados com o Meta Ads.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao sincronizar dados.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64"><p className="text-muted-foreground">Carregando...</p></div>;
 
   return (
@@ -922,19 +958,31 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <h1 className="text-2xl font-bold">Campanhas ({campanhaData.length})</h1>
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                className="gap-2 text-xs"
-                onClick={handleAnaliseEscala}
-                disabled={aiLoading}
-              >
-                <Brain size={14} />
-                Analisar potencial de escala
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-xs border-primary/20 hover:bg-primary/10 transition-colors"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw size={14} className={isRefreshing ? "animate-spin text-primary" : "text-muted-foreground"} />
+              {isRefreshing ? "Sincronizando..." : "Sincronizar Meta"}
+            </Button>
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 text-xs"
+                  onClick={handleAnaliseEscala}
+                  disabled={aiLoading}
+                >
+                  <Brain size={14} />
+                  Analisar potencial de escala
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>Análise de Escala — IA</SheetTitle>
                 <SheetDescription>Análise automática do potencial de escala das campanhas ativas (máx 25%/dia)</SheetDescription>
@@ -961,6 +1009,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
               </div>
             </SheetContent>
           </Sheet>
+          </div>
         </div>
         {/* Period selector is now in the layout */}
       </div>
@@ -969,7 +1018,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
       {(topPerformer || topMql) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {topPerformer && (
-            <Card className="border-blue-500/40 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+            <Card className="border-accent/40 bg-gradient-to-r from-accent/5 to-purple-500/5">
               <CardContent className="py-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-yellow-500/15 flex items-center justify-center shrink-0">
                   <Trophy size={18} className="text-yellow-400" />
@@ -981,7 +1030,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="text-right">
                     <p className="text-[11px] text-muted-foreground">CPL</p>
-                    <p className="text-lg font-bold text-blue-400">{formatCurrency(topPerformer.cpl)}</p>
+                    <p className="text-lg font-bold text-accent">{formatCurrency(topPerformer.cpl)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[11px] text-muted-foreground">Leads</p>
@@ -992,7 +1041,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
             </Card>
           )}
           {topMql && (
-            <Card className="border-green-500/40 bg-gradient-to-r from-green-500/5 to-emerald-500/5">
+            <Card className="border-green-500/40 bg-gradient-to-r from-green-500/5 to-primary/5">
               <CardContent className="py-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
                   <UserCheck size={18} className="text-green-400" />
@@ -1082,13 +1131,16 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                                   {funilMap.get(camp.id)?.tipo_funil && <FunilBadge tipo={funilMap.get(camp.id)!.tipo_funil} size="xs" />}
                                   <FunilCampanhaPopover campaignId={camp.id} campaignName={camp.nome} currentTipo={funilMap.get(camp.id)?.tipo_funil} />
                                 </div>
+                                {camp.budgetRemaining != null && (
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">Budget: {formatCurrency(camp.budgetRemaining)}</p>
+                                )}
                               </td>
-                              <td className="px-3 py-2 text-xs text-right font-bold">{camp.leadsCount}</td>
+                              <td className="px-3 py-2 text-xs text-right font-bold">{renderLeadsWithObjective(camp.leadsCount, camp.objetivo)}</td>
                               <td className="px-3 py-2 text-xs text-right">{camp.cpl > 0 ? formatCurrency(camp.cpl) : "—"}</td>
                               <td className="px-3 py-2 text-xs text-right">{camp.ctr > 0 ? formatPercent(camp.ctr) : "—"}</td>
                               <td className="px-3 py-2 text-xs text-right font-medium">{formatCurrency(camp.spend)}</td>
                               <td className="px-3 py-2 text-xs text-right">{camp.qualificados > 0 ? camp.qualificados : <CrmDash />}</td>
-                              <td className={`px-3 py-2 text-xs text-right font-medium ${camp.taxaQualif >= 40 ? "text-green-400" : camp.taxaQualif >= 20 ? "text-yellow-400" : camp.qualificados > 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                              <td className={`px-3 py-2 text-xs text-right font-medium ${camp.taxaQualif >= 40 ? "text-green-400" : camp.taxaQualif >= 20 ? "text-yellow-400" : camp.qualificados > 0 ? "text-destructive" : "text-muted-foreground"}`}>
                                 {camp.qualificados > 0 ? formatPercent(camp.taxaQualif) : <CrmDash />}
                               </td>
                               <td className="px-3 py-2 text-xs text-right">{camp.reunioesAgendadas || <CrmDash />}</td>
@@ -1103,14 +1155,12 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                               <td className="px-3 py-2 text-xs text-right">{camp.cpql > 0 ? formatCurrency(camp.cpql) : <CrmDash />}</td>
                               <td className="px-3 py-2 text-xs text-right">{camp.fechados || <CrmDash />}</td>
                               <td className="px-3 py-2 text-xs text-right">{camp.cpa > 0 ? formatCurrency(camp.cpa) : <CrmDash />}</td>
-                              <td className={`px-3 py-2 text-xs text-right font-medium ${camp.mrrGerado > 0 ? "text-emerald-400" : ""}`}>{camp.mrrGerado > 0 ? formatCurrency(camp.mrrGerado) : <CrmDash />}</td>
-                              <td className={`px-3 py-2 text-xs text-right font-medium ${camp.taxaFechamento >= 10 ? "text-green-400" : camp.taxaFechamento >= 5 ? "text-yellow-400" : camp.fechados > 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                              <td className={`px-3 py-2 text-xs text-right font-medium ${camp.mrrGerado > 0 ? "text-primary" : ""}`}>{camp.mrrGerado > 0 ? formatCurrency(camp.mrrGerado) : <CrmDash />}</td>
+                              <td className={`px-3 py-2 text-xs text-right font-medium ${camp.taxaFechamento >= 10 ? "text-green-400" : camp.taxaFechamento >= 5 ? "text-yellow-400" : camp.fechados > 0 ? "text-destructive" : "text-muted-foreground"}`}>
                                 {camp.fechados > 0 ? formatPercent(camp.taxaFechamento) : <CrmDash />}
                               </td>
                               <td className="px-3 py-2 text-center">
-                                <Badge className={`text-[10px] ${camp.status === "ACTIVE" ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
-                                  {camp.status === "ACTIVE" ? "Ativo" : (camp.status || "—").replace(/_/g, " ")}
-                                </Badge>
+                                {renderStatusBadge(camp.status)}
                               </td>
                             </tr>
                             {/* Expanded: conjuntos inline + funil */}
@@ -1147,7 +1197,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                                               <span className="text-xs w-24 text-right text-muted-foreground">{etapa.label}</span>
                                               <div className="flex-1 h-6 bg-muted/40 rounded overflow-hidden">
                                                 <div
-                                                  className="h-full rounded flex items-center px-2 text-white text-xs font-medium transition-all"
+                                                  className="h-full rounded flex items-center px-2 text-foreground text-xs font-medium transition-all"
                                                   style={{ width: `${Math.max(pct, etapa.valor > 0 ? 4 : 0)}%`, backgroundColor: etapa.cor }}
                                                 >
                                                   {etapa.valor > 0 && etapa.valor}
@@ -1243,7 +1293,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                       onClick={() => setActiveSubTab(tab.id)}
                       className={cn(
                         "flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-colors flex-1 justify-center relative",
-                        activeSubTab === tab.id ? "text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                        activeSubTab === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                       )}
                     >
                       {activeSubTab === tab.id && (
@@ -1273,7 +1323,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                     ].map((opt) => (
                       <button key={opt.value} onClick={() => setTipoFiltro(opt.value)}
                         className={cn("px-3 py-1.5 text-xs rounded-lg border transition-all",
-                          tipoFiltro === opt.value ? "gradient-primary text-white border-transparent" : "border-border dark:border-white/[0.08] text-muted-foreground hover:text-foreground"
+                          tipoFiltro === opt.value ? "gradient-primary text-foreground border-transparent" : "border-border text-muted-foreground hover:text-foreground"
                         )}>{opt.label}</button>
                     ))}
                   </div>
@@ -1301,7 +1351,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                   ) : (
                     <Card><CardContent className="p-0"><div className="overflow-auto">
                       <table className="w-full text-sm">
-                        <thead><tr className="border-b border-border dark:border-white/[0.06] text-muted-foreground">
+                        <thead><tr className="border-b border-border text-muted-foreground">
                           <th className="px-3 py-2.5 text-left font-medium text-xs">Público / Interesse</th>
                           <th className="px-3 py-2.5 text-left font-medium text-xs">Tipo</th>
                           <th className="px-3 py-2.5 text-left font-medium text-xs">Campanhas</th>
@@ -1324,7 +1374,7 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ delay: i * 0.05 }}
                                   className={cn(
-                                    "border-b border-border dark:border-white/[0.06] hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors",
+                                    "border-b border-border hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors",
                                     (aud.tipo as string) === "broad" && "bg-muted/10 dark:bg-white/[0.01]"
                                   )}
                                 >
@@ -1339,11 +1389,11 @@ function CampanhasInner({ initialTab, nivelExpand }: { initialTab: string; nivel
                                   </div></td>
                                   <td className="px-3 py-2.5 text-right text-xs font-medium">{formatCurrency(aud.spend)}</td>
                                   <td className="px-3 py-2.5 text-right text-xs font-bold">{aud.leads}</td>
-                                  <td className={cn("px-3 py-2.5 text-right text-xs font-medium", aud.cpl > 0 && aud.cpl < globalCpl * 0.8 ? "text-emerald-400" : aud.cpl > globalCpl * 1.3 ? "text-red-400" : "")}>
+                                  <td className={cn("px-3 py-2.5 text-right text-xs font-medium", aud.cpl > 0 && aud.cpl < globalCpl * 0.8 ? "text-primary" : aud.cpl > globalCpl * 1.3 ? "text-destructive" : "")}>
                                     {aud.leads > 0 ? formatCurrency(aud.cpl) : "—"}
                                   </td>
                                   <td className="px-3 py-2.5 text-right text-xs">{aud.impressoes.toLocaleString("pt-BR")}</td>
-                                  <td className={cn("px-3 py-2.5 text-right text-xs font-medium", aud.ctr >= 1.5 ? "text-emerald-400" : aud.ctr > 0 && aud.ctr < 0.8 ? "text-red-400" : "")}>{formatPercent(aud.ctr)}</td>
+                                  <td className={cn("px-3 py-2.5 text-right text-xs font-medium", aud.ctr >= 1.5 ? "text-primary" : aud.ctr > 0 && aud.ctr < 0.8 ? "text-destructive" : "")}>{formatPercent(aud.ctr)}</td>
                                   <td className="px-3 py-2.5 text-center"><Badge className="text-[10px] bg-muted text-muted-foreground">{aud.adsets.length}</Badge></td>
                                 </motion.tr>
                               );

@@ -150,19 +150,19 @@ function barWidths(etapas: Etapa[]): number[] {
 
 function FunilSkeleton() {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 animate-pulse">
-      <div className="h-6 w-64 bg-zinc-800 rounded mb-6" />
+    <div className="rounded-xl border border-border bg-black/5 dark:bg-black/20 p-6 animate-pulse">
+      <div className="h-6 w-64 bg-black/10 dark:bg-white/10 rounded mb-6" />
       <div className="space-y-4">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4">
-            <div className="h-8 bg-zinc-800 rounded" style={{ width: `${100 - i * 10}%` }} />
-            <div className="h-4 w-20 bg-zinc-800 rounded" />
+            <div className="h-8 bg-black/10 dark:bg-white/10 rounded" style={{ width: `${100 - i * 10}%` }} />
+            <div className="h-4 w-20 bg-black/10 dark:bg-white/10 rounded" />
           </div>
         ))}
       </div>
       <div className="mt-6 grid grid-cols-5 gap-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-16 bg-zinc-800 rounded" />
+          <div key={i} className="h-16 bg-black/10 dark:bg-white/10 rounded" />
         ))}
       </div>
     </div>
@@ -194,7 +194,8 @@ export function FunilComarka({
   dataInicio,
   dataFim,
   compacto = false,
-}: FunilComarkaProps) {
+  accountId,
+}: FunilComarkaProps & { accountId?: string | null }) {
   const [data, setData] = useState<FunilData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -210,15 +211,102 @@ export function FunilComarka({
         params.set("dataInicio", dataInicio.toISOString().slice(0, 10))
         params.set("dataFim", dataFim.toISOString().slice(0, 10))
       }
-      const res = await fetch(`/api/marketing/funil-comarka?${params}`)
-      if (!res.ok) throw new Error(await res.text())
-      setData(await res.json())
+      
+      let since = "";
+      let until = "";
+      
+      if (dataInicio && dataFim) {
+        since = dataInicio.toISOString().slice(0, 10);
+        until = dataFim.toISOString().slice(0, 10);
+      } else if (mesReferencia) {
+        since = `${mesReferencia}-01`;
+        const [year, month] = mesReferencia.split("-");
+        const lastDay = new Date(Number(year), Number(month), 0).getDate();
+        until = `${mesReferencia}-${lastDay}`;
+      }
+
+      // Fetch both APIs in parallel
+      const promises = [fetch(`/api/marketing/funil-comarka?${params}`).then(r => {
+        if (!r.ok) throw new Error("Erro funil")
+        return r.json()
+      })]
+
+      if (accountId && since && until) {
+        const metaParams = new URLSearchParams({
+          since,
+          until,
+          level: "campaign",
+          breakdown: "none",
+          account_id: accountId
+        })
+        promises.push(fetch(`/api/meta/insights?${metaParams}`).then(r => r.ok ? r.json() : null))
+      } else {
+        promises.push(Promise.resolve(null))
+      }
+
+      const [funilRes, metaRes] = await Promise.all(promises)
+      let finalData: FunilData = funilRes
+
+      // Override global DB stats with Account specific Meta stats if available
+      if (metaRes?.totals) {
+        const meta = metaRes.totals
+        
+        // Helper to update etapa
+        const updateEtapa = (id: string, valor: number) => {
+          const idx = finalData.etapas.findIndex(e => e.id === id)
+          if (idx >= 0) finalData.etapas[idx].valor = valor
+        }
+
+        updateEtapa("investimento", meta.spend || 0)
+        updateEtapa("impressoes", meta.impressions || 0)
+        updateEtapa("cliques", meta.clicks || 0)
+        updateEtapa("leads", meta.leads || 0)
+
+        // Helper to get val
+        const getVal = (id: string) => finalData.etapas.find(e => e.id === id)?.valor || 0
+        
+        const safe = (n: number, d: number) => (d && d > 0 ? n / d : null)
+
+        const inv = getVal("investimento")
+        const imp = getVal("impressoes")
+        const cli = getVal("cliques")
+        const leads = getVal("leads")
+        const qual = getVal("qualificados")
+        const reuniAg = getVal("reunioes_agendadas")
+        const reuniRe = getVal("reunioes_realizadas")
+        const clientes = getVal("clientes_fechados")
+        const mrr = finalData.receita_gerada.mrr
+
+        // Recalculate taxas
+        finalData.taxas = [
+          { de: "impressoes", para: "cliques", valor: safe(cli, imp), label: "CTR" },
+          { de: "cliques", para: "leads", valor: safe(leads, cli), label: "Conversão página" },
+          { de: "leads", para: "qualificados", valor: safe(qual, leads), label: "Qualificação" },
+          { de: "qualificados", para: "reunioes_agendadas", valor: safe(reuniAg, qual), label: "Agendamento" },
+          { de: "reunioes_agendadas", para: "reunioes_realizadas", valor: safe(reuniRe, reuniAg), label: "Comparecimento" },
+          { de: "reunioes_realizadas", para: "clientes_fechados", valor: safe(clientes, reuniRe), label: "Fechamento" }
+        ]
+
+        // Recalculate totais finais
+        const cacBruto = safe(inv, clientes)
+        const ticketMedio = safe(mrr, clientes)
+        
+        finalData.totais_finais = {
+          cac_bruto: cacBruto,
+          cprf: safe(inv, reuniRe),
+          roas_bruto: inv > 0 ? mrr / inv : null,
+          payback_bruto_meses: cacBruto && ticketMedio ? cacBruto / ticketMedio : null,
+          taxa_lead_para_cliente: safe(clientes, leads)
+        }
+      }
+
+      setData(finalData)
     } catch {
       setError(true)
     } finally {
       setLoading(false)
     }
-  }, [mesReferencia, dataInicio, dataFim])
+  }, [mesReferencia, dataInicio, dataFim, accountId])
 
   useEffect(() => {
     fetchData()
@@ -266,17 +354,17 @@ function FunilContent({
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+    <div className="rounded-xl border border-border bg-black/5 dark:bg-black/20 overflow-hidden">
       {/* Header */}
-      <div className="border-b border-zinc-800 px-4 py-3 sm:px-6 sm:py-4">
-        <h3 className="text-base font-semibold text-zinc-100">
+      <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+        <h3 className="text-base font-semibold text-foreground">
           Funil de Aquisição Comarka
-          <span className="ml-2 text-sm font-normal text-zinc-400">
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
             {mesLabel(data.periodo.valor)}
           </span>
         </h3>
         {data.periodo_parcial && (
-          <p className="mt-1 text-xs text-yellow-400">
+          <p className="mt-1 text-xs text-yellow-500 dark:text-yellow-400">
             Periodo parcialmente coberto pela atribuicao de campanhas
           </p>
         )}
@@ -300,9 +388,9 @@ function FunilContent({
               {/* Taxa badge between bars */}
               {taxa && (
                 <div className="flex items-center gap-2 pl-4 py-0.5">
-                  <div className="w-px h-3 bg-zinc-700" />
+                  <div className="w-px h-3 bg-border" />
                   <span
-                    className={`text-xs font-medium ${taxa.valor !== null && taxa.valor > 1 ? "text-zinc-500" : taxaColor(taxa.valor, i - 1)}`}
+                    className={`text-xs font-medium ${taxa.valor !== null && taxa.valor > 1 ? "text-muted-foreground" : taxaColor(taxa.valor, i - 1)}`}
                     title={taxa.valor !== null && taxa.valor > 1
                       ? `${taxa.label}: Dados insuficientes para calcular (${TAXA_FORMULAS[taxa.label] || ""})`
                       : `${taxa.label}: ${TAXA_FORMULAS[taxa.label] || ""}`}
@@ -322,20 +410,20 @@ function FunilContent({
                 <div
                   className={`relative flex items-center gap-2 rounded-lg px-3 py-2 transition-all ${
                     showHash
-                      ? "bg-zinc-800/50 border border-dashed border-zinc-600"
-                      : "bg-gradient-to-r from-blue-600/20 to-blue-500/5 border border-blue-500/20"
+                      ? "bg-black/5 dark:bg-white/5 border border-dashed border-border"
+                      : "bg-primary/10 border border-primary/20"
                   }`}
                   style={{ width: `${widths[i]}%`, minWidth: 120 }}
                   title={`Fonte: ${ETAPA_FONTES[etapa.id] || "view"}`}
                 >
-                  <Icon size={16} className={showHash ? "text-zinc-500" : "text-blue-400"} />
-                  <span className={`text-xs truncate ${showHash ? "text-zinc-500" : "text-zinc-300"}`}>
+                  <Icon size={16} className={showHash ? "text-muted-foreground" : "text-primary"} />
+                  <span className={`text-xs truncate ${showHash ? "text-muted-foreground" : "text-foreground"}`}>
                     {etapa.label}
                   </span>
                 </div>
                 <span
                   className={`text-sm font-semibold whitespace-nowrap ${
-                    showHash ? "text-zinc-500" : "text-zinc-100"
+                    showHash ? "text-muted-foreground" : "text-foreground"
                   }`}
                 >
                   {fmtValor(etapa)}
@@ -348,7 +436,7 @@ function FunilContent({
 
       {/* Footer KPIs */}
       {!compacto && (
-        <div className="border-t border-zinc-800 px-4 py-3 sm:px-6 sm:py-4">
+        <div className="border-t border-border px-4 py-3 sm:px-6 sm:py-4">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 md:gap-3">
             <KpiCard
               label="CAC"
@@ -407,14 +495,14 @@ function KpiCard({
 }) {
   return (
     <div
-      className="rounded-lg border border-zinc-800 bg-zinc-800/30 px-3 py-2"
+      className="rounded-lg border border-border bg-black/5 dark:bg-white/5 px-3 py-2"
       title={tooltip}
     >
-      <div className="flex items-center gap-1.5 text-zinc-400 mb-1">
+      <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
         <Icon size={12} />
         <span className="text-[10px] uppercase tracking-wider">{label}</span>
       </div>
-      <span className="text-sm font-bold text-zinc-100">
+      <span className="text-sm font-bold text-foreground">
         {value !== null && value !== undefined ? format(value) : "\u2014"}
       </span>
     </div>

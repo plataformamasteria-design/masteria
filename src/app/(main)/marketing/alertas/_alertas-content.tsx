@@ -302,7 +302,7 @@ export default function TrafegoAlertasPage() {
               const fullName = ad.ad_name || ad.ad_id;
               return (
                 <tr key={`${ad.ad_id}-${p.tipo}-${i}`} className="border-b hover:bg-muted/30">
-                  <td className="px-4 py-2"><Badge className={`text-[10px] ${p.severidade === "danger" ? "bg-red-500/15 text-red-400" : "bg-yellow-500/15 text-yellow-400"}`}>{p.tipo === "cpl_max" ? "CPL Alto" : p.tipo === "ctr_min" ? "CTR Baixo" : p.tipo === "frequencia_max" ? "Freq. Alta" : "Zero Leads"}</Badge></td>
+                  <td className="px-4 py-2"><Badge className={`text-[10px] ${p.severidade === "danger" ? "bg-destructive/15 text-destructive" : "bg-yellow-500/15 text-yellow-400"}`}>{p.tipo === "cpl_max" ? "CPL Alto" : p.tipo === "ctr_min" ? "CTR Baixo" : p.tipo === "frequencia_max" ? "Freq. Alta" : "Zero Leads"}</Badge></td>
                   <td className="px-4 py-2 text-xs font-medium max-w-[180px]">
                     <div className="truncate" title={fullName}>{truncateAdName(fullName)}</div>
                     <div className="text-[10px] text-muted-foreground truncate">{ad.campaign_name || "—"}</div>

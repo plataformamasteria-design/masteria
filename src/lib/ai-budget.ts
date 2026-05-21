@@ -8,7 +8,7 @@
  *   await logAIUsage(guard.userId, provider, model, tokensUsed, route);
  */
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { getUserSession } from "@/app/actions";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const DAILY_TOKEN_LIMIT = 50_000;
@@ -26,10 +26,10 @@ export async function checkAIBudget(
   route: string,
   opts?: { skipAuth?: boolean }
 ): Promise<BudgetCheck> {
-  // Auth check
+// Auth check
   if (!opts?.skipAuth) {
-    const session = await getSession();
-    if (!session) {
+    const session = await getUserSession();
+    if (session.error || !session.user) {
       return {
         userId: "",
         error: NextResponse.json(
@@ -39,7 +39,7 @@ export async function checkAIBudget(
       };
     }
 
-    const userId = session.employeeId;
+    const userId = session.user.id;
     const budgetError = await checkTokenBudget(userId);
     if (budgetError) {
       return { userId, error: budgetError };

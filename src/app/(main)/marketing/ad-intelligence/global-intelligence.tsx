@@ -136,21 +136,21 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
       value: stats?.contas_total ?? null,
       icon: Shield,
       cls: "text-zinc-300",
-      border: "border-white/5",
+      border: "border-border",
     },
     {
       label: "Em Risco",
       value: stats?.contas_em_risco ?? null,
       icon: Flame,
-      cls: stats?.contas_em_risco ? "text-red-400" : "text-zinc-500",
-      border: stats?.contas_em_risco ? "border-red-500/20" : "border-white/5",
+      cls: stats?.contas_em_risco ? "text-destructive" : "text-zinc-500",
+      border: stats?.contas_em_risco ? "border-destructive/20" : "border-border",
     },
     {
       label: "Estáveis",
       value: stats?.contas_estaveis ?? null,
       icon: TrendingUp,
-      cls: "text-emerald-400",
-      border: "border-emerald-500/10",
+      cls: "text-primary",
+      border: "border-primary/10",
     },
     {
       label: "Oportunidade Escala",
@@ -181,7 +181,7 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
                 <CardIcon className={cn("h-4 w-4", card.cls)} />
               </div>
               {statsLoading ? (
-                <div className="h-10 w-16 rounded-lg bg-white/5 animate-pulse" />
+                <div className="h-10 w-16 rounded-lg bg-black/5 dark:bg-white/5 animate-pulse" />
               ) : (
                 <p className={cn("text-4xl lg:text-5xl font-black tracking-tighter", card.cls)}>
                   {card.value ?? "—"}
@@ -196,7 +196,7 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
       {stats && stats.total_alerts > 0 && (
         <div className="flex flex-wrap gap-3">
           {stats.critical > 0 && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 text-xs font-bold">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-destructive/20 bg-destructive/5 text-destructive text-xs font-bold">
               <Flame className="h-4 w-4" /> {stats.critical} alertas críticos
             </div>
           )}
@@ -206,7 +206,7 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
             </div>
           )}
           {stats.last_sync_at && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/5 bg-white/[0.02] text-zinc-500 text-xs ml-auto">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-white/[0.02] text-zinc-500 text-xs ml-auto">
               <RefreshCw className="h-3.5 w-3.5" />
               Último sync: {formatRelativeTime(stats.last_sync_at)}
             </div>
@@ -215,8 +215,8 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
       )}
 
       {/* ── Painel de Ações em Lote ─────────────────────────────────────── */}
-      <SpotlightCard className="border-white/5">
-        <div className="flex items-center justify-between p-5 border-b border-white/5">
+      <SpotlightCard className="border-border">
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <div>
             <h3 className="text-sm font-bold tracking-tight flex items-center gap-2">
               <Bot className="h-4 w-4 text-primary" />
@@ -229,7 +229,7 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
           <button
             onClick={generateClusterReport}
             disabled={analyzing}
-            className="flex items-center gap-2 bg-accent hover:bg-accent text-white text-[11px] font-bold tracking-widest uppercase px-4 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(0,153,255,0.2)] disabled:opacity-50 shrink-0"
+            className="flex items-center gap-2 bg-accent hover:bg-accent text-foreground text-[11px] font-bold tracking-widest uppercase px-4 py-2.5 rounded-xl transition-all shadow-[0_0_20px_rgba(0,153,255,0.2)] disabled:opacity-50 shrink-0"
           >
             {analyzing
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -300,7 +300,7 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="border-t border-accent/10 bg-black/20"
+                          className="border-t border-accent/10 bg-black/5 dark:bg-black/20"
                         >
                           <div className="p-4 space-y-3">
                             <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-3">
@@ -309,7 +309,7 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
                             {batch.ad_intelligence_batch_items.map(item => (
                               <div
                                 key={item.id}
-                                className="bg-zinc-900/60 border border-white/5 rounded-xl p-4 flex gap-4"
+                                className="bg-card/60 border border-border rounded-xl p-4 flex gap-4"
                               >
                                 <div className="flex-1">
                                   <div className="flex items-center justify-between mb-2">
@@ -317,10 +317,10 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
                                     <span className={cn(
                                       "text-[9px] px-2 py-0.5 rounded border font-bold uppercase tracking-widest",
                                       item.confidence_level === "alta"
-                                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                                        ? "border-primary/20 bg-primary/10 text-primary"
                                         : item.confidence_level === "media"
                                         ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                                        : "border-zinc-700 bg-zinc-800 text-zinc-400"
+                                        : "border-zinc-700 bg-muted text-zinc-400"
                                     )}>
                                       Confiança {item.confidence_level.toUpperCase()}
                                     </span>
@@ -339,13 +339,13 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
                                 <div className="flex flex-col gap-2 shrink-0">
                                   <button
                                     title="Remover conta do lote"
-                                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 text-zinc-500 flex items-center justify-center transition-all"
+                                    className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 border border-border hover:bg-destructive/10 hover:border-destructive/20 hover:text-destructive text-zinc-500 flex items-center justify-center transition-all"
                                   >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
                                   <button
                                     title="Ajustar instrução"
-                                    className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-zinc-500 hover:text-white flex items-center justify-center transition-all"
+                                    className="w-8 h-8 rounded-lg bg-black/5 dark:bg-white/5 border border-border hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 text-zinc-500 hover:text-foreground flex items-center justify-center transition-all"
                                   >
                                     <SlidersHorizontal className="h-3.5 w-3.5" />
                                   </button>
@@ -353,16 +353,16 @@ export function GlobalIntelligence({ since, until }: GlobalIntelligenceProps) {
                               </div>
                             ))}
 
-                            <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                            <div className="flex justify-between items-center pt-4 border-t border-border">
                               <button
                                 onClick={() => resolveBatch(batch.id, "reject_all")}
-                                className="text-xs text-zinc-500 hover:text-red-400 px-3 py-2 transition-colors"
+                                className="text-xs text-zinc-500 hover:text-destructive px-3 py-2 transition-colors"
                               >
                                 Rejeitar Lote
                               </button>
                               <button
                                 onClick={() => resolveBatch(batch.id, "approve_all")}
-                                className="flex items-center gap-2 bg-accent hover:bg-accent text-white text-[11px] font-bold tracking-widest uppercase px-4 py-2.5 rounded-xl transition-all"
+                                className="flex items-center gap-2 bg-accent hover:bg-accent text-foreground text-[11px] font-bold tracking-widest uppercase px-4 py-2.5 rounded-xl transition-all"
                               >
                                 <Check className="h-3.5 w-3.5" />
                                 Aprovar & Marcar Contas

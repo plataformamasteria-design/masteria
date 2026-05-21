@@ -56,7 +56,7 @@ function AdPreviewFrame({ adId }: { adId: string }) {
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${
               format === f.value
                 ? "bg-primary/15 border-accent/40 text-accent/70"
-                : "bg-white/5 border-white/8 text-foreground/90 hover:text-foreground/90 hover:border-white/15"
+                : "bg-black/5 dark:bg-white/5 border-border text-foreground/90 hover:text-foreground/90 border-border"
             }`}
           >
             <f.icon className="h-3 w-3" />
@@ -65,7 +65,7 @@ function AdPreviewFrame({ adId }: { adId: string }) {
         ))}
         <button
           onClick={() => { setKey(k => k + 1); setLoading(true); }}
-          className="ml-auto flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-foreground/90 hover:text-foreground/90 hover:bg-white/5 transition-colors"
+          className="ml-auto flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-foreground/90 hover:text-foreground/90 hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors"
           title="Recarregar preview"
         >
           <RefreshCw className="h-3 w-3" />
@@ -73,9 +73,9 @@ function AdPreviewFrame({ adId }: { adId: string }) {
       </div>
 
       {/* Preview iframe */}
-      <div className="relative rounded-xl overflow-hidden border border-white/8 bg-zinc-950" style={{ minHeight: 380 }}>
+      <div className="relative rounded-xl overflow-hidden border border-border bg-background" style={{ minHeight: 380 }}>
         {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950 z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background z-10">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
             <span className="text-xs text-foreground/90 font-mono">Renderizando preview via Graph API...</span>
           </div>
@@ -335,14 +335,14 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
 
   return createPortal(
     <>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999]" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/5 dark:bg-black/60 backdrop-blur-md z-[9999]" onClick={onClose} />
       <motion.div
         initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
         transition={{ type: "spring", damping: 26, stiffness: 210 }}
-        className="fixed top-0 right-0 bottom-0 w-[640px] bg-[#09090b] border-l border-white/8 shadow-2xl z-[10000] flex flex-col"
+        className="fixed top-0 right-0 bottom-0 w-[640px] bg-background border-l border-border shadow-2xl z-[10000] flex flex-col"
       >
         {/* Header */}
-        <div className="flex-shrink-0 px-6 py-5 border-b border-white/5 bg-zinc-950 flex items-start justify-between">
+        <div className="flex-shrink-0 px-6 py-5 border-b border-border bg-background flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest border ${typeBg}`}>
@@ -354,13 +354,13 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
             </div>
             <h2 className="text-lg font-bold text-foreground truncate max-w-[420px]">{target.name}</h2>
           </div>
-          <button onClick={onClose} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-foreground/90 hover:text-foreground transition-colors flex-shrink-0">
+          <button onClick={onClose} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 rounded-full text-foreground/90 hover:text-foreground transition-colors flex-shrink-0">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex-shrink-0 flex gap-0.5 px-6 pt-4 border-b border-white/5">
+        <div className="flex-shrink-0 flex gap-0.5 px-6 pt-4 border-b border-border">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -389,11 +389,11 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label  className="text-xs font-semibold text-foreground/90">Nome da Campanha</Label>
-                    <Input value={camp.name || ""} onChange={e => setCamp({ ...camp, name: e.target.value })} className="bg-white/5 border-white/10 text-foreground" />
+                    <Input value={camp.name || ""} onChange={e => setCamp({ ...camp, name: e.target.value })} className="bg-black/5 dark:bg-white/5 border-border text-foreground" />
                   </div>
 
                   {/* Status Toggle */}
-                  <div className="flex items-center justify-between p-3 rounded-xl border border-white/8 bg-white/[0.02]">
+                  <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-white/[0.02]">
                     <div>
                       <p className="text-sm font-semibold text-foreground">Status da Campanha</p>
                       <p className="text-xs text-foreground/90">Ativar ou pausar a veiculação imediatamente</p>
@@ -419,7 +419,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                           type="number"
                           value={camp.daily_budget || ""}
                           onChange={e => setCamp({ ...camp, daily_budget: e.target.value })}
-                          className="bg-white/5 border-white/10 text-foreground pl-9"
+                          className="bg-black/5 dark:bg-white/5 border-border text-foreground pl-9"
                           placeholder="Ex: 50.00"
                         />
                       </div>
@@ -427,7 +427,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                     <div className="space-y-2">
                       <Label  className="text-xs font-semibold text-foreground/90">Bid Strategy</Label>
                       <Select value={camp.bid_strategy || "LOWEST_COST_WITHOUT_CAP"} onValueChange={v => setCamp({ ...camp, bid_strategy: v })}>
-                        <SelectTrigger  className="bg-white/5 border-white/10 text-foreground h-10">
+                        <SelectTrigger  className="bg-black/5 dark:bg-white/5 border-border text-foreground h-10">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -447,7 +447,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                         type="number"
                         value={camp.spend_cap || ""}
                         onChange={e => setCamp({ ...camp, spend_cap: e.target.value })}
-                        className="bg-white/5 border-white/10 text-foreground pl-9"
+                        className="bg-black/5 dark:bg-white/5 border-border text-foreground pl-9"
                         placeholder="Opcional"
                       />
                     </div>
@@ -456,7 +456,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label  className="text-xs font-semibold text-foreground/90">Objetivo (somente leitura)</Label>
-                      <Input  value={camp.objective || ""} readOnly className="bg-white/[0.02] border-white/5 text-foreground/90 cursor-not-allowed" />
+                      <Input  value={camp.objective || ""} readOnly className="bg-white/[0.02] border-border text-foreground/90 cursor-not-allowed" />
                     </div>
                     <div className="space-y-2">
                       <Label  className="text-xs font-semibold text-foreground/90">Data de Encerramento</Label>
@@ -464,7 +464,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                         type="datetime-local"
                         value={camp.stop_time?.slice(0, 16) || ""}
                         onChange={e => setCamp({ ...camp, stop_time: e.target.value })}
-                        className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        className="flex h-10 w-full rounded-md border border-border bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                       />
                     </div>
                   </div>
@@ -479,11 +479,11 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label  className="text-xs font-semibold text-foreground/90">Nome do Conjunto</Label>
-                        <Input value={adset.name || ""} onChange={e => setAdset({ ...adset, name: e.target.value })} className="bg-white/5 border-white/10 text-foreground" />
+                        <Input value={adset.name || ""} onChange={e => setAdset({ ...adset, name: e.target.value })} className="bg-black/5 dark:bg-white/5 border-border text-foreground" />
                       </div>
 
                       {/* Status */}
-                      <div className="flex items-center justify-between p-3 rounded-xl border border-white/8 bg-white/[0.02]">
+                      <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-white/[0.02]">
                         <div>
                           <p className="text-sm font-semibold text-foreground">Status do Conjunto</p>
                           <p className="text-xs text-foreground/90">Ativar ou pausar véiculação deste conjunto</p>
@@ -505,7 +505,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                         <div className="space-y-2">
                           <Label  className="text-xs font-semibold text-foreground/90">Tipo de Orçamento</Label>
                           <Select value={adset.budget_type} onValueChange={v => setAdset({ ...adset, budget_type: v as "DAILY" | "LIFETIME" })}>
-                            <SelectTrigger  className="bg-white/5 border-white/10 text-foreground h-10"><SelectValue /></SelectTrigger>
+                            <SelectTrigger  className="bg-black/5 dark:bg-white/5 border-border text-foreground h-10"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="DAILY">Diário</SelectItem>
                               <SelectItem value="LIFETIME">Vitalício</SelectItem>
@@ -522,32 +522,32 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                               onChange={e => adset.budget_type === "DAILY"
                                 ? setAdset({ ...adset, daily_budget: e.target.value })
                                 : setAdset({ ...adset, lifetime_budget: e.target.value })}
-                              className="bg-white/5 border-white/10 text-foreground pl-9 font-mono"
+                              className="bg-black/5 dark:bg-white/5 border-border text-foreground pl-9 font-mono"
                             />
                           </div>
                         </div>
                       </div>
 
                       {/* Cronograma */}
-                      <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                      <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
                         <div className="space-y-2">
                           <Label  className="text-xs font-semibold text-foreground/90">Início</Label>
                           <input type="datetime-local" value={adset.start_time || ""} onChange={e => setAdset({ ...adset, start_time: e.target.value })}
-                            className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                            className="flex h-10 w-full rounded-md border border-border bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50" />
                         </div>
                         <div className="space-y-2">
                           <Label  className="text-xs font-semibold text-foreground/90">Fim (Opcional)</Label>
                           <input type="datetime-local" value={adset.end_time || ""} onChange={e => setAdset({ ...adset, end_time: e.target.value })}
-                            className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-foreground/90 focus:outline-none focus:ring-1 focus:ring-white/10" />
+                            className="flex h-10 w-full rounded-md border border-border bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground/90 focus:outline-none focus:ring-1 focus:ring-white/10" />
                         </div>
                       </div>
 
                       {/* Optimization */}
-                      <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                      <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
                         <div className="space-y-2">
                           <Label  className="text-xs font-semibold text-foreground/90">Local de Conversão</Label>
                           <Select value={adset.conversion_location} onValueChange={v => setAdset({ ...adset, conversion_location: v })}>
-                            <SelectTrigger  className="bg-white/5 border-white/10 text-foreground h-10"><SelectValue /></SelectTrigger>
+                            <SelectTrigger  className="bg-black/5 dark:bg-white/5 border-border text-foreground h-10"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="WEBSITE">Site (Pixel)</SelectItem>
                               <SelectItem value="APP">App</SelectItem>
@@ -557,7 +557,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                         </div>
                         <div className="space-y-2">
                           <Label  className="text-xs font-semibold text-foreground/90">Pixel ID</Label>
-                          <Input value={adset.pixel_id} onChange={e => setAdset({ ...adset, pixel_id: e.target.value })} className="bg-white/5 border-white/10 text-foreground font-mono text-xs" placeholder="Ex: 123456789" />
+                          <Input value={adset.pixel_id} onChange={e => setAdset({ ...adset, pixel_id: e.target.value })} className="bg-black/5 dark:bg-white/5 border-border text-foreground font-mono text-xs" placeholder="Ex: 123456789" />
                         </div>
                       </div>
                     </div>
@@ -573,21 +573,21 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                           <div className="space-y-1.5">
                             <Label  className="text-xs text-foreground/90">Idade Mín.</Label>
                             <Select value={adset.age_min} onValueChange={v => setAdset({ ...adset, age_min: v })}>
-                              <SelectTrigger  className="bg-white/5 border-white/10 text-foreground h-9"><SelectValue /></SelectTrigger>
+                              <SelectTrigger  className="bg-black/5 dark:bg-white/5 border-border text-foreground h-9"><SelectValue /></SelectTrigger>
                               <SelectContent>{Array.from({ length: 48 }, (_, i) => i + 18).map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
                             </Select>
                           </div>
                           <div className="space-y-1.5">
                             <Label  className="text-xs text-foreground/90">Idade Máx.</Label>
                             <Select value={adset.age_max} onValueChange={v => setAdset({ ...adset, age_max: v })}>
-                              <SelectTrigger  className="bg-white/5 border-white/10 text-foreground h-9"><SelectValue /></SelectTrigger>
+                              <SelectTrigger  className="bg-black/5 dark:bg-white/5 border-border text-foreground h-9"><SelectValue /></SelectTrigger>
                               <SelectContent>{Array.from({ length: 48 }, (_, i) => i + 18).map(n => <SelectItem key={n} value={String(n)}>{n === 65 ? "65+" : n}</SelectItem>)}</SelectContent>
                             </Select>
                           </div>
                           <div className="space-y-1.5">
                             <Label  className="text-xs text-foreground/90">Gênero</Label>
                             <Select value={adset.genders} onValueChange={v => setAdset({ ...adset, genders: v })}>
-                              <SelectTrigger  className="bg-white/5 border-white/10 text-foreground h-9"><SelectValue /></SelectTrigger>
+                              <SelectTrigger  className="bg-black/5 dark:bg-white/5 border-border text-foreground h-9"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="ALL">Todos</SelectItem>
                                 <SelectItem value="MALE">Só Homens</SelectItem>
@@ -606,14 +606,14 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                   {/* Tab: Posicionamentos */}
                   {tab === "posicionamento" && (
                     <div className="space-y-5">
-                      <div className="flex items-center justify-between p-4 rounded-xl border border-white/8 bg-white/[0.02]">
+                      <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-white/[0.02]">
                         <div>
                           <p className="text-sm font-semibold text-foreground">Advantage+ Placements</p>
                           <p className="text-xs text-foreground/90">A Meta distribui automaticamente nos melhores canais</p>
                         </div>
                         <button
                           onClick={() => setAdset({ ...adset, placements_type: adset.placements_type === "ADVANTAGE" ? "MANUAL" : "ADVANTAGE" })}
-                          className={`w-11 h-6 rounded-full transition-colors flex items-center p-1 ${adset.placements_type === "ADVANTAGE" ? "bg-accent" : "bg-zinc-700"}`}
+                          className={`w-11 h-6 rounded-full transition-colors flex items-center p-1 ${adset.placements_type === "ADVANTAGE" ? "bg-accent" : "bg-muted-foreground/20"}`}
                         >
                           <div className={`bg-white w-4 h-4 rounded-full transition-transform ${adset.placements_type === "ADVANTAGE" ? "translate-x-5" : "translate-x-0"}`} />
                         </button>
@@ -638,7 +638,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                                         const next = cur.includes(pos) ? cur.filter(p => p !== pos) : [...cur, pos];
                                         setAdset({ ...adset, [key]: next } as any);
                                       }}
-                                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${active ? "bg-white/15 border-white/30 text-foreground" : "bg-white/[0.03] border-white/8 text-foreground/90 hover:text-foreground/90"}`}
+                                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${active ? "bg-black/10 dark:bg-white/15 border-border text-foreground" : "bg-white/[0.03] border-border text-foreground/90 hover:text-foreground/90"}`}
                                     >
                                       {pos}
                                     </button>
@@ -661,10 +661,10 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label  className="text-xs font-semibold text-foreground/90">Nome do Anúncio</Label>
-                        <Input value={ad.name || ""} onChange={e => setAd({ ...ad, name: e.target.value })} className="bg-white/5 border-white/10 text-foreground" />
+                        <Input value={ad.name || ""} onChange={e => setAd({ ...ad, name: e.target.value })} className="bg-black/5 dark:bg-white/5 border-border text-foreground" />
                       </div>
                       {/* Status */}
-                      <div className="flex items-center justify-between p-3 rounded-xl border border-white/8 bg-white/[0.02]">
+                      <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-white/[0.02]">
                         <div>
                           <p className="text-sm font-semibold text-foreground">Status do Anúncio</p>
                         </div>
@@ -703,7 +703,7 @@ export function FullEditDrawer({ target, onClose, onSaved }: FullEditDrawerProps
 
         {/* Footer */}
         {tab !== "preview" && (
-          <div className="p-5 border-t border-white/5 bg-zinc-950 flex justify-between items-center flex-shrink-0">
+          <div className="p-5 border-t border-border bg-background flex justify-between items-center flex-shrink-0">
             <Button  variant="ghost" onClick={onClose} disabled={saving} className="text-foreground/90 hover:text-foreground">
               Cancelar
             </Button>

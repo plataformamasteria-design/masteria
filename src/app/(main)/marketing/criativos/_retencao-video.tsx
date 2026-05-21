@@ -22,6 +22,7 @@ interface Creative {
   video_retention_50: number | null;
   video_retention_75: number | null;
   video_retention_100: number | null;
+  thumbnail_url?: string | null;
 }
 
 type SortKey = "ret50" | "taxa_qualificacao" | "cpql" | "spend";
@@ -51,7 +52,7 @@ function getRetentionInsight(c: Creative): { text: string; type: "success" | "wa
 
 function retCellColor(value: number | null, thresholds: { bad: number; mid: number }): string {
   if (value == null || value === 0) return "text-muted-foreground";
-  if (value < thresholds.bad) return "text-red-400";
+  if (value < thresholds.bad) return "text-destructive";
   if (value < thresholds.mid) return "text-yellow-400";
   return "text-green-400";
 }
@@ -175,7 +176,7 @@ export default function RetencaoVideoTab() {
     : 0;
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>;
-  if (error) return <Card><CardContent className="py-12 text-center text-red-400 text-sm">{error}</CardContent></Card>;
+  if (error) return <Card><CardContent className="py-12 text-center text-destructive text-sm">{error}</CardContent></Card>;
   if (allVideos.length === 0) return <Card><CardContent className="py-12 text-center text-muted-foreground text-sm">Nenhum criativo de video encontrado.</CardContent></Card>;
 
   return (
@@ -282,7 +283,7 @@ export default function RetencaoVideoTab() {
             <div className={cn("mt-3 p-2 rounded border text-[11px]",
               getRetentionInsight(selected).type === "success" ? "bg-green-500/10 border-green-500/30 text-green-400" :
               getRetentionInsight(selected).type === "warning" ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400" :
-              "bg-blue-500/10 border-blue-500/30 text-blue-400"
+              "bg-accent/10 border-accent/30 text-accent"
             )}>
               Insight: {getRetentionInsight(selected).text}
             </div>
@@ -314,7 +315,7 @@ export default function RetencaoVideoTab() {
 
           {/* Insights automáticos */}
           <div className="mt-4 space-y-2">
-            <div className="p-2 rounded border bg-blue-500/5 border-blue-500/20 text-[11px] text-blue-400 flex items-start gap-2">
+            <div className="p-2 rounded border bg-accent/5 border-accent/20 text-[11px] text-accent flex items-start gap-2">
               <Eye size={12} className="shrink-0 mt-0.5" />
               <span>A maior queda acontece entre 0% e 25% — revisar os primeiros 3 segundos dos videos.</span>
             </div>
@@ -365,7 +366,19 @@ export default function RetencaoVideoTab() {
                       className={cn("border-b border-border/30 hover:bg-muted/30 cursor-pointer", selectedId === v.ad_id && "bg-primary/5")}
                       onClick={() => setSelectedId(v.ad_id)}
                     >
-                      <td className="py-2 px-2 max-w-[160px] truncate font-medium">{v.ad_name}</td>
+                      <td className="py-2 px-2 max-w-[200px]">
+                        <div className="flex items-center gap-2">
+                          {v.thumbnail_url ? (
+                            <div className="relative w-8 h-8 shrink-0">
+                              <div className="absolute inset-0 rounded bg-muted flex items-center justify-center z-0 text-[8px] font-medium text-muted-foreground">AD</div>
+                              <img src={v.thumbnail_url} alt="" className="absolute inset-0 w-8 h-8 rounded object-cover z-10" onError={(e) => e.currentTarget.style.display = 'none'} />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 shrink-0 rounded bg-muted flex items-center justify-center text-[8px] font-medium text-muted-foreground">AD</div>
+                          )}
+                          <span className="truncate font-medium flex-1">{v.ad_name}</span>
+                        </div>
+                      </td>
                       <td className={cn("text-right py-2 px-2 font-mono", retCellColor(v.video_retention_25, { bad: 3, mid: 6 }))}>
                         {v.video_retention_25 != null && v.video_retention_25 > 0 ? formatPercent(v.video_retention_25) : "–"}
                       </td>
@@ -395,7 +408,7 @@ export default function RetencaoVideoTab() {
                         <Badge className={cn("text-[8px]",
                           insight.type === "success" && "bg-green-500/15 text-green-400",
                           insight.type === "warning" && "bg-yellow-500/15 text-yellow-400",
-                          insight.type === "info" && "bg-blue-500/15 text-blue-400",
+                          insight.type === "info" && "bg-accent/15 text-accent",
                           insight.type === "muted" && "bg-muted text-muted-foreground",
                         )}>
                           {insight.text}

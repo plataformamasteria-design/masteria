@@ -108,7 +108,7 @@ function TabelaContent() {
   const avgCpql = totalQualificados > 0 ? totalSpend / totalQualificados : 0;
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>;
-  if (error) return <Card><CardContent className="py-12 text-center text-red-400 text-sm">{error}</CardContent></Card>;
+  if (error) return <Card><CardContent className="py-12 text-center text-destructive text-sm">{error}</CardContent></Card>;
 
   return (
     <div className="space-y-4">
@@ -168,7 +168,17 @@ function TabelaContent() {
                 <TableRow key={c.ad_id}>
                   <TableCell className="p-2">
                     {c.thumbnail_url ? (
-                      <img src={c.thumbnail_url} alt="" className="w-10 h-10 rounded object-cover" />
+                      <div className="relative w-10 h-10">
+                        <div className="absolute inset-0 rounded bg-muted flex items-center justify-center z-0">
+                          {FORMAT_ICON[c.format]}
+                        </div>
+                        <img 
+                          src={c.thumbnail_url} 
+                          alt="" 
+                          className="absolute inset-0 w-10 h-10 rounded object-cover z-10" 
+                          onError={(e) => e.currentTarget.style.display = 'none'} 
+                        />
+                      </div>
                     ) : (
                       <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">{FORMAT_ICON[c.format]}</div>
                     )}
@@ -263,15 +273,15 @@ function SortableHead({ field, current, asc, onClick, children }: {
 function CpqlBadge({ value }: { value: number | null }) {
   if (value == null) return <span className="text-xs text-muted-foreground">—</span>;
   const cls = value <= 50 ? "bg-green-500/15 text-green-400 border-green-500/30"
-    : value <= 100 ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+    : value <= 100 ? "bg-accent/15 text-accent border-accent/30"
     : value <= 200 ? "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
-    : "bg-red-500/15 text-red-400 border-red-500/30";
+    : "bg-destructive/15 text-destructive border-destructive/30";
   return <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-bold font-mono ${cls}`}>{formatCurrency(value)}</span>;
 }
 
 function QualBadge({ value }: { value: number }) {
   if (value === 0) return <span className="text-xs text-muted-foreground">—</span>;
-  const cls = value >= 50 ? "text-green-400" : value >= 30 ? "text-blue-400" : value >= 15 ? "text-yellow-400" : "text-red-400";
+  const cls = value >= 50 ? "text-green-400" : value >= 30 ? "text-accent" : value >= 15 ? "text-yellow-400" : "text-destructive";
   return <span className={`text-xs font-mono font-semibold ${cls}`}>{formatPercent(value)}</span>;
 }
 

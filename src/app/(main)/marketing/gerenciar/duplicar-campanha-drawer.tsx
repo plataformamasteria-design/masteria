@@ -126,10 +126,10 @@ export function DuplicarCampanhaDrawer({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 24 }}
           transition={{ type: "spring", damping: 28, stiffness: 280 }}
-          className="w-full max-w-[1240px] max-h-[93vh] bg-[#09090b] rounded-2xl border border-white/10 shadow-2xl flex flex-col pointer-events-auto overflow-hidden"
+          className="w-full max-w-[1240px] max-h-[93vh] bg-background rounded-2xl border border-border shadow-2xl flex flex-col pointer-events-auto overflow-hidden"
         >
           {/* Header */}
-          <div className="flex-shrink-0 px-6 py-5 border-b border-white/5 bg-zinc-950 flex items-center justify-between">
+          <div className="flex-shrink-0 px-6 py-5 border-b border-border bg-background flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Copy className="h-4 w-4 text-primary" />
@@ -151,14 +151,14 @@ export function DuplicarCampanhaDrawer({
             </div>
             <button
               onClick={onClose}
-              className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-foreground/60 hover:text-foreground transition-colors flex-shrink-0"
+              className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 rounded-full text-foreground/60 hover:text-foreground transition-colors flex-shrink-0"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-h-0 bg-[#09090b] flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 bg-background flex flex-col overflow-hidden">
             <AnimatePresence mode="wait">
 
               {/* Phase: loading */}

@@ -4,94 +4,113 @@ import { useState, useEffect, useCallback } from "react";
 import { CardKPI } from "./CardKPI";
 import { cn } from "@/lib/utils";
 
-type Modo = "midia" | "funil" | "receita";
-
 interface CardsKPIsProps {
   mesReferencia: string;
   dataInicio?: string;
   dataFim?: string;
+  accountId?: string | null;
 }
 
-const MODOS: { value: Modo; label: string }[] = [
-  { value: "midia", label: "Midia" },
-  { value: "funil", label: "Funil" },
-  { value: "receita", label: "Receita" },
-];
-
-const LS_KEY = "trafego_kpis_modo";
-
-function getInitialModo(): Modo {
-  if (typeof window === "undefined") return "midia";
-  const saved = localStorage.getItem(LS_KEY);
-  if (saved === "midia" || saved === "funil" || saved === "receita") return saved;
-  return "midia";
-}
-
-export function CardsKPIs({ mesReferencia, dataInicio, dataFim }: CardsKPIsProps) {
-  const [modo, setModo] = useState<Modo>(getInitialModo);
+export function CardsKPIs({ mesReferencia, dataInicio, dataFim, accountId }: CardsKPIsProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [transitioning, setTransitioning] = useState(false);
 
-  const fetchKpis = useCallback(async (m: Modo) => {
+  const fetchKpis = useCallback(async () => {
+    const m = "midia";
     setLoading(true);
     try {
-      // Passar since/until explícitos para garantir mesma fonte de dados de todas as telas
-      const dateParams = dataInicio && dataFim ? `&since=${dataInicio}&until=${dataFim}` : "";
-      const res = await fetch(`/api/marketing/kpis-trafego?mesReferencia=${mesReferencia}&modo=${m}${dateParams}`);
-      const json = await res.json();
+      let since = "";
+      let until = "";
+      
+      if (dataInicio && dataFim) {
+        since = dataInicio;
+        until = dataFim;
+      } else if (mesReferencia) {
+        since = `${mesReferencia}-01`;
+        const [y, mo] = mesReferencia.split("-");
+        const ld = new Date(Number(y), Number(mo), 0).getDate();
+        until = `${mesReferencia}-${ld}`;
+      }
+
+      const promises = [
+        fetch(`/api/marketing/kpis-trafego?mesReferencia=${mesReferencia}&modo=${m}${dataInicio && dataFim ? `&since=${dataInicio}&until=${dataFim}` : ""}`).then(r => r.json())
+      ];
+
+      if (accountId && since && until) {
+        const metaParams = new URLSearchParams({
+          since,
+          until,
+          level: "campaign",
+          breakdown: "none",
+          account_id: accountId
+        });
+        promises.push(fetch(`/api/meta/insights?${metaParams}`).then(r => r.ok ? r.json() : null));
+      } else {
+        promises.push(Promise.resolve(null));
+      }
+
+      const [json, metaRes] = await Promise.all(promises);
+
+      if (!json.error && metaRes?.totals) {
+        const meta = metaRes.totals;
+        const safe = (n: number, d: number) => (d && d > 0 ? n / d : null);
+        const findC = (id: string) => json.cards.find((c: any) => c.id === id);
+        const setV = (id: string, val: number | null) => { const c = findC(id); if (c) c.valor = val; };
+        
+        const inv = meta.spend || 0;
+        const leads = meta.leads || 0;
+        const imp = meta.impressions || 0;
+        const cli = meta.clicks || 0;
+
+        if (m === "midia") {
+          setV("investimento", inv);
+          setV("leads", leads);
+          setV("impressoes", imp);
+          
+          const ctr = safe(cli, imp);
+          const cpc = safe(inv, cli);
+          const cpl = safe(inv, leads);
+          const cpm = imp > 0 ? (inv * 1000) / imp : null;
+          
+          setV("ctr", ctr ? ctr * 100 : null);
+          setV("cpc", cpc);
+          setV("cpl", cpl);
+          setV("cpm", cpm);
+        } else if (m === "funil") {
+          const cprfCard = findC("cprf");
+          const reuniRe = findC("reunioes_realizadas")?.valor || 0;
+          if (cprfCard) cprfCard.valor = safe(inv, reuniRe);
+        } else if (m === "receita") {
+          const cacCard = findC("cac_bruto");
+          const roasCard = findC("roas_bruto");
+          const clientes = findC("clientes_fechados")?.valor || 0;
+          const mrr = findC("mrr_gerado")?.valor || 0;
+          if (cacCard) cacCard.valor = safe(inv, clientes);
+          if (roasCard) roasCard.valor = safe(mrr, inv);
+        }
+      }
+
       if (!json.error) setData(json);
     } catch (err) {
       console.error("[CardsKPIs] fetch error:", err);
     } finally {
       setLoading(false);
     }
-  }, [mesReferencia, dataInicio, dataFim]);
+  }, [mesReferencia, dataInicio, dataFim, accountId]);
 
   useEffect(() => {
-    fetchKpis(modo);
-  }, [modo, fetchKpis]);
-
-  function handleModoChange(newModo: Modo) {
-    if (newModo === modo) return;
-    localStorage.setItem(LS_KEY, newModo);
-    setTransitioning(true);
-    setTimeout(() => {
-      setModo(newModo);
-      setTransitioning(false);
-    }, 100);
-  }
+    fetchKpis();
+  }, [fetchKpis]);
 
   const cards = data?.cards || [];
   const atribuicaoCompleta = data?.atribuicao_completa ?? true;
 
   return (
     <div>
-      {/* Toggle */}
-      <div className="flex items-center gap-1 mb-4 p-1 bg-muted/50 rounded-lg w-fit">
-        {MODOS.map((m) => (
-          <button
-            key={m.value}
-            onClick={() => handleModoChange(m.value)}
-            className={cn(
-              "px-4 py-1.5 text-xs font-medium rounded-md transition-all duration-200",
-              modo === m.value
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
-
       {/* Grid */}
-      <div className={cn(
-        "grid grid-cols-2 lg:grid-cols-4 gap-3 transition-opacity duration-200",
-        transitioning && "opacity-0"
-      )}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 transition-opacity duration-200">
         {loading
-          ? Array.from({ length: modo === "midia" ? 10 : modo === "funil" ? 9 : 8 }).map((_, i) => (
+          ? Array.from({ length: 10 }).map((_, i) => (
               <CardKPI
                 key={i}
                 id=""

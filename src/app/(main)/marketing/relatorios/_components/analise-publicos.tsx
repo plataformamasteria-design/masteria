@@ -179,7 +179,7 @@ export function AnalisePublicosCompleta({ since, until, statusFilter, accountId 
                         ].map((opt) => (
                             <button key={opt.value} onClick={() => setTipoFiltro(opt.value)}
                                 className={cn("px-3 py-1.5 text-xs rounded-lg border transition-all",
-                                    tipoFiltro === opt.value ? "gradient-primary text-foreground border-transparent" : "border-border dark:border-white/[0.08] text-foreground/90 hover:text-foreground"
+                                    tipoFiltro === opt.value ? "gradient-primary text-foreground border-transparent" : "border-border text-foreground/90 hover:text-foreground"
                                 )}>{opt.label}</button>
                         ))}
                     </div>
@@ -197,7 +197,7 @@ export function AnalisePublicosCompleta({ since, until, statusFilter, accountId 
                         <SpotlightCard className="overflow-hidden bg-background/50 backdrop-blur-xl border-border/20"><div className="overflow-auto">
                             <table className="w-full text-sm">
                                 <thead className="border-b border-border/20 text-[10px] font-bold text-foreground/90 uppercase tracking-[0.1em]">
-                                    <tr className="border-b border-border dark:border-white/[0.06] text-foreground/90">
+                                    <tr className="border-b border-border text-foreground/90">
                                         <th className="px-5 py-4 text-left">Público / Interesse</th>
                                         <th className="px-5 py-4 text-left">Tipo</th>
                                         <th className="px-5 py-4 text-left">Campanhas</th>
@@ -221,7 +221,7 @@ export function AnalisePublicosCompleta({ since, until, statusFilter, accountId 
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: i * 0.05 }}
                                                     className={cn(
-                                                        "border-b border-border dark:border-white/[0.06] hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors",
+                                                        "border-b border-border hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors",
                                                         aud.tipo === "broad" && "bg-muted/10 dark:bg-white/[0.01]"
                                                     )}
                                                 >
@@ -389,7 +389,7 @@ function DemographicPanel({ rows, loading, breakdown, somenteComDados, permiteCo
                     <div className="overflow-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-border dark:border-white/[0.06] text-foreground/90">
+                                <tr className="border-b border-border text-foreground/90">
                                     <th className="px-3 py-2.5 text-left font-medium text-xs">
                                         {breakdown === "age_gender" ? "Faixa Etária" : breakdown === "region" ? "Região" : breakdown === "device" ? "Dispositivo" : breakdown === "placement" ? "Posicionamento" : "Plataforma"}
                                     </th>
@@ -434,7 +434,7 @@ function DemographicPanel({ rows, loading, breakdown, somenteComDados, permiteCo
                                     const budgetPct = totalSpend > 0 ? (row.spend / totalSpend) * 100 : 0;
                                     const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
                                     return (
-                                        <tr key={`${row.label}-${row.sublabel}-${i}`} className="border-b border-border dark:border-white/[0.06] hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
+                                        <tr key={`${row.label}-${row.sublabel}-${i}`} className="border-b border-border hover:bg-muted/30 dark:hover:bg-white/[0.02] transition-colors">
                                             <td className="px-3 py-2.5 text-xs font-medium">
                                                 <div className="flex items-center gap-2">
                                                     {breakdown === "device" && <span className="text-foreground/90">{deviceIcon(row.label)}</span>}

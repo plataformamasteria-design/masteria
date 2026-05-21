@@ -31,8 +31,8 @@ export function Section({ icon, title, children, accent = "blue" }: {
   icon: React.ReactNode; title: string; children: React.ReactNode; accent?: string;
 }) {
   return (
-    <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6 shadow-xl space-y-5">
-      <div className="space-y-1 pb-3 border-b border-white/5 group">
+    <div className="bg-card border border-border rounded-2xl p-6 shadow-xl space-y-5">
+      <div className="space-y-1 pb-3 border-b border-border group">
          <h3 className={`font-bold text-[13px] uppercase tracking-wider flex items-center gap-2 text-foreground transition-opacity`}>
             <span className={`text-${accent}-400 p-1 bg-${accent}-500/10 rounded-md`}>
               {icon}
@@ -83,17 +83,17 @@ export function MediaPicker({ type, onSelect, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onMouseDown={onClose}>
-      <div className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="p-4 border-b border-white/10 flex items-center justify-between">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="p-4 border-b border-border flex items-center justify-between">
           <h3 className="text-foreground font-semibold flex items-center gap-2">Seleção de {type === "image" ? "Imagem" : "Vídeo"}</h3>
-          <button onClick={onClose} className="text-foreground/90 hover:text-foreground text-xs border border-white/10 px-2 py-1 rounded transition-colors">Fechar</button>
+          <button onClick={onClose} className="text-foreground/90 hover:text-foreground text-xs border border-border px-2 py-1 rounded transition-colors">Fechar</button>
         </div>
         
-        <div className="flex border-b border-white/10">
-          <button onClick={() => setTab("library")} className={`flex-1 p-3 text-sm font-semibold border-b-2 flex items-center justify-center gap-2 transition-all ${tab === "library" ? "border-accent text-primary" : "border-transparent text-foreground/90 hover:bg-white/5"}`}>
+        <div className="flex border-b border-border">
+          <button onClick={() => setTab("library")} className={`flex-1 p-3 text-sm font-semibold border-b-2 flex items-center justify-center gap-2 transition-all ${tab === "library" ? "border-accent text-primary" : "border-transparent text-foreground/90 hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5"}`}>
             <Cloud className="h-4 w-4" /> Nuvem Meta
           </button>
-          <button onClick={() => setTab("upload")} className={`flex-1 p-3 text-sm font-semibold border-b-2 flex items-center justify-center gap-2 transition-all ${tab === "upload" ? "border-primary/20 text-primary" : "border-transparent text-foreground/90 hover:bg-white/5"}`}>
+          <button onClick={() => setTab("upload")} className={`flex-1 p-3 text-sm font-semibold border-b-2 flex items-center justify-center gap-2 transition-all ${tab === "upload" ? "border-primary/20 text-primary" : "border-transparent text-foreground/90 hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5"}`}>
             <Upload className="h-4 w-4" /> Enviar Local
           </button>
         </div>
@@ -112,7 +112,7 @@ export function MediaPicker({ type, onSelect, onClose }: {
                   <button
                     key={item.hash || item.id}
                     onClick={() => { onSelect(item.hash || item.id, item.name || item.title || "", item.url_128 || item.url || ""); onClose(); }}
-                    className="aspect-square bg-zinc-800 border border-white/10 rounded-lg hover:border-accent/50 transition-all overflow-hidden flex flex-col items-center justify-center p-2 group relative"
+                    className="aspect-square bg-muted border border-border rounded-lg hover:border-accent/50 transition-all overflow-hidden flex flex-col items-center justify-center p-2 group relative"
                   >
                     {item.url_128 ? (
                       <img src={item.url_128} alt={item.name} className="w-full h-full object-cover rounded" />
@@ -128,7 +128,7 @@ export function MediaPicker({ type, onSelect, onClose }: {
             )
           ) : (
             <div className="flex flex-col h-full justify-center space-y-4">
-              <div className="border-2 border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center justify-center bg-black/20 relative transition-all hover:bg-black/30 hover:border-primary/20">
+              <div className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center justify-center bg-black/5 dark:bg-black/20 relative transition-all hover:bg-black/30 hover:border-primary/20">
                 <Input type="file" disabled={uploading} accept={type === "image" ? "image/*" : "video/*"} onChange={(e) => setFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 <Upload className={`h-10 w-10 mb-4 ${file ? "text-primary" : "text-foreground/90"}`} />
                 <p className="text-sm font-bold text-foreground text-center">
@@ -173,8 +173,8 @@ export function CarouselEditor({ cards, onChange }: { cards: CarouselCard[]; onC
   return (
     <div className="space-y-4">
       {cards.map((card, i) => (
-        <div key={card.id} className="p-4 bg-black/30 border border-white/5 rounded-2xl space-y-3 relative overflow-hidden group">
-          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+        <div key={card.id} className="p-4 bg-black/30 border border-border rounded-2xl space-y-3 relative overflow-hidden group">
+          <div className="flex items-center justify-between pb-2 border-b border-border">
             <span className="text-xs uppercase tracking-widest text-foreground/90 font-bold">Card {i + 1}</span>
             <button onClick={() => removeCard(i)} className="text-foreground/90 hover:text-primary hover:bg-primary/10 p-1.5 rounded-lg transition-colors">
               <Trash2 className="h-4 w-4" />
@@ -183,23 +183,23 @@ export function CarouselEditor({ cards, onChange }: { cards: CarouselCard[]; onC
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label className="text-foreground/90 text-[10px]">Título</Label>
-              <Input value={card.headline} onChange={(e) => updCard(i, { headline: e.target.value })} placeholder="Ex: Oferta especial" className="bg-white/5 border-white/10 text-foreground h-8 text-xs" />
+              <Input value={card.headline} onChange={(e) => updCard(i, { headline: e.target.value })} placeholder="Ex: Oferta especial" className="bg-black/5 dark:bg-white/5 border-border text-foreground h-8 text-xs" />
             </div>
             <div className="space-y-1">
               <Label className="text-foreground/90 text-[10px]">URL do Card</Label>
-              <Input value={card.url} onChange={(e) => updCard(i, { url: e.target.value })} placeholder="https://" className="bg-white/5 border-white/10 text-foreground h-8 text-xs" />
+              <Input value={card.url} onChange={(e) => updCard(i, { url: e.target.value })} placeholder="https://" className="bg-black/5 dark:bg-white/5 border-border text-foreground h-8 text-xs" />
             </div>
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/90 font-semibold text-xs">Descrição Menor (Opcional)</Label>
-            <Input value={card.description} onChange={(e) => updCard(i, { description: e.target.value })} placeholder="Descrição curta sob título" className="bg-black/50 border-white/10 text-foreground h-11 text-sm rounded-xl focus-visible:ring-primary/50" />
+            <Input value={card.description} onChange={(e) => updCard(i, { description: e.target.value })} placeholder="Descrição curta sob título" className="bg-black/5 dark:bg-black/50 border-border text-foreground h-11 text-sm rounded-xl focus-visible:ring-primary/50" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-foreground/90 font-semibold text-xs">Hash da Imagem (Asset Meta)</Label>
               <div className="flex gap-2">
-                <Input value={card.image_hash} onChange={(e) => updCard(i, { image_hash: e.target.value })} placeholder="Ex: 5b6c2...03f9e" className="bg-black/50 border-white/10 text-foreground h-11 text-xs rounded-xl flex-1 font-mono focus-visible:ring-primary/50" />
-                <button onClick={() => setPicker(i)} className="h-11 px-4 bg-zinc-800 border border-white/10 rounded-xl hover:bg-zinc-700 transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 text-foreground/90 flex items-center justify-center">
+                <Input value={card.image_hash} onChange={(e) => updCard(i, { image_hash: e.target.value })} placeholder="Ex: 5b6c2...03f9e" className="bg-black/5 dark:bg-black/50 border-border text-foreground h-11 text-xs rounded-xl flex-1 font-mono focus-visible:ring-primary/50" />
+                <button onClick={() => setPicker(i)} className="h-11 px-4 bg-muted border border-border rounded-xl hover:bg-muted-foreground/20 transition-colors shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary/50 text-foreground/90 flex items-center justify-center">
                   <span className="h-4 w-4">IMG</span>
                 </button>
               </div>
@@ -207,7 +207,7 @@ export function CarouselEditor({ cards, onChange }: { cards: CarouselCard[]; onC
             <div className="space-y-2">
               <Label className="text-foreground/90 font-semibold text-xs">Ação Desejada (CTA)</Label>
               <Select value={card.cta_type} onValueChange={(v) => updCard(i, { cta_type: v })}>
-                <SelectTrigger className="bg-black/50 border-white/10 text-foreground h-11 text-sm rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-black/5 dark:bg-black/50 border-border text-foreground h-11 text-sm rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>{CTA_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -243,7 +243,7 @@ export function ChatPreview({ greeting, questions }: { greeting: string; questio
       <div className="bg-[#0a1a12] p-4 space-y-3 min-h-[120px]">
         {greeting && (
           <div className="flex justify-start">
-            <div className="bg-zinc-800 border border-white/5 text-sm text-foreground rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%] leading-relaxed shadow-sm">
+            <div className="bg-muted border border-border text-sm text-foreground rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%] leading-relaxed shadow-sm">
               {greeting}
             </div>
           </div>
@@ -331,8 +331,8 @@ export function MessageTemplateEditor({
   };
 
   return (
-    <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6 shadow-xl space-y-4">
-      <div className="space-y-1 pb-3 border-b border-white/5">
+    <div className="bg-card border border-border rounded-2xl p-6 shadow-xl space-y-4">
+      <div className="space-y-1 pb-3 border-b border-border">
         <h3 className="font-bold text-[13px] uppercase tracking-wider flex items-center gap-2 text-primary">
           <span className="text-primary p-1 bg-primary/10 rounded-md">
             <MessageCircle className="h-4 w-4" />
@@ -352,7 +352,7 @@ export function MessageTemplateEditor({
       <div className="space-y-3">
         <Label className="text-foreground/90 font-semibold text-xs">Selecionar modelo salvo (opcional)</Label>
         {loadingTemplates ? (
-          <div className="h-11 rounded-xl bg-black/40 border border-white/10 flex items-center gap-2 px-3 text-xs text-foreground/90">
+          <div className="h-11 rounded-xl bg-black/5 dark:bg-black/40 border border-border flex items-center gap-2 px-3 text-xs text-foreground/90">
             <Loader2 className="h-3 w-3 animate-spin text-primary" /> Carregando modelos da Página...
           </div>
         ) : (
@@ -370,7 +370,7 @@ export function MessageTemplateEditor({
               }
             }}
           >
-            <SelectTrigger className="bg-black/50 border-white/10 text-foreground rounded-xl h-11">
+            <SelectTrigger className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11">
               <SelectValue placeholder="Selecione..." />
             </SelectTrigger>
             <SelectContent>
@@ -392,7 +392,7 @@ export function MessageTemplateEditor({
         onClick={() => { setForm({ name: "", greeting_text: "", qs: [""] }); setModalOpen(true); }}
         variant="outline"
         disabled={!pageId}
-        className="w-full h-11 border-dashed border-white/20 text-foreground/90 hover:text-foreground hover:bg-white/5 rounded-xl text-xs uppercase font-bold tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full h-11 border-dashed border-border text-foreground/90 hover:text-foreground hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 rounded-xl text-xs uppercase font-bold tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Plus className="h-4 w-4 mr-2" /> Criar Novo Modelo
       </Button>
@@ -401,7 +401,7 @@ export function MessageTemplateEditor({
         <div className="relative">
           <button
             onClick={handleDelete}
-            className="absolute top-2 right-2 z-10 text-foreground/90 hover:text-primary transition-colors p-1 bg-black/40 rounded-lg"
+            className="absolute top-2 right-2 z-10 text-foreground/90 hover:text-primary transition-colors p-1 bg-black/5 dark:bg-black/40 rounded-lg"
             title="Remover modelo da Página"
           >
             <Trash2 className="h-4 w-4" />
@@ -414,9 +414,9 @@ export function MessageTemplateEditor({
       )}
 
       {modalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="px-6 pt-6 pb-4 border-b border-white/5">
+        <div className="fixed inset-0 z-[60] bg-black/10 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="px-6 pt-6 pb-4 border-b border-border">
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <span className="p-1.5 bg-primary/10 rounded-lg">
                   <MessageCircle className="h-4 w-4 text-primary" />
@@ -431,7 +431,7 @@ export function MessageTemplateEditor({
                 <div>
                   <Label className="text-xs text-foreground/90 font-semibold">Nome Interno</Label>
                   <Input
-                    className="bg-black/50 border-white/10 h-10 text-foreground mt-1 text-sm"
+                    className="bg-black/5 dark:bg-black/50 border-border h-10 text-foreground mt-1 text-sm"
                     placeholder="Ex: Lead WhatsApp"
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
@@ -445,7 +445,7 @@ export function MessageTemplateEditor({
                     </span>
                   </div>
                   <Textarea
-                    className="bg-black/50 border-white/10 text-foreground mt-1 min-h-[72px] text-sm resize-none"
+                    className="bg-black/5 dark:bg-black/50 border-border text-foreground mt-1 min-h-[72px] text-sm resize-none"
                     placeholder="Oi! Como podemos te ajudar?"
                     value={form.greeting_text}
                     onChange={e => setForm({ ...form, greeting_text: e.target.value })}
@@ -458,7 +458,7 @@ export function MessageTemplateEditor({
                     {form.qs.map((q, i) => (
                       <div key={i} className="flex gap-2 items-center">
                         <Input
-                          className={`bg-black/40 border-white/5 text-xs h-9 flex-1 ${
+                          className={`bg-black/5 dark:bg-black/40 border-border text-xs h-9 flex-1 ${
                             q.length > 80 ? 'text-primary border-primary/20' : 'text-foreground/90'
                           }`}
                           value={q}

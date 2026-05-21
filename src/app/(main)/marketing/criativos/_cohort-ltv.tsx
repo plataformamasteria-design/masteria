@@ -57,7 +57,7 @@ export default function CohortLtvTab() {
   }, [withCohorts, selectedId]);
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>;
-  if (error) return <Card><CardContent className="py-12 text-center text-red-400 text-sm">{error}</CardContent></Card>;
+  if (error) return <Card><CardContent className="py-12 text-center text-destructive text-sm">{error}</CardContent></Card>;
   if (withCohorts.length === 0) return (
     <Card>
       <CardContent className="py-12">
@@ -128,14 +128,14 @@ export default function CohortLtvTab() {
                       <TableCell className="text-right">
                         {c.cpql != null ? (
                           <span className={cn("font-mono text-xs font-bold",
-                            c.cpql <= 50 ? "text-green-400" : c.cpql <= 100 ? "text-blue-400" : c.cpql <= 200 ? "text-yellow-400" : "text-red-400"
+                            c.cpql <= 50 ? "text-green-400" : c.cpql <= 100 ? "text-accent" : c.cpql <= 200 ? "text-yellow-400" : "text-destructive"
                           )}>{formatCurrency(c.cpql)}</span>
                         ) : <span className="text-xs text-muted-foreground">—</span>}
                       </TableCell>
                       <TableCell className="text-right">
                         {roi != null ? (
                           <span className={cn("font-mono text-xs font-bold",
-                            roi >= 3 ? "text-green-400" : roi >= 1.5 ? "text-blue-400" : roi >= 1 ? "text-yellow-400" : "text-red-400"
+                            roi >= 3 ? "text-green-400" : roi >= 1.5 ? "text-accent" : roi >= 1 ? "text-yellow-400" : "text-destructive"
                           )}>{roi.toFixed(1)}x</span>
                         ) : <span className="text-xs text-muted-foreground">—</span>}
                       </TableCell>

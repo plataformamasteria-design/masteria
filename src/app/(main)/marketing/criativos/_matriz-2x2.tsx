@@ -37,9 +37,9 @@ interface ScatterPoint {
 
 const QUADRANT_CONFIG = {
   escalar: { label: "ESCALAR", icon: <TrendingUp size={12} />, color: "text-green-400", bg: "bg-green-500/10 border-green-500/30", desc: "Baixo CPL + alta qualificacao" },
-  otimizar: { label: "OTIMIZAR", icon: <Wrench size={12} />, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/30", desc: "CPL alto mas qualificacao boa" },
+  otimizar: { label: "OTIMIZAR", icon: <Wrench size={12} />, color: "text-accent", bg: "bg-accent/10 border-accent/30", desc: "CPL alto mas qualificacao boa" },
   investigar: { label: "INVESTIGAR", icon: <Search size={12} />, color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/30", desc: "CPL baixo mas qualificacao ruim" },
-  pausar: { label: "PAUSAR", icon: <Pause size={12} />, color: "text-red-400", bg: "bg-red-500/10 border-red-500/30", desc: "CPL alto e qualificacao ruim" },
+  pausar: { label: "PAUSAR", icon: <Pause size={12} />, color: "text-destructive", bg: "bg-destructive/10 border-destructive/30", desc: "CPL alto e qualificacao ruim" },
 };
 
 function ltvToColor(ltv: number, maxLtv: number): string {
@@ -109,7 +109,7 @@ export default function Matriz2x2Tab() {
   }, []);
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>;
-  if (error) return <Card><CardContent className="py-12 text-center text-red-400 text-sm">{error}</CardContent></Card>;
+  if (error) return <Card><CardContent className="py-12 text-center text-destructive text-sm">{error}</CardContent></Card>;
   if (points.length === 0) return <Card><CardContent className="py-12 text-center text-muted-foreground text-sm">Dados insuficientes para gerar a matriz. Necessario CPL e leads qualificados.</CardContent></Card>;
 
   return (
@@ -247,7 +247,7 @@ export default function Matriz2x2Tab() {
           {confirmAction && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Tem certeza que deseja <strong className={confirmAction.action === "escalar" ? "text-green-400" : "text-red-400"}>
+                Tem certeza que deseja <strong className={confirmAction.action === "escalar" ? "text-green-400" : "text-destructive"}>
                   {confirmAction.action === "escalar" ? "ESCALAR" : "PAUSAR"}
                 </strong> o criativo <strong>&quot;{confirmAction.point.name}&quot;</strong>?
               </p>

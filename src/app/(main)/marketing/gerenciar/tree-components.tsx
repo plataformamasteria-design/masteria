@@ -21,14 +21,14 @@ export function PixelSelector({ value, onChange }: { value: string; onChange: (v
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="ID do Pixel (manual)"
-        className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 font-mono text-xs focus-visible:ring-primary/50"
+        className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 font-mono text-xs focus-visible:ring-primary/50"
       />
     );
   }
 
   return (
     <Select value={value || "__NONE__"} onValueChange={(v) => onChange(v === "__NONE__" ? "" : v)}>
-      <SelectTrigger className="bg-black/50 border-white/10 text-foreground rounded-xl h-11 text-xs">
+      <SelectTrigger className="bg-black/5 dark:bg-black/50 border-border text-foreground rounded-xl h-11 text-xs">
         {isLoading ? (
           <span className="text-foreground/90 flex items-center gap-2">
             <Loader2 className="h-3 w-3 animate-spin" /> Carregando pixels...
@@ -61,7 +61,7 @@ export function AsyncCombobox({ items, setItems, endpoint, placeholder, searchKe
   const list: TargetingItem[] = Array.isArray(data?.data) ? data.data : [];
 
   return (
-    <div className="relative flex flex-wrap gap-1.5 p-2 bg-white/5 border border-white/10 rounded-md min-h-10 items-center focus-within:border-primary/20 transition-colors">
+    <div className="relative flex flex-wrap gap-1.5 p-2 bg-black/5 dark:bg-white/5 border border-border rounded-md min-h-10 items-center focus-within:border-primary/20 transition-colors">
       {items.map((t, i) => (
         <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-xs text-primary">
           {t.name}
@@ -78,7 +78,7 @@ export function AsyncCombobox({ items, setItems, endpoint, placeholder, searchKe
           className="w-full bg-transparent text-foreground text-sm outline-none placeholder:text-foreground/90"
         />
         {open && (
-          <div className="absolute z-50 top-full mt-1 w-72 max-h-60 overflow-y-auto bg-zinc-900 border border-white/10 rounded-md shadow-2xl">
+          <div className="absolute z-50 top-full mt-1 w-72 max-h-60 overflow-y-auto bg-card border border-border rounded-md shadow-2xl">
             {inp.length < minChars ? (
               <div className="p-3 text-xs text-foreground/90">Digite ao menos {minChars} letras...</div>
             ) : isLoading ? (
@@ -87,7 +87,7 @@ export function AsyncCombobox({ items, setItems, endpoint, placeholder, searchKe
               <div className="p-3 text-xs text-foreground/90">Nenhum resultado encontrado.</div>
             ) : list.map((it) => (
               <div key={it.id} onMouseDown={(e) => { e.preventDefault(); if (!items.find((x) => x.id === it.id)) setItems([...items, { id: it.id, name: it.name }]); setInp(""); setOpen(false); }}
-                className="p-2 text-sm text-foreground hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 truncate">
+                className="p-2 text-sm text-foreground hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 cursor-pointer border-b border-border last:border-0 truncate">
                 {it.name}
                 {((it as Record<string, unknown>).audience_size_upper_bound) && (
                   <span className="text-[10px] text-foreground/90 ml-2">{(it as Record<string, unknown>).audience_size_upper_bound?.toLocaleString("pt-BR")} pessoas)</span>
@@ -127,21 +127,21 @@ export function LocationPicker({ adset, upd }: { adset: AdSetNode, upd: (p: Part
   };
 
   return (
-    <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6 shadow-xl space-y-5">
-      <div className="space-y-1 pb-3 border-b border-white/5">
+    <div className="bg-card border border-border rounded-2xl p-6 shadow-xl space-y-5">
+      <div className="space-y-1 pb-3 border-b border-border">
         <h3 className="text-xs font-bold text-foreground/90 uppercase tracking-wider flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Geofencing de Alta Precisão (Ad Geolocation)</h3>
       </div>
       <div className="relative">
-        <Input type="text" value={inp} onChange={(e) => { setInp(e.target.value); setOpen(true); }} placeholder="Pesquisar países, estados, cidades ou CEPs..." className="bg-black/50 border-white/10 text-foreground h-11 rounded-xl focus:ring-primary/50" />
+        <Input type="text" value={inp} onChange={(e) => { setInp(e.target.value); setOpen(true); }} placeholder="Pesquisar países, estados, cidades ou CEPs..." className="bg-black/5 dark:bg-black/50 border-border text-foreground h-11 rounded-xl focus:ring-primary/50" />
         {open && (
-          <div className="absolute z-50 top-full mt-2 w-full max-h-60 overflow-y-auto bg-zinc-900 border border-white/10 rounded-xl shadow-2xl p-2">
+          <div className="absolute z-50 top-full mt-2 w-full max-h-60 overflow-y-auto bg-card border border-border rounded-xl shadow-2xl p-2">
             {inp.length < 2 ? <div className="p-3 text-xs text-foreground/90">Digite ao menos 2 caracteres...</div> : isLoading ? <div className="p-3 text-xs text-primary flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Mapeando satélite Meta...</div> : list.length === 0 ? <div className="p-3 text-xs text-foreground/90">Local não encontrado no Graph API.</div> : list.map((loc: Record<string, unknown>) => (
-              <div key={loc.key} onMouseDown={(e) => { e.preventDefault(); add(loc); }} className="p-3 text-sm text-foreground hover:bg-primary/10 cursor-pointer border-b border-white/5 last:border-0 hover:border-l-2 hover:border-l-accent transition-all truncate flex items-center justify-between">
+              <div key={loc.key} onMouseDown={(e) => { e.preventDefault(); add(loc); }} className="p-3 text-sm text-foreground hover:bg-primary/10 cursor-pointer border-b border-border last:border-0 hover:border-l-2 hover:border-l-accent transition-all truncate flex items-center justify-between">
                 <div>
                   <span className="font-bold">{loc.name as string}</span>
                   {loc.region && <span className="text-foreground/90 ml-2">({loc.region as string}, {loc.country_code as string})</span>}
                 </div>
-                <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded uppercase font-bold text-foreground/90">{loc.type as string}</span>
+                <span className="text-[10px] bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded uppercase font-bold text-foreground/90">{loc.type as string}</span>
               </div>
             ))}
           </div>
@@ -150,7 +150,7 @@ export function LocationPicker({ adset, upd }: { adset: AdSetNode, upd: (p: Part
       {items.length > 0 && (
         <div className="space-y-3 pt-2">
           {items.map((loc: Record<string, unknown>, i: number) => (
-            <div key={String(loc.key)} className="flex items-center gap-4 bg-black/30 border border-white/5 p-3 rounded-xl relative group">
+            <div key={String(loc.key)} className="flex items-center gap-4 bg-black/30 border border-border p-3 rounded-xl relative group">
                <div className="flex-1">
                   <p className="text-sm font-bold text-foreground flex items-center gap-2">
                      {loc.name as string} <span className="text-[9px] uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded">{loc.type as string}</span>
@@ -160,7 +160,7 @@ export function LocationPicker({ adset, upd }: { adset: AdSetNode, upd: (p: Part
                {loc.type === "city" && (
                  <div className="flex items-center gap-3 w-48">
                     <span className="text-[10px] text-foreground/90 font-bold whitespace-nowrap">Raio: {loc.radius as number} km</span>
-                    <input type="range" min="17" max="80" value={loc.radius as number} onChange={(e) => updateRadius(i, parseInt(e.target.value))} className="w-full accent-accent bg-zinc-800 rounded-full h-1" />
+                    <input type="range" min="17" max="80" value={loc.radius as number} onChange={(e) => updateRadius(i, parseInt(e.target.value))} className="w-full accent-accent bg-muted rounded-full h-1" />
                  </div>
                )}
                <button onClick={() => remove(i)} className="p-2 text-foreground/90 hover:text-primary opacity-50 group-hover:opacity-100 transition-all rounded-lg hover:bg-primary/10">
@@ -184,7 +184,7 @@ function CheckGroup<T extends string | number>({ label, options, selected, onCha
         {options.map((opt) => {
           const checked = selected.includes(opt.value);
           return (
-            <label key={String(opt.value)} className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${checked ? "bg-primary/20 border-accent/40 text-accent/70" : "border-white/10 text-foreground/90 hover:border-white/30"}`}>
+            <label key={String(opt.value)} className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${checked ? "bg-primary/20 border-accent/40 text-accent/70" : "border-border text-foreground/90 border-border"}`}>
               <input type="checkbox" className="hidden" checked={checked} onChange={(e) => { if (e.target.checked) onChange([...selected, opt.value]); else onChange(selected.filter((v) => v !== opt.value)); }} />
               {opt.label}
             </label>
@@ -206,7 +206,7 @@ export function TargetingPanel({ adset, upd }: { adset: AdSetNode; upd: (p: Part
   ];
 
   return (
-    <div className="space-y-4 mt-6 p-4 bg-white/[0.03] border border-white/8 rounded-xl">
+    <div className="space-y-4 mt-6 p-4 bg-white/[0.03] border border-border rounded-xl">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
           <Target className="h-4 w-4 text-primary" /> Segmentação Detalhada
@@ -214,7 +214,7 @@ export function TargetingPanel({ adset, upd }: { adset: AdSetNode; upd: (p: Part
         <div className="flex items-center gap-3">
           <span className="text-xs text-foreground/90">Público Original</span>
           <button onClick={() => upd({ advantage_audience: adset.advantage_audience === 0 ? 1 : 0 })}
-            className={`w-10 h-5 rounded-full transition-colors flex items-center p-0.5 ${adset.advantage_audience !== 0 ? "bg-accent" : "bg-zinc-700"}`}>
+            className={`w-10 h-5 rounded-full transition-colors flex items-center p-0.5 ${adset.advantage_audience !== 0 ? "bg-accent" : "bg-muted-foreground/20"}`}>
             <div className={`bg-white w-4 h-4 rounded-full transition-transform ${adset.advantage_audience !== 0 ? "translate-x-5" : "translate-x-0"}`} />
           </button>
           <span className="text-xs text-foreground/90 font-bold">Público Advantage+</span>
@@ -241,11 +241,11 @@ export function TargetingPanel({ adset, upd }: { adset: AdSetNode; upd: (p: Part
       )}
 
       {adset.advantage_audience === 0 && (
-        <div className="border-t border-white/10 pt-4">
-          <div className="flex gap-1 bg-black/20 p-1 rounded-lg mb-4">
+        <div className="border-t border-border pt-4">
+          <div className="flex gap-1 bg-black/5 dark:bg-black/20 p-1 rounded-lg mb-4">
             {tabDef.map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-md transition-all ${tab === t.id ? "bg-white/10 text-foreground shadow-sm" : "text-foreground/90 hover:text-foreground/90"}`}>
+                className={`flex-1 flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-md transition-all ${tab === t.id ? "bg-black/10 dark:bg-white/10 text-foreground shadow-sm" : "text-foreground/90 hover:text-foreground/90"}`}>
                 {t.icon} {t.label}
               </button>
             ))}

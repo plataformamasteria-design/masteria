@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { useTrafegoData } from "@/hooks/use-trafego-data";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/trafego/FunilCampanhaConfig";
 
 type Nivel = "campanhas" | "conjuntos" | "anuncios";
@@ -188,49 +188,75 @@ export default function TrafegoEstruturaPage() {
 
   if (loading && !metadata.length) return (
     <div className="flex flex-col items-center justify-center py-24 gap-4 animate-in fade-in zoom-in">
-      <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+      <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
       <p className="text-muted-foreground text-sm font-medium animate-pulse">Sincronizando arquitetura global de dados Ads do Meta API...</p>
     </div>
   );
 
   const nivelLabel = nivel === "campanhas" ? "Campanhas" : nivel === "conjuntos" ? "Conjuntos" : "Anúncios";
-  const columns = nivel === "anuncios"
-    ? [{ key: "nome", label: "Peça Publicitária" }, { key: "spend", label: "Investido" }, { key: "totalLeads", label: "Leads" }, { key: "cpl", label: "CPL Atual" }, { key: "impressoes", label: "Audiência (Imp.)" }, { key: "ctr", label: "Engajamento CTR" }, { key: "count", label: "Vigor Neural" }]
-    : [{ key: "nome", label: nivelLabel.slice(0, -1) }, { key: "spend", label: "Investido" }, { key: "totalLeads", label: "Leads" }, { key: "cpl", label: "CPL Atual" }, { key: "impressoes", label: "Audiência (Imp.)" }, { key: "ctr", label: "Engajamento CTR" }, { key: "count", label: "N° Anúncios Anexos" }];
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetch("/api/meta/cache-clear", { method: "POST" });
+      await mutate(
+        (key) => typeof key === "string" && key.includes("/api/meta/"),
+        undefined,
+        { revalidate: true }
+      );
+      toast.success("Dados sincronizados com o Meta Ads.");
+    } catch (e) {
+      toast.error("Falha ao sincronizar dados.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
       <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-3">
-          {nivel !== "campanhas" && (
-            <button onClick={voltar} className="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/20 border border-border/50 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all shrink-0">
-              <ChevronLeft size={16} />
-            </button>
-          )}
-          <div>
-            <h1 className="text-3xl font-black tracking-tight" style={{ letterSpacing: "-0.04em" }}>Arquitetura de Ad-Sets</h1>
-            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground font-medium uppercase tracking-widest">
-              <button onClick={() => { setNivel("campanhas"); setCampanhaId(null); setAdsetId(null); }} className={`transition-colors hover:text-primary ${nivel === "campanhas" ? "text-primary font-bold" : ""}`}>Campanhas Base</button>
-              {campanhaId && (
-                <>
-                  <ChevronRight size={10} className="text-muted-foreground/40" />
-                  <button onClick={() => { setNivel("conjuntos"); setAdsetId(null); }} className={`max-w-[200px] truncate transition-colors hover:text-primary ${nivel === "conjuntos" ? "text-primary font-bold" : ""}`} title={campanhaNome}>{campanhaNome}</button>
-                </>
-              )}
-              {adsetId && (
-                <>
-                  <ChevronRight size={10} className="text-muted-foreground/40" />
-                  <span className="text-foreground font-bold max-w-[200px] truncate" title={adsetNome}>{adsetNome}</span>
-                </>
-              )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {nivel !== "campanhas" && (
+              <button onClick={voltar} className="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/20 border border-border/50 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all shrink-0">
+                <ChevronLeft size={16} />
+              </button>
+            )}
+            <div>
+              <h1 className="text-3xl font-black tracking-tight" style={{ letterSpacing: "-0.04em" }}>Arquitetura de Ad-Sets</h1>
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground font-medium uppercase tracking-widest">
+                <button onClick={() => { setNivel("campanhas"); setCampanhaId(null); setAdsetId(null); }} className={`transition-colors hover:text-primary ${nivel === "campanhas" ? "text-primary font-bold" : ""}`}>Campanhas Base</button>
+                {campanhaId && (
+                  <>
+                    <ChevronRight size={10} className="text-muted-foreground/40" />
+                    <button onClick={() => { setNivel("conjuntos"); setAdsetId(null); }} className={`max-w-[200px] truncate transition-colors hover:text-primary ${nivel === "conjuntos" ? "text-primary font-bold" : ""}`} title={campanhaNome}>{campanhaNome}</button>
+                  </>
+                )}
+                {adsetId && (
+                  <>
+                    <ChevronRight size={10} className="text-muted-foreground/40" />
+                    <span className="text-foreground font-bold max-w-[200px] truncate" title={adsetNome}>{adsetNome}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 border-primary/20 hover:bg-primary/10 transition-colors"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-primary" : "text-muted-foreground"}`} />
+            {isRefreshing ? "Sincronizando..." : "Sincronizar Meta"}
+          </Button>
         </div>
 
         {/* Pilares 3: Bento Grid Cards na Tela de Estrutura */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-card/40 backdrop-blur border-emerald-500/10 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div className="flex flex-col"><p className="text-[10px] uppercase font-bold tracking-widest text-emerald-500 mb-0.5">Budget Restrito Investido</p><p className="text-2xl font-black">{formatCurrency(globaMetrics.globalSpend)}</p></div><BadgeDollarSignIcon size={28} className="text-emerald-500/20" /></CardContent></Card>
-          <Card className="bg-card/40 backdrop-blur border-blue-500/10 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div className="flex flex-col"><p className="text-[10px] uppercase font-bold tracking-widest text-blue-500 mb-0.5">Captura CRM Sincronizada</p><p className="text-2xl font-black">{globaMetrics.globalLeads} Leads</p></div><UsersIcon size={28} className="text-blue-500/20" /></CardContent></Card>
+          <Card className="bg-card/40 backdrop-blur border-primary/10 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div className="flex flex-col"><p className="text-[10px] uppercase font-bold tracking-widest text-primary mb-0.5">Budget Restrito Investido</p><p className="text-2xl font-black">{formatCurrency(globaMetrics.globalSpend)}</p></div><BadgeDollarSignIcon size={28} className="text-primary/20" /></CardContent></Card>
+          <Card className="bg-card/40 backdrop-blur border-accent/10 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div className="flex flex-col"><p className="text-[10px] uppercase font-bold tracking-widest text-accent mb-0.5">Captura CRM Sincronizada</p><p className="text-2xl font-black">{globaMetrics.globalLeads} Leads</p></div><UsersIcon size={28} className="text-accent/20" /></CardContent></Card>
           <Card className="bg-card/40 backdrop-blur border-accent/10 shadow-sm"><CardContent className="p-4 flex items-center justify-between"><div className="flex flex-col"><p className="text-[10px] uppercase font-bold tracking-widest text-accent mb-0.5">Health Score CPL</p><p className="text-2xl font-black">{formatCurrency(globaMetrics.globalCpl)} / Lead</p></div><Activity size={28} className="text-accent/20" /></CardContent></Card>
         </div>
 
@@ -275,28 +301,28 @@ export default function TrafegoEstruturaPage() {
                     </td>
                     <td className="px-4 py-3 text-xs font-mono opacity-80">{formatCurrency(row.spend)}</td>
                     <td className="px-4 py-3 text-xs font-bold text-foreground">
-                      <Badge className="bg-blue-500/10 text-blue-400 font-bold border-transparent pointer-events-none hover:bg-blue-500/20">{row.totalLeads}</Badge>
+                      <Badge className="bg-accent/10 text-accent font-bold border-transparent pointer-events-none hover:bg-accent/20">{row.totalLeads}</Badge>
                     </td>
                     <td className="px-4 py-3 text-xs font-mono">
                       <span className={`${row.cpl > globaMetrics.globalCpl * 1.5 ? "text-rose-400 font-bold" : "opacity-80"}`}>{row.totalLeads > 0 ? formatCurrency(row.cpl) : "—"}</span>
                     </td>
                     <td className="px-4 py-3 text-xs opacity-60 font-mono">{row.impressoes.toLocaleString("pt-BR")}</td>
                     <td className="px-4 py-3 text-xs font-mono">
-                      <span className={`px-1.5 py-0.5 rounded-sm ${row.ctr >= 1.5 ? "bg-emerald-500/10 text-emerald-400" : row.ctr >= 0.8 ? "text-muted-foreground" : row.ctr > 0 ? "bg-accent/10 text-accent" : "opacity-40"}`}>{formatPercent(row.ctr)}</span>
+                      <span className={`px-1.5 py-0.5 rounded-sm ${row.ctr >= 1.5 ? "bg-primary/10 text-primary" : row.ctr >= 0.8 ? "text-muted-foreground" : row.ctr > 0 ? "bg-accent/10 text-accent" : "opacity-40"}`}>{formatPercent(row.ctr)}</span>
                     </td>
                     <td className="px-4 py-3 text-xs">
                       {nivel === "anuncios" ? (
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-1.5 bg-background shadow-inner rounded-full overflow-hidden border border-border/50">
-                            <div className={`h-full rounded-full transition-all duration-700 ${row.count >= 70 ? "bg-emerald-500" : row.count >= 40 ? "bg-yellow-500" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"}`} style={{ width: `${Math.min(row.count, 100)}%` }} />
+                            <div className={`h-full rounded-full transition-all duration-700 ${row.count >= 70 ? "bg-primary" : row.count >= 40 ? "bg-yellow-500" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"}`} style={{ width: `${Math.min(row.count, 100)}%` }} />
                           </div>
-                          <span className={`text-[10px] font-black ${row.count >= 70 ? "text-emerald-400" : row.count >= 40 ? "text-yellow-400" : "text-rose-400 font-bold"}`}>{row.count}</span>
+                          <span className={`text-[10px] font-black ${row.count >= 70 ? "text-primary" : row.count >= 40 ? "text-yellow-400" : "text-rose-400 font-bold"}`}>{row.count}</span>
                         </div>
                       ) : <Badge className="text-[10px] tracking-widest font-bold bg-muted/40 text-muted-foreground shadow-inner">{row.count} Nodes</Badge>}
                     </td>
                     {nivel === "anuncios" && (
                       <td className="px-4 py-3 text-center">
-                        <Badge className={`text-[9px] uppercase tracking-widest ${row.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" : "bg-muted/50 text-muted-foreground"}`}>
+                        <Badge className={`text-[9px] uppercase tracking-widest ${row.status === "ACTIVE" ? "bg-primary/15 text-primary border border-primary/30" : "bg-muted/50 text-muted-foreground"}`}>
                           {row.status === "ACTIVE" ? "Ativo" : (row.status || "").replace(/_/g, " ")}
                         </Badge>
                       </td>
@@ -323,7 +349,7 @@ export default function TrafegoEstruturaPage() {
       <AnimatePresence>
         {anuncioSelecionado && (
           <Dialog open={!!anuncioSelecionado} onOpenChange={() => setAnuncioSelecionado(null)}>
-            <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-card/95 backdrop-blur-xl border border-white/10 shadow-2xl p-0">
+            <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col bg-card/95 backdrop-blur-xl border border-border shadow-2xl p-0">
               <DialogHeader className="p-5 pb-3 border-b border-border/50 bg-muted/10 shrink-0">
                 <DialogTitle className="text-base font-black truncate max-w-[85%] uppercase tracking-tight text-foreground/90">{anuncioSelecionado.ad_name}</DialogTitle>
                 <p className="text-[10px] font-mono text-muted-foreground mt-1 tracking-widest">{anuncioSelecionado.ad_id}</p>
@@ -380,7 +406,7 @@ export default function TrafegoEstruturaPage() {
                             </tr></thead>
                             <tbody className="divide-y divide-border/20">
                               {leadsFiltrados.map((l: any, i: number) => {
-                                const corEtapa = l.etapa === "comprou" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : l.etapa.includes("reuniao") ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : l.etapa.includes("desqualificado") ? "bg-rose-500/15 text-rose-400 border-rose-500/30" : "bg-muted text-muted-foreground";
+                                const corEtapa = l.etapa === "comprou" ? "bg-primary/15 text-primary border-primary/30" : l.etapa.includes("reuniao") ? "bg-accent/15 text-accent border-accent/30" : l.etapa.includes("desqualificado") ? "bg-rose-500/15 text-rose-400 border-rose-500/30" : "bg-muted text-muted-foreground";
                                 return (
                                   <tr key={i} className="hover:bg-muted/10 transition-colors group">
                                     <td className="px-3 py-2 font-semibold text-foreground/90">{l.nome || "Não preencheu na origem"}</td>
@@ -405,7 +431,7 @@ export default function TrafegoEstruturaPage() {
                     {tabAtiva === "anomalias" && (
                       <div className="space-y-3">
                         {(!modalData?.anomalias || modalData.anomalias.length === 0) ? (
-                          <div className="border border-dashed border-emerald-500/30 bg-emerald-500/5 rounded-2xl flex flex-col items-center justify-center p-12 text-emerald-500/70">
+                          <div className="border border-dashed border-primary/30 bg-primary/5 rounded-2xl flex flex-col items-center justify-center p-12 text-primary/70">
                             <CheckCircle size={32} className="mb-3 opacity-60" />
                             <p className="text-sm font-bold uppercase tracking-widest">Peça Estável</p>
                             <p className="text-xs font-mono mt-1 opacity-80">Nenhuma irregularidade computada nos algoritmos de gasto.</p>
@@ -421,14 +447,14 @@ export default function TrafegoEstruturaPage() {
                                 <div className="space-y-1.5 flex-1 pr-4">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <Badge className={`text-[9px] uppercase tracking-widest font-black ${badgeColor}`}>{ano.tipo.replace(/_/g, " ")}</Badge>
-                                    {ano.resolvida && <Badge className="text-[8px] uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold">✓ Ticket Resolvido</Badge>}
+                                    {ano.resolvida && <Badge className="text-[8px] uppercase tracking-widest bg-primary/10 text-primary border border-primary/20 font-bold">✓ Ticket Resolvido</Badge>}
                                   </div>
                                   <p className={`text-sm tracking-tight ${ano.resolvida ? "text-muted-foreground" : "text-foreground font-medium"}`}>{ano.causa_provavel}</p>
                                   <p className="text-[10px] text-muted-foreground font-mono">Flagrado em: {new Date(ano.criado_em).toLocaleString("pt-BR")}</p>
                                 </div>
                                 {!ano.resolvida && (
                                   <motion.button whileTap={{ scale: 0.95 }} className="mt-3 sm:mt-0 shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg bg-background border border-border/50 hover:bg-muted text-foreground transition-all flex items-center gap-1.5 shadow-sm" onClick={(e) => resolverAnomalia(ano.id, e)}>
-                                    <CheckCircle size={14} className="text-emerald-500 opacity-80" /> Fechar Investigação
+                                    <CheckCircle size={14} className="text-primary opacity-80" /> Fechar Investigação
                                   </motion.button>
                                 )}
                               </div>

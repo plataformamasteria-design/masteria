@@ -27,7 +27,7 @@ export function useAccountSpend(since: string, until: string): AccountSpendResul
   const acct = accountId ? `&account_id=${accountId}` : "";
 
   const key = accountId
-    ? `/api/meta/insights?since=${since}&until=${until}&level=campaign&breakdown=none${acct}`
+    ? `/api/meta/insights?since=${since}&until=${until}&level=account&breakdown=none${acct}`
     : null;
 
   const { data, isLoading } = useSWR(key, fetcher, {

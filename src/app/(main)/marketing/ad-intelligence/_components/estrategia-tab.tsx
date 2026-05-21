@@ -7,6 +7,7 @@ import { CardsKPIs } from "@/components/trafego/CardsKPIs";
 import { BarChart3, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdIntelligence } from "./ai-context";
+import { useAccountId } from "@/contexts/ad-account-context";
 
 const LS_KEY = "trafego_ad_intel_secao_beta_aberta";
 
@@ -28,6 +29,8 @@ export function EstrategiaTab() {
     setAberta(next);
     localStorage.setItem(LS_KEY, String(next));
   }
+
+  const accountId = useAccountId();
 
   return (
     <div className="space-y-6">
@@ -54,6 +57,7 @@ export function EstrategiaTab() {
               Funil de Aquisição Comarka
             </h3>
             <FunilComarka
+              accountId={accountId}
               mesReferencia={crossasMeses ? undefined : mesReferencia}
               dataInicio={crossasMeses ? new Date(period.since) : undefined}
               dataFim={crossasMeses ? new Date(period.until) : undefined}
@@ -65,7 +69,7 @@ export function EstrategiaTab() {
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
               KPIs Estrategicos
             </h3>
-            <CardsKPIs mesReferencia={mesReferencia} dataInicio={period.since} dataFim={period.until} />
+            <CardsKPIs accountId={accountId} mesReferencia={mesReferencia} dataInicio={period.since} dataFim={period.until} />
           </div>
         </div>
       )}
