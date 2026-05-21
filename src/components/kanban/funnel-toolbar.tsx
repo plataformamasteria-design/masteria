@@ -212,7 +212,7 @@ export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersC
                             onCheckedChange={() => handleConnectionToggle(conn.id)}
                           />
                           <label htmlFor={`filter-conn-${conn.id}`} className="text-sm cursor-pointer flex-1 truncate">
-                            {conn.name}
+                            {conn.config_name || conn.configName || conn.name || conn.sessionName || 'Conexão'}
                           </label>
                         </div>
                       ))}
