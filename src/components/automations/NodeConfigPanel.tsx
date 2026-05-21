@@ -547,7 +547,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
         // Nodes that need kanban boards
         const needsKanbans = ['crm_move', 'trigger'].includes(node.type || '');
         // Nodes that need all connections
-        const needsAllConns = ['message', 'marketing', 'send_template', 'ai_agent', 'ai', 'trigger'].includes(node.type || '');
+        const needsAllConns = ['message', 'send_message', 'interactive_message', 'marketing', 'send_template', 'ai_agent', 'ai', 'trigger'].includes(node.type || '');
         // Nodes that need users and teams
         const needsUsersTeams = ['assign_user', 'trigger'].includes(node.type || '');
 
@@ -1032,6 +1032,14 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 onChange={(v) => update(node.type === 'message' ? 'content' : (node.type === 'interactive_message' ? 'text' : 'message'), v)}
                                 placeholder="Olá {{contact.name}}! Como posso ajudar?"
                                 multiline
+                            />
+                        </ConfigSection>
+                        <ConfigSection label="Conexão de Envio (Opcional)" hint="Forçar o envio por esta conexão específica. Se vazio, usará a conexão atual do lead.">
+                            <SelectField
+                                value={d.connection_id || ''}
+                                onChange={(v) => update('connection_id', v)}
+                                placeholder="Automático (Conexão do Lead)"
+                                options={allConnections.map(c => ({ value: c.id, label: c.config_name || c.configName || c.name || c.sessionName || c.id }))}
                             />
                         </ConfigSection>
                         {(d.message || d.content || d.text) && (

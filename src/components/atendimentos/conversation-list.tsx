@@ -120,7 +120,7 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
                         {/* API/WA Label */}
                         {conversation.connectionType && (
                             <span className={cn(
-                                "text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider max-w-[60px] truncate",
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider max-w-[100px] truncate",
                                 conversation.connectionType === 'meta_api' ? "text-emerald-500 bg-emerald-500/10" : 
                                 conversation.connectionType === 'instagram' ? "text-pink-500 bg-pink-500/10" : "text-blue-500 bg-blue-500/10"
                             )} title={conversation.connectionName || undefined}>

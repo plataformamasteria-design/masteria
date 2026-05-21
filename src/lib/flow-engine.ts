@@ -984,12 +984,14 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             return { message: 'Trigger activated' };
 
         // ---- Messages ----
+        case 'interactive_message':
         case 'send_message':
         case 'message': {
-            const text = await interpolateTemplate(step.data.message || step.data.content || '', ctx);
+            const text = await interpolateTemplate(step.data.message || step.data.content || step.data.text || '', ctx);
+            const overrideConnectionId = step.data.connection_id || ctx.connectionId;
             const sendResult = await sendUnifiedMessage({
                 provider: ctx.provider as any,
-                connectionId: ctx.connectionId,
+                connectionId: overrideConnectionId,
                 to: ctx.contactPhone || ctx.contactId,
                 message: text,
             });
@@ -1002,11 +1004,11 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         orderBy: desc(conversations.lastMessageAt)
                     });
                     
-                    if (!activeConv && ctx.connectionId) {
+                    if (!activeConv && overrideConnectionId) {
                         const [newConv] = await db.insert(conversations).values({
                             companyId: ctx.companyId,
                             contactId: ctx.contactId,
-                            connectionId: ctx.connectionId,
+                            connectionId: overrideConnectionId,
                             status: 'IN_PROGRESS',
                         }).returning();
                         activeConv = newConv;
@@ -1042,9 +1044,10 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     : step.type === 'send_audio' ? 'audio'
                         : step.type === 'send_document' ? 'document'
                             : step.data.mediaType || 'image';
+            const overrideConnectionId = step.data.connection_id || ctx.connectionId;
             await sendUnifiedMessage({
                 provider: ctx.provider as any,
-                connectionId: ctx.connectionId,
+                connectionId: overrideConnectionId,
                 to: ctx.contactPhone || ctx.contactId,
                 message: caption,
                 mediaUrl: step.data.file_url || step.data.url,
@@ -1093,9 +1096,10 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 }
             }
 
+            const overrideConnectionId = step.data.connection_id || ctx.connectionId;
             await sendUnifiedMessage({
                 provider: ctx.provider as any,
-                connectionId: ctx.connectionId,
+                connectionId: overrideConnectionId,
                 to: ctx.contactPhone || ctx.contactId,
                 message: fullMessage,
             });
@@ -1129,9 +1133,10 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
                 if (!isValid) {
                     // Send an error message and repeat question
+                    const overrideConnectionId = step.data.connection_id || ctx.connectionId;
                     await sendUnifiedMessage({
                         provider: ctx.provider as any,
-                        connectionId: ctx.connectionId,
+                        connectionId: overrideConnectionId,
                         to: ctx.contactPhone || ctx.contactId,
                         message: "Formato inválido. Por favor, tente novamente com o formato correto:",
                     });
@@ -1723,20 +1728,37 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
             if (foundContact) {
                 // Lead encontrado — atualizar contexto
+                let finalName = foundContact.name;
+                
+                // Se não tem nome mas tem default_name configurado, tenta preencher
+                if (!finalName && step.data.default_name) {
+                    const evaluatedName = await interpolateTemplate(step.data.default_name, ctx);
+                    if (evaluatedName && evaluatedName.trim() !== '') {
+                        finalName = evaluatedName.trim();
+                        try {
+                            const { eq } = await import('drizzle-orm');
+                            await db.update(contacts).set({ name: finalName }).where(eq(contacts.id, foundContact.id));
+                            console.log(`[FLOW-ENGINE] Lookup: Updated empty name for contact ${foundContact.id} to "${finalName}"`);
+                        } catch (e) {
+                            console.error(`[FLOW-ENGINE] Lookup: Failed to update contact name`, e);
+                        }
+                    }
+                }
+
                 ctx.contactId = foundContact.id;
                 ctx.contactPhone = foundContact.phone;
-                ctx.contactName = foundContact.name || '';
+                ctx.contactName = finalName || '';
                 ctx.contactEmail = foundContact.email || '';
                 return {
                     sourceHandle: 'found',
                     newVars: {
                         lead_id: foundContact.id,
-                        lead_name: foundContact.name,
+                        lead_name: finalName || '',
                         lead_phone: foundContact.phone,
                         lead_email: foundContact.email || '',
                         lead_found: true,
                     },
-                    message: `Lookup: found ${foundContact.name} (${foundContact.phone})`,
+                    message: `Lookup: found ${finalName || 'Unknown'} (${foundContact.phone})`,
                 };
             }
 
