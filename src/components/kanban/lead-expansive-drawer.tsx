@@ -394,7 +394,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 
                 {/* Loss Reason Alert */}
                 {currentStage?.type === 'LOSS' && leadNotes && (
-                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive-foreground">
+                  <div className="p-4 bg-red-100 border border-red-200 rounded-lg text-sm text-red-900 dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-200">
                     <strong className="block mb-1 font-semibold">Motivo da Perda (Notas Internas):</strong>
                     <p className="whitespace-pre-wrap">{leadNotes}</p>
                   </div>

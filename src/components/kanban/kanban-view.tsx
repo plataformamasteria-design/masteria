@@ -73,7 +73,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
 
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, textarea, select, [role="menuitem"], [role="button"], [data-rbd-draggable-id]')) {
+    if (target.closest('button, a, input, textarea, select, [role="menuitem"], [role="button"], [role="option"], [role="dialog"], [role="listbox"], [data-radix-popper-content-wrapper], [data-rbd-draggable-id]')) {
       return;
     }
     setIsDragging(true);
