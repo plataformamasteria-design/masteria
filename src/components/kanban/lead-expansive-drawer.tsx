@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { InboxView } from '@/components/atendimentos/inbox-view';
@@ -59,6 +60,12 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
   const [leadValue, setLeadValue] = useState(card.value || 0);
   const [leadNotes, setLeadNotes] = useState(card.notes || '');
   const [leadStatus, setLeadStatus] = useState(card.status || 'ACTIVE');
+  const [leadStageId, setLeadStageId] = useState(card.stageId);
+
+  // States for Loss Reason Dialog
+  const [lossReasonOpen, setLossReasonOpen] = useState(false);
+  const [pendingStageId, setPendingStageId] = useState<string | null>(null);
+  const [lossReason, setLossReason] = useState('');
 
   // Load Contact Details deeper
   const [contactDetails, setContactDetails] = useState<ExtendedContact | null>(null);
@@ -99,6 +106,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
       setLeadValue(card.value || 0);
       setLeadNotes(card.notes || '');
       setLeadStatus(card.status || 'ACTIVE');
+      setLeadStageId(card.stageId);
       setEditingSection(null);
       setIsChatMode(initialTab === 'chat');
       setIsContactDetailsOpen(false);
@@ -158,6 +166,28 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
       notify.success('Lead atualizado!');
     } catch (e: any) {
       notify.error('Erro ao atualizar', e.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const confirmLossReason = async () => {
+    if (!pendingStageId) return;
+    setIsSaving(true);
+    try {
+      const reasonPrefix = `[Motivo da perda]: ${lossReason.trim()}`;
+      const newNotes = leadNotes ? `${reasonPrefix}\n\n${leadNotes}` : reasonPrefix;
+      
+      await onUpdate(card.id, { stageId: pendingStageId, notes: newNotes });
+      setLeadStageId(pendingStageId);
+      setLeadNotes(newNotes);
+      notify.success('Etapa e motivo atualizados com sucesso!');
+      setLossReasonOpen(false);
+      setLossReason('');
+      setPendingStageId(null);
+      onUpdateCards?.();
+    } catch (e: any) {
+      notify.error('Erro ao mover lead', e.message);
     } finally {
       setIsSaving(false);
     }
@@ -242,7 +272,41 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 <span className="font-semibold text-primary">R$ {Number(leadValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-muted/50">{currentStage?.title || 'Sem Etapa'}</Badge>
+                <Select
+                  value={leadStageId}
+                  onValueChange={async (val) => {
+                    const targetStage = stages.find(s => s.id === val);
+                    if (targetStage?.type === 'LOSS') {
+                      setPendingStageId(val);
+                      setLossReasonOpen(true);
+                      return;
+                    }
+
+                    setLeadStageId(val);
+                    setIsSaving(true);
+                    try {
+                      await onUpdate(card.id, { stageId: val });
+                      notify.success('Etapa atualizada!');
+                    } catch (e: any) {
+                      setLeadStageId(card.stageId);
+                      notify.error('Erro ao alterar etapa', e.message);
+                    } finally {
+                      setIsSaving(false);
+                    }
+                  }}
+                  disabled={isSaving}
+                >
+                  <SelectTrigger className="h-7 text-xs border-dashed bg-muted/30 max-w-[200px]">
+                    <SelectValue placeholder="Selecione a Etapa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stages.map(s => (
+                      <SelectItem key={s.id} value={s.id} className="text-xs">
+                        {s.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CalendarIcon className="h-4 w-4" />
@@ -328,6 +392,14 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                   {/* TAB OVERVIEW */}
                   <TabsContent value="overview" className="mt-0 space-y-6">
                 
+                {/* Loss Reason Alert */}
+                {currentStage?.type === 'LOSS' && leadNotes && (
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive-foreground">
+                    <strong className="block mb-1 font-semibold">Motivo da Perda (Notas Internas):</strong>
+                    <p className="whitespace-pre-wrap">{leadNotes}</p>
+                  </div>
+                )}
+
                 {/* Lead Edit Quick Form */}
                 <Card className="border-border/50 shadow-sm">
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -499,6 +571,43 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
           </div>
         )}
+
+        {/* LOSS REASON DIALOG */}
+        <Dialog open={lossReasonOpen} onOpenChange={(open) => {
+          if (!open && !isSaving) {
+            setLossReasonOpen(false);
+            setLossReason('');
+            setPendingStageId(null);
+          }
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Motivo da Perda</DialogTitle>
+              <DialogDescription>
+                Por que este lead não foi qualificado? O motivo será salvo nas notas internas.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Textarea 
+                value={lossReason} 
+                onChange={(e) => setLossReason(e.target.value)} 
+                placeholder="Descreva o motivo detalhadamente..."
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => {
+                setLossReasonOpen(false);
+                setLossReason('');
+                setPendingStageId(null);
+              }} disabled={isSaving}>Cancelar</Button>
+              <Button variant="destructive" onClick={confirmLossReason} disabled={isSaving || !lossReason.trim()}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Salvar e Mover
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );
