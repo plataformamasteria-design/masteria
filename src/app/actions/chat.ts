@@ -469,13 +469,14 @@ export async function startOutboundConversationAction(contactId: string, kanbanC
         }
 
         // DB Transaction
+        let savedConvId = '';
         await db.transaction(async (tx) => {
-            let convId = '';
             const [existing] = await tx.select().from(conversations).where(and(eq(conversations.contactId, contact.id), not(eq(conversations.status, 'archived')))).limit(1);
             
             if (existing) {
-                convId = existing.id;
-                await tx.update(conversations).set({ assignedTo: userId, connectionId, lastMessageAt: new Date() }).where(eq(conversations.id, convId));
+                savedConvId = existing.id;
+                // NÃO sobrescreve connectionId — mantém a conexão original da conversa
+                await tx.update(conversations).set({ assignedTo: userId, lastMessageAt: new Date() }).where(eq(conversations.id, savedConvId));
             } else {
                 const [newConv] = await tx.insert(conversations).values({
                     companyId,
@@ -486,12 +487,12 @@ export async function startOutboundConversationAction(contactId: string, kanbanC
                     aiActive: false, // O humano assumiu
                     lastMessageAt: new Date(),
                 }).returning({ id: conversations.id });
-                convId = newConv.id;
+                savedConvId = newConv.id;
             }
 
             await tx.insert(messages).values({
                 companyId,
-                conversationId: convId,
+                conversationId: savedConvId,
                 connectionId,
                 providerMessageId: result.messageId,
                 senderType: 'AGENT',
@@ -505,7 +506,7 @@ export async function startOutboundConversationAction(contactId: string, kanbanC
         revalidatePath('/kanban');
         revalidatePath('/atendimentos');
         emitInboxUpdate(companyId);
-        return { success: true };
+        return { success: true, conversationId: savedConvId };
     } catch (error: unknown) {
         console.error("StartOutbound Error:", error);
         return { success: false, error: error instanceof Error ? error.message : "Erro interno ao iniciar conversa." };

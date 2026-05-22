@@ -1,4 +1,4 @@
-'use server';
+// Service module — importado por Server Actions. NÃO adicionar 'use server' aqui.
 
 import { db } from '@/lib/db';
 import { connections, messageTemplates } from '@/lib/db/schema';

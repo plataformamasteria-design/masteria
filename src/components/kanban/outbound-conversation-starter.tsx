@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +23,7 @@ export function OutboundConversationStarter({ contactId, kanbanCardId, onConvers
   const [loading, setLoading] = useState(false);
   const [fetchingConnections, setFetchingConnections] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const loadConnections = async () => {
@@ -57,6 +59,10 @@ export function OutboundConversationStarter({ contactId, kanbanCardId, onConvers
       if (result.success) {
         toast({ title: 'Sucesso', description: 'Conversa iniciada! O lead foi atribuído a você.' });
         onConversationStarted();
+        // Navegar para a conversa criada no módulo de atendimentos
+        if (result.conversationId) {
+          router.push(`/atendimentos?conversationId=${result.conversationId}`);
+        }
       } else {
         toast({ title: 'Erro', description: result.error || 'Erro ao iniciar conversa.', variant: 'destructive' });
       }
