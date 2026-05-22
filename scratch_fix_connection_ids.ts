@@ -1,0 +1,1 @@
+import { db } from './src/lib/db'; import { sql } from 'drizzle-orm'; async function run() { try { console.log('Updating...'); await db.execute(sql\UPDATE messages m SET connection_id = c.connection_id FROM conversations c WHERE m.conversation_id = c.id AND m.connection_id IS NULL\); console.log('Done'); } catch (e) { console.error(e); } process.exit(0); } run();

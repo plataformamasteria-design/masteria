@@ -6,7 +6,7 @@ import { FunnelToolbar } from './funnel-toolbar';
 import { KanbanColumn } from './kanban-column';
 import type { KanbanFunnel, KanbanCard as KanbanCardType, KanbanStage } from '@/lib/types';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { KanbanFilters } from '@/app/(main)/kanban/[funnelId]/page';
 
@@ -25,9 +25,10 @@ interface KanbanViewProps {
   companyUsers?: any[];
   companyTeams?: any[];
   connections?: any[];
+  availableTags?: any[];
 }
 
-export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections }: KanbanViewProps): JSX.Element | null {
+export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections, availableTags }: KanbanViewProps): JSX.Element | null {
   const [showLossStages, setShowLossStages] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -71,17 +72,14 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Ignorar cliques em botões, links, inputs, menus e CARDS (drag-and-drop nativo)
     const target = e.target as HTMLElement;
     if (target.closest('button, a, input, textarea, select, [role="menuitem"], [role="button"], [data-rbd-draggable-id]')) {
       return;
     }
-    
     setIsDragging(true);
     if (!scrollRef.current) return;
     setStartX(e.clientX);
     setScrollLeft(scrollRef.current.scrollLeft);
-    // Captura o ponteiro para continuar o drag mesmo se o mouse sair da div
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
   };
 
@@ -92,15 +90,55 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging || !scrollRef.current) return;
-    // Evita seleção de texto durante o arraste
     e.preventDefault(); 
     const x = e.clientX;
-    const walk = (x - startX) * 1.5; // Multiplicador de velocidade
+    const walk = (x - startX) * 1.5;
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
+  // --- Active Filter Chips ---
+  const removeFilterChip = (type: keyof KanbanFilters, value: string) => {
+    if (!filters || !onFiltersChange) return;
+    const arr = filters[type] as string[];
+    onFiltersChange({ ...filters, [type]: arr.filter(v => v !== value) });
+  };
+
+  const getChips = () => {
+    if (!filters) return [];
+    const chips: { type: keyof KanbanFilters; id: string; label: string; color: string }[] = [];
+
+    filters.connections.forEach(id => {
+      const conn = connections?.find(c => c.id === id);
+      chips.push({ type: 'connections', id, label: conn?.config_name || conn?.configName || conn?.name || 'Conexão', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400' });
+    });
+
+    filters.assignedUsers.forEach(id => {
+      const user = companyUsers?.find(u => u.id === id);
+      chips.push({ type: 'assignedUsers', id, label: user?.name || user?.email || 'Usuário', color: 'bg-violet-500/10 text-violet-600 border-violet-500/20 dark:text-violet-400' });
+    });
+
+    filters.teams.forEach(id => {
+      const team = companyTeams?.find(t => t.id === id);
+      chips.push({ type: 'teams', id, label: team?.name || 'Equipe', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20 dark:text-indigo-400' });
+    });
+
+    filters.tags.forEach(id => {
+      const tag = availableTags?.find(t => t.id === id);
+      chips.push({ type: 'tags', id, label: tag?.name || 'Tag', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' });
+    });
+
+    filters.stages.forEach(id => {
+      const stage = funnel?.stages?.find(s => s.id === id);
+      chips.push({ type: 'stages', id, label: stage?.title || 'Etapa', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400' });
+    });
+
+    return chips;
+  };
+
+  const chips = getChips();
+
   if (!isMounted) {
-    return null; // Evita problema de hidratação com DragDropContext
+    return null;
   }
 
   if (!funnel || !funnel.stages) {
@@ -122,9 +160,38 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         companyUsers={companyUsers}
         companyTeams={companyTeams}
         connections={connections}
+        availableTags={availableTags}
       />
+
+      {/* Active Filter Chips Row */}
+      {chips.length > 0 && (
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border/30 bg-muted/20 flex-wrap flex-shrink-0">
+          <span className="text-[11px] text-muted-foreground/60 font-medium uppercase tracking-wide mr-1">Filtrando:</span>
+          {chips.map(chip => (
+            <button
+              key={`${chip.type}-${chip.id}`}
+              onClick={() => removeFilterChip(chip.type, chip.id)}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all hover:opacity-70 ${chip.color}`}
+            >
+              {chip.label}
+              <X className="h-2.5 w-2.5" />
+            </button>
+          ))}
+          {filters && (chips.length > 1) && (
+            <button
+              onClick={() => onFiltersChange?.({
+                stages: [], priority: [], valueMin: null, valueMax: null,
+                dateRange: 'all', assignedUsers: [], teams: [], connections: [], tags: [],
+              })}
+              className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2 transition-colors ml-1"
+            >
+              Limpar tudo
+            </button>
+          )}
+        </div>
+      )}
       
-      {/* Barra de Rolagem Superior */}
+      {/* Top Scroll Bar */}
       <div 
         ref={topScrollRef} 
         onScroll={handleTopScroll}

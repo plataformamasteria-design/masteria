@@ -1,0 +1,1 @@
+import { db } from './src/lib/db'; import { sql } from 'drizzle-orm'; async function run() { try { const res = await db.execute(sql\SELECT conname FROM pg_constraint WHERE conrelid = 'messages'::regclass AND contype = 'u'\); console.log(res); } catch (e) { console.error(e); } process.exit(0); } run();

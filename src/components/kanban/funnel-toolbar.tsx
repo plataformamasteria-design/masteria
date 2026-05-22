@@ -1,19 +1,21 @@
 // src/components/kanban/funnel-toolbar.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Search, Plus, Filter, Settings, X, Calendar } from 'lucide-react';
+import {
+  Search, Plus, SlidersHorizontal, Settings, X, Calendar,
+  Wifi, User, Users, Tag, Layers, DollarSign, ChevronDown, ChevronRight,
+} from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Checkbox } from '../ui/checkbox';
-import { Separator } from '../ui/separator';
 import { Badge } from '../ui/badge';
+import { Separator } from '../ui/separator';
 import type { KanbanFunnel, KanbanStage } from '@/lib/types';
 import type { KanbanFilters } from '@/app/(main)/kanban/[funnelId]/page';
 import Link from 'next/link';
 import { ImportKommoModal } from './import-kommo-modal';
+import { cn } from '@/lib/utils';
 
 interface FunnelToolbarProps {
   funnel: KanbanFunnel;
@@ -25,85 +27,198 @@ interface FunnelToolbarProps {
   companyUsers?: any[];
   companyTeams?: any[];
   connections?: any[];
+  availableTags?: any[];
 }
 
-export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections }: FunnelToolbarProps): JSX.Element {
-  const [filtersOpen, setFiltersOpen] = useState(false);
+// ─── FilterSection — colapsável fechado por padrão ──────────────────────────
+function FilterSection({
+  icon,
+  title,
+  count,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  count?: number;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
 
-  const handleStageToggle = (stageId: string) => {
-    if (!filters || !onFiltersChange) return;
-    const newStages = filters.stages.includes(stageId)
-      ? filters.stages.filter(s => s !== stageId)
-      : [...filters.stages, stageId];
-    onFiltersChange({ ...filters, stages: newStages });
-  };
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-muted/40 hover:bg-muted/70 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">{icon}</span>
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
+            {title}
+          </span>
+          {count !== undefined && count > 0 && (
+            <Badge className="h-4 min-w-4 px-1.5 py-0 text-[10px] bg-primary/15 text-primary border border-primary/30 font-semibold">
+              {count}
+            </Badge>
+          )}
+        </div>
+        {open
+          ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+          : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+        }
+      </button>
 
-  const handleUserToggle = (userId: string) => {
-    if (!filters || !onFiltersChange) return;
-    const newUsers = filters.assignedUsers.includes(userId)
-      ? filters.assignedUsers.filter(u => u !== userId)
-      : [...filters.assignedUsers, userId];
-    onFiltersChange({ ...filters, assignedUsers: newUsers });
-  };
+      {open && (
+        <div className="p-2 space-y-0.5 bg-background">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const handleTeamToggle = (teamId: string) => {
-    if (!filters || !onFiltersChange) return;
-    const newTeams = filters.teams.includes(teamId)
-      ? filters.teams.filter(t => t !== teamId)
-      : [...filters.teams, teamId];
-    onFiltersChange({ ...filters, teams: newTeams });
-  };
+// ─── FilterCheckItem ─────────────────────────────────────────────────────────
+function FilterCheckItem({
+  id,
+  label,
+  checked,
+  color,
+  onToggle,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  color?: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      onClick={onToggle}
+      className={cn(
+        'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors text-sm',
+        checked
+          ? 'bg-primary/10 text-primary'
+          : 'text-foreground hover:bg-muted'
+      )}
+    >
+      <div className={cn(
+        'h-4 w-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
+        checked
+          ? 'bg-primary border-primary'
+          : 'border-border bg-background'
+      )}>
+        {checked && (
+          <svg className="h-2.5 w-2.5 text-primary-foreground" viewBox="0 0 10 10" fill="none">
+            <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </div>
+      {color && (
+        <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+      )}
+      <span className="flex-1 truncate text-[13px]">{label}</span>
+    </button>
+  );
+}
 
-  const handleConnectionToggle = (connectionId: string) => {
-    if (!filters || !onFiltersChange) return;
-    const newConns = filters.connections.includes(connectionId)
-      ? filters.connections.filter(c => c !== connectionId)
-      : [...filters.connections, connectionId];
-    onFiltersChange({ ...filters, connections: newConns });
-  };
+// ─── SectionSearch ───────────────────────────────────────────────────────────
+function SectionSearch({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative mb-1.5">
+      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder || 'Buscar...'}
+        className="w-full pl-7 pr-2.5 py-1.5 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+      />
+    </div>
+  );
+}
 
-  const handleDateRangeChange = (range: 'all' | '7d' | '30d' | '90d') => {
-    if (!filters || !onFiltersChange) return;
-    onFiltersChange({ ...filters, dateRange: range });
-  };
+// ─── Main Component ──────────────────────────────────────────────────────────
+export function FunnelToolbar({
+  funnel, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount,
+  companyUsers, companyTeams, connections, availableTags,
+}: FunnelToolbarProps): JSX.Element {
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [connSearch, setConnSearch] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
+  const [tagSearch, setTagSearch] = useState('');
+  const [stageSearch, setStageSearch] = useState('');
 
-  const handleValueMinChange = (val: string) => {
+  const toggle = (key: keyof KanbanFilters, value: string) => {
     if (!filters || !onFiltersChange) return;
-    onFiltersChange({ ...filters, valueMin: val ? Number(val) : null });
-  };
-
-  const handleValueMaxChange = (val: string) => {
-    if (!filters || !onFiltersChange) return;
-    onFiltersChange({ ...filters, valueMax: val ? Number(val) : null });
+    const arr = filters[key] as string[];
+    const next = arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value];
+    onFiltersChange({ ...filters, [key]: next });
   };
 
   const handleClearFilters = () => {
     if (!onFiltersChange) return;
     onFiltersChange({
-      stages: [],
-      priority: [],
-      valueMin: null,
-      valueMax: null,
-      dateRange: 'all',
-      assignedUsers: [],
-      teams: [],
-      connections: [],
+      stages: [], priority: [], valueMin: null, valueMax: null,
+      dateRange: 'all', assignedUsers: [], teams: [], connections: [], tags: [],
     });
   };
+
+  const filteredConns = useMemo(() =>
+    (connections || []).filter(c =>
+      (c.config_name || c.configName || c.name || '').toLowerCase().includes(connSearch.toLowerCase())
+    ), [connections, connSearch]);
+
+  const filteredUsers = useMemo(() =>
+    (companyUsers || []).filter(u =>
+      (u.name || u.email || '').toLowerCase().includes(userSearch.toLowerCase())
+    ), [companyUsers, userSearch]);
+
+  const filteredTeams = useMemo(() =>
+    (companyTeams || []).filter(t =>
+      (t.name || '').toLowerCase().includes(teamSearch.toLowerCase())
+    ), [companyTeams, teamSearch]);
+
+  const filteredTags = useMemo(() =>
+    (availableTags || []).filter(t =>
+      (t.name || '').toLowerCase().includes(tagSearch.toLowerCase())
+    ), [availableTags, tagSearch]);
+
+  const filteredStages = useMemo(() =>
+    (funnel?.stages || []).filter(s =>
+      (s.title || '').toLowerCase().includes(stageSearch.toLowerCase())
+    ), [funnel?.stages, stageSearch]);
+
+  const hasFilters = (activeFilterCount ?? 0) > 0;
 
   return (
     <div className="border-b bg-background flex-shrink-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 gap-3">
+        {/* Funnel Name */}
         <div className="flex flex-col gap-0.5 min-w-0">
           <h2 className="text-base sm:text-lg font-semibold truncate">{funnel.name}</h2>
           <div className="text-xs text-muted-foreground">
-            {funnel.totalLeads || 0} leads • R$ {(funnel.totalValue || 0).toLocaleString('pt-BR')}
+            {funnel.totalLeads || 0} leads
+            {(funnel.totalValue ?? 0) > 0 && (
+              <span> • R$ {(funnel.totalValue || 0).toLocaleString('pt-BR')}</span>
+            )}
           </div>
         </div>
 
+        {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Desktop search */}
           <div className="relative hidden lg:block">
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar leads..."
               className="pl-8 h-8 w-40 xl:w-56 text-sm"
@@ -111,170 +226,237 @@ export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersC
             />
           </div>
 
-          {/* Filtros com Popover */}
-          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+          {/* Filters Popover */}
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3 relative">
-                <Filter className="h-4 w-4" />
-                <span className="hidden sm:inline ml-1.5">Filtros</span>
-                {(activeFilterCount ?? 0) > 0 && (
-                  <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary">
+              <Button
+                variant="outline"
+                size="sm"
+                id="kanban-filter-btn"
+                className="h-8 px-2 sm:px-3 relative gap-1.5"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="hidden sm:inline ml-0.5">Filtros</span>
+                {hasFilters && (
+                  <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px] bg-primary text-primary-foreground">
                     {activeFilterCount}
                   </Badge>
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="end">
-              <div className="p-3 border-b flex items-center justify-between">
-                <h4 className="text-sm font-semibold">Filtros</h4>
-                {(activeFilterCount ?? 0) > 0 && (
-                  <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={handleClearFilters}>
-                    <X className="h-3 w-3 mr-1" />
+
+            <PopoverContent
+              className="w-80 p-0 bg-background border border-border shadow-lg"
+              align="end"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground">Filtros</span>
+                  {hasFilters && (
+                    <Badge className="h-4 px-1.5 text-[10px] bg-primary text-primary-foreground font-bold">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </div>
+                {hasFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearFilters}
+                    className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                  >
+                    <X className="h-3 w-3" />
                     Limpar
                   </Button>
                 )}
               </div>
 
-              <div className="p-3 space-y-4 max-h-[400px] overflow-auto">
-                {/* Filtro por Etapa */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase">Etapas</Label>
-                  <div className="space-y-1.5">
-                    {funnel.stages.map((stage: KanbanStage) => (
-                      <div key={stage.id} className="flex items-center gap-2">
-                        <Checkbox
-                          id={`filter-stage-${stage.id}`}
-                          checked={filters?.stages.includes(stage.id) ?? false}
-                          onCheckedChange={() => handleStageToggle(stage.id)}
-                        />
-                        <label htmlFor={`filter-stage-${stage.id}`} className="text-sm cursor-pointer flex-1 truncate">
-                          {stage.title}
-                        </label>
-                      </div>
+              {/* Scrollable filter body */}
+              <div className="p-3 space-y-2 max-h-[70vh] overflow-y-auto">
+
+                {/* Conexão */}
+                {(connections || []).length > 0 && (
+                  <FilterSection
+                    icon={<Wifi className="h-3.5 w-3.5" />}
+                    title="Conexão"
+                    count={filters?.connections.length}
+                  >
+                    {(connections || []).length > 4 && (
+                      <SectionSearch value={connSearch} onChange={setConnSearch} placeholder="Buscar conexão..." />
+                    )}
+                    {filteredConns.map(conn => (
+                      <FilterCheckItem
+                        key={conn.id}
+                        id={`filter-conn-${conn.id}`}
+                        label={conn.config_name || conn.configName || conn.name || conn.sessionName || 'Conexão'}
+                        checked={filters?.connections.includes(conn.id) ?? false}
+                        onToggle={() => toggle('connections', conn.id)}
+                      />
                     ))}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Filtro por Usuário Atribuído */}
-                {companyUsers && companyUsers.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase">Usuário Atribuído</Label>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
-                      {companyUsers.map((user: any) => (
-                        <div key={user.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`filter-user-${user.id}`}
-                            checked={filters?.assignedUsers.includes(user.id) ?? false}
-                            onCheckedChange={() => handleUserToggle(user.id)}
-                          />
-                          <label htmlFor={`filter-user-${user.id}`} className="text-sm cursor-pointer flex-1 truncate">
-                            {user.name || user.email}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                    {filteredConns.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-2 py-1">Nenhuma encontrada.</p>
+                    )}
+                  </FilterSection>
                 )}
 
-                {/* Filtro por Equipe */}
-                {companyTeams && companyTeams.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase">Equipe</Label>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
-                      {companyTeams.map((team: any) => (
-                        <div key={team.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`filter-team-${team.id}`}
-                            checked={filters?.teams.includes(team.id) ?? false}
-                            onCheckedChange={() => handleTeamToggle(team.id)}
-                          />
-                          <label htmlFor={`filter-team-${team.id}`} className="text-sm cursor-pointer flex-1 truncate">
-                            {team.name}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {/* Usuário Atribuído */}
+                {(companyUsers || []).length > 0 && (
+                  <FilterSection
+                    icon={<User className="h-3.5 w-3.5" />}
+                    title="Usuário Atribuído"
+                    count={filters?.assignedUsers.length}
+                  >
+                    {(companyUsers || []).length > 4 && (
+                      <SectionSearch value={userSearch} onChange={setUserSearch} placeholder="Buscar usuário..." />
+                    )}
+                    {filteredUsers.map(user => (
+                      <FilterCheckItem
+                        key={user.id}
+                        id={`filter-user-${user.id}`}
+                        label={user.name || user.email}
+                        checked={filters?.assignedUsers.includes(user.id) ?? false}
+                        onToggle={() => toggle('assignedUsers', user.id)}
+                      />
+                    ))}
+                    {filteredUsers.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-2 py-1">Nenhum encontrado.</p>
+                    )}
+                  </FilterSection>
                 )}
 
-                {/* Filtro por Conexão */}
-                {connections && connections.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <Label className="text-xs font-semibold text-muted-foreground uppercase">Conexão</Label>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
-                      {connections.map((conn: any) => (
-                        <div key={conn.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`filter-conn-${conn.id}`}
-                            checked={filters?.connections.includes(conn.id) ?? false}
-                            onCheckedChange={() => handleConnectionToggle(conn.id)}
-                          />
-                          <label htmlFor={`filter-conn-${conn.id}`} className="text-sm cursor-pointer flex-1 truncate">
-                            {conn.config_name || conn.configName || conn.name || conn.sessionName || 'Conexão'}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {/* Equipe */}
+                {(companyTeams || []).length > 0 && (
+                  <FilterSection
+                    icon={<Users className="h-3.5 w-3.5" />}
+                    title="Equipe"
+                    count={filters?.teams.length}
+                  >
+                    {(companyTeams || []).length > 4 && (
+                      <SectionSearch value={teamSearch} onChange={setTeamSearch} placeholder="Buscar equipe..." />
+                    )}
+                    {filteredTeams.map(team => (
+                      <FilterCheckItem
+                        key={team.id}
+                        id={`filter-team-${team.id}`}
+                        label={team.name}
+                        checked={filters?.teams.includes(team.id) ?? false}
+                        onToggle={() => toggle('teams', team.id)}
+                      />
+                    ))}
+                    {filteredTeams.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-2 py-1">Nenhuma encontrada.</p>
+                    )}
+                  </FilterSection>
                 )}
 
-                <Separator className="my-4" />
+                {/* Etiquetas */}
+                {(availableTags || []).length > 0 && (
+                  <FilterSection
+                    icon={<Tag className="h-3.5 w-3.5" />}
+                    title="Etiquetas"
+                    count={filters?.tags.length}
+                  >
+                    {(availableTags || []).length > 4 && (
+                      <SectionSearch value={tagSearch} onChange={setTagSearch} placeholder="Buscar etiqueta..." />
+                    )}
+                    {filteredTags.map(tag => (
+                      <FilterCheckItem
+                        key={tag.id}
+                        id={`filter-tag-${tag.id}`}
+                        label={tag.name}
+                        color={tag.color || undefined}
+                        checked={filters?.tags.includes(tag.id) ?? false}
+                        onToggle={() => toggle('tags', tag.id)}
+                      />
+                    ))}
+                    {filteredTags.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-2 py-1">Nenhuma encontrada.</p>
+                    )}
+                  </FilterSection>
+                )}
 
-                {/* Filtro por Valor */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase">Valor (R$)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Mín"
-                      className="h-7 text-xs"
-                      value={filters?.valueMin ?? ''}
-                      onChange={(e) => handleValueMinChange(e.target.value)}
-                    />
-                    <span className="text-muted-foreground text-xs">—</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Máx"
-                      className="h-7 text-xs"
-                      value={filters?.valueMax ?? ''}
-                      onChange={(e) => handleValueMaxChange(e.target.value)}
-                    />
-                  </div>
-                </div>
+                <Separator className="my-1" />
 
-                <Separator />
+                {/* Etapas */}
+                {(funnel?.stages || []).length > 0 && (
+                  <FilterSection
+                    icon={<Layers className="h-3.5 w-3.5" />}
+                    title="Etapas"
+                    count={filters?.stages.length}
+                  >
+                    {(funnel?.stages || []).length > 5 && (
+                      <SectionSearch value={stageSearch} onChange={setStageSearch} placeholder="Buscar etapa..." />
+                    )}
+                    {filteredStages.map((stage: KanbanStage) => (
+                      <FilterCheckItem
+                        key={stage.id}
+                        id={`filter-stage-${stage.id}`}
+                        label={stage.title}
+                        checked={filters?.stages.includes(stage.id) ?? false}
+                        onToggle={() => toggle('stages', stage.id)}
+                      />
+                    ))}
+                  </FilterSection>
+                )}
 
-                {/* Filtro por Data */}
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    Criado em
-                  </Label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[
+                {/* Data de Criação */}
+                <FilterSection
+                  icon={<Calendar className="h-3.5 w-3.5" />}
+                  title="Criado em"
+                  count={filters?.dateRange !== 'all' ? 1 : 0}
+                >
+                  <div className="flex gap-1.5 flex-wrap py-1 px-1">
+                    {([
                       { value: 'all' as const, label: 'Todos' },
                       { value: '7d' as const, label: '7 dias' },
                       { value: '30d' as const, label: '30 dias' },
                       { value: '90d' as const, label: '90 dias' },
-                    ].map(({ value, label }) => (
-                      <Button
+                    ] as const).map(({ value, label }) => (
+                      <button
                         key={value}
-                        variant={filters?.dateRange === value ? 'default' : 'outline'}
-                        size="sm"
-                        className="h-6 text-xs px-2"
-                        onClick={() => handleDateRangeChange(value)}
+                        type="button"
+                        onClick={() => onFiltersChange?.({ ...(filters!), dateRange: value })}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-xs font-medium border transition-colors',
+                          filters?.dateRange === value
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background text-foreground border-border hover:bg-muted'
+                        )}
                       >
                         {label}
-                      </Button>
+                      </button>
                     ))}
                   </div>
-                </div>
+                </FilterSection>
+
+                {/* Valor */}
+                <FilterSection
+                  icon={<DollarSign className="h-3.5 w-3.5" />}
+                  title="Valor (R$)"
+                  count={(filters?.valueMin !== null || filters?.valueMax !== null) ? 1 : 0}
+                >
+                  <div className="flex items-center gap-2 px-1 py-1">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Mín"
+                      className="h-7 text-xs"
+                      value={filters?.valueMin ?? ''}
+                      onChange={e => onFiltersChange?.({ ...filters!, valueMin: e.target.value ? Number(e.target.value) : null })}
+                    />
+                    <span className="text-muted-foreground text-sm flex-shrink-0">—</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Máx"
+                      className="h-7 text-xs"
+                      value={filters?.valueMax ?? ''}
+                      onChange={e => onFiltersChange?.({ ...filters!, valueMax: e.target.value ? Number(e.target.value) : null })}
+                    />
+                  </div>
+                </FilterSection>
+
               </div>
             </PopoverContent>
           </Popover>
@@ -287,17 +469,18 @@ export function FunnelToolbar({ funnel, onAddCard, onSearch, filters, onFiltersC
           </Link>
 
           <ImportKommoModal />
-          
-          <Button size="sm" onClick={onAddCard} className="h-8 px-2 sm:px-3">
+
+          <Button size="sm" onClick={onAddCard} id="kanban-new-lead-btn" className="h-8 px-2 sm:px-3">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline ml-1.5">Novo Lead</span>
           </Button>
         </div>
       </div>
 
+      {/* Mobile search */}
       <div className="px-3 pb-3 lg:hidden">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar leads..."
             className="pl-8 h-8 w-full text-sm"

@@ -22,6 +22,7 @@ export interface KanbanFilters {
   assignedUsers: string[];
   teams: string[];
   connections: string[];
+  tags: string[];
 }
 
 const DEFAULT_FILTERS: KanbanFilters = {
@@ -33,6 +34,7 @@ const DEFAULT_FILTERS: KanbanFilters = {
   assignedUsers: [],
   teams: [],
   connections: [],
+  tags: [],
 };
 
 export default function FunnelPage({ params }: { params: Promise<{ funnelId: string }> }) {
@@ -47,15 +49,17 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
   const [companyUsers, setCompanyUsers] = useState<any[]>([]);
   const [companyTeams, setCompanyTeams] = useState<any[]>([]);
   const [connections, setConnections] = useState<any[]>([]);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
   
   const { toast } = useToast();
 
   const fetchFunnelData = async () => {
     try {
       setLoading(true);
-      const [funnelRes, leadsRes, usersData, teamsData, connsData] = await Promise.all([
+      const [funnelRes, leadsRes, tagsRes, usersData, teamsData, connsData] = await Promise.all([
         fetch(`/api/v1/kanbans/${funnelId}`),
         fetch(`/api/v1/leads?boardId=${funnelId}`),
+        fetch(`/api/v1/tags?limit=200`),
         getCompanyUsers(),
         getTeams(),
         fetchAvailableConnections()
@@ -65,12 +69,14 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
 
       const funnelData = await funnelRes.json();
       const leadsData = await leadsRes.json();
+      const tagsData = tagsRes.ok ? await tagsRes.json() : { data: [] };
 
       setFunnel(funnelData);
       setCards(leadsData);
       setCompanyUsers(usersData);
       setCompanyTeams(teamsData);
       setConnections(connsData);
+      setAvailableTags(tagsData.data || []);
 
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro', description: (error as Error).message });
@@ -138,6 +144,14 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
       result = result.filter(card => {
          const connId = (card as any).conversation?.connectionId;
          return connId && filters.connections.includes(connId);
+      });
+    }
+
+    // Filtro por Etiquetas/Tags (via contact.tags[].id)
+    if (filters.tags.length > 0) {
+      result = result.filter(card => {
+        const cardTags: any[] = (card as any).contact?.tags || [];
+        return cardTags.some(t => filters.tags.includes(t.id));
       });
     }
 
@@ -260,6 +274,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     if (filters.assignedUsers.length > 0) count++;
     if (filters.teams.length > 0) count++;
     if (filters.connections.length > 0) count++;
+    if (filters.tags.length > 0) count++;
     if (filters.valueMin !== null || filters.valueMax !== null) count++;
     if (filters.dateRange !== 'all') count++;
     return count;
@@ -309,6 +324,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
             companyUsers={companyUsers}
             companyTeams={companyTeams}
             connections={connections}
+            availableTags={availableTags}
           />
         </TabsContent>
 
