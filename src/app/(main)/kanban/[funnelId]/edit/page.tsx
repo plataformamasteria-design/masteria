@@ -504,10 +504,6 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
                                 </div>
                               </div>
 
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Tipo Semântico (Automação)</Label>
-                                <Select
-                                  value={stage.semanticType || 'NONE'}
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <Label className="text-xs text-muted-foreground">Tipo Semântico (Automação)</Label>
