@@ -11,7 +11,8 @@ import { emitInboxUpdate } from '@/lib/socket';
 
 const SendMessageSchema = z.object({
     conversationId: z.string().min(1),
-    content: z.string().min(1, "Não é possível enviar mensagens vazias").max(5000, "Mensagem longa demais")
+    content: z.string().min(1, "Não é possível enviar mensagens vazias").max(5000, "Mensagem longa demais"),
+    isInternalNote: z.boolean().optional()
 });
 
 const ToggleAiSchema = z.object({
@@ -28,9 +29,9 @@ const SyncHistorySchema = z.object({
     conversationId: z.string().min(1)
 });
 
-export async function sendMessageAction(conversationIdRaw: string, contentRaw: string) {
+export async function sendMessageAction(conversationIdRaw: string, contentRaw: string, isInternalNoteRaw?: boolean) {
     try {
-        const { conversationId, content } = SendMessageSchema.parse({ conversationId: conversationIdRaw, content: contentRaw });
+        const { conversationId, content, isInternalNote } = SendMessageSchema.parse({ conversationId: conversationIdRaw, content: contentRaw, isInternalNote: isInternalNoteRaw });
 
         const userId = await getUserIdFromSession();
         const companyId = await getCompanyIdFromSession();
@@ -72,18 +73,31 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
         }
 
         // 3. Send
-        // Determinar provedor com base no tipo de conexão
-        const provider = ['baileys', 'evolution'].includes(conversation.connection?.connectionType || '') ? 'baileys' : 'apicloud';
+        let providerMessageId = null;
+        let finalContent = content;
 
-        const result = await sendUnifiedMessage({
-            provider: provider,
-            connectionId: conversation.connectionId,
-            to: conversation.contact.phone, // Assuming phone acts as UID
-            message: content,
-        });
+        if (isInternalNote) {
+            // Empacota a nota interna com o nome do agente
+            const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+            finalContent = JSON.stringify({
+                text: content,
+                authorName: user?.name || 'Agente'
+            });
+        } else {
+            // Determinar provedor com base no tipo de conexão
+            const provider = ['baileys', 'evolution'].includes(conversation.connection?.connectionType || '') ? 'baileys' : 'apicloud';
 
-        if (!result.success) {
-            throw new Error(result.error || "Erro ao enviar mensagem.");
+            const result = await sendUnifiedMessage({
+                provider: provider,
+                connectionId: conversation.connectionId,
+                to: conversation.contact.phone, // Assuming phone acts as UID
+                message: content,
+            });
+
+            if (!result.success) {
+                throw new Error(result.error || "Erro ao enviar mensagem.");
+            }
+            providerMessageId = result.messageId;
         }
 
         // 4. Persist to DB immediately
@@ -92,10 +106,11 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
                 companyId: companyId,
                 conversationId: conversation.id,
                 connectionId: conversation.connectionId,
-                providerMessageId: result.messageId,
+                providerMessageId: providerMessageId,
                 senderType: 'AGENT',
                 senderId: userId,
-                content: content,
+                content: finalContent,
+                contentType: isInternalNote ? 'INTERNAL_NOTE' : 'TEXT',
                 status: 'SENT',
                 sentAt: new Date(),
             }).onConflictDoUpdate({
@@ -116,7 +131,7 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
 
         revalidatePath('/atendimentos');
         emitInboxUpdate(companyId);
-        return { success: true, messageId: result.messageId, dbId: savedMsg?.id };
+        return { success: true, messageId: providerMessageId, dbId: savedMsg?.id };
     } catch (error: unknown) {
         console.error("SendMessageAction Error:", error);
         return { success: false, error: error instanceof Error ? error.message : "Erro interno ao enviar mensagem." };

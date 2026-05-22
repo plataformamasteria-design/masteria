@@ -186,19 +186,29 @@ export function useInboxController({
         router.push(`/atendimentos?conversationId=${conversationId}`, { scroll: false });
     }, [conversations, fetchAndSetMessages, fetchContactDetails, router]);
 
-    const handleSendMessage = useCallback(async (text: string) => {
+    const handleSendMessage = useCallback(async (text: string, isInternalNote?: boolean) => {
         if (!selectedConversation || !session?.userId) return;
 
         // Optimistic Update
         const tempId = `temp-${Date.now()}`;
+        
+        let optimisticContent = text;
+        if (isInternalNote) {
+            // Empacotar optimistic content
+            optimisticContent = JSON.stringify({
+                text,
+                authorName: session.userName || 'Agente'
+            });
+        }
+
         const optimisticMessage: Message = {
             id: tempId,
             conversationId: selectedConversation.id,
             connectionId: selectedConversation.connectionId,
             senderType: 'AGENT',
             senderId: session.userId,
-            content: text,
-            contentType: 'TEXT',
+            content: optimisticContent,
+            contentType: isInternalNote ? 'INTERNAL_NOTE' : 'TEXT',
             status: 'PENDING',
             sentAt: new Date(),
             providerMessageId: null,
@@ -210,7 +220,7 @@ export function useInboxController({
         setCurrentMessages(prev => [...prev, optimisticMessage]);
 
         try {
-            const result = await sendMessageAction(selectedConversation.id, text);
+            const result = await sendMessageAction(selectedConversation.id, text, isInternalNote);
             if (!result.success) throw new Error(result.error);
 
             // Replace temp id with real DB id so polling merge won't duplicate

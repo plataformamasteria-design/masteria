@@ -62,7 +62,7 @@ interface ActiveChatProps {
   messages: Message[];
   loadingMessages: boolean;
   templates: Template[];
-  onSendMessage: (text: string) => Promise<void>;
+  onSendMessage: (text: string, isInternalNote?: boolean) => Promise<void>;
   onSendMedia?: (file: File) => Promise<void>;
   onBack: () => void;
   onToggleAi: (conversationId: string, aiActive: boolean) => Promise<void>;
@@ -256,13 +256,13 @@ export function ActiveChat({
     return () => container.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  const handleSendMessage = async (e: React.FormEvent | undefined) => {
+  const handleSendMessage = async (e: React.FormEvent | undefined, isInternalNote?: boolean) => {
     if (e?.preventDefault) e.preventDefault();
     if (!messageText.trim() || !conversation) return;
 
     setIsSending(true);
     try {
-      await onSendMessage(messageText);
+      await onSendMessage(messageText, isInternalNote);
       setMessageText('');
       setReplyToMessage(null);
     } catch (error) {

@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Send, X, LockKeyhole, Loader2, Paperclip, Mic, Trash2 } from "lucide-react";
+import { Send, X, LockKeyhole, Loader2, Paperclip, Mic, Trash2, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/lib/types";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
@@ -8,7 +8,7 @@ import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 interface MessageInputProps {
   messageText: string;
   setMessageText: (text: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent, isInternalNote?: boolean) => void;
   isSending: boolean;
   disabled: boolean;
   replyToMessage?: Message | null;
@@ -48,6 +48,7 @@ export function MessageInput({
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recorder = useAudioRecorder();
+  const [isInternalNote, setIsInternalNote] = useState(false);
 
   // Auto-resize
   useEffect(() => {
@@ -67,8 +68,17 @@ export function MessageInput({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!isSending && !disabled && messageText.trim()) {
-        onSubmit(e as any);
+        onSubmit(e as any, isInternalNote);
+        setIsInternalNote(false); // Reset after send
       }
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSending && !disabled && messageText.trim()) {
+      onSubmit(e, isInternalNote);
+      setIsInternalNote(false); // Reset after send
     }
   };
 
@@ -149,15 +159,36 @@ export function MessageInput({
             </Button>
           </div>
         ) : (
-          <form onSubmit={onSubmit} className="flex items-end gap-2 px-1 relative">
+          <form onSubmit={handleFormSubmit} className="flex items-end gap-2 px-1 relative">
             <div className="flex gap-1 shrink-0 pb-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsInternalNote(!isInternalNote)}
+                className={cn(
+                  "shrink-0 h-10 w-10 rounded-full transition-all duration-200",
+                  isInternalNote 
+                    ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted focus:bg-muted"
+                )}
+                title="Nota Interna"
+                disabled={isArchived || (!canSendFreeform && is24hRestricted)}
+              >
+                <StickyNote className="h-5 w-5" />
+              </Button>
               {actionMenuSlot}
             </div>
             
-            <div className="relative flex-1 bg-white dark:bg-zinc-900 border border-border/80 shadow-sm rounded-3xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all duration-200">
+            <div className={cn(
+              "relative flex-1 border shadow-sm rounded-3xl overflow-hidden focus-within:ring-1 transition-all duration-200",
+              isInternalNote 
+                ? "bg-amber-50 dark:bg-amber-500/5 border-amber-500/40 focus-within:ring-amber-500/40 focus-within:border-amber-500/60" 
+                : "bg-white dark:bg-zinc-900 border-border/80 focus-within:ring-primary/20 focus-within:border-primary/50"
+            )}>
               <textarea
                 ref={textareaRef}
-                placeholder={placeholder}
+                placeholder={isInternalNote ? "Escreva uma nota interna..." : placeholder}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -186,12 +217,14 @@ export function MessageInput({
                 size="icon"
                 className={cn(
                   "shrink-0 h-11 w-11 rounded-full transition-all duration-300 ml-1 flex items-center justify-center shadow-md",
-                  "bg-emerald-500 hover:bg-emerald-600 text-white focus:ring-2 focus:ring-emerald-500/30",
+                  isInternalNote 
+                    ? "bg-amber-500 hover:bg-amber-600 text-white focus:ring-2 focus:ring-amber-500/30 cursor-not-allowed opacity-50" 
+                    : "bg-emerald-500 hover:bg-emerald-600 text-white focus:ring-2 focus:ring-emerald-500/30",
                   disabled && "opacity-50 cursor-not-allowed"
                 )}
-                disabled={disabled}
+                disabled={disabled || isInternalNote}
                 onClick={recorder.startRecording}
-                title="Gravar Áudio"
+                title={isInternalNote ? "Áudio não suportado para nota interna" : "Gravar Áudio"}
               >
                 <Mic className="h-5 w-5" />
               </Button>

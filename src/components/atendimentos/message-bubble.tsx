@@ -4,7 +4,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Message } from "@/lib/types";
-import { Check, CheckCheck, Clock, AlertTriangle, FileText, ImageIcon, Mic, Video, Smile, Calendar as CalendarIcon } from 'lucide-react';
+import { Check, CheckCheck, Clock, AlertTriangle, FileText, ImageIcon, Mic, Video, Smile, Calendar as CalendarIcon, StickyNote } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 // import Image from "next/image";
 import { AudioPlayer } from "./audio-player";
@@ -309,6 +309,37 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
             <div id={`message-${message.id}`} className="flex w-full justify-center my-3">
                 <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-muted-foreground text-[11px] px-4 py-1.5 rounded-full flex items-center gap-1.5 max-w-[85%] text-center italic">
                     <span>{message.content}</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (message.contentType === 'INTERNAL_NOTE') {
+        let text = message.content;
+        let authorName = 'Agente';
+        try {
+            const parsed = JSON.parse(message.content || '{}');
+            if (parsed.text) text = parsed.text;
+            if (parsed.authorName) authorName = parsed.authorName;
+        } catch (e) {
+            // Retrocompatibilidade se já existir notas em texto simples
+        }
+
+        return (
+            <div id={`message-${message.id}`} className="flex w-full justify-center my-4">
+                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-900 dark:text-amber-200 text-sm px-4 py-3 rounded-2xl flex flex-col w-full max-w-[85%] shadow-sm">
+                    <div className="flex items-center gap-1.5 mb-2 opacity-80 text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                        <StickyNote className="h-3.5 w-3.5" />
+                        <span>Nota Interna • {authorName}</span>
+                    </div>
+                    <div className="whitespace-pre-wrap leading-relaxed"><FormatWhatsAppText text={text || ''} /></div>
+                    <div className="flex items-center justify-end mt-1.5 opacity-60 text-[10px] text-amber-700 dark:text-amber-400">
+                        <span>
+                            {message.sentAt && !isNaN(new Date(message.sentAt).getTime())
+                                ? new Date(message.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                : '--:--'}
+                        </span>
+                    </div>
                 </div>
             </div>
         );
