@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createToastNotifier } from '@/lib/toast-helper';
 import Link from 'next/link';
 import { ImportKommoModal } from './import-kommo-modal';
+import { UnassignedLeadsDrawer } from './unassigned-leads-drawer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,6 +82,7 @@ export function FunnelList() {
           <Filter className="h-6 w-6" /> Funis Kanban
         </h2>
         <div className="flex items-center gap-2">
+          <UnassignedLeadsDrawer funnels={funnels} />
           <ImportKommoModal />
           <Link href="/kanban/new" passHref>
             <Button>

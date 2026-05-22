@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, GripVertical, Link2 } from 'lucide-react';
+import { Zap, ArrowLeft, Loader2, GripVertical, Plus, Trash2, AlertCircle, Link2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
@@ -67,14 +67,29 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
   const [stages, setStages] = useState<Stage[]>([]);
   const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>([]);
   const [availableConnections, setAvailableConnections] = useState<ConnectionOption[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [automations, setAutomations] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
+
+  const [settings, setSettings] = useState({
+    autoAssignTeamId: '',
+    autoAssignUserId: '',
+    autoTriggerAutomationId: '',
+    autoTags: [] as string[],
+    defaultEntryStageId: '',
+  });
 
   // Carregar dados do funil e conexões
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [funnelRes, connectionsRes] = await Promise.all([
+        const [funnelRes, connectionsRes, teamsRes, automationsRes, tagsRes] = await Promise.all([
           fetch(`/api/v1/kanbans/${funnelId}`),
           fetch('/api/v1/connections'),
+          fetch('/api/v1/team'),
+          fetch('/api/v1/automations'),
+          fetch('/api/v1/tags'),
         ]);
 
         if (!funnelRes.ok) throw new Error('Falha ao carregar funil');
@@ -88,9 +103,26 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
           ...s,
           semanticType: s.semanticType || undefined
         })));
+        if (data.settings) {
+          setSettings({
+            autoAssignTeamId: data.settings.autoAssignTeamId || '',
+            autoAssignUserId: data.settings.autoAssignUserId || '',
+            autoTriggerAutomationId: data.settings.autoTriggerAutomationId || '',
+            autoTags: data.settings.autoTags || [],
+            defaultEntryStageId: data.settings.defaultEntryStageId || '',
+          });
+        }
 
         const connData = await connectionsRes.json();
         setAvailableConnections(Array.isArray(connData) ? connData.filter((c: ConnectionOption) => c.isActive) : []);
+        
+        if (teamsRes.ok) { 
+           const td = await teamsRes.json(); 
+           setTeams(Array.isArray(td.teams) ? td.teams : (Array.isArray(td) ? td : [])); 
+           setUsers(Array.isArray(td.members) ? td.members : []); 
+        }
+        if (automationsRes.ok) { const ad = await automationsRes.json(); setAutomations(Array.isArray(ad.data) ? ad.data : []); }
+        if (tagsRes.ok) { const tg = await tagsRes.json(); setTags(Array.isArray(tg) ? tg : []); }
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -110,6 +142,13 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
     setSelectedConnectionIds(prev =>
       prev.includes(connId) ? prev.filter(id => id !== connId) : [...prev, connId]
     );
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSettings(prev => ({
+      ...prev,
+      autoTags: prev.autoTags.includes(tagId) ? prev.autoTags.filter(id => id !== tagId) : [...prev.autoTags, tagId]
+    }));
   };
 
   const addStage = () => {
@@ -193,9 +232,17 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
           objective: objective || null,
           stages: stages.map(s => ({
             ...s,
-            semanticType: s.semanticType || undefined
+            semanticType: s.semanticType === 'NONE' ? undefined : s.semanticType,
+            entryAutomationId: s.entryAutomationId || undefined
           })),
           connectionIds: selectedConnectionIds.length > 0 ? selectedConnectionIds : null,
+          settings: {
+            autoAssignTeamId: settings.autoAssignTeamId || null,
+            autoAssignUserId: settings.autoAssignUserId || null,
+            autoTriggerAutomationId: settings.autoTriggerAutomationId || null,
+            autoTags: settings.autoTags,
+            defaultEntryStageId: settings.defaultEntryStageId || null,
+          }
         })
       });
 
@@ -325,7 +372,59 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
               </div>
             )}
 
-            <div className="space-y-4">
+            {/* Configurações de Entrada do Funil */}
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-lg font-semibold">Automações de Entrada (Opcional)</Label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Configure o que deve acontecer automaticamente quando um lead entrar neste funil.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Atribuir a Usuário Específico</Label>
+                  <Select value={settings.autoAssignUserId} onValueChange={(val) => setSettings(s => ({ ...s, autoAssignUserId: val === 'none' ? '' : val }))}>
+                    <SelectTrigger><SelectValue placeholder="Nenhum Usuário..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum Usuário</SelectItem>
+                      {users.map(u => <SelectItem key={u.id || u.user?.id} value={u.id || u.user?.id}>{u.name || u.user?.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Disparar Fluxo de Automação</Label>
+                  <Select value={settings.autoTriggerAutomationId} onValueChange={(val) => setSettings(s => ({ ...s, autoTriggerAutomationId: val === 'none' ? '' : val }))}>
+                    <SelectTrigger><SelectValue placeholder="Nenhum Fluxo..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum Fluxo</SelectItem>
+                      {automations.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {tags.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <Label>Adicionar Tags Automaticamente</Label>
+                  <div className="flex flex-wrap gap-2 p-3 border rounded-md">
+                    {tags.map(t => (
+                      <label key={t.id} className="flex items-center gap-2 cursor-pointer bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors text-sm">
+                        <Checkbox 
+                          checked={settings.autoTags.includes(t.id)} 
+                          onCheckedChange={() => toggleTag(t.id)} 
+                        />
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: t.color || '#cbd5e1' }} />
+                          {t.name}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
               <div className="flex items-center justify-between">
                 <Label>Estágios do Funil *</Label>
                 <Button type="button" variant="outline" size="sm" onClick={addStage}>
@@ -409,19 +508,53 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
                                 <Label className="text-xs text-muted-foreground">Tipo Semântico (Automação)</Label>
                                 <Select
                                   value={stage.semanticType || 'NONE'}
-                                  onValueChange={(value: SemanticType | 'NONE') => updateStage(stage.id, 'semanticType', value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {SEMANTIC_TYPES.map((st) => (
-                                      <SelectItem key={st.value} value={st.value}>
-                                        {st.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Tipo Semântico (Automação)</Label>
+                                  <Select
+                                    value={stage.semanticType || 'NONE'}
+                                    onValueChange={(value: SemanticType | 'NONE') => updateStage(stage.id, 'semanticType', value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="NONE">Nenhum</SelectItem>
+                                      {SEMANTIC_TYPES.map((st) => (
+                                        <SelectItem key={st.value} value={st.value}>
+                                          {st.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> Automação ao Entrar na Etapa</Label>
+                                  <Select
+                                    value={stage.entryAutomationId || 'none'}
+                                    onValueChange={(value: string) => updateStage(stage.id, 'entryAutomationId', value === 'none' ? undefined : value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Nenhum fluxo selecionado" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">Nenhum fluxo</SelectItem>
+                                      {automations.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                              <div className="pt-2 border-t border-muted-foreground/10 flex items-center">
+                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
+                                  <input 
+                                    type="radio" 
+                                    name="defaultEntryStage" 
+                                    checked={settings.defaultEntryStageId === stage.id || (!settings.defaultEntryStageId && index === 0)}
+                                    onChange={() => setSettings(s => ({ ...s, defaultEntryStageId: stage.id }))}
+                                    className="accent-primary w-4 h-4"
+                                  />
+                                  Definir como Etapa Padrão de Entrada (Leads Novos)
+                                </label>
                               </div>
                             </div>
                           )}

@@ -17,8 +17,16 @@ const boardUpdateSchema = z.object({
         title: z.string().min(1),
         type: z.enum(['NEUTRAL', 'WIN', 'LOSS']),
         semanticType: z.enum(['meeting_scheduled', 'meeting_cancelled', 'payment_received', 'proposal_sent']).optional(),
+        entryAutomationId: z.string().optional().nullable(),
     })).min(1, 'É necessária pelo menos uma etapa').optional(),
     connectionIds: z.array(z.string().uuid()).optional().nullable(),
+    settings: z.object({
+        autoAssignTeamId: z.string().optional().nullable(),
+        autoAssignUserId: z.string().optional().nullable(),
+        autoTriggerAutomationId: z.string().optional().nullable(),
+        autoTags: z.array(z.string()).optional(),
+        defaultEntryStageId: z.string().optional().nullable(),
+    }).optional(),
 });
 
 

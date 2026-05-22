@@ -423,3 +423,76 @@ export async function switchConnectionAction(conversationIdRaw: string, newConne
 export async function syncBaileysHistoryAction(conversationIdRaw: string) {
     return { success: false, error: "A sincronização de histórico foi descontinuada na nova arquitetura (Evolution API)." };
 }
+
+// ==============================
+// Outbound Conversation (Kanban)
+// ==============================
+
+export async function startOutboundConversationAction(contactId: string, kanbanCardId: string, connectionId: string, messageContent: string) {
+    try {
+        const userId = await getUserIdFromSession();
+        const companyId = await getCompanyIdFromSession();
+
+        const [contact] = await db.select().from(contacts).where(and(eq(contacts.id, contactId), eq(contacts.companyId, companyId))).limit(1);
+        if (!contact) throw new Error("Contato não encontrado.");
+
+        const [connection] = await db.select().from(connections).where(and(eq(connections.id, connectionId), eq(connections.companyId, companyId))).limit(1);
+        if (!connection) throw new Error("Conexão não encontrada.");
+
+        // Dispara mensagem
+        const provider = ['baileys', 'evolution'].includes(connection.connectionType || '') ? 'baileys' : 'apicloud';
+        
+        const result = await sendUnifiedMessage({
+            provider: provider,
+            connectionId: connection.id,
+            to: contact.phone,
+            message: messageContent,
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || "Erro ao enviar mensagem.");
+        }
+
+        // DB Transaction
+        await db.transaction(async (tx) => {
+            let convId = '';
+            const [existing] = await tx.select().from(conversations).where(and(eq(conversations.contactId, contact.id), not(eq(conversations.status, 'archived')))).limit(1);
+            
+            if (existing) {
+                convId = existing.id;
+                await tx.update(conversations).set({ assignedTo: userId, connectionId, lastMessageAt: new Date() }).where(eq(conversations.id, convId));
+            } else {
+                const [newConv] = await tx.insert(conversations).values({
+                    companyId,
+                    contactId: contact.id,
+                    connectionId,
+                    assignedTo: userId,
+                    status: 'IN_PROGRESS',
+                    aiActive: false, // O humano assumiu
+                    lastMessageAt: new Date(),
+                }).returning({ id: conversations.id });
+                convId = newConv.id;
+            }
+
+            await tx.insert(messages).values({
+                companyId,
+                conversationId: convId,
+                connectionId,
+                providerMessageId: result.messageId,
+                senderType: 'AGENT',
+                senderId: userId,
+                content: messageContent,
+                status: 'SENT',
+                sentAt: new Date(),
+            });
+        });
+
+        revalidatePath('/kanban');
+        revalidatePath('/atendimentos');
+        emitInboxUpdate(companyId);
+        return { success: true };
+    } catch (error: unknown) {
+        console.error("StartOutbound Error:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Erro interno ao iniciar conversa." };
+    }
+}

@@ -29,6 +29,7 @@ export type KanbanStage = {
   type: 'NEUTRAL' | 'WIN' | 'LOSS';
   semanticType?: 'meeting_scheduled' | 'meeting_cancelled' | 'payment_received' | 'proposal_sent';
   externalId?: string;
+  entryAutomationId?: string;
 };
 
 export type MetaHandle = {
@@ -620,6 +621,13 @@ export const kanbanBoards = pgTable('kanban_boards', {
   objective: text('objective'),
   stages: jsonb('stages').$type<KanbanStage[]>().notNull(),
   connectionIds: text('connection_ids').array(),
+  settings: jsonb('settings').$type<{
+    autoAssignTeamId?: string;
+    autoAssignUserId?: string;
+    autoTriggerAutomationId?: string;
+    autoTags?: string[];
+    defaultEntryStageId?: string;
+  }>().default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

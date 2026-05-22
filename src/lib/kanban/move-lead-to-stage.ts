@@ -63,6 +63,17 @@ export async function moveLeadToStage(
       })
       .where(eq(kanbanLeads.id, leadId));
 
+    // 🌟 APLICAR AUTOMAÇÃO DE ENTRADA NA ETAPA
+    if (newStage.entryAutomationId) {
+      import('@/lib/flow-engine').then(({ triggerFlow }) => {
+        triggerFlow(newStage.entryAutomationId!, companyId, lead.contactId, {
+          trigger_type: 'kanban_stage_entered',
+          board_id: lead.boardId,
+          stage_id: newStageId,
+        }).catch(err => console.warn('[Stage Entry Automation] failed:', err));
+      }).catch(err => console.warn('[Stage Entry Automation] import failed:', err));
+    }
+
     try {
       await logContactEvent(
         companyId,

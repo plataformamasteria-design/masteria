@@ -23,6 +23,7 @@ import { MultiSelectCreatable } from '@/components/ui/multi-select-creatable';
 import type { KanbanCard, ExtendedContact, Tag, KanbanStage } from '@/lib/types';
 import { NeurolinguisticCard } from '@/components/contacts/neurolinguistic-card';
 import { ContactHistoryTimeline } from '@/components/contacts/contact-history-timeline';
+import { OutboundConversationStarter } from '@/components/kanban/outbound-conversation-starter';
 
 interface LeadExpansiveDrawerProps {
   open: boolean;
@@ -67,7 +68,12 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
     if (!card.contact?.id) return;
     setLoadingContact(true);
     try {
-      const res = await fetch(`/api/v1/contacts/${card.contact.id}`);
+      const res = await fetch(`/api/v1/contacts/${card.contact.id}?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache'
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         setContactDetails(data);
@@ -285,10 +291,14 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 />
               );
             })() : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
-                <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                <p>Nenhuma conversa ativa encontrada para este contato.</p>
-              </div>
+              <OutboundConversationStarter
+                contactId={card.contact?.id as string}
+                kanbanCardId={card.id}
+                onConversationStarted={() => {
+                  fetchContactDetails();
+                  onUpdateCards?.();
+                }}
+              />
             )}
           </div>
         ) : (

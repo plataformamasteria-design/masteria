@@ -13,8 +13,16 @@ const boardSchema = z.object({
         id: z.string().uuid(),
         title: z.string().min(1),
         type: z.enum(['NEUTRAL', 'WIN', 'LOSS']),
+        entryAutomationId: z.string().optional().nullable(),
     })).min(1, 'É necessária pelo menos uma etapa'),
     connectionIds: z.array(z.string().uuid()).optional().nullable(),
+    settings: z.object({
+        autoAssignTeamId: z.string().optional().nullable(),
+        autoAssignUserId: z.string().optional().nullable(),
+        autoTriggerAutomationId: z.string().optional().nullable(),
+        autoTags: z.array(z.string()).optional(),
+        defaultEntryStageId: z.string().optional().nullable(),
+    }).optional(),
 });
 
 // GET /api/v1/kanbans - List all boards for the company
@@ -63,7 +71,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Dados inválidos.', details: parsedData.error.flatten() }, { status: 400 });
         }
 
-        const { name, stages, connectionIds } = parsedData.data;
+        const { name, stages, connectionIds, settings } = parsedData.data;
 
         // 🔄 Auto-insert "Agendamento Desmarcado" if "Reunião Marcada" exists
         const processedStages = ensureCancelledStage(stages as unknown as KanbanStage[]);
@@ -73,6 +81,7 @@ export async function POST(request: NextRequest) {
             name,
             stages: processedStages,
             connectionIds: connectionIds || null,
+            settings: settings || {},
         }).returning();
 
         return NextResponse.json(newBoard, { status: 201 });

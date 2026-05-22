@@ -2327,21 +2327,70 @@ async function ensureLeadInDefaultFunnel(contact: Contact, companyId: string, lo
             return;
         }
 
-        // Pega o primeiro estÃ¡gio
-        const firstStage = stages[0];
+        // Pega o estágio padrão ou o primeiro
+        const settings = targetBoard.settings as any || {};
+        let entryStage = stages[0];
+        if (settings.defaultEntryStageId) {
+            const found = stages.find(s => s.id === settings.defaultEntryStageId);
+            if (found) entryStage = found;
+        }
 
         // 3. Criar Lead
         const [newLead] = await db.insert(kanbanLeads).values({
             companyId,
             boardId: targetBoard.id,
-            stageId: firstStage.id,
+            stageId: entryStage.id,
             contactId: contact.id,
             title: contact.name || contact.phone,
             value: "0",
             status: 'OPEN',
             priority: 'MEDIUM',
-            currentStage: firstStage, // Denormalized stage copy
+            currentStage: entryStage, // Denormalized stage copy
         }).returning();
+
+        // 🌟 APLICAR CONFIGURAÇÕES AUTOMÁTICAS DO FUNIL
+        if (Object.keys(settings).length > 0) {
+            // 1. Tagging
+            if (settings.autoTags && Array.isArray(settings.autoTags) && settings.autoTags.length > 0) {
+                try {
+                    const tagValues = settings.autoTags.map((tagId: string) => ({
+                        companyId,
+                        contactId: contact.id,
+                        tagId
+                    }));
+                    await db.insert(contactsToTags).values(tagValues).onConflictDoNothing();
+                    await logAutomation('INFO', `🏷️ Tags automáticas aplicadas ao lead.`, logContext);
+                } catch(e) {
+                    await logAutomation('ERROR', `Erro ao aplicar tags automáticas: ${e}`, logContext);
+                }
+            }
+
+            // 2. Team/User Assign
+            if (settings.autoAssignUserId || settings.autoAssignTeamId) {
+                const updateAssign: any = {};
+                if (settings.autoAssignUserId) updateAssign.assignedTo = settings.autoAssignUserId;
+                if (settings.autoAssignTeamId) updateAssign.teamId = settings.autoAssignTeamId;
+                
+                await db.update(conversations).set(updateAssign).where(eq(conversations.contactId, contact.id));
+                await logAutomation('INFO', `👤 Atribuição de usuário/equipe aplicada ao contato.`, logContext);
+            }
+
+            // 3. Fluxo de Automação
+            if (settings.autoTriggerAutomationId) {
+                await logAutomation('INFO', `⚡ Disparando Fluxo de Boas-Vindas ${settings.autoTriggerAutomationId}...`, logContext);
+                // Here we would trigger the execution, maybe we can just create an execution row
+                try {
+                     const { executeAutomationFlow } = await import('@/lib/flow-engine');
+                     await executeAutomationFlow(settings.autoTriggerAutomationId, {
+                          contactId: contact.id,
+                          companyId: companyId
+                     });
+                     await logAutomation('INFO', `✅ Fluxo de Boas-Vindas iniciado com sucesso.`, logContext);
+                } catch(e) {
+                     await logAutomation('ERROR', `Erro ao iniciar Fluxo de Boas-Vindas: ${e}`, logContext);
+                }
+            }
+        }
 
         // 4. Disparar Webhook de Lead Criado (se necessÃ¡rio)
         try {

@@ -93,7 +93,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           AND c.company_id = ${companyId}
           AND c.archived_at IS NULL
           AND c.connection_id IS NOT NULL
-          AND conn.phone IS NOT NULL
       )
       SELECT 
         id,
