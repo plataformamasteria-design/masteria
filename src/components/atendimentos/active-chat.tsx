@@ -108,6 +108,7 @@ export function ActiveChat({
   const [replyToMessage, setReplyToMessage] = React.useState<Message | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
   const [messageFilter, setMessageFilter] = React.useState<'all' | 'connection'>('all');
+  const [isInternalNote, setIsInternalNote] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const connectionDropdownRef = React.useRef<HTMLDivElement>(null);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
@@ -251,12 +252,11 @@ export function ActiveChat({
   React.useEffect(() => {
     const container = scrollAreaRef.current;
     if (!container) return;
-
-    container.addEventListener('scroll', handleScroll);
+  container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  const handleSendMessage = async (e: React.FormEvent | undefined, isInternalNote?: boolean) => {
+  const handleSendMessage = async (e: React.FormEvent | undefined) => {
     if (e?.preventDefault) e.preventDefault();
     if (!messageText.trim() || !conversation) return;
 
@@ -265,6 +265,7 @@ export function ActiveChat({
       await onSendMessage(messageText, isInternalNote);
       setMessageText('');
       setReplyToMessage(null);
+      // Don't reset isInternalNote to allow multiple internal notes easily
     } catch (error) {
       // Error is handled by the caller
     } finally {
@@ -624,14 +625,14 @@ export function ActiveChat({
             )}
           </div>
         )}
-        {/* ✅ v2: Assignment requirement replaces the input entirely */}
-        {/* ✅ v2: Assignment requirement replaces the input entirely */}
         <MessageInput
            messageText={messageText}
            setMessageText={setMessageText}
            onSubmit={handleSendMessage}
            isSending={isSending}
-           disabled={!canSendMessage || (!canSendFreeform && is24hRestricted) || isSending || isArchived}
+           isInternalNote={isInternalNote}
+           setIsInternalNote={setIsInternalNote}
+           disabled={!canSendMessage || (!canSendFreeform && is24hRestricted && !isInternalNote) || isSending || isArchived}
            replyToMessage={replyToMessage}
            onClearReply={() => setReplyToMessage(null)}
            isConversationAssigned={isConversationAssigned}
@@ -653,7 +654,7 @@ export function ActiveChat({
                setIsAssigning(false);
              }
            }}
-           placeholder={isArchived ? "Esta conversa está arquivada." : (!canSendFreeform && is24hRestricted ? "Janela 24h fechada." : "Digite sua mensagem...")}
+           placeholder={isArchived ? "Esta conversa está arquivada." : (!canSendFreeform && is24hRestricted && !isInternalNote ? "Janela 24h fechada." : "Digite sua mensagem...")}
            onSendMedia={onSendMedia}
            actionMenuSlot={
               <div className="flex items-center gap-1">

@@ -21,6 +21,8 @@ interface MessageInputProps {
   actionMenuSlot?: React.ReactNode; 
   placeholder?: string;
   onSendMedia?: (file: File) => Promise<void>;
+  isInternalNote?: boolean;
+  setIsInternalNote?: (val: boolean) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -44,11 +46,12 @@ export function MessageInput({
   onAssignToMe,
   actionMenuSlot,
   placeholder = "Digite sua mensagem...",
-  onSendMedia
+  onSendMedia,
+  isInternalNote = false,
+  setIsInternalNote
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recorder = useAudioRecorder();
-  const [isInternalNote, setIsInternalNote] = useState(false);
 
   // Auto-resize
   useEffect(() => {
@@ -165,7 +168,7 @@ export function MessageInput({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsInternalNote(!isInternalNote)}
+                onClick={() => setIsInternalNote?.(!isInternalNote)}
                 className={cn(
                   "shrink-0 h-10 w-10 rounded-full transition-all duration-200",
                   isInternalNote 
@@ -173,7 +176,6 @@ export function MessageInput({
                     : "text-muted-foreground hover:text-foreground hover:bg-muted focus:bg-muted"
                 )}
                 title="Nota Interna"
-                disabled={isArchived || (!canSendFreeform && is24hRestricted)}
               >
                 <StickyNote className="h-5 w-5" />
               </Button>
