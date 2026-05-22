@@ -300,9 +300,14 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
               <OutboundConversationStarter
                 contactId={card.contact?.id as string}
                 kanbanCardId={card.id}
-                onConversationStarted={() => {
-                  fetchContactDetails();
+                onConversationStarted={async () => {
+                  // Rebuscar detalhes do contato (inclui activeConversations)
+                  // para que o drawer troque automaticamente para o chat criado
+                  await fetchContactDetails();
                   onUpdateCards?.();
+                  // Forçar re-render do isChatMode para mostrar o InboxView
+                  setIsChatMode(false);
+                  setTimeout(() => setIsChatMode(true), 50);
                 }}
               />
             )}
