@@ -125,6 +125,7 @@ async function fetchLeadsData(companyId: string, boardId: string) {
         assignedTo: conversations.assignedTo,
         teamId: conversations.teamId,
         connectionId: conversations.connectionId,
+        lastMessageAt: conversations.lastMessageAt,
       })
       .from(conversations)
       .where(inArray(conversations.contactId, contactIds));
@@ -149,6 +150,14 @@ async function fetchLeadsData(companyId: string, boardId: string) {
       },
       conversation: convosByContactId[contact.id] || null
     };
+  });
+
+  // Sort leads by lastMessageAt (descending)
+  // If no conversation/message, fallback to lead creation date
+  leads.sort((a: any, b: any) => {
+      const timeA = a.conversation?.lastMessageAt ? new Date(a.conversation.lastMessageAt).getTime() : new Date(a.createdAt).getTime();
+      const timeB = b.conversation?.lastMessageAt ? new Date(b.conversation.lastMessageAt).getTime() : new Date(b.createdAt).getTime();
+      return timeB - timeA;
   });
 
   return leads;
