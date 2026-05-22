@@ -258,24 +258,30 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
           <div className="flex-1 overflow-hidden h-full flex flex-col">
             {(contactDetails as any)?.activeConversations?.[0]?.id ? (() => {
               const activeConv = (contactDetails as any).activeConversations[0];
+              // Map the basic properties required to make it look like a real conversation initially
+              // It will fetch the real one if we need full data, but InboxView handles it gracefully if preselected is provided.
               const syntheticConversation = {
                 id: activeConv.id,
                 contactId: (contactDetails as any).id,
-                connectionId: activeConv.connectionId,
-                connectionName: activeConv.connectionName,
-                connectionType: activeConv.connectionType,
-                status: activeConv.status,
-                lastMessageAt: activeConv.lastMessageAt,
-                aiActive: activeConv.aiActive,
-                contactName: (contactDetails as any).name || (contactDetails as any).whatsappName,
-                contactPhone: (contactDetails as any).phone,
-                contactAvatarUrl: (contactDetails as any).avatarUrl,
+                connectionId: activeConv.connectionId || '',
+                connectionName: activeConv.connectionName || 'Conexão',
+                connectionType: activeConv.connectionType || 'apicloud',
+                status: activeConv.status || 'OPEN',
+                lastMessageAt: activeConv.lastMessageAt || new Date(),
+                aiActive: activeConv.aiActive || false,
+                contactName: (contactDetails as any).name || (contactDetails as any).whatsappName || 'Contato',
+                contactPhone: (contactDetails as any).phone || '',
+                contactAvatarUrl: (contactDetails as any).avatarUrl || null,
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 archivedAt: null,
                 archivedBy: null,
                 lastMessage: null,
                 lastMessageSenderType: null,
+                assignedTo: null,
+                teamId: null,
+                assignedUserName: null,
+                tags: [],
               };
 
               return (
