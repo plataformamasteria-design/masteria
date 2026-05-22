@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         
         // Evolution API Payload
-        const eventType = body.event;
+        const eventType = typeof body.event === 'string' ? body.event.toLowerCase() : body.event;
         const instanceName = body.instance;
         const rawData = body.data;
 
