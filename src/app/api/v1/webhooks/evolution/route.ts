@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Payload inválido' }, { status: 400 });
         }
 
-        if (eventType !== 'messages.upsert') {
+        if (eventType !== 'messages.upsert' && eventType !== 'messages_upsert') {
             return NextResponse.json({ success: true, ignored: true, reason: 'Event not supported' });
         }
 
@@ -181,6 +181,7 @@ export async function POST(req: NextRequest) {
             ));
 
             if (!conversation) {
+                // Primeira mensagem deste contato: cria conversa com a conexão atual
                 [conversation] = await tx.insert(conversations).values({
                     companyId,
                     contactId: contact.id,
@@ -188,16 +189,22 @@ export async function POST(req: NextRequest) {
                     status: 'NEW',
                 }).returning();
             } else {
-                const updatePayload: any = { lastMessageAt: new Date(), connectionId: connection.id };
-                [conversation] = await tx.update(conversations).set(updatePayload).where(eq(conversations.id, conversation.id)).returning();
+                // MULTI-CONEXÃO: atualiza apenas lastMessageAt.
+                // NÃO sobrescreve connectionId para preservar a conexão original da conversa.
+                // Mensagens de qualquer conexão são salvas na mesma thread do lead.
+                [conversation] = await tx.update(conversations)
+                    .set({ lastMessageAt: new Date() })
+                    .where(eq(conversations.id, conversation.id))
+                    .returning();
             }
 
             const conversationId = conversation.id;
 
-            const [existingMessage] = await tx.select({ id: messages.id }).from(messages).where(and(
-                eq(messages.providerMessageId, messageId),
-                eq(messages.conversationId, conversationId)
-            )).limit(1);
+            // Deduplicação: busca por providerMessageId em toda a tabela (sem filtrar por conversationId)
+            // para evitar duplicatas mesmo que a conversa tenha sido reatribuída entre conexões.
+            const [existingMessage] = await tx.select({ id: messages.id }).from(messages).where(
+                eq(messages.providerMessageId, messageId)
+            ).limit(1);
 
             if (existingMessage) {
                 return { ignored: true, messageId: existingMessage.id, conversationId, contactId: contact.id, aiActive: conversation.aiActive };

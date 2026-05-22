@@ -384,8 +384,11 @@ async function processIncomingMessage(
                 }).returning();
                 if (newConversation) conversation = newConversation;
             } else {
+                // MULTI-CONEXÃO: atualiza apenas lastMessageAt e status.
+                // NÃO sobrescreve connectionId para preservar a conexão original da conversa.
+                // Mensagens de qualquer conexão (Meta ou não) são salvas na mesma thread do lead.
                 const [updatedConversation] = await tx.update(conversations)
-                    .set({ lastMessageAt: new Date(), status: 'IN_PROGRESS', connectionId: connection.id })
+                    .set({ lastMessageAt: new Date(), status: 'IN_PROGRESS' })
                     .where(eq(conversations.id, conversation.id))
                     .returning();
                 if (updatedConversation) conversation = updatedConversation;
