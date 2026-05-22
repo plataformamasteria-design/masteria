@@ -572,7 +572,7 @@ export function ActiveChat({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/30" />
               </div>
             ) : (
-              (messageFilter === 'all' ? messages : messages.filter((m: any) => m.connectionId === conversation?.connectionId)).map((msg, index, arr) => {
+              (messageFilter === 'all' ? messages : messages.filter((m: any) => !m.connectionId || m.connectionId === conversation?.connectionId)).map((msg, index, arr) => {
                 const currentDate = new Date(msg.sentAt);
                 const prevMsg = index > 0 ? arr[index - 1] : null;
                 const prevDate = prevMsg ? new Date(prevMsg.sentAt) : null;

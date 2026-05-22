@@ -698,6 +698,7 @@ async function processIncomingMessage(
         const [newMessage] = await tx.insert(messages).values({
             companyId: companyId,
             conversationId: conversation.id,
+            connectionId: connection.id,
             providerMessageId: messageData.id,
             repliedToMessageId: repliedToInternalId,
             senderType: isEcho ? 'AGENT' : 'CONTACT',
