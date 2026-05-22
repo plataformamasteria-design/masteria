@@ -423,15 +423,14 @@ export function useInboxController({
                 // Determinar senderType correto para exibir na lista
                 const effectiveSenderType = payload.senderType
                     || (isFromMe ? 'AGENT' : 'CONTACT');
-                const newConn = payload.connectionId ? availableConnections.find(c => c.id === payload.connectionId) : null;
                 const updated = {
                     ...prev[idx],
                     lastMessage: content || '',
                     lastMessageAt: new Date(timestamp || Date.now()),
                     lastMessageSenderType: effectiveSenderType,
-                    connectionId: payload.connectionId || prev[idx].connectionId,
-                    connectionName: newConn ? newConn.config_name : prev[idx].connectionName,
-                    connectionType: newConn ? newConn.connectionType : prev[idx].connectionType,
+                    // NÃO sobrescrever connectionId/connectionName da CONVERSA:
+                    // A conversa mantém a conexão original. O connectionId do payload
+                    // é da MENSAGEM (pode ser de outra conexão), não da conversa.
                 };
                 // Move para o topo
                 return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
@@ -471,15 +470,9 @@ export function useInboxController({
                     );
                 });
 
-                if (payload.connectionId && selectedConversation.connectionId !== payload.connectionId) {
-                    const newConn = availableConnections.find(c => c.id === payload.connectionId);
-                    setSelectedConversation(prev => prev ? { 
-                        ...prev, 
-                        connectionId: payload.connectionId,
-                        connectionName: newConn ? newConn.config_name : prev.connectionName,
-                        connectionType: newConn ? newConn.connectionType : prev.connectionType
-                    } as Conversation : prev);
-                }
+                // NÃO atualizar connectionId da conversa selecionada quando chega mensagem de outra conexão.
+                // A conversa mantém sua conexão original. O agente pode trocar manualmente se quiser.
+                // Apenas o messageId individual fica com o connectionId correto da mensagem.
             }
 
             // Marcar esta conversa como "fast-path ativo" por 2s
