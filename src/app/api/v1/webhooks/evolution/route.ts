@@ -194,7 +194,10 @@ export async function POST(req: NextRequest) {
 
             const conversationId = conversation.id;
 
-            const [existingMessage] = await tx.select({ id: messages.id }).from(messages).where(eq(messages.providerMessageId, messageId)).limit(1);
+            const [existingMessage] = await tx.select({ id: messages.id }).from(messages).where(and(
+                eq(messages.providerMessageId, messageId),
+                eq(messages.conversationId, conversationId)
+            )).limit(1);
 
             if (existingMessage) {
                 return { ignored: true, messageId: existingMessage.id, conversationId, contactId: contact.id, aiActive: conversation.aiActive };

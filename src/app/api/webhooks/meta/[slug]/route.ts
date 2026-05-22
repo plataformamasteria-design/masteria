@@ -549,20 +549,7 @@ async function processIncomingMessage(
     const phone = sanitizePhone(contactData.wa_id);
     const messagePreview = getMessageContent(messageData).substring(0, 50);
 
-    // 1. Duplication Check
-    const [existingMessage] = await db.select({ id: messages.id })
-        .from(messages)
-        .innerJoin(conversations, eq(messages.conversationId, conversations.id))
-        .where(and(
-            eq(messages.providerMessageId, messageData.id),
-            eq(conversations.companyId, companyId)
-        ))
-        .limit(1);
-
-    if (existingMessage) {
-        console.log(`[Meta Webhook] 🛑 Mensagem duplicada ignorada (ID: ${messageData.id})`);
-        return;
-    }
+    // Deduplication moved inside transaction to scope it by conversation
 
     const isEcho = messageData.from === metadata.display_phone_number;
     console.log(`📨 [Meta Webhook] ${isEcho ? '[ECHO] ' : ''}Nova mensagem de ${contactData.profile?.name || phone} (${phone}): "${messagePreview}"`);
@@ -667,6 +654,19 @@ async function processIncomingMessage(
         }
 
         if (!conversation) throw new Error("Falha ao criar ou encontrar a conversa.");
+
+        const [existingMessage] = await tx.select({ id: messages.id })
+            .from(messages)
+            .where(and(
+                eq(messages.providerMessageId, messageData.id),
+                eq(messages.conversationId, conversation.id)
+            ))
+            .limit(1);
+
+        if (existingMessage) {
+            console.log(`[Meta Webhook] 🛑 Mensagem duplicada ignorada (ID: ${messageData.id})`);
+            return;
+        }
 
         const mediaTypes = ['image', 'video', 'document', 'audio', 'sticker'];
         const messageType = messageData.type;
