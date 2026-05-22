@@ -152,11 +152,16 @@ async function fetchLeadsData(companyId: string, boardId: string) {
     };
   });
 
-  // Sort leads by lastMessageAt (descending)
-  // If no conversation/message, fallback to lead creation date
+  // Sort leads by most recent activity (either last message or creation date)
   leads.sort((a: any, b: any) => {
-      const timeA = a.conversation?.lastMessageAt ? new Date(a.conversation.lastMessageAt).getTime() : new Date(a.createdAt).getTime();
-      const timeB = b.conversation?.lastMessageAt ? new Date(b.conversation.lastMessageAt).getTime() : new Date(b.createdAt).getTime();
+      const timeA1 = a.conversation?.lastMessageAt ? new Date(a.conversation.lastMessageAt).getTime() : 0;
+      const timeA2 = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeA = Math.max(timeA1, timeA2);
+
+      const timeB1 = b.conversation?.lastMessageAt ? new Date(b.conversation.lastMessageAt).getTime() : 0;
+      const timeB2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const timeB = Math.max(timeB1, timeB2);
+
       return timeB - timeA;
   });
 
