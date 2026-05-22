@@ -7,6 +7,7 @@ import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { createSystemMessage } from '@/services/system-message.service';
 import { logContactEvent } from '@/lib/contact-events';
+import { emitInboxUpdate } from '@/lib/socket';
 
 export async function getOrganizationUsers() {
     try {
@@ -64,6 +65,7 @@ export async function assignChatToUser(conversationId: string, userId: string) {
             await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Atendimento assumido por ${userName}`, { assignedUserId: userId });
         }
 
+        emitInboxUpdate(companyId);
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };
@@ -89,6 +91,7 @@ export async function assignChatToTeam(conversationId: string, teamId: string) {
             await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Transferido para equipe ${teamName}`, { teamId: teamId });
         }
 
+        emitInboxUpdate(companyId);
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };
@@ -110,9 +113,10 @@ export async function unassignChat(conversationId: string) {
 
         const [conv] = await db.select({ contactId: conversations.contactId }).from(conversations).where(eq(conversations.id, conversationId));
         if (conv?.contactId) {
-            await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Atribuição de chat removida`);
+            await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Atendimento removido de agente/equipe`, { assignedUserId: null });
         }
 
+        emitInboxUpdate(companyId);
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };

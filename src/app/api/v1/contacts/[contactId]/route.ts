@@ -86,9 +86,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           c.status,
           c.last_message_at as "lastMessageAt",
           c.ai_active as "aiActive",
+          c.assigned_to as "assignedTo",
+          c.team_id as "teamId",
+          u.name as "assignedUserName",
           ROW_NUMBER() OVER (PARTITION BY COALESCE(conn.phone, 'SEM_TELEFONE') ORDER BY c.last_message_at DESC) as rn
         FROM conversations c
         INNER JOIN connections conn ON c.connection_id = conn.id
+        LEFT JOIN users u ON c.assigned_to = u.id
         WHERE c.contact_id = ${contact.id}
           AND c.company_id = ${companyId}
           AND c.archived_at IS NULL
@@ -102,7 +106,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         "connectionPhone",
         status,
         "lastMessageAt",
-        "aiActive"
+        "aiActive",
+        "assignedTo",
+        "teamId",
+        "assignedUserName"
       FROM ranked_conversations
       WHERE rn = 1
       ORDER BY "lastMessageAt" DESC
@@ -119,6 +126,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         status: string;
         lastMessageAt: Date | null;
         aiActive: boolean | null;
+        assignedTo: string | null;
+        teamId: string | null;
+        assignedUserName: string | null;
       }>;
 
     // Buscar Funis (Kanban Leads) associados a este contato

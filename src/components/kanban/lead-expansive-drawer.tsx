@@ -278,9 +278,9 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 archivedBy: null,
                 lastMessage: null,
                 lastMessageSenderType: null,
-                assignedTo: null,
-                teamId: null,
-                assignedUserName: null,
+                assignedTo: activeConv.assignedTo || null,
+                teamId: activeConv.teamId || null,
+                assignedUserName: activeConv.assignedUserName || null,
                 tags: [],
               };
 
