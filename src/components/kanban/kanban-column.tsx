@@ -15,9 +15,10 @@ interface KanbanColumnProps {
   onUpdateLead: (leadId: string, data: { stageId?: string; title?: string; value?: number | null; notes?: string }) => Promise<void>;
   onDeleteLead: (leadId: string) => Promise<void>;
   onUpdateCards?: () => void;
+  companyUsers?: any[];
 }
 
-export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead, onUpdateCards }: KanbanColumnProps): JSX.Element {
+export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead, onUpdateCards, companyUsers = [] }: KanbanColumnProps): JSX.Element {
   const stageCards = cards.filter(card => card.stageId === stage.id);
   const totalValue = stageCards.reduce((sum, card) => sum + (Number(card.value) || 0), 0);
   
@@ -81,6 +82,7 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
                     onUpdate={onUpdateLead}
                     onDelete={onDeleteLead}
                     onUpdateCards={onUpdateCards}
+                    companyUsers={companyUsers}
                   />
                 ))}
                 {provided.placeholder}

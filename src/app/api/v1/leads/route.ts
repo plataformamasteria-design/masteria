@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { kanbanLeads, contacts, contactsToTags, tags, kanbanBoards, conversations } from '@/lib/db/schema';
-import { asc, eq, and, inArray } from 'drizzle-orm';
+import { kanbanLeads, contacts, contactsToTags, tags, kanbanBoards, conversations, messages } from '@/lib/db/schema';
+import { asc, eq, and, inArray, min } from 'drizzle-orm';
 import { z } from 'zod';
 import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
 import { getCompanyIdFromSession } from '@/app/actions';
@@ -126,21 +126,47 @@ async function fetchLeadsData(companyId: string, boardId: string) {
         teamId: conversations.teamId,
         connectionId: conversations.connectionId,
         lastMessageAt: conversations.lastMessageAt,
+        conversationId: conversations.id,
       })
       .from(conversations)
       .where(inArray(conversations.contactId, contactIds));
   }
 
   const convosByContactId = allConversations.reduce((acc, row) => {
-      // Pega a primeira conversa (ou sobrescreve, caso haja lixo, mas devem ser únicas agora)
       acc[row.contactId] = row;
       return acc;
   }, {} as Record<string, any>);
 
-  // Post-process to add tags
+  // Busca a primeira mensagem de cada conversa (para cronômetro de primeiro contato)
+  const conversationIds = allConversations.map(c => c.conversationId).filter(Boolean) as string[];
+  let firstMessageByConvId: Record<string, string> = {};
+  if (conversationIds.length > 0) {
+    const firstMessages = await db
+      .select({
+        conversationId: messages.conversationId,
+        firstAt: min(messages.sentAt),
+      })
+      .from(messages)
+      .where(inArray(messages.conversationId, conversationIds))
+      .groupBy(messages.conversationId);
+    firstMessages.forEach(row => {
+      if (row.conversationId && row.firstAt) {
+        firstMessageByConvId[row.conversationId] = row.firstAt instanceof Date
+          ? row.firstAt.toISOString()
+          : String(row.firstAt);
+      }
+    });
+  }
+
+  // Post-process to add tags + firstMessageAt
   const leads = flatLeadsAndContacts.map((row) => {
     const { lead, contact } = row;
     if (!contact) return lead;
+
+    const convo = convosByContactId[contact.id] || null;
+    const firstMessageAt = convo?.conversationId
+      ? (firstMessageByConvId[convo.conversationId] ?? null)
+      : null;
 
     return {
       ...lead,
@@ -148,7 +174,8 @@ async function fetchLeadsData(companyId: string, boardId: string) {
         ...contact,
         tags: tagsByContactId[contact.id] || []
       },
-      conversation: convosByContactId[contact.id] || null
+      conversation: convo,
+      firstMessageAt,
     };
   });
 

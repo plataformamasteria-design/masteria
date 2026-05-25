@@ -5,11 +5,12 @@ import { KanbanView } from '@/components/kanban/kanban-view';
 import { StagePersonaConfig } from '@/components/kanban/stage-persona-config';
 import type { KanbanFunnel, KanbanCard as KanbanCardType } from '@/lib/types';
 import { use, useState, useEffect, useMemo } from 'react';
-import { Loader2, Kanban as KanbanIcon, Bot } from 'lucide-react';
+import { Loader2, Kanban as KanbanIcon, Bot, BarChart2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DropResult } from '@hello-pangea/dnd';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateLeadDialog } from '@/components/kanban/lead-dialogs';
+import { FunnelReport } from '@/components/kanban/funnel-report';
 import { getCompanyUsers, getTeams } from '@/app/actions/teams';
 import { fetchAvailableConnections } from '@/app/actions/chat';
 
@@ -18,7 +19,9 @@ export interface KanbanFilters {
   priority: string[];
   valueMin: number | null;
   valueMax: number | null;
-  dateRange: 'all' | '7d' | '30d' | '90d';
+  dateRange: 'all' | 'today' | 'yesterday' | '7d' | '30d' | '90d' | 'custom';
+  dateFrom: string | null;
+  dateTo: string | null;
   assignedUsers: string[];
   teams: string[];
   connections: string[];
@@ -31,6 +34,8 @@ const DEFAULT_FILTERS: KanbanFilters = {
   valueMin: null,
   valueMax: null,
   dateRange: 'all',
+  dateFrom: null,
+  dateTo: null,
   assignedUsers: [],
   teams: [],
   connections: [],
@@ -158,12 +163,36 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     // Filtro por data de criação
     if (filters.dateRange !== 'all') {
       const now = new Date();
-      const days = filters.dateRange === '7d' ? 7 : filters.dateRange === '30d' ? 30 : 90;
-      const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-      result = result.filter(card => {
-        if (!card.createdAt) return true;
-        return new Date(card.createdAt) >= cutoff;
-      });
+      if (filters.dateRange === 'today') {
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        result = result.filter(card => !card.createdAt || new Date(card.createdAt) >= startOfDay);
+      } else if (filters.dateRange === 'yesterday') {
+        const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
+        const endOfYesterday   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        result = result.filter(card => {
+          if (!card.createdAt) return true;
+          const d = new Date(card.createdAt);
+          return d >= startOfYesterday && d < endOfYesterday;
+        });
+      } else if (filters.dateRange === 'custom') {
+        if (filters.dateFrom) {
+          const from = new Date(filters.dateFrom);
+          from.setHours(0, 0, 0, 0);
+          result = result.filter(card => !card.createdAt || new Date(card.createdAt) >= from);
+        }
+        if (filters.dateTo) {
+          const to = new Date(filters.dateTo);
+          to.setHours(23, 59, 59, 999);
+          result = result.filter(card => !card.createdAt || new Date(card.createdAt) <= to);
+        }
+      } else {
+        const days = filters.dateRange === '7d' ? 7 : filters.dateRange === '30d' ? 30 : 90;
+        const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+        result = result.filter(card => {
+          if (!card.createdAt) return true;
+          return new Date(card.createdAt) >= cutoff;
+        });
+      }
     }
 
     return result;
@@ -306,6 +335,13 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
             <Bot className="h-4 w-4 mr-2" />
             Agentes IA por Estágio
           </TabsTrigger>
+          <TabsTrigger
+            value="report"
+            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+          >
+            <BarChart2 className="h-4 w-4 mr-2" />
+            Relatório
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="kanban" className="flex-1 mt-0 min-h-0">
@@ -334,6 +370,10 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
             stages={funnel.stages}
             funnelType={funnel.funnelType ?? undefined}
           />
+        </TabsContent>
+
+        <TabsContent value="report" className="flex-1 mt-0 min-h-0 overflow-auto">
+          <FunnelReport boardId={funnelId} />
         </TabsContent>
       </Tabs>
 

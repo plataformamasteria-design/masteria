@@ -169,7 +169,8 @@ export function FunnelToolbar({
     if (!onFiltersChange) return;
     onFiltersChange({
       stages: [], priority: [], valueMin: null, valueMax: null,
-      dateRange: 'all', assignedUsers: [], teams: [], connections: [], tags: [],
+      dateRange: 'all', dateFrom: null, dateTo: null,
+      assignedUsers: [], teams: [], connections: [], tags: [],
     });
   };
 
@@ -408,15 +409,23 @@ export function FunnelToolbar({
                 >
                   <div className="flex gap-1.5 flex-wrap py-1 px-1">
                     {([
-                      { value: 'all' as const, label: 'Todos' },
-                      { value: '7d' as const, label: '7 dias' },
-                      { value: '30d' as const, label: '30 dias' },
-                      { value: '90d' as const, label: '90 dias' },
-                    ] as const).map(({ value, label }) => (
+                      { value: 'all'       , label: 'Todos' },
+                      { value: 'today'     , label: 'Hoje' },
+                      { value: 'yesterday' , label: 'Ontem' },
+                      { value: '7d'        , label: '7 dias' },
+                      { value: '30d'       , label: '30 dias' },
+                      { value: '90d'       , label: '90 dias' },
+                      { value: 'custom'    , label: 'Personalizado' },
+                    ] as { value: KanbanFilters['dateRange']; label: string }[]).map(({ value, label }) => (
                       <button
                         key={value}
                         type="button"
-                        onClick={() => onFiltersChange?.({ ...(filters!), dateRange: value })}
+                        onClick={() => onFiltersChange?.({
+                          ...(filters!),
+                          dateRange: value,
+                          // Limpar datas ao mudar de modo
+                          ...(value !== 'custom' ? { dateFrom: null, dateTo: null } : {}),
+                        })}
                         className={cn(
                           'px-2.5 py-1 rounded-md text-xs font-medium border transition-colors',
                           filters?.dateRange === value
@@ -428,6 +437,30 @@ export function FunnelToolbar({
                       </button>
                     ))}
                   </div>
+
+                  {/* Período personalizado */}
+                  {filters?.dateRange === 'custom' && (
+                    <div className="flex flex-col gap-2 px-1 pb-1 pt-0.5">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] text-muted-foreground w-10 flex-shrink-0">De</label>
+                        <input
+                          type="date"
+                          value={filters?.dateFrom ?? ''}
+                          onChange={e => onFiltersChange?.({ ...filters!, dateFrom: e.target.value || null })}
+                          className="flex-1 h-7 px-2 text-xs rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] text-muted-foreground w-10 flex-shrink-0">Até</label>
+                        <input
+                          type="date"
+                          value={filters?.dateTo ?? ''}
+                          onChange={e => onFiltersChange?.({ ...filters!, dateTo: e.target.value || null })}
+                          className="flex-1 h-7 px-2 text-xs rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </FilterSection>
 
                 {/* Valor */}

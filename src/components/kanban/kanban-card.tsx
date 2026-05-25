@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import type { KanbanCard as KanbanCardType, KanbanStage } from '@/lib/types';
 import { DeleteLeadDialog, AddMeetingTimeDialog } from './lead-dialogs';
 import { LeadExpansiveDrawer } from './lead-expansive-drawer';
+import { FirstContactTimer } from './first-contact-timer';
 
 interface KanbanCardProps {
   card: KanbanCardType;
@@ -20,9 +21,10 @@ interface KanbanCardProps {
   onDelete: (leadId: string) => Promise<void>;
   onOpenWhatsApp?: (phone: string) => void;
   onUpdateCards?: () => void;
+  companyUsers?: any[];
 }
 
-export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards }: KanbanCardProps) {
+export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards, companyUsers = [] }: KanbanCardProps) {
   const router = useRouter();
   const [viewOpen, setViewOpen] = useState(false);
   const [initialTab, setInitialTab] = useState<'overview' | 'chat'>('overview');
@@ -68,7 +70,18 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
   const remainingTags = tags.length > 2 ? tags.length - 2 : 0;
   
   const hasCustomFields = Object.keys(customFields).length > 0;
-  const createdAtFormatted = card.createdAt ? new Date(card.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const createdAtFormatted = card.createdAt ? (() => {
+    const d = new Date(card.createdAt);
+    const date = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return `${date} • ${time}`;
+  })() : '';
+
+  // Resolver agente atribuído via conversa
+  const assignedUserId = (card as any).conversation?.assignedTo;
+  const assignedUser = assignedUserId
+    ? companyUsers.find((u: any) => u.id === assignedUserId)
+    : null;
 
   return (
     <>
@@ -165,34 +178,79 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                   </div>
                 )}
 
-                {/* Linha 3: Tags e Status */}
-                <div className="flex items-center justify-between gap-2 mt-1">
-                  <div className="flex items-center flex-wrap gap-1 min-w-0">
-                    {displayTags.length > 0 ? (
-                      displayTags.map((tag: any) => (
-                        <div key={tag.id} className="border border-border/50 bg-muted/30 text-muted-foreground px-1.5 py-0.5 rounded text-[10px] truncate max-w-[120px]">
-                          {tag.name}
-                        </div>
-                      ))
-                    ) : (
-                      (card.value !== null && card.value !== undefined && Number(card.value) > 0) ? (
-                        <div className="border border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px]">
-                          R$ {Number(card.value).toLocaleString('pt-BR')}
-                        </div>
-                      ) : null
-                    )}
+                {/* Etiquetas — sempre visíveis quando existem */}
+                {displayTags.length > 0 && (
+                  <div className="flex items-center flex-wrap gap-1">
+                    {displayTags.map((tag: any) => (
+                      <div
+                        key={tag.id}
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium border"
+                        style={{
+                          backgroundColor: tag.color ? `${tag.color}18` : undefined,
+                          borderColor: tag.color ? `${tag.color}40` : undefined,
+                          color: tag.color || undefined,
+                        }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color || '#888' }} />
+                        {tag.name}
+                      </div>
+                    ))}
                     {remainingTags > 0 && (
-                      <div className="border border-border/50 bg-muted/30 text-muted-foreground px-1.5 py-0.5 rounded text-[10px]">
+                      <div className="border border-border/50 bg-muted/30 text-muted-foreground px-1.5 py-0.5 rounded-full text-[9px]">
                         +{remainingTags}
                       </div>
                     )}
                   </div>
-                  
-                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                )}
+
+                {/* Linha inferior: valor (se não tiver tags) e status */}
+                <div className="flex items-center justify-between gap-2 mt-1">
+                  <div className="flex items-center gap-1 min-w-0">
+                    {displayTags.length === 0 && (card.value !== null && card.value !== undefined && Number(card.value) > 0) && (
+                      <div className="border border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px]">
+                        R$ {Number(card.value).toLocaleString('pt-BR')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
                     <span className="text-[10px] text-amber-600 dark:text-yellow-500/90 font-medium">Sem Tarefas</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-yellow-500"></div>
                   </div>
                 </div>
+
+                {/* Rodapé: Agente atribuído + Cronômetro */}
+                {(assignedUser || card.createdAt) && (
+                  <div className="flex items-center justify-between gap-1.5 mt-1 pt-1.5 border-t border-border/30">
+                    {/* Agente */}
+                    {assignedUser ? (
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {assignedUser.avatarUrl ? (
+                          <img
+                            src={assignedUser.avatarUrl}
+                            alt={assignedUser.name}
+                            className="w-4 h-4 rounded-full object-cover flex-shrink-0 ring-1 ring-border/40"
+                          />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full flex-shrink-0 bg-primary/20 flex items-center justify-center ring-1 ring-border/40">
+                            <span className="text-[8px] font-bold text-primary">
+                              {(assignedUser.name || '?')[0].toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-[10px] text-muted-foreground truncate">{assignedUser.name || assignedUser.email}</span>
+                      </div>
+                    ) : <div />}
+
+                    {/* Cronômetro de primeiro contato */}
+                    {card.createdAt && (
+                      <FirstContactTimer
+                        leadCreatedAt={card.createdAt}
+                        firstMessageAt={(card as any).firstMessageAt ?? null}
+                        compact
+                      />
+                    )}
+                  </div>
+                )}
 
                 {card.notes && card.notes.includes('📅 Reunião agendada:') && (() => {
                   const meetingText = card.notes.match(/📅 Reunião agendada:[^\n]*/)?.[0] || '';

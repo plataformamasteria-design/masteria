@@ -181,7 +181,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
             <button
               onClick={() => onFiltersChange?.({
                 stages: [], priority: [], valueMin: null, valueMax: null,
-                dateRange: 'all', assignedUsers: [], teams: [], connections: [], tags: [],
+                dateRange: 'all', dateFrom: null, dateTo: null, assignedUsers: [], teams: [], connections: [], tags: [],
               })}
               className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2 transition-colors ml-1"
             >
@@ -223,6 +223,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
                   onUpdateLead={onUpdateLead}
                   onDeleteLead={onDeleteLead}
                   onUpdateCards={onUpdateCards}
+                  companyUsers={companyUsers}
                 />
               ))}
 
