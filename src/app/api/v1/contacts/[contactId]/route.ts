@@ -89,14 +89,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           c.assigned_to as "assignedTo",
           c.team_id as "teamId",
           u.name as "assignedUserName",
-          ROW_NUMBER() OVER (PARTITION BY COALESCE(conn.phone, 'SEM_TELEFONE') ORDER BY c.last_message_at DESC) as rn
+          ROW_NUMBER() OVER (PARTITION BY COALESCE(conn.phone, c.connection_id, 'SEM_CONEXAO') ORDER BY c.last_message_at DESC NULLS LAST) as rn
         FROM conversations c
-        INNER JOIN connections conn ON c.connection_id = conn.id
+        LEFT JOIN connections conn ON c.connection_id = conn.id
         LEFT JOIN users u ON c.assigned_to = u.id
         WHERE c.contact_id = ${contact.id}
           AND c.company_id = ${companyId}
           AND c.archived_at IS NULL
-          AND c.connection_id IS NOT NULL
       )
       SELECT 
         id,
@@ -112,7 +111,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         "assignedUserName"
       FROM ranked_conversations
       WHERE rn = 1
-      ORDER BY "lastMessageAt" DESC
+      ORDER BY "lastMessageAt" DESC NULLS LAST
     `);
 
     const activeConversations = (Array.isArray(activeConversationsRaw)
