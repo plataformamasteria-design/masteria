@@ -180,14 +180,31 @@ async function fetchLeadsData(companyId: string, boardId: string) {
   });
 
   // Sort leads by most recent activity (either last message or creation date)
-  leads.sort((a: any, b: any) => {
-      const timeA1 = a.conversation?.lastMessageAt ? new Date(a.conversation.lastMessageAt).getTime() : 0;
-      const timeA2 = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const timeA = Math.max(timeA1, timeA2);
+  // Exceção: Leads na primeira etapa (ou etapas "Lead Novo"/"Novo Lead") devem ser ordenados estritamente pela data de cadastro (createdAt)
+  const stagesList = (board.stages as any[]) || [];
+  const novoLeadStageIds = new Set(
+    stagesList
+      .filter((s: any, idx: number) => {
+        const t = (s.title || '').toLowerCase();
+        return idx === 0 || t.includes('lead novo') || t.includes('novo lead');
+      })
+      .map((s: any) => s.id)
+  );
 
-      const timeB1 = b.conversation?.lastMessageAt ? new Date(b.conversation.lastMessageAt).getTime() : 0;
-      const timeB2 = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      const timeB = Math.max(timeB1, timeB2);
+  leads.sort((a: any, b: any) => {
+      const getSortTime = (leadObj: any) => {
+          if (novoLeadStageIds.has(leadObj.stageId)) {
+              // Strict createdAt for new leads
+              return leadObj.createdAt ? new Date(leadObj.createdAt).getTime() : 0;
+          }
+          // Default behavior for other stages
+          const time1 = leadObj.conversation?.lastMessageAt ? new Date(leadObj.conversation.lastMessageAt).getTime() : 0;
+          const time2 = leadObj.createdAt ? new Date(leadObj.createdAt).getTime() : 0;
+          return Math.max(time1, time2);
+      };
+
+      const timeA = getSortTime(a);
+      const timeB = getSortTime(b);
 
       return timeB - timeA;
   });
