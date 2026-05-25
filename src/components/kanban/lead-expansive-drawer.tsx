@@ -102,6 +102,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
 
   useEffect(() => {
     if (open) {
+      // Reset ALL state when a new card is opened (including switching between cards)
       setLeadTitle(card.title || '');
       setLeadValue(card.value || 0);
       setLeadNotes(card.notes || '');
@@ -111,9 +112,12 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
       setIsChatMode(initialTab === 'chat');
       setIsContactDetailsOpen(false);
       setActiveTab('overview');
+      setContactDetails(null);
       void fetchContactDetails();
     }
-  }, [open, card, fetchContactDetails, initialTab]);
+  // card.id ensures state resets when user opens a DIFFERENT card without closing drawer first
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, card.id, initialTab]);
 
   // Actions
   const handleSaveContact = async () => {
@@ -258,7 +262,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                   )}
                 </Button>
                 {card.contact?.id && (
-                  <Button size="sm" onClick={() => setIsChatMode(true)}>
+                  <Button size="sm" onClick={(e) => { e.stopPropagation(); setIsChatMode(true); }}>
                     <MessageCircle className="h-4 w-4 mr-1" /> Chat
                   </Button>
                 )}
@@ -320,7 +324,11 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
         {/* TABS OR CHAT */}
         {isChatMode ? (
           <div className="flex-1 overflow-hidden h-full flex flex-col">
-            {(contactDetails as any)?.activeConversations?.[0]?.id ? (() => {
+            {loadingContact ? (
+              <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (contactDetails as any)?.activeConversations?.[0]?.id ? (() => {
               const activeConv = (contactDetails as any).activeConversations[0];
               // Map the basic properties required to make it look like a real conversation initially
               // It will fetch the real one if we need full data, but InboxView handles it gracefully if preselected is provided.
