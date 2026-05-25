@@ -9,6 +9,8 @@ import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { Eye, EyeOff, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { KanbanFilters } from '@/app/(main)/kanban/[funnelId]/page';
+import { LeadExpansiveDrawer } from './lead-expansive-drawer';
+import { AddMeetingTimeDialog, DeleteLeadDialog } from './lead-dialogs';
 
 interface KanbanViewProps {
   funnel: KanbanFunnel;
@@ -41,6 +43,14 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
+
+  // Lifted state for Lead Drawer and Dialogs
+  const [selectedCard, setSelectedCard] = useState<KanbanCardType | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [initialDrawerTab, setInitialDrawerTab] = useState<'overview' | 'chat'>('overview');
+  
+  const [meetingTimeCard, setMeetingTimeCard] = useState<KanbanCardType | null>(null);
+  const [deleteCard, setDeleteCard] = useState<KanbanCardType | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -224,6 +234,13 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
                   onDeleteLead={onDeleteLead}
                   onUpdateCards={onUpdateCards}
                   companyUsers={companyUsers}
+                  onOpenCard={(card, tab) => {
+                    setSelectedCard(card);
+                    setInitialDrawerTab(tab || 'overview');
+                    setDrawerOpen(true);
+                  }}
+                  onOpenMeetingTime={(card) => setMeetingTimeCard(card)}
+                  onOpenDelete={(card) => setDeleteCard(card)}
                 />
               ))}
 
@@ -245,6 +262,43 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
           </DragDropContext>
         </div>
       </div>
+      {selectedCard && (
+        <LeadExpansiveDrawer
+          open={drawerOpen}
+          onOpenChange={(open) => {
+            setDrawerOpen(open);
+            if (!open) setTimeout(() => setSelectedCard(null), 300); // cleanup after animation
+          }}
+          card={selectedCard}
+          stages={funnel.stages}
+          initialTab={initialDrawerTab}
+          onUpdate={onUpdateLead}
+          onDelete={onDeleteLead}
+          onOpenWhatsApp={() => {
+            setInitialDrawerTab('chat');
+            setDrawerOpen(true);
+          }}
+          onUpdateCards={onUpdateCards}
+        />
+      )}
+
+      {meetingTimeCard && (
+        <AddMeetingTimeDialog 
+          open={!!meetingTimeCard} 
+          onOpenChange={(open) => !open && setMeetingTimeCard(null)} 
+          card={meetingTimeCard} 
+          onSave={onUpdateLead} 
+        />
+      )}
+
+      {deleteCard && (
+        <DeleteLeadDialog 
+          open={!!deleteCard} 
+          onOpenChange={(open) => !open && setDeleteCard(null)} 
+          card={deleteCard} 
+          onConfirm={onDeleteLead} 
+        />
+      )}
     </div>
   );
 }

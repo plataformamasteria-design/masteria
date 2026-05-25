@@ -23,6 +23,7 @@ import {
     Brain, Send, MessageSquareHeart, Globe, Code2, PenLine,
     Plus, Trash2, Zap, Settings2, Info, Loader2, CheckCircle2, AlertTriangle
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 // ==============================
 // Types
@@ -2593,6 +2594,17 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 options={selectedBoardStages}
                             />
                         </ConfigSection>
+
+                        <div className="flex items-center justify-between mt-4 bg-gray-50/50 border border-gray-100 p-3 rounded-lg">
+                            <div className="mr-4">
+                                <h4 className="text-[13px] font-medium text-gray-800">Multi Funil (Manter Anteriores)</h4>
+                                <p className="text-xs text-gray-500 mt-0.5">Se ativado, cria o lead neste funil sem remover de outros funis. Se desativado, o lead sai de qualquer outro funil e move para este.</p>
+                            </div>
+                            <Switch
+                                checked={!!d.multi_funnel}
+                                onCheckedChange={(checked) => update('multi_funnel', checked)}
+                            />
+                        </div>
                     </div>
                 );
 

@@ -90,7 +90,11 @@ async function fetchLeadsData(companyId: string, boardId: string) {
     })
     .from(kanbanLeads)
     .innerJoin(contacts, eq(kanbanLeads.contactId, contacts.id))
-    .where(eq(kanbanLeads.boardId, boardId))
+    .where(and(
+      eq(kanbanLeads.boardId, boardId),
+      eq(kanbanLeads.companyId, companyId),
+      eq(contacts.companyId, companyId)
+    ))
     .orderBy(asc(kanbanLeads.createdAt));
 
   // Otimização: Batch Fetching para Tags (Evitar N+1 Queries)
@@ -106,7 +110,10 @@ async function fetchLeadsData(companyId: string, boardId: string) {
       })
       .from(tags)
       .innerJoin(contactsToTags, eq(tags.id, contactsToTags.tagId))
-      .where(inArray(contactsToTags.contactId, contactIds));
+      .where(and(
+        eq(contactsToTags.companyId, companyId),
+        inArray(contactsToTags.contactId, contactIds)
+      ));
   }
 
   // Agrupa tags por contato em memória (Acesso O(1))
@@ -129,7 +136,10 @@ async function fetchLeadsData(companyId: string, boardId: string) {
         conversationId: conversations.id,
       })
       .from(conversations)
-      .where(inArray(conversations.contactId, contactIds));
+      .where(and(
+        eq(conversations.companyId, companyId),
+        inArray(conversations.contactId, contactIds)
+      ));
   }
 
   const convosByContactId = allConversations.reduce((acc, row) => {
@@ -147,7 +157,10 @@ async function fetchLeadsData(companyId: string, boardId: string) {
         firstAt: min(messages.sentAt),
       })
       .from(messages)
-      .where(inArray(messages.conversationId, conversationIds))
+      .where(and(
+        eq(messages.companyId, companyId),
+        inArray(messages.conversationId, conversationIds)
+      ))
       .groupBy(messages.conversationId);
     firstMessages.forEach(row => {
       if (row.conversationId && row.firstAt) {

@@ -195,8 +195,10 @@ export class SessionService {
     }
 
     try {
-      // Deletar sessão da Evolution API
-      await evolutionApiService.deleteInstance(sessionId);
+      // Deletar sessão da Evolution API (Ignora falhas para permitir deletar conexões fantasmas do banco)
+      await evolutionApiService.deleteInstance(sessionId).catch(error => {
+          console.warn('[SessionService] Could not delete from Evolution API, proceeding with local deletion:', error);
+      });
 
       // Limpar referências em campanhas
       await db.update(campaigns)

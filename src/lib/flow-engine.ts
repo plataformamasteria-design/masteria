@@ -107,6 +107,10 @@ async function interpolateTemplate(content: string, ctx: ExecutionContext): Prom
         // UI template syntax: "Gatilho: Nova Mensagem.body.nome" → extract "body.nome"
         // Then try: "nome" (last segment), "body.nome" (dot path), webhook_body.nome (nested)
         if (path.includes('.')) {
+            // New robust full path resolution first
+            const fullPathVal = path.split('.').reduce((obj: any, k: string) => obj?.[k], ctx.variables);
+            if (fullPathVal !== undefined) return String(fullPathVal);
+
             const segments = path.split('.');
             // Try last segment as variable key (e.g., "nome")
             const lastSegment = segments[segments.length - 1];
@@ -1405,6 +1409,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         const inserted = await db.insert(tags).values({
                             companyId: ctx.companyId,
                             name: stageName,
+                            color: '#e5e7eb',
                         }).returning();
                         tagRecord = inserted[0];
                     }
@@ -1440,8 +1445,9 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         ) || stages[0];
 
                         if (targetStage) {
-                            // Find existing lead card or create one
-                            const existingLead = await db.query.kanbanLeads.findFirst({
+                            // ALWAYS use multi-funnel logic as requested by user:
+                            // "se o lead já pertencer ao funil apenas atualiza a etapa, e não pertencer então adiciona o lead aquele funil e etapa"
+                            let existingLead = await db.query.kanbanLeads.findFirst({
                                 where: and(
                                     eq(kanbanLeads.boardId, board.id),
                                     eq(kanbanLeads.contactId, ctx.contactId)
@@ -1452,6 +1458,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 // Move existing card
                                 await db.update(kanbanLeads)
                                     .set({
+                                        boardId: board.id, // Update boardId in case it's moving from another board
                                         stageId: targetStage.id,
                                         currentStage: targetStage as any,
                                         lastStageChangeAt: new Date(),
@@ -1488,6 +1495,21 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             const assignType = step.data.assign_type || 'user';
             
             try {
+                // Ensure the contact has at least one conversation to hold the assignment
+                let conv = await db.query.conversations.findFirst({
+                    where: and(eq(conversations.contactId, ctx.contactId), eq(conversations.companyId, ctx.companyId))
+                });
+
+                if (!conv) {
+                    const [inserted] = await db.insert(conversations).values({
+                        companyId: ctx.companyId,
+                        contactId: ctx.contactId,
+                        status: 'NEW',
+                        aiActive: false
+                    }).returning();
+                    conv = inserted;
+                }
+
                 if (assignType === 'user') {
                     const userId = step.data.user_id;
                     if (userId) {

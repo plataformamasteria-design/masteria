@@ -16,9 +16,12 @@ interface KanbanColumnProps {
   onDeleteLead: (leadId: string) => Promise<void>;
   onUpdateCards?: () => void;
   companyUsers?: any[];
+  onOpenCard: (card: KanbanCardType, tab?: 'overview' | 'chat') => void;
+  onOpenMeetingTime: (card: KanbanCardType) => void;
+  onOpenDelete: (card: KanbanCardType) => void;
 }
 
-export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead, onUpdateCards, companyUsers = [] }: KanbanColumnProps): JSX.Element {
+export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead, onUpdateCards, companyUsers = [], onOpenCard, onOpenMeetingTime, onOpenDelete }: KanbanColumnProps): JSX.Element {
   const stageCards = cards.filter(card => card.stageId === stage.id);
   const totalValue = stageCards.reduce((sum, card) => sum + (Number(card.value) || 0), 0);
   
@@ -83,6 +86,9 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
                     onDelete={onDeleteLead}
                     onUpdateCards={onUpdateCards}
                     companyUsers={companyUsers}
+                    onOpenCard={onOpenCard}
+                    onOpenMeetingTime={onOpenMeetingTime}
+                    onOpenDelete={onOpenDelete}
                   />
                 ))}
                 {provided.placeholder}

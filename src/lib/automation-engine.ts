@@ -16,7 +16,9 @@ import {
     whatsappDeliveryReports,
     aiScheduledMeetings,
     automationFlowExecutions,
-    automationFlows
+    automationFlows,
+    companies,
+    kanbanLeads
 } from './db/schema';
 import { and, eq, gte, gt, ne, or, isNull, sql, desc, inArray } from 'drizzle-orm';
 import { ensureTenantAccess } from './db/tenant-guard';
@@ -39,7 +41,6 @@ import {
 } from './prompt-utils';
 import { buildEnrichedContactContext } from './contact-context';
 import { analyzeProfile, getPsychographicPromptInstructions } from './neurolinguistics/profile-analyzer';
-import { kanbanLeads, kanbanStagePersonas, kanbanBoards } from './db';
 import { apiCache } from './api-cache';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { resolveAIKeys } from './ai-keys-resolver';
@@ -2804,7 +2805,8 @@ if (!debounceMap.__messageDebounceMap) {
     }; // End of processAIAndFlow
 
     // ⏱️ Lógica de Debounce (Atropelamento de Mensagens)
-    let debounceSeconds = 5; // Padrão
+    // REDUZIDO: O sleep inicial (1s/3s) já agrupa mensagens. Não precisamos de mais 5s de espera padrão.
+    let debounceSeconds = 0; // Padrão
     
     // Tenta ler a configuração de debounce_seconds do nó atual (se estiver pausado no ai_agent)
     try {

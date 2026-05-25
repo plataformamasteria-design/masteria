@@ -9,8 +9,6 @@ import { MoreHorizontal, Phone, Eye, Pencil, Trash2, MessageCircle, MoveRight, C
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '../ui/dropdown-menu';
 import type { KanbanCard as KanbanCardType, KanbanStage } from '@/lib/types';
-import { DeleteLeadDialog, AddMeetingTimeDialog } from './lead-dialogs';
-import { LeadExpansiveDrawer } from './lead-expansive-drawer';
 import { FirstContactTimer } from './first-contact-timer';
 
 interface KanbanCardProps {
@@ -22,22 +20,19 @@ interface KanbanCardProps {
   onOpenWhatsApp?: (phone: string) => void;
   onUpdateCards?: () => void;
   companyUsers?: any[];
+  onOpenCard: (card: KanbanCardType, tab?: 'overview' | 'chat') => void;
+  onOpenMeetingTime: (card: KanbanCardType) => void;
+  onOpenDelete: (card: KanbanCardType) => void;
 }
 
-export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards, companyUsers = [] }: KanbanCardProps) {
+export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards, companyUsers = [], onOpenCard, onOpenMeetingTime, onOpenDelete }: KanbanCardProps) {
   const router = useRouter();
-  const [viewOpen, setViewOpen] = useState(false);
-  const [initialTab, setInitialTab] = useState<'overview' | 'chat'>('overview');
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [meetingTimeOpen, setMeetingTimeOpen] = useState(false);
-
   const handleMoveStage = async (stageId: string) => {
     await onUpdate(card.id, { stageId });
   };
 
   const handleOpenWhatsApp = () => {
-    setInitialTab('chat');
-    setViewOpen(true);
+    onOpenCard(card, 'chat');
   };
 
   const hasMeetingTime = card.notes?.includes('📅 Reunião agendada:');
@@ -93,7 +88,7 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
             {...provided.dragHandleProps}
           >
             <Card
-              onClick={() => { setInitialTab('overview'); setViewOpen(true); }}
+              onClick={() => onOpenCard(card, 'overview')}
               className={`cursor-pointer transition-all duration-200 rounded-lg ${
                 snapshot.isDragging 
                   ? 'bg-background dark:bg-zinc-900/90 shadow-xl scale-[1.02] rotate-1 ring-1 ring-primary/20 z-50' 
@@ -123,11 +118,11 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={() => { setInitialTab('overview'); setViewOpen(true); }}>
+                        <DropdownMenuItem onClick={() => onOpenCard(card, 'overview')}>
                           <Pencil className="mr-2 h-4 w-4" /> Editar / Detalhes
                         </DropdownMenuItem>
                         {isCallStage && (
-                          <DropdownMenuItem onClick={() => setMeetingTimeOpen(true)}>
+                          <DropdownMenuItem onClick={() => onOpenMeetingTime(card)}>
                             <Clock className="mr-2 h-4 w-4" /> {hasMeetingTime ? 'Editar Horário' : 'Adicionar Horário'}
                           </DropdownMenuItem>
                         )}
@@ -149,7 +144,7 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                           </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setDeleteOpen(true)} className="text-red-500 dark:text-red-400 focus:text-red-500 focus:bg-red-500/10">
+                        <DropdownMenuItem onClick={() => onOpenDelete(card)} className="text-red-500 dark:text-red-400 focus:text-red-500 focus:bg-red-500/10">
                           <Trash2 className="mr-2 h-4 w-4" /> Excluir
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -285,19 +280,6 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
           </div>
         )}
       </Draggable>
-
-      <LeadExpansiveDrawer
-        open={viewOpen}
-        onOpenChange={setViewOpen}
-        card={card}
-        stages={stages}
-        initialTab={initialTab}
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-        onOpenWhatsApp={handleOpenWhatsApp}
-      />
-      <AddMeetingTimeDialog open={meetingTimeOpen} onOpenChange={setMeetingTimeOpen} card={card} onSave={onUpdate} />
-      <DeleteLeadDialog open={deleteOpen} onOpenChange={setDeleteOpen} card={card} onConfirm={onDelete} />
     </>
   );
 }
