@@ -1384,16 +1384,35 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             // Specific time mode: wait until HH:mm today (or tomorrow if past)
             if (unit === 'specific_time') {
                 const targetTime = step.data.specific_time || '12:00'; // HH:mm
-                const [h, m] = targetTime.split(':').map(Number);
+                const [targetH, targetM] = targetTime.split(':').map(Number);
+                
+                // Pega a hora atual do Brasil de forma confiável
                 const now = new Date();
-                const target = new Date(now);
-                target.setHours(h, m, 0, 0);
-                if (target <= now) {
-                    // Already past today — schedule for tomorrow
-                    target.setDate(target.getDate() + 1);
+                const brtFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/Sao_Paulo',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                });
+                
+                const parts = brtFormatter.formatToParts(now);
+                // Handle 24h format quirk where midnight can be '24' in some node versions
+                let brtH = Number(parts.find(p => p.type === 'hour')?.value || 0);
+                if (brtH === 24) brtH = 0;
+                const brtM = Number(parts.find(p => p.type === 'minute')?.value || 0);
+                const brtS = Number(parts.find(p => p.type === 'second')?.value || 0);
+                
+                const nowMsInDay = (brtH * 3600 + brtM * 60 + brtS) * 1000;
+                const targetMsInDay = (targetH * 3600 + targetM * 60) * 1000;
+                
+                let ms = targetMsInDay - nowMsInDay;
+                if (ms <= 0) {
+                    // Já passou do horário hoje, agenda para o mesmo horário de amanhã
+                    ms += 24 * 60 * 60 * 1000;
                 }
-                const ms = target.getTime() - now.getTime();
-                return { action: 'delay', delayMs: ms, message: `Delay until ${targetTime} (${Math.round(ms / 60000)} min)` };
+                
+                return { action: 'delay', delayMs: ms, message: `Delay until ${targetTime} BRT (${Math.round(ms / 60000)} min)` };
             }
 
             const amount = parseInt(step.data.amount || '5');
