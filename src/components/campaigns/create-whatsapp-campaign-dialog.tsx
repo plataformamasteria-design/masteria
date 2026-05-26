@@ -128,7 +128,7 @@ export function CreateWhatsappCampaignDialog({
     const [funnelIds, setFunnelIds] = useState<string[]>([]);
     const [funnelStageIds, setFunnelStageIds] = useState<string[]>([]);
     const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
-    const [scheduleTime, setScheduleTime] = useState('09:00');
+    const [scheduleTime, setScheduleTime] = useState<string>('');
     const [sendNow, setSendNow] = useState(true);
     const [variableMappings, setVariableMappings] = useState<Record<string, VariableMapping>>({});
     const [selectedMedia, setSelectedMedia] = useState<MediaAsset | null>(null);
@@ -264,6 +264,7 @@ export function CreateWhatsappCampaignDialog({
         setSendNow(true);
         setVariableMappings({});
         setSelectedMedia(null);
+        setMediaHandleId(null);
         setDelayOption('normal');
     }, [connections]);
 
@@ -321,14 +322,15 @@ export function CreateWhatsappCampaignDialog({
                 variableMappings,
                 contactListIds: contactListIds,
                 excludeListIds,
-                tagIds,
-                excludeTagIds,
-                funnelIds,
-                funnelStageIds,
+                tagIds: tagIds,
+                excludeTagIds: excludeTagIds,
+                funnelIds: funnelIds,
+                funnelStageIds: funnelStageIds,
                 schedule,
                 minDelaySeconds: selectedDelay?.min || 0,
                 maxDelaySeconds: selectedDelay?.max || 0,
                 mediaAssetId: selectedMedia?.id || undefined,
+                mediaHandleId: mediaHandleId || undefined,
             };
 
             const response = await fetch('/api/v1/campaigns/whatsapp', {
@@ -474,11 +476,11 @@ export function CreateWhatsappCampaignDialog({
                             <p><strong>Atenção:</strong> Se o modelo foi importado do Gerenciador da Meta há muito tempo, o link original pode ter expirado (Erro 403). Nesse caso, faça o upload do arquivo novamente abaixo para garantir o envio.</p>
                         </div>
                         <MediaUploader
-                            onUploadSuccess={(asset) => setSelectedMedia(asset)}
-                            onUploadError={(error) => notify.error('Erro de Upload', error.message)}
-                            defaultAsset={selectedMedia || undefined}
-                            acceptedTypes={resolvedHeaderType?.toLowerCase() as 'image' | 'video' | 'document' | undefined}
-                            companyId={connections.find(c => c.id === selectedConnectionId)?.companyId || ''}
+                            mediaType={resolvedHeaderType as HeaderType | null}
+                            selectedMedia={selectedMedia}
+                            connectionId={selectedConnectionId}
+                            onMediaSelect={(asset) => setSelectedMedia(asset)}
+                            onHandleGenerated={(handleId) => setMediaHandleId(handleId)}
                         />
                     </div>
                 );
@@ -502,26 +504,37 @@ export function CreateWhatsappCampaignDialog({
                                 setFunnelStageIds={setFunnelStageIds}
                             />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-4 pt-2 border-t mt-4">
                             <Label className="text-base font-semibold">Agendamento</Label>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="send-now-checkbox-whatsapp" checked={sendNow} onCheckedChange={(checked) => setSendNow(!!checked)} />
-                                <Label htmlFor="send-now-checkbox-whatsapp">Enviar Imediatamente</Label>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button type="button" variant={"outline"} className={cn("w-full justify-start text-left font-normal", !scheduleDate && "text-muted-foreground", sendNow && 'opacity-50 cursor-not-allowed')} disabled={sendNow}>
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {scheduleDate ? format(scheduleDate, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={scheduleDate} onSelect={setScheduleDate} initialFocus />
-                                    </PopoverContent>
-                                </Popover>
-                                <Input name="scheduleTime" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full sm:w-auto" disabled={sendNow} />
-                            </div>
+                            
+                            <Card className="p-4 border-dashed bg-muted/30">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="send-now-checkbox-whatsapp">Enviar Imediatamente</Label>
+                                            <p className="text-sm text-muted-foreground">Desmarque para agendar uma data futura</p>
+                                        </div>
+                                        <Checkbox id="send-now-checkbox-whatsapp" checked={sendNow} onCheckedChange={(checked) => setSendNow(!!checked)} />
+                                    </div>
+                                    
+                                    {!sendNow && (
+                                        <div className="flex flex-col sm:flex-row gap-2 pt-2 animate-in fade-in zoom-in-95 duration-200">
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button type="button" variant={"outline"} className={cn("w-full justify-start text-left font-normal", !scheduleDate && "text-muted-foreground")}>
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {scheduleDate ? format(scheduleDate, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar mode="single" selected={scheduleDate} onSelect={setScheduleDate} initialFocus />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <Input name="scheduleTime" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full sm:w-auto" />
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="delay-select" className="flex items-center gap-2">

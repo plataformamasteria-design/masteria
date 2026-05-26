@@ -38,19 +38,21 @@ export function CampaignsDashboard(): JSX.Element {
       const res = await fetch('/api/v1/campaigns?limit=100');
       if (!res.ok) throw new Error('Erro ao buscar campanhas');
 
-      const campaigns: Campaign[] = await res.json();
+      // API retorna { data: Campaign[], totalPages: number } — não um array direto
+      const { data: campaigns }: { data: Campaign[] } = await res.json();
+      const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
 
       // Calcular métricas agregadas
-      const totalSent = campaigns.reduce((sum, c) => sum + (c.sent || 0), 0);
-      const totalDelivered = campaigns.reduce((sum, c) => sum + (c.delivered || 0), 0);
-      const totalRead = campaigns.reduce((sum, c) => sum + (c.read || 0), 0);
-      const totalFailed = campaigns.reduce((sum, c) => sum + (c.failed || 0), 0);
+      const totalSent = safeCampaigns.reduce((sum, c) => sum + (c.sent || 0), 0);
+      const totalDelivered = safeCampaigns.reduce((sum, c) => sum + (c.delivered || 0), 0);
+      const totalRead = safeCampaigns.reduce((sum, c) => sum + (c.read || 0), 0);
+      const totalFailed = safeCampaigns.reduce((sum, c) => sum + (c.failed || 0), 0);
 
-      const deliveryRates = campaigns
+      const deliveryRates = safeCampaigns
         .filter(c => (c.sent || 0) > 0)
         .map(c => (((c.delivered || 0) / (c.sent || 1)) * 100));
 
-      const readRates = campaigns
+      const readRates = safeCampaigns
         .filter(c => (c.delivered || 0) > 0)
         .map(c => (((c.read || 0) / (c.delivered || 1)) * 100));
 
@@ -62,10 +64,10 @@ export function CampaignsDashboard(): JSX.Element {
         ? readRates.reduce((a, b) => a + b, 0) / readRates.length
         : 0;
 
-      const activeCampaigns = campaigns.filter(c => c.status === 'SENDING' || c.status === 'SCHEDULED').length;
+      const activeCampaigns = safeCampaigns.filter(c => c.status === 'SENDING' || c.status === 'SCHEDULED').length;
 
       setMetrics({
-        totalCampaigns: campaigns.length,
+        totalCampaigns: safeCampaigns.length,
         totalSent,
         totalDelivered,
         totalRead,
