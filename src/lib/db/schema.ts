@@ -339,9 +339,15 @@ export const contacts = pgTable('contacts', {
 }, (table) => ({
   phoneCompanyUnique: unique('contacts_phone_company_id_unique').on(table.phone, table.companyId),
   externalIdProviderUnique: unique('contacts_external_id_provider_unique').on(table.externalId, table.externalProvider),
+  // Existing partial indexes
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS contacts_company_status_idx ON ${table} (company_id, status) WHERE deleted_at IS NULL`,
   companyCreatedAtIdx: sql`CREATE INDEX IF NOT EXISTS contacts_company_created_at_idx ON ${table} (company_id, created_at DESC) WHERE deleted_at IS NULL`,
   companyPhoneIdx: sql`CREATE INDEX IF NOT EXISTS contacts_company_phone_idx ON ${table} (company_id, phone) WHERE deleted_at IS NULL`,
+  
+  // New generic full indexes to prevent Sequential Scans
+  companyStatusFullIdx: sql`CREATE INDEX IF NOT EXISTS contacts_company_status_full_idx ON ${table} (company_id, status)`,
+  companyCreatedAtFullIdx: sql`CREATE INDEX IF NOT EXISTS contacts_company_created_at_full_idx ON ${table} (company_id, created_at DESC)`,
+  companyPhoneFullIdx: sql`CREATE INDEX IF NOT EXISTS contacts_company_phone_full_idx ON ${table} (company_id, phone)`,
 }));
 
 export const contactsToTags = pgTable('contacts_to_tags', {
@@ -358,6 +364,7 @@ export const contactsToContactLists = pgTable('contacts_to_contact_lists', {
   companyId: text('company_id').references(() => companies.id, { onDelete: 'cascade' }),
 }, (t) => ({
   pk: primaryKey({ columns: [t.contactId, t.listId] }),
+  listIdIdx: sql`CREATE INDEX IF NOT EXISTS contacts_to_contact_lists_list_id_idx ON ${t} (list_id)`,
 }));
 
 // ==============================
@@ -567,10 +574,17 @@ export const conversations = pgTable('conversations', {
   archivedAt: timestamp('archived_at'),
   archivedBy: text('archived_by').references(() => users.id, { onDelete: 'set null' }),
 }, (table) => ({
+  // Existing partial indexes
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_status_idx ON ${table} (company_id, status) WHERE archived_at IS NULL`,
   companyLastMessageAtIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_last_message_at_idx ON ${table} (company_id, last_message_at DESC) WHERE archived_at IS NULL`,
   companyUpdatedAtIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_updated_at_idx ON ${table} (company_id, updated_at DESC) WHERE archived_at IS NULL`,
   companyContactIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_contact_idx ON ${table} (company_id, contact_id) WHERE archived_at IS NULL`,
+
+  // New generic full indexes to prevent Sequential Scans
+  companyStatusFullIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_status_full_idx ON ${table} (company_id, status)`,
+  companyLastMessageAtFullIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_last_msg_full_idx ON ${table} (company_id, last_message_at DESC)`,
+  companyUpdatedAtFullIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_updated_at_full_idx ON ${table} (company_id, updated_at DESC)`,
+  companyContactFullIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_contact_full_idx ON ${table} (company_id, contact_id)`,
 }));
 
 export const messages = pgTable('messages', {
@@ -592,9 +606,15 @@ export const messages = pgTable('messages', {
   sentAt: timestamp('sent_at').defaultNow().notNull(),
   readAt: timestamp('read_at'),
 }, (table) => ({
+  // Existing partial indexes
   companySentAtIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_sent_at_idx ON ${table} (company_id, sent_at DESC) WHERE company_id IS NOT NULL`,
   companyConversationIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_conversation_idx ON ${table} (company_id, conversation_id) WHERE company_id IS NOT NULL`,
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_status_idx ON ${table} (company_id, status) WHERE company_id IS NOT NULL AND status IS NOT NULL`,
+
+  // New generic full indexes to prevent Sequential Scans
+  companySentAtFullIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_sent_full_idx ON ${table} (company_id, sent_at DESC)`,
+  companyConversationFullIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_conversation_full_idx ON ${table} (company_id, conversation_id)`,
+  companyStatusFullIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_status_full_idx ON ${table} (company_id, status)`,
 }));
 
 export const messageReactions = pgTable('message_reactions', {
