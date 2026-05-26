@@ -8,13 +8,14 @@ import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
 const UNIT_LABELS: Record<string, string> = {
-    seconds: 'segundo(s)', minutes: 'minuto(s)', hours: 'hora(s)', days: 'dia(s)',
+    seconds: 'segundo(s)', minutes: 'minuto(s)', hours: 'hora(s)', days: 'dia(s)', specific_time: 'Hora Específica',
 };
 
 export const DelayNodeV4 = memo(({ data, selected }: NodePropsV4) => {
-    const amount = data.amount ?? 1;
     const unit = data.unit || 'minutes';
-    const label = `${amount} ${UNIT_LABELS[unit] || unit}`;
+    const label = unit === 'specific_time'
+        ? `⏰ Às ${data.specific_time || '??:??'}`
+        : `${data.amount ?? 1} ${UNIT_LABELS[unit] || unit}`;
 
     return (
         <BaseNode

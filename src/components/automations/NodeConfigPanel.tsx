@@ -1401,13 +1401,40 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
             case 'delay':
                 return (
                     <div className="space-y-5">
-                        <ConfigSection label="Tempo de Espera">
-                            <div className="flex gap-2">
-                                <NumberField value={d.amount || '5'} onChange={(v) => update('amount', v)} min={1} />
-                                <SelectField value={d.unit || 'minutes'} onChange={(v) => update('unit', v)} options={TIME_UNIT_OPTIONS} />
-                            </div>
+                        <ConfigSection label="Modo de Espera">
+                            <SelectField
+                                value={d.unit === 'specific_time' ? 'specific_time' : (d.unit || 'minutes')}
+                                onChange={(v) => update('unit', v)}
+                                options={[
+                                    ...TIME_UNIT_OPTIONS,
+                                    { value: 'specific_time', label: '⏰ Hora Específica do Dia' },
+                                ]}
+                            />
                         </ConfigSection>
-                        <InfoBanner text="O fluxo será pausado pelo tempo especificado e depois continuará automaticamente." color="blue" />
+                        {d.unit === 'specific_time' ? (
+                            <ConfigSection label="Hora Alvo" hint="O fluxo aguardará até essa hora (hoje ou amanhã se já passou)">
+                                <input
+                                    type="time"
+                                    value={d.specific_time || '12:00'}
+                                    onChange={(e) => update('specific_time', e.target.value)}
+                                    className="w-full h-11 rounded-xl bg-muted/50 border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 transition-all"
+                                />
+                            </ConfigSection>
+                        ) : (
+                            <ConfigSection label="Tempo de Espera">
+                                <div className="flex gap-2">
+                                    <NumberField value={d.amount || '5'} onChange={(v) => update('amount', v)} min={1} />
+                                    <SelectField value={d.unit || 'minutes'} onChange={(v) => update('unit', v)} options={TIME_UNIT_OPTIONS} />
+                                </div>
+                            </ConfigSection>
+                        )}
+                        <InfoBanner
+                            text={d.unit === 'specific_time'
+                                ? `O fluxo pausará até as ${d.specific_time || '??:??'}. Se esse horário já passou hoje, continuará no mesmo horário de amanhã.`
+                                : 'O fluxo será pausado pelo tempo especificado e depois continuará automaticamente.'
+                            }
+                            color="blue"
+                        />
                     </div>
                 );
 

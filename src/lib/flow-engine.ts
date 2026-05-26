@@ -256,10 +256,11 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
         // Only process message-based triggers
         if (!['message_received', 'keyword'].includes(triggerType)) continue;
 
-        const keyword = (trigger.data?.keyword || '').trim();
+        // Strip invisible unicode characters (e.g. U+2060 WORD JOINER) that may appear in copy-pasted text
+        const keyword = (trigger.data?.keyword || '').replace(/[\u2060\u200B\u200C\u200D\uFEFF\u00A0]/g, '').trim();
         const matchMode = trigger.data?.match_mode || 'contains';
         // ✅ Extrair texto do BD (message.content) que contém a transcrição de áudios ou texto puro
-        const messageText = (message?.content || message?.body || message?.text || '');
+        const messageText = (message?.content || message?.body || message?.text || '').replace(/[\u2060\u200B\u200C\u200D\uFEFF]/g, '').trim();
         const messageTextLower = messageText.toLowerCase();
         const keywordLower = keyword.toLowerCase();
 
@@ -1378,8 +1379,24 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
         // ---- Logic: Delay ----
         case 'delay': {
-            const amount = parseInt(step.data.amount || '5');
             const unit = step.data.unit || 'minutes';
+            
+            // Specific time mode: wait until HH:mm today (or tomorrow if past)
+            if (unit === 'specific_time') {
+                const targetTime = step.data.specific_time || '12:00'; // HH:mm
+                const [h, m] = targetTime.split(':').map(Number);
+                const now = new Date();
+                const target = new Date(now);
+                target.setHours(h, m, 0, 0);
+                if (target <= now) {
+                    // Already past today — schedule for tomorrow
+                    target.setDate(target.getDate() + 1);
+                }
+                const ms = target.getTime() - now.getTime();
+                return { action: 'delay', delayMs: ms, message: `Delay until ${targetTime} (${Math.round(ms / 60000)} min)` };
+            }
+
+            const amount = parseInt(step.data.amount || '5');
             const multipliers: Record<string, number> = {
                 seconds: 1000,
                 minutes: 60 * 1000,
