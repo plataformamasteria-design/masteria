@@ -35,7 +35,7 @@ export function useInboxController({
     // Data State
     const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
     const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
-    const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+    const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(preselectedConversation || null);
     const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
     const [templates, setTemplates] = useState<any[]>(initialTemplates);
     const [availableConnections, setAvailableConnections] = useState<any[]>([]);

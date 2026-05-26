@@ -95,8 +95,14 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
             {...provided.dragHandleProps}
           >
             <Card
-              onClick={() => onOpenCard(card, 'overview')}
-              className={`cursor-pointer transition-all duration-200 rounded-lg ${
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                // Ensure it doesn't fire if we are clicking a menu item or button inside
+                if ((e.target as HTMLElement).closest('button, [role="menuitem"], a')) return;
+                onOpenCard(card, 'overview');
+              }}
+              className={`cursor-pointer transition-all duration-200 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 snapshot.isDragging 
                   ? 'bg-background dark:bg-zinc-900/90 shadow-xl scale-[1.02] rotate-1 ring-1 ring-primary/20 z-50' 
                   : 'bg-white dark:bg-zinc-950 shadow-sm border border-border/40 hover:border-border/80 hover:shadow-md'
@@ -114,17 +120,19 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-[10px] text-muted-foreground hidden md:block">{createdAtFormatted}</span>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                          onPointerDown={(e) => { e.stopPropagation(); }}
+                          onPointerUp={(e) => { e.stopPropagation(); }}
                         >
                           <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onClick={() => onOpenCard(card, 'overview')}>
                           <Pencil className="mr-2 h-4 w-4" /> Editar / Detalhes
                         </DropdownMenuItem>

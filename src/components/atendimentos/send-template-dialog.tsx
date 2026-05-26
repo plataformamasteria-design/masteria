@@ -19,11 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { createToastNotifier } from '@/lib/toast-helper';
 import type { Template, Contact } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Variable } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface SendTemplateDialogProps {
@@ -33,10 +35,23 @@ interface SendTemplateDialogProps {
   contact: Contact;
 }
 
+/** Extrai variáveis {{N}} ou {{nome}} do body de um template */
+function extractVariables(text: string): string[] {
+  const matches = text.match(/\{\{([^}]+)\}\}/g) || [];
+  // Deduplica mantendo ordem
+  return [...new Set(matches.map(m => m.replace(/\{\{|\}\}/g, '').trim()))];
+}
+
+/** Substitui {{N}} pelo valor digitado para preview */
+function applyVariables(text: string, vars: Record<string, string>): string {
+  return text.replace(/\{\{([^}]+)\}\}/g, (_, key) => vars[key.trim()] || `{{${key.trim()}}}`);
+}
+
 export function SendTemplateDialog({ children, templates, connectionId, contact }: SendTemplateDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const notify = useMemo(() => createToastNotifier(toast), [toast]);
   const router = useRouter();
@@ -51,12 +66,31 @@ export function SendTemplateDialog({ children, templates, connectionId, contact 
 
   const templateBody = useMemo(() => {
     if (!selectedTemplate?.components) return '';
-    const componentsArray = Array.isArray(selectedTemplate.components) 
-      ? selectedTemplate.components 
+    const componentsArray = Array.isArray(selectedTemplate.components)
+      ? selectedTemplate.components
       : [];
     const bodyComponent = componentsArray.find((c: any) => c.type === 'BODY');
     return bodyComponent?.text || '';
   }, [selectedTemplate]);
+
+  // Extrair variáveis do body do template selecionado
+  const templateVariables = useMemo(() => extractVariables(templateBody), [templateBody]);
+
+  // Preview em tempo real com variáveis preenchidas
+  const previewText = useMemo(
+    () => applyVariables(templateBody, variableValues),
+    [templateBody, variableValues]
+  );
+
+  // Quando o template muda, resetar variáveis e pré-preencher com dados do contato
+  const handleTemplateChange = useCallback((id: string) => {
+    setSelectedTemplateId(id);
+    setVariableValues({});
+  }, []);
+
+  const handleVariableChange = (varKey: string, value: string) => {
+    setVariableValues(prev => ({ ...prev, [varKey]: value }));
+  };
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +98,14 @@ export function SendTemplateDialog({ children, templates, connectionId, contact 
       notify.error('Erro', 'Dados incompletos para iniciar a conversa.');
       return;
     }
+
+    // Verificar se todas as variáveis foram preenchidas
+    const missing = templateVariables.filter(v => !variableValues[v]?.trim());
+    if (missing.length > 0) {
+      notify.error('Variáveis pendentes', `Preencha: ${missing.join(', ')}`);
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
@@ -74,7 +116,7 @@ export function SendTemplateDialog({ children, templates, connectionId, contact 
           contactId: contact.id,
           connectionId: connectionId,
           templateId: selectedTemplate.id,
-          variableMappings: {}, // Simplified for this context
+          variableMappings: variableValues,
         }),
       });
 
@@ -82,56 +124,104 @@ export function SendTemplateDialog({ children, templates, connectionId, contact 
       if (!response.ok) {
         throw new Error(result.error || 'Falha ao iniciar a conversa.');
       }
-      
+
       notify.success('Conversa Iniciada!', 'A mensagem foi enviada com sucesso.');
       setIsOpen(false);
+      setSelectedTemplateId('');
+      setVariableValues({});
       router.push(`/atendimentos?conversationId=${result.conversationId}`);
 
     } catch (error) {
-       notify.error('Erro ao Enviar', (error as Error).message);
+      notify.error('Erro ao Enviar', (error as Error).message);
     } finally {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
-  }, [contact, connectionId, selectedTemplate, notify, router]);
+  }, [contact, connectionId, selectedTemplate, templateVariables, variableValues, notify, router]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open) { setSelectedTemplateId(''); setVariableValues({}); }
+    }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Iniciar Conversa com Modelo</DialogTitle>
             <DialogDescription>
-              A janela de 24 horas para resposta livre expirou. Selecione um modelo aprovado para iniciar uma nova conversa com este contato.
+              Selecione um modelo aprovado pelo Meta para iniciar uma nova conversa com este contato.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                  <Label htmlFor="template-select">Modelo de Mensagem</Label>
-                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger id="template-select">
-                          <SelectValue placeholder="Selecione um modelo..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {templateList.filter(t => t.status === 'APPROVED' || t.status === 'APROVADO').map(t => (
-                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
+
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-4 py-3 px-1">
+              {/* Seleção de template */}
+              <div className="space-y-1.5">
+                <Label htmlFor="template-select">Modelo de Mensagem</Label>
+                <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
+                  <SelectTrigger id="template-select">
+                    <SelectValue placeholder="Selecione um modelo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templateList.filter(t => t.status === 'APPROVED' || t.status === 'APROVADO').map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {selectedTemplate && templateBody && (
-                  <div className="p-4 border rounded-md bg-muted/50 text-sm">
-                      <p className="whitespace-pre-wrap">{templateBody}</p>
+              {/* Inputs dinâmicos para variáveis */}
+              {templateVariables.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <Variable className="h-3.5 w-3.5" />
+                    Preencha as variáveis do template
                   </div>
+                  {templateVariables.map(varKey => (
+                    <div key={varKey} className="space-y-1.5">
+                      <Label htmlFor={`var-${varKey}`} className="text-sm">
+                        {`{{${varKey}}}`}
+                      </Label>
+                      <Input
+                        id={`var-${varKey}`}
+                        placeholder={`Valor para {{${varKey}}}...`}
+                        value={variableValues[varKey] || ''}
+                        onChange={e => handleVariableChange(varKey, e.target.value)}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
-          </div>
-          <DialogFooter>
-              <Button type="button" variant="secondary" disabled={isProcessing} onClick={() => setIsOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={!selectedTemplateId || isProcessing}>
-                  {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Enviar Mensagem
-              </Button>
+
+              {/* Preview do template */}
+              {selectedTemplate && templateBody && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Preview</p>
+                  <div className="p-4 border rounded-lg bg-muted/30 text-sm leading-relaxed">
+                    <p className="whitespace-pre-wrap">{previewText}</p>
+                  </div>
+                  {templateVariables.length > 0 && templateVariables.some(v => !variableValues[v]) && (
+                    <p className="text-[11px] text-amber-500">
+                      ⚠️ Preencha todas as variáveis antes de enviar
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="secondary" disabled={isProcessing} onClick={() => setIsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={!selectedTemplateId || isProcessing || (templateVariables.length > 0 && templateVariables.some(v => !variableValues[v]?.trim()))}
+            >
+              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Enviar Mensagem
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,0 +1,30 @@
+- [Fri May 08 2026 14:02:56 GMT-0300 (Horário Padrão de Brasília)] INFO: âš ï¸ [Prioridade 5] Nenhum agente configurado. Sistema nÃ£o responderÃ¡ automaticamente.
+- [Fri May 08 2026 14:02:56 GMT-0300 (Horário Padrão de Brasília)] INFO: Sem agente IA configurado para esta conversa.
+- [Fri May 08 2026 14:04:54 GMT-0300 (Horário Padrão de Brasília)] INFO: Nova conversa detectada. Verificando criaÃ§Ã£o de lead...
+- [Fri May 08 2026 14:04:54 GMT-0300 (Horário Padrão de Brasília)] ERROR: Falha ao criar lead automÃ¡tico: companies is not defined 
+- [Fri May 08 2026 14:04:54 GMT-0300 (Horário Padrão de Brasília)] INFO: Processando gatilhos para mensagem: 0c7f6918-f8a3-4d13-a46c-d58fbcf9c8d1 (Tipo: TEXT)
+- [Fri May 08 2026 14:04:56 GMT-0300 (Horário Padrão de Brasília)] INFO: Nenhuma regra de automaÃ§Ã£o ativa encontrada para esta mensagem.
+- [Fri May 08 2026 14:04:56 GMT-0300 (Horário Padrão de Brasília)] INFO: Verificando roteamento de IA: aiActive = true, hasRouting = false, connectionAssignedPersonaId = null 
+- [Fri May 08 2026 14:04:56 GMT-0300 (Horário Padrão de Brasília)] INFO: Contato sem lead ativo no Kanban. Seguindo hierarquia de fallback...
+- [Fri May 08 2026 14:04:56 GMT-0300 (Horário Padrão de Brasília)] INFO: âš ï¸ [Prioridade 3] Nenhum agente padrÃ£o configurado na conexÃ£o (assignedPersonaId: null)
+- [Fri May 08 2026 14:04:56 GMT-0300 (Horário Padrão de Brasília)] INFO: âš ï¸ [Prioridade 5] Nenhum agente configurado. Sistema nÃ£o responderÃ¡ automaticamente.
+- [Fri May 08 2026 14:04:56 GMT-0300 (Horário Padrão de Brasília)] INFO: Sem agente IA configurado para esta conversa.
+- [Fri May 08 2026 14:05:39 GMT-0300 (Horário Padrão de Brasília)] INFO: Processando gatilhos para mensagem: 2b42a98e-0f0d-4f6a-b5af-b1c5842df919 (Tipo: TEXT)
+- [Fri May 08 2026 14:05:41 GMT-0300 (Horário Padrão de Brasília)] INFO: Nenhuma regra de automaÃ§Ã£o ativa encontrada para esta mensagem.
+- [Fri May 08 2026 14:05:41 GMT-0300 (Horário Padrão de Brasília)] INFO: Verificando roteamento de IA: aiActive = true, hasRouting = false, connectionAssignedPersonaId = null 
+- [Fri May 08 2026 14:05:41 GMT-0300 (Horário Padrão de Brasília)] INFO: Contato sem lead ativo no Kanban. Seguindo hierarquia de fallback...
+- [Fri May 08 2026 14:05:41 GMT-0300 (Horário Padrão de Brasília)] INFO: âš ï¸ [Prioridade 3] Nenhum agente padrÃ£o configurado na conexÃ£o (assignedPersonaId: null)
+- [Fri May 08 2026 14:05:41 GMT-0300 (Horário Padrão de Brasília)] INFO: âš ï¸ [Prioridade 5] Nenhum agente configurado. Sistema nÃ£o responderÃ¡ automaticamente.
+- [Fri May 08 2026 14:05:41 GMT-0300 (Horário Padrão de Brasília)] INFO: Sem agente IA configurado para esta conversa.
+- [Fri May 08 2026 14:05:45 GMT-0300 (Horário Padrão de Brasília)] INFO: Processando gatilhos para mensagem: 5f9e2c69-a609-4ad6-b446-636c39bdb4a2 (Tipo: TEXT)
+- [Fri May 08 2026 14:05:48 GMT-0300 (Horário Padrão de Brasília)] INFO: Nenhuma regra de automaÃ§Ã£o ativa encontrada para esta mensagem.
+- [Fri May 08 2026 14:05:48 GMT-0300 (Horário Padrão de Brasília)] INFO: ðŸš« IA ignorada pois uma regra de automaÃ§Ã£o enviou resposta(Prioridade para Palavras - Chave).
+- [Fri May 08 2026 14:05:51 GMT-0300 (Horário Padrão de Brasília)] INFO: Processando gatilhos para mensagem: 8600bb8c-bbb2-4ccd-b89f-2106da967e01 (Tipo: TEXT)
+- [Fri May 08 2026 14:06:04 GMT-0300 (Horário Padrão de Brasília)] INFO: Nenhuma regra de automaÃ§Ã£o ativa encontrada para esta mensagem.
+- [Fri May 08 2026 14:06:04 GMT-0300 (Horário Padrão de Brasília)] INFO: ðŸš« IA ignorada pois uma regra de automaÃ§Ã£o enviou resposta(Prioridade para Palavras - Chave).
+- [Mon May 25 2026 18:02:19 GMT-0300 (Horário Padrão de Brasília)] INFO: Processando gatilhos para mensagem: 0a03b31c-b02e-428e-8f8f-0f632de581b7 (Tipo: TEXT)
+- [Mon May 25 2026 18:03:42 GMT-0300 (Horário Padrão de Brasília)] INFO: Nenhuma regra de automaÃ§Ã£o ativa encontrada para esta mensagem.
+- [Mon May 25 2026 18:03:42 GMT-0300 (Horário Padrão de Brasília)] INFO: ðŸš« IA ignorada pois uma regra de automaÃ§Ã£o enviou resposta(Prioridade para Palavras - Chave).
+- [Mon May 25 2026 18:05:27 GMT-0300 (Horário Padrão de Brasília)] INFO: Processando gatilhos para mensagem: 13b00353-90cc-4786-9f5e-52c547652eb4 (Tipo: TEXT)
+- [Mon May 25 2026 18:06:41 GMT-0300 (Horário Padrão de Brasília)] INFO: Nenhuma regra de automaÃ§Ã£o ativa encontrada para esta mensagem.
+- [Mon May 25 2026 18:06:41 GMT-0300 (Horário Padrão de Brasília)] INFO: ðŸš« IA ignorada pois uma regra de automaÃ§Ã£o enviou resposta(Prioridade para Palavras - Chave).

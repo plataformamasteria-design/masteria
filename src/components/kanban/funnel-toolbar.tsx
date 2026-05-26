@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 
 interface FunnelToolbarProps {
   funnel: KanbanFunnel;
+  totalLeadsCount?: number;
   onAddCard?: () => void;
   onSearch?: (query: string) => void;
   filters?: KanbanFilters;
@@ -148,7 +149,7 @@ function SectionSearch({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export function FunnelToolbar({
-  funnel, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount,
+  funnel, totalLeadsCount, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount,
   companyUsers, companyTeams, connections, availableTags,
 }: FunnelToolbarProps): JSX.Element {
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -208,7 +209,7 @@ export function FunnelToolbar({
         <div className="flex flex-col gap-0.5 min-w-0">
           <h2 className="text-base sm:text-lg font-semibold truncate">{funnel.name}</h2>
           <div className="text-xs text-muted-foreground">
-            {funnel.totalLeads || 0} leads
+            {totalLeadsCount ?? funnel.totalLeads ?? 0} leads
             {(funnel.totalValue ?? 0) > 0 && (
               <span> • R$ {(funnel.totalValue || 0).toLocaleString('pt-BR')}</span>
             )}

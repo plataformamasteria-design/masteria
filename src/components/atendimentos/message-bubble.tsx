@@ -39,11 +39,31 @@ const MediaError = () => (
         <AlertTriangle className="h-5 w-5 text-amber-500/60" />
         <p className="text-xs text-center font-medium">Mídia não disponível</p>
         <p className="text-[10px] text-center opacity-50 leading-tight">
-            Este arquivo foi perdido durante atualização do servidor.
-            Novas mídias serão salvas de forma persistente.
+            Este arquivo foi perdido ou o upload falhou.
         </p>
     </div>
 );
+
+const MediaPending = ({ type, sentAt }: { type: string, sentAt?: Date | string | null }) => {
+    const isOld = sentAt && (new Date().getTime() - new Date(sentAt).getTime() > 5 * 60 * 1000);
+    
+    if (isOld) {
+        return <MediaError />;
+    }
+
+    let text = 'Processando imagem...';
+    if (type === 'VIDEO') { text = 'Processando vídeo...'; }
+    if (type === 'AUDIO') { text = 'Processando áudio...'; }
+    if (type === 'DOCUMENT') { text = 'Processando documento...'; }
+    if (type === 'STICKER') { text = 'Carregando sticker...'; }
+
+    return (
+        <div className="flex items-center gap-2 p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-border/30 text-muted-foreground w-full min-w-[180px]">
+            <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/40 border-t-primary animate-spin shrink-0" />
+            <span className="text-xs font-medium">{text}</span>
+        </div>
+    );
+};
 
 const ChatImage = ({ src, alt, className, width, height }: any) => {
     const [hasError, setHasError] = useState(false);
@@ -359,24 +379,19 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                         className="rounded-lg"
                         width={300}
                     />
-                ) : <MediaError />;
+                ) : <MediaPending type="IMAGE" sentAt={message.sentAt} />;
             case 'VIDEO':
                 return message.mediaUrl ? (
                     <video src={message.mediaUrl} controls className="rounded-lg w-full max-w-xs">
                         Seu navegador não suporta a tag de vídeo.
                     </video>
-                ) : <MediaError />;
+                ) : <MediaPending type="VIDEO" sentAt={message.sentAt} />;
             case 'AUDIO':
                 return (
                     <div className="w-full space-y-2">
                         {message.mediaUrl ? (
                             <AudioPlayer key={message.id} src={message.mediaUrl} />
-                        ) : message.content ? (
-                            <div className="flex items-center gap-2 p-2 rounded bg-black/5 dark:bg-white/5 italic text-sm">
-                                <Mic className="h-4 w-4 shrink-0 opacity-70" />
-                                <span>{message.content}</span>
-                            </div>
-                        ) : <MediaError />}
+                        ) : <MediaPending type="AUDIO" sentAt={message.sentAt} />}
                         
                         {message.mediaUrl && (message as any).aiTranscription && (
                             <p className="text-xs italic opacity-70 border-t border-black/5 dark:border-white/5 pt-1 mt-1">
@@ -389,9 +404,9 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                 return message.mediaUrl ? (
                     <a href={message.mediaUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20">
                         <FileText className="h-6 w-6" />
-                        <span className="truncate">{message.content}</span>
+                        <span className="truncate">{message.content || 'Documento'}</span>
                     </a>
-                ) : <MediaError />;
+                ) : <MediaPending type="DOCUMENT" sentAt={message.sentAt} />;
             case 'STICKER':
                 return message.mediaUrl ? (
                     <ChatImage
@@ -400,7 +415,7 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                         width={150}
                         className="object-contain bg-transparent"
                     />
-                ) : <MediaError />;
+                ) : <MediaPending type="STICKER" sentAt={message.sentAt} />;
             case 'TEXT':
             case 'BUTTON':
             case 'INTERACTIVE':

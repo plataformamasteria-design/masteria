@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Tag, Kanban, Bot, User, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
+import { Loader2, Tag, Kanban, CheckCircle2, AlertCircle, Calendar, Zap, UserCheck } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ContactEvent {
     id: string;
@@ -9,6 +8,102 @@ interface ContactEvent {
     description: string;
     metadata: any;
     createdAt: string;
+}
+
+interface EventStyle {
+    icon: React.ReactNode;
+    border: string;
+    bg: string;
+}
+
+const DEFAULT_STYLE: EventStyle = {
+    icon: <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground/60" />,
+    border: 'border-border/40',
+    bg: 'bg-muted/20',
+};
+
+const EVENT_STYLES: Partial<Record<ContactEvent['type'], EventStyle>> = {
+    ASSIGNMENT: {
+        icon: <UserCheck className="h-3.5 w-3.5 text-blue-500" />,
+        border: 'border-blue-500/25',
+        bg: 'bg-blue-500/5',
+    },
+    TAG: {
+        icon: <Tag className="h-3.5 w-3.5 text-orange-500" />,
+        border: 'border-orange-500/25',
+        bg: 'bg-orange-500/5',
+    },
+    KANBAN: {
+        icon: <Kanban className="h-3.5 w-3.5 text-purple-500" />,
+        border: 'border-purple-500/25',
+        bg: 'bg-purple-500/5',
+    },
+    AUTOMATION: {
+        icon: <Zap className="h-3.5 w-3.5 text-emerald-500" />,
+        border: 'border-emerald-500/25',
+        bg: 'bg-emerald-500/5',
+    },
+    SYSTEM: DEFAULT_STYLE,
+};
+
+/**
+ * Parseia o metadata de um evento e retorna label humanizado.
+ * Evita exibir JSON bruto ou UUIDs para o usuário final.
+ */
+function parseMetadata(type: ContactEvent['type'], raw: any): string | null {
+    if (!raw) return null;
+
+    // Se vier como string JSON, parsear
+    let metadata = raw;
+    if (typeof raw === 'string') {
+        try { metadata = JSON.parse(raw); } catch { return null; }
+    }
+
+    if (typeof metadata !== 'object' || metadata === null) return null;
+
+    try {
+        if (type === 'ASSIGNMENT') {
+            if (metadata.unassigned) return 'Atribuição removida';
+            if (metadata.assignedUserName) return `Agente: ${metadata.assignedUserName}`;
+            if (metadata.teamName) return `Equipe: ${metadata.teamName}`;
+            // UUID sem nome — não exibir para o usuário
+            return null;
+        }
+
+        if (type === 'KANBAN') {
+            const from = metadata.fromStage as string | undefined;
+            const to = (metadata.toStage ?? metadata.stageName) as string | undefined;
+            const board = metadata.boardName as string | undefined;
+            if (to && from) return `${board ? `[${board}] ` : ''}${from} → ${to}`;
+            if (to) return `Etapa: ${to}${board ? ` (${board})` : ''}`;
+            return null;
+        }
+
+        if (type === 'AUTOMATION') {
+            if (metadata.flowName) return `Fluxo: ${metadata.flowName}`;
+            if (metadata.action) return `Ação: ${metadata.action}`;
+            return null;
+        }
+
+        if (type === 'TAG') {
+            if (metadata.tagName) {
+                return `${metadata.added === false ? 'Removida' : 'Adicionada'}: ${metadata.tagName}`;
+            }
+            return null;
+        }
+
+        // SYSTEM — exibir apenas campos legíveis
+        const readableKeys = ['message', 'reason', 'status', 'action', 'note'];
+        for (const key of readableKeys) {
+            if (metadata[key] && typeof metadata[key] === 'string') {
+                return metadata[key] as string;
+            }
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
 }
 
 export function ContactHistoryTimeline({ contactId }: { contactId: string }) {
@@ -58,39 +153,38 @@ export function ContactHistoryTimeline({ contactId }: { contactId: string }) {
         );
     }
 
-    const getEventIcon = (type: string) => {
-        switch (type) {
-            case 'ASSIGNMENT': return <User className="h-3.5 w-3.5 text-blue-500" />;
-            case 'TAG': return <Tag className="h-3.5 w-3.5 text-orange-500" />;
-            case 'KANBAN': return <Kanban className="h-3.5 w-3.5 text-purple-500" />;
-            case 'AUTOMATION': return <Bot className="h-3.5 w-3.5 text-green-500" />;
-            default: return <CheckCircle2 className="h-3.5 w-3.5 text-gray-500" />;
-        }
-    };
-
     return (
-        <div className="relative border-l border-border/40 ml-3 pl-4 space-y-6 pb-4 pt-2">
-            {events.map((event, index) => (
-                <div key={event.id} className="relative">
-                    <div className="absolute -left-[26px] top-1 h-5 w-5 rounded-full bg-background border border-border/60 flex items-center justify-center">
-                        {getEventIcon(event.type)}
+        <div className="relative border-l border-border/40 ml-3 pl-4 space-y-4 pb-4 pt-2">
+            {events.map((event) => {
+                const style: EventStyle = EVENT_STYLES[event.type] ?? DEFAULT_STYLE;
+                const detail = parseMetadata(event.type, event.metadata);
+
+                return (
+                    <div key={event.id} className="relative">
+                        {/* Timeline dot */}
+                        <div className="absolute -left-[26px] top-2 h-5 w-5 rounded-full bg-background border border-border/60 flex items-center justify-center">
+                            {style.icon}
+                        </div>
+
+                        <div className={`flex flex-col gap-1 rounded-lg border p-2.5 ${style.border} ${style.bg}`}>
+                            <p className="text-[13px] font-medium leading-tight">{event.description}</p>
+
+                            {detail && (
+                                <p className="text-[11px] text-muted-foreground/80 font-medium">
+                                    {detail}
+                                </p>
+                            )}
+
+                            <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1 mt-0.5">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(event.createdAt).toLocaleString('pt-BR')}
+                                <span className="opacity-50">·</span>
+                                <RelativeTime date={event.createdAt} />
+                            </span>
+                        </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <p className="text-sm font-medium leading-tight">{event.description}</p>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(event.createdAt).toLocaleString('pt-BR')}
-                            <span className="opacity-50">·</span>
-                            <RelativeTime date={event.createdAt} />
-                        </span>
-                        {event.metadata && Object.keys(event.metadata).length > 0 && (
-                            <div className="mt-1 bg-muted/20 border border-border/40 rounded p-1.5 overflow-x-auto text-[10px] font-mono text-muted-foreground">
-                                {JSON.stringify(event.metadata)}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }

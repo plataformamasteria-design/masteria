@@ -102,11 +102,15 @@ export function ActiveChat({
   const isMobile = useIsMobile();
   const { session } = useSession();
   const currentUserId = session?.userId ?? null;
+  // Admins e SuperAdmins podem enviar em qualquer conversa
+  const currentUserRole = session?.userData?.role ?? null;
+  const isAdminOrSuperAdmin = currentUserRole === 'admin' || currentUserRole === 'superadmin';
   const [messageText, setMessageText] = React.useState('');
   const [isSending, setIsSending] = React.useState(false);
   const [isAssigning, setIsAssigning] = React.useState(false);
   const [replyToMessage, setReplyToMessage] = React.useState<Message | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
+  const [pendingConnectionId, setPendingConnectionId] = React.useState<string | null>(null);
   const [messageFilter, setMessageFilter] = React.useState<'all' | 'connection'>('all');
   const [isInternalNote, setIsInternalNote] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -137,13 +141,14 @@ export function ActiveChat({
     setOptimisticAssignment(null);
   }, [conversation?.id]);
 
-  // ✅ v2: Assignment-based access control
+  // ✅ v3: Assignment-based access control com bypass para admin/superadmin
   const activeAssignedTo = optimisticAssignment ? optimisticAssignment.assignedTo : conversation?.assignedTo;
   const activeTeamId = optimisticAssignment ? optimisticAssignment.teamId : conversation?.teamId;
 
   const isConversationAssigned = !!activeAssignedTo || !!activeTeamId;
   const isAssignedToMe = activeAssignedTo === currentUserId;
-  const canSendMessage = isAssignedToMe;
+  // Admins/SuperAdmins podem sempre enviar — sem bloqueio de atribuição
+  const canSendMessage = isAdminOrSuperAdmin || isAssignedToMe;
 
   const lastWindowOpeningMessage = React.useMemo(() => {
     // A janela de 24 horas da Meta SÓ É ABERTA por mensagens do cliente.
@@ -389,9 +394,11 @@ export function ActiveChat({
                   return (
                     <DropdownMenuItem
                       key={conn.id}
-                      onClick={async () => {
+                      onClick={() => {
                         if (!isActive) {
-                          await onSwitchConnection(conn.id);
+                          // Guardar conexão pendente — pedir confirmação
+                          setPendingConnectionId(conn.id);
+                          setShowConnectionDropdown(false);
                         }
                       }}
                       className={cn(
@@ -432,7 +439,7 @@ export function ActiveChat({
             </DropdownMenu>
           )}
 
-          {/* Message Filter Toggle */}
+          {/* Message Filter Toggle — mostra badge quando filtro ativo */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -442,17 +449,25 @@ export function ActiveChat({
                   size="icon"
                   onClick={() => setMessageFilter(f => f === 'all' ? 'connection' : 'all')}
                   className={cn(
-                    "shrink-0 h-9 w-9 rounded-lg transition-all duration-200",
+                    "shrink-0 h-9 w-9 rounded-lg transition-all duration-200 relative",
                     messageFilter === 'connection'
                       ? "bg-primary/10 text-primary hover:bg-primary/15"
                       : "hover:bg-white/[0.04] text-muted-foreground"
                   )}
                 >
                   <Filter className="h-[18px] w-[18px]" />
+                  {messageFilter === 'connection' && (() => {
+                    const count = messages.filter((m: any) => !m.connectionId || m.connectionId === conversation?.connectionId).length;
+                    return (
+                      <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded-full flex items-center justify-center leading-none">
+                        {count}
+                      </span>
+                    );
+                  })()}
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="bg-card/95 backdrop-blur-md border-white/[0.08]">
-                <p>{messageFilter === 'all' ? 'Filtrar por esta conexão' : 'Mostrar todas as conexões'}</p>
+                <p>{messageFilter === 'connection' ? `Filtrando por conexão ativa (${messages.filter((m: any) => !m.connectionId || m.connectionId === conversation?.connectionId).length} msgs) — clique para ver todas` : 'Filtrar mensagens por esta conexão'}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -636,7 +651,7 @@ export function ActiveChat({
            replyToMessage={replyToMessage}
            onClearReply={() => setReplyToMessage(null)}
            isConversationAssigned={isConversationAssigned}
-           isAssignedToMe={isAssignedToMe}
+           isAssignedToMe={isAdminOrSuperAdmin ? true : isAssignedToMe}
            assignedUserName={conversation.assignedUserName || conversation.teamName || null}
            isAssigning={isAssigning}
            onAssignToMe={async () => {
@@ -698,6 +713,39 @@ export function ActiveChat({
            }
         />
       </div>
+
+      {/* Modal de Confirmação de Troca de Conexão */}
+      <Dialog open={!!pendingConnectionId} onOpenChange={(open) => !open && setPendingConnectionId(null)}>
+        <DialogContent className="sm:max-w-[380px]">
+          <DialogHeader>
+            <DialogTitle>Trocar Conexão</DialogTitle>
+          </DialogHeader>
+          <div className="py-3">
+            <p className="text-sm text-muted-foreground">
+              Ao trocar a conexão, as próximas mensagens serão enviadas pelo novo canal. Esta ação não desfaz mensagens já enviadas.
+            </p>
+            {pendingConnectionId && (() => {
+              const conn = availableConnections.find(c => c.id === pendingConnectionId);
+              return conn ? (
+                <div className="mt-3 p-3 rounded-lg border border-primary/20 bg-primary/5 text-sm font-medium">
+                  ✅ {conn.config_name} · {conn.phoneNumber || conn.phone || 'Sem número'}
+                </div>
+              ) : null;
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingConnectionId(null)}>Cancelar</Button>
+            <Button onClick={async () => {
+              if (pendingConnectionId && onSwitchConnection) {
+                await onSwitchConnection(pendingConnectionId);
+              }
+              setPendingConnectionId(null);
+            }}>
+              Confirmar Troca
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de Preview de Mídia */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>

@@ -328,19 +328,18 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : (contactDetails as any)?.activeConversations?.[0]?.id ? (() => {
-              const activeConv = (contactDetails as any).activeConversations[0];
-              // Map the basic properties required to make it look like a real conversation initially
-              // It will fetch the real one if we need full data, but InboxView handles it gracefully if preselected is provided.
-              const syntheticConversation = {
-                id: activeConv.id,
+            ) : (contactDetails as any)?.activeConversations?.length > 0 ? (() => {
+              const activeConvs = (contactDetails as any).activeConversations;
+              
+              const syntheticConversations = activeConvs.map((conv: any) => ({
+                id: conv.id,
                 contactId: (contactDetails as any).id,
-                connectionId: activeConv.connectionId || '',
-                connectionName: activeConv.connectionName || 'Conexão',
-                connectionType: activeConv.connectionType || 'apicloud',
-                status: activeConv.status || 'OPEN',
-                lastMessageAt: activeConv.lastMessageAt || new Date(),
-                aiActive: activeConv.aiActive || false,
+                connectionId: conv.connectionId || '',
+                connectionName: conv.connectionName || 'Conexão',
+                connectionType: conv.connectionType || 'apicloud',
+                status: conv.status || 'OPEN',
+                lastMessageAt: conv.lastMessageAt || new Date(),
+                aiActive: conv.aiActive || false,
                 contactName: (contactDetails as any).name || (contactDetails as any).whatsappName || 'Contato',
                 contactPhone: (contactDetails as any).phone || '',
                 contactAvatarUrl: (contactDetails as any).avatarUrl || null,
@@ -350,18 +349,20 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 archivedBy: null,
                 lastMessage: null,
                 lastMessageSenderType: null,
-                assignedTo: activeConv.assignedTo || null,
-                teamId: activeConv.teamId || null,
-                assignedUserName: activeConv.assignedUserName || null,
+                assignedTo: conv.assignedTo || null,
+                teamId: conv.teamId || null,
+                assignedUserName: conv.assignedUserName || null,
                 tags: [],
-              };
+              }));
+
+              const mainConv = syntheticConversations[0];
 
               return (
                 <InboxView 
-                  preselectedConversationId={activeConv.id}
-                  preselectedConversation={syntheticConversation as any}
-                  initialConversations={[syntheticConversation as any]}
-                  hideConversationList={true}
+                  preselectedConversationId={mainConv.id}
+                  preselectedConversation={mainConv as any}
+                  initialConversations={syntheticConversations as any}
+                  hideConversationList={false}
                   hideContactDetails={false}
                   onBack={() => setIsChatMode(false)}
                   forceShowBack={true}

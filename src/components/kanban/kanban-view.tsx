@@ -82,8 +82,10 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    // Only intercept if we are clicking on the background (the scroll area)
+    // Avoid intercepting if we are on a Kanban Card or a button
     const target = e.target as HTMLElement;
-    if (target.closest('button, a, input, textarea, select, [role="menuitem"], [role="button"], [role="option"], [role="dialog"], [role="listbox"], [data-radix-popper-content-wrapper], [data-rbd-draggable-id]')) {
+    if (target.closest('.kanban-card-container, button, a, input, textarea, select, [role="menuitem"], [role="button"], [role="option"], [role="dialog"], [role="listbox"], [data-radix-popper-content-wrapper], [data-rbd-draggable-id]')) {
       return;
     }
     setIsDragging(true);
@@ -94,12 +96,15 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    setIsDragging(false);
-    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (isDragging) {
+      setIsDragging(false);
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging || !scrollRef.current) return;
+    // Don't preventDefault if it breaks natural interactions, but needed for custom drag-scroll
     e.preventDefault(); 
     const x = e.clientX;
     const walk = (x - startX) * 1.5;
@@ -162,6 +167,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     <div className="flex h-full flex-col min-h-0">
       <FunnelToolbar
         funnel={funnel}
+        totalLeadsCount={cards.length}
         onAddCard={onAddCard}
         onSearch={onSearch}
         filters={filters}
