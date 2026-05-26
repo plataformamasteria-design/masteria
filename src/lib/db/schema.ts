@@ -627,6 +627,7 @@ export const kanbanBoards = pgTable('kanban_boards', {
     autoTriggerAutomationId?: string;
     autoTags?: string[];
     defaultEntryStageId?: string;
+    visibleCustomFields?: string[];
   }>().default({}),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

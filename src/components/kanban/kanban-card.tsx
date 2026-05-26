@@ -23,9 +23,10 @@ interface KanbanCardProps {
   onOpenCard: (card: KanbanCardType, tab?: 'overview' | 'chat') => void;
   onOpenMeetingTime: (card: KanbanCardType) => void;
   onOpenDelete: (card: KanbanCardType) => void;
+  boardSettings?: any;
 }
 
-export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards, companyUsers = [], onOpenCard, onOpenMeetingTime, onOpenDelete }: KanbanCardProps) {
+export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards, companyUsers = [], onOpenCard, onOpenMeetingTime, onOpenDelete, boardSettings }: KanbanCardProps) {
   const router = useRouter();
   const handleMoveStage = async (stageId: string) => {
     await onUpdate(card.id, { stageId });
@@ -60,11 +61,17 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
       customFields = contact.customFields;
     }
   } catch(e) {}
+  
+  // Filter custom fields based on boardSettings
+  const visibleCustomFieldsList = boardSettings?.visibleCustomFields 
+    ? Object.entries(customFields).filter(([k]) => boardSettings.visibleCustomFields.includes(k))
+    : Object.entries(customFields);
+
   const tags = contact?.tags || [];
   const displayTags = tags.slice(0, 2);
   const remainingTags = tags.length > 2 ? tags.length - 2 : 0;
   
-  const hasCustomFields = Object.keys(customFields).length > 0;
+  const hasCustomFields = visibleCustomFieldsList.length > 0;
   const createdAtFormatted = card.createdAt ? (() => {
     const d = new Date(card.createdAt);
     const date = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -162,11 +169,16 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                 {/* Campos Personalizados */}
                 {hasCustomFields && (
                   <div className="flex flex-wrap gap-1 mt-0.5">
-                    {Object.entries(customFields).map(([k, v]) => {
+                    {visibleCustomFieldsList.map(([k, v]) => {
                       if (!v) return null;
+                      const displayKey = k.length > 15 ? k.substring(0, 15) + '...' : k;
                       return (
-                        <span key={k} className="text-[9px] bg-muted/40 text-muted-foreground px-1.5 py-0.5 rounded border border-border/40 truncate max-w-[120px]">
-                          {k}: {String(v)}
+                        <span 
+                          key={k} 
+                          title={k}
+                          className="text-[9px] bg-muted/40 text-muted-foreground px-1.5 py-1 rounded border border-border/40 whitespace-normal break-words max-w-full leading-[1.3]"
+                        >
+                          <span className="font-semibold opacity-90">{displayKey}:</span> <span className="text-foreground/90">{String(v)}</span>
                         </span>
                       );
                     })}

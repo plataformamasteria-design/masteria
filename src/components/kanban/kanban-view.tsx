@@ -241,6 +241,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
                   }}
                   onOpenMeetingTime={(card) => setMeetingTimeCard(card)}
                   onOpenDelete={(card) => setDeleteCard(card)}
+                  boardSettings={funnel.settings}
                 />
               ))}
 

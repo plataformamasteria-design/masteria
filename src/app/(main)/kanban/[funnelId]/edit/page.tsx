@@ -71,6 +71,7 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
   const [users, setUsers] = useState<any[]>([]);
   const [automations, setAutomations] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
+  const [availableCustomFields, setAvailableCustomFields] = useState<string[]>([]);
 
   const [settings, setSettings] = useState({
     autoAssignTeamId: '',
@@ -78,18 +79,20 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
     autoTriggerAutomationId: '',
     autoTags: [] as string[],
     defaultEntryStageId: '',
+    visibleCustomFields: undefined as string[] | undefined,
   });
 
   // Carregar dados do funil e conexões
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [funnelRes, connectionsRes, teamsRes, automationsRes, tagsRes] = await Promise.all([
+        const [funnelRes, connectionsRes, teamsRes, automationsRes, tagsRes, leadsRes] = await Promise.all([
           fetch(`/api/v1/kanbans/${funnelId}`),
           fetch('/api/v1/connections'),
           fetch('/api/v1/team'),
           fetch('/api/v1/automations'),
           fetch('/api/v1/tags'),
+          fetch(`/api/v1/leads?boardId=${funnelId}`),
         ]);
 
         if (!funnelRes.ok) throw new Error('Falha ao carregar funil');
@@ -110,6 +113,7 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
             autoTriggerAutomationId: data.settings.autoTriggerAutomationId || '',
             autoTags: data.settings.autoTags || [],
             defaultEntryStageId: data.settings.defaultEntryStageId || '',
+            visibleCustomFields: data.settings.visibleCustomFields,
           });
         }
 
@@ -123,6 +127,22 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
         }
         if (automationsRes.ok) { const ad = await automationsRes.json(); setAutomations(Array.isArray(ad.data) ? ad.data : []); }
         if (tagsRes.ok) { const tg = await tagsRes.json(); setTags(Array.isArray(tg) ? tg : []); }
+        if (leadsRes.ok) {
+          const leads = await leadsRes.json();
+          const customFieldsSet = new Set<string>();
+          if (Array.isArray(leads)) {
+            leads.forEach((lead: any) => {
+              let cf = lead.contact?.customFields;
+              if (typeof cf === 'string') {
+                try { cf = JSON.parse(cf); } catch(e) { cf = null; }
+              }
+              if (cf && typeof cf === 'object') {
+                Object.keys(cf).forEach(key => customFieldsSet.add(key));
+              }
+            });
+          }
+          setAvailableCustomFields(Array.from(customFieldsSet).sort());
+        }
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -149,6 +169,16 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
       ...prev,
       autoTags: prev.autoTags.includes(tagId) ? prev.autoTags.filter(id => id !== tagId) : [...prev.autoTags, tagId]
     }));
+  };
+
+  const toggleCustomField = (field: string) => {
+    setSettings(prev => {
+      const current = prev.visibleCustomFields || availableCustomFields;
+      const next = current.includes(field) 
+        ? current.filter(f => f !== field)
+        : [...current, field];
+      return { ...prev, visibleCustomFields: next };
+    });
   };
 
   const addStage = () => {
@@ -242,6 +272,7 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
             autoTriggerAutomationId: settings.autoTriggerAutomationId || null,
             autoTags: settings.autoTags,
             defaultEntryStageId: settings.defaultEntryStageId || null,
+            visibleCustomFields: settings.visibleCustomFields,
           }
         })
       });
@@ -419,6 +450,46 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
                         </div>
                       </label>
                     ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
+              <Label className="text-lg font-semibold">Visibilidade de Campos Personalizados</Label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Selecione quais campos personalizados devem ficar visíveis nos cards deste funil. 
+                Isso ajuda a manter o card limpo e focado nas informações mais importantes.
+              </p>
+              
+              {availableCustomFields.length === 0 ? (
+                <div className="text-sm text-muted-foreground italic p-4 border rounded-md bg-muted/20">
+                  Nenhum campo personalizado encontrado nos leads atuais deste funil. 
+                  À medida que leads com campos personalizados entrarem, eles aparecerão aqui para configuração.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setSettings(s => ({ ...s, visibleCustomFields: [...availableCustomFields] }))}>
+                      Marcar Todos
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setSettings(s => ({ ...s, visibleCustomFields: [] }))}>
+                      Desmarcar Todos
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 p-3 border rounded-md">
+                    {availableCustomFields.map(field => {
+                    const isChecked = settings.visibleCustomFields === undefined || settings.visibleCustomFields.includes(field);
+                    return (
+                      <label key={field} className="flex items-center gap-2 cursor-pointer bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors text-sm">
+                        <Checkbox 
+                          checked={isChecked}
+                          onCheckedChange={() => toggleCustomField(field)}
+                        />
+                        <span className="font-medium">{field}</span>
+                      </label>
+                    );
+                  })}
                   </div>
                 </div>
               )}

@@ -26,6 +26,7 @@ const boardUpdateSchema = z.object({
         autoTriggerAutomationId: z.string().optional().nullable(),
         autoTags: z.array(z.string()).optional(),
         defaultEntryStageId: z.string().optional().nullable(),
+        visibleCustomFields: z.array(z.string()).optional(),
     }).optional(),
 });
 
