@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MonitorPlay, Settings2, Brain, Palette, FileBarChart } from "lucide-react";
+import { MonitorPlay, Settings2, Brain, Palette, FileBarChart, FileInput } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TOP_NAV_ITEMS = [
   { id: "visao-geral", href: "/marketing/visao-geral", label: "Visão Geral", icon: MonitorPlay, paths: ["/marketing/visao-geral"] },
   { id: "gerenciar", href: "/marketing/gerenciar", label: "Gerenciar", icon: Settings2, paths: ["/marketing/gerenciar"] },
+  { id: "formularios", href: "/marketing/formularios", label: "Formulários", icon: FileInput, paths: ["/marketing/formularios"] },
   { id: "ia-insights", href: "/marketing/ad-intelligence", label: "IA Insights", icon: Brain, paths: ["/marketing/ad-intelligence", "/marketing/alertas"] },
   { id: "criativos", href: "/marketing/criativos", label: "Análise de Criativos", icon: Palette, paths: ["/marketing/criativos", "/marketing/biblioteca"] },
   { id: "relatorios", href: "/marketing/relatorios", label: "Relatórios", icon: FileBarChart, paths: ["/marketing/relatorios"] },
 ];
+
 
 export function TrafegoSubnav() {
   const pathname = usePathname();

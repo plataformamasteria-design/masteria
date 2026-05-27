@@ -18,6 +18,7 @@ import { UserNotificationsService } from '@/lib/notifications/user-notifications
 import { emitToCompany } from '@/lib/socket';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadFileToS3 } from '@/lib/s3';
+import { handleLeadgenWebhook } from '@/lib/meta-leadgen-handler';
 
 async function recordWebhookHealth(connectionId: string, companyId: string, status: 'success' | 'failure', errorMessage?: string) {
     try {
@@ -302,8 +303,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 
 async function processWebhookEvents(payload: any, companyId: string, candidateConnection?: any) {
+
+    // ── Formulários Nativos Meta (Lead Ads / EndForms) ──────────────────────
+    // Evento: object=="page", entry[].changes[].field=="leadgen"
+    // Ref: https://developers.facebook.com/docs/marketing-api/guides/lead-ads/retrieving
+    if (payload.object === 'page') {
+        const hasLeadgen = payload.entry?.some((e: any) =>
+            e.changes?.some((c: any) => c.field === 'leadgen')
+        );
+        if (hasLeadgen) {
+            console.log(`📋 [Meta Webhook] Evento de formulário nativo (LeadGen) detectado para empresa ${companyId}`);
+            try {
+                const { processed, errors } = await handleLeadgenWebhook(payload.entry || [], companyId);
+                console.log(`📋 [Meta Webhook] LeadGen processado: ${processed} leads. Erros: ${errors.length}`, errors.length ? errors : '');
+            } catch (lgErr: any) {
+                console.error(`❌ [Meta Webhook] Erro ao processar LeadGen:`, lgErr.message);
+            }
+        } else {
+            console.log(`ℹ️ [Meta Webhook] Evento 'page' sem field 'leadgen' — ignorando`);
+        }
+        return;
+    }
+
+    // ── Instagram ──────────────────────────────────────────────────────────
     if (payload.object === 'instagram') {
-        // Instagram Event Processing
         for (const entry of payload.entry) {
             if (entry.messaging) {
                 for (const event of entry.messaging) {
@@ -330,6 +353,8 @@ async function processWebhookEvents(payload: any, companyId: string, candidateCo
         }
         return;
     }
+
+
 
     if (payload.object !== 'whatsapp_business_account') return;
 

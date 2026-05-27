@@ -1,7 +1,8 @@
 import {
   MonitorPlay, Brain, TrendingUp, Palette, Layers, Radio, Tag,
-  FileBarChart, Presentation, CalendarDays, Settings2,
+  FileBarChart, Presentation, CalendarDays, Settings2, FileInput,
 } from "lucide-react";
+
 
 /**
  * Configuração da navegação do módulo de Tráfego/Marketing no MasterIA.
@@ -45,6 +46,14 @@ export const TRAFEGO_NAV_AREAS: TrafegoNavArea[] = [
         icon: Settings2,
         paths: ["/marketing/gerenciar"],
       },
+      {
+        id: "formularios",
+        href: "/marketing/formularios",
+        label: "Formulários",
+        icon: FileInput,
+        paths: ["/marketing/formularios"],
+      },
+
       {
         id: "calendario",
         href: "/marketing/calendario",

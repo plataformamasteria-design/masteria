@@ -99,7 +99,9 @@ export async function getMetaAuthUrl(returnTo?: string) {
             'ads_read',
             'pages_show_list',
             'pages_read_engagement',
-            'pages_manage_metadata'
+            'pages_manage_metadata',
+            'leads_retrieval',           // Acesso a leadgen_forms e lead_gen_form_id
+            'pages_manage_ads',          // Gerenciar anúncios em páginas
         ].join(',');
 
         const state = Buffer.from(JSON.stringify({ companyId, returnTo, baseUrl })).toString('base64');
