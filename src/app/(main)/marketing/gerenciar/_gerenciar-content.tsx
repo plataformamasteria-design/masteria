@@ -66,6 +66,8 @@ interface Campaign {
   spend_today?: number;
   adsets?: { data: AdSet[] };
   created_time?: string;
+  result_type?: string;  // 'endform' | 'lead_pixel' | 'messages' | 'purchase' | 'link_click' | 'reach' | 'thruplay'
+  endforms?: number;
 }
 
 type StatusFilter = "ALL" | "ACTIVE" | "PAUSED" | "RECENT";
@@ -105,12 +107,49 @@ function getMetricCols(preset: MetricPreset) {
   const resultsFmt = (v: any, row?: any) => {
     const num = fmtNum(v || 0);
     if (!row || num === "0") return num;
+
+    // Mapa de tipos de resultado → badge visual
+    const RESULT_BADGES: Record<string, { label: string; color: string }> = {
+      endform:     { label: "EndForm",    color: "text-violet-400" },
+      lead_pixel:  { label: "Lead Pixel", color: "text-indigo-400" },
+      messages:    { label: "Msg",        color: "text-sky-400" },
+      purchase:    { label: "Compra",     color: "text-emerald-400" },
+      link_click:  { label: "Clique",     color: "text-amber-400" },
+      reach:       { label: "Alcance",    color: "text-orange-400" },
+      thruplay:    { label: "ThruPlay",   color: "text-pink-400" },
+      app_install: { label: "Install",    color: "text-cyan-400" },
+    };
+
+    // Prioridade 1: usar result_type vindo da API (mais preciso)
+    const resultType = row.result_type as string | undefined;
+    if (resultType && RESULT_BADGES[resultType]) {
+      const { label, color } = RESULT_BADGES[resultType];
+      return (
+        <span className="flex items-center gap-1">
+          {num}
+          <span className={`text-[9px] font-bold tracking-wide uppercase ${color}`}>{label}</span>
+        </span>
+      );
+    }
+
+    // Fallback para objetivo (compatibilidade com dados sem result_type)
     const obj = row.objective || "";
-    if (obj.includes("LEAD")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">leads</span></span>;
-    if (obj.includes("SALE") || obj.includes("CONVERSION") || obj.includes("PURCHASE")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">compras</span></span>;
-    if (obj.includes("ENGAGEMENT") || obj.includes("MESSAGE")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">msg</span></span>;
-    if (obj.includes("TRAFFIC") || obj.includes("LINK_CLICK")) return <span className="flex items-center gap-1">{num}<span className="text-[9px] text-foreground/50 font-normal tracking-wide uppercase">cliques</span></span>;
-    return num;
+    const DEFAULT_BADGE = { label: "Lead Pixel", color: "text-indigo-400" };
+    let fallbackBadge = DEFAULT_BADGE;
+    if (obj.includes("LEAD")) fallbackBadge = RESULT_BADGES["lead_pixel"] ?? DEFAULT_BADGE;
+    else if (obj.includes("SALE") || obj.includes("CONVERSION")) fallbackBadge = RESULT_BADGES["purchase"] ?? DEFAULT_BADGE;
+    else if (obj.includes("ENGAGEMENT") || obj.includes("MESSAGE")) fallbackBadge = RESULT_BADGES["messages"] ?? DEFAULT_BADGE;
+    else if (obj.includes("TRAFFIC") || obj.includes("LINK_CLICK")) fallbackBadge = RESULT_BADGES["link_click"] ?? DEFAULT_BADGE;
+
+
+    return (
+      <span className="flex items-center gap-1">
+        {num}
+        <span className={`text-[9px] font-bold tracking-wide uppercase ${fallbackBadge.color}`}>
+          {fallbackBadge.label}
+        </span>
+      </span>
+    );
   };
 
   const cols: Record<MetricPreset, MetricColumn[]> = {

@@ -351,10 +351,30 @@ function FormCard({
   onPhoneFieldChange: (formId: string, key: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+  const [simResult, setSimResult] = useState<{
+    ok: boolean; message: string; fieldDataSent?: { name: string; values: string[] }[];
+  } | null>(null);
   const boardId = mapping?.boardId || "";
   const stageId = mapping?.stageId || "";
   const tagIds = mapping?.tagIds || [];
   const phoneFieldKey = mapping?.phoneFieldKey || "";
+
+  const handleSimulate = async () => {
+    setSimulating(true);
+    setSimResult(null);
+    try {
+      const res = await fetch(`/api/meta/leadforms/${form.id}/simulate-lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneFieldKey: phoneFieldKey || undefined }),
+      });
+      const data = await res.json();
+      setSimResult({ ok: data.ok, message: data.message || data.error || 'Erro desconhecido', fieldDataSent: data.fieldDataSent });
+    } catch (e: any) {
+      setSimResult({ ok: false, message: e.message });
+    } finally { setSimulating(false); }
+  };
 
   return (
     <div className={`rounded-2xl border transition-all duration-200 ${
@@ -398,25 +418,36 @@ function FormCard({
                 </span>
               </div>
             )}
-            <a
-              id={`btn-download-leads-${form.id}`}
-              href={`/api/meta/leadforms/${form.id}/leads-export`}
-              download
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/5 border border-border hover:border-emerald-500/20 transition-all"
-              title="Baixar leads como CSV"
-            >
-              <ArrowRight className="h-3 w-3 rotate-90" />
-              CSV
-            </a>
-            <button
-              id={`btn-expand-form-${form.id}`}
-              onClick={() => setExpanded(v => !v)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-foreground/50 hover:text-foreground hover:bg-white/[0.06] border border-border transition-all"
-            >
-              <Eye className="h-3 w-3" />
-              {expanded ? "Ocultar" : "Ver detalhes"}
-              <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
-            </button>
+            <div className="flex gap-1.5">
+              <button
+                onClick={handleSimulate}
+                disabled={simulating}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-foreground/50 hover:text-amber-400 hover:bg-amber-500/5 border border-border hover:border-amber-500/20 transition-all disabled:opacity-50"
+                title="Simular entrada de lead neste formulário"
+              >
+                {simulating ? <Loader2 className="h-3 w-3 animate-spin" /> : <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12l5 5l10 -10"/></svg>}
+                Simular Lead
+              </button>
+              <a
+                id={`btn-download-leads-${form.id}`}
+                href={`/api/meta/leadforms/${form.id}/leads-export`}
+                download
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/5 border border-border hover:border-emerald-500/20 transition-all"
+                title="Baixar leads como CSV"
+              >
+                <ArrowRight className="h-3 w-3 rotate-90" />
+                CSV
+              </a>
+              <button
+                id={`btn-expand-form-${form.id}`}
+                onClick={() => setExpanded(v => !v)}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-foreground/50 hover:text-foreground hover:bg-white/[0.06] border border-border transition-all"
+              >
+                <Eye className="h-3 w-3" />
+                {expanded ? "Ocultar" : "Ver detalhes"}
+                <ChevronRight className={`h-3 w-3 transition-transform ${expanded ? "rotate-90" : ""}`} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -473,6 +504,37 @@ function FormCard({
           />
         </div>
       )}
+
+      {/* Simulation Result */}
+      {simResult && (
+        <div className="border-t border-border px-5 pb-5 bg-black/10">
+          <div className={`mt-4 p-4 rounded-xl border text-xs shadow-inner ${
+            simResult.ok ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                {simResult.ok ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                <p className="font-bold text-sm">{simResult.message}</p>
+              </div>
+              <button onClick={() => setSimResult(null)} className="opacity-50 hover:opacity-100 hover:bg-white/10 p-1 rounded-md transition-colors">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            
+            {simResult.fieldDataSent && (
+              <div className="mt-4 pt-3 border-t border-current/20 space-y-1.5">
+                <p className="text-[10px] uppercase font-bold tracking-widest opacity-60 mb-2">Payload de simulação (fake data gerado via Meta API):</p>
+                {simResult.fieldDataSent.map(f => (
+                  <div key={f.name} className="flex items-center gap-2 bg-black/20 px-2 py-1.5 rounded-lg font-mono">
+                    <span className="opacity-60 min-w-[120px] shrink-0 truncate">{f.name}:</span>
+                    <span className="font-medium text-foreground truncate">{f.values[0]}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -514,7 +576,14 @@ export default function FormulariosPage() {
     formId: string, boardId: string, stageId: string, formName: string,
   ) => {
     setFormMappings(prev => {
-      if (!boardId) return prev.filter(m => m.formId !== formId);
+      if (!boardId) {
+        // Remove o mapping, MAS preserva phoneFieldKey em entrada parcial se existir
+        const existing = prev.find(m => m.formId === formId);
+        if (existing?.phoneFieldKey) {
+          return prev.map(m => m.formId === formId ? { formId, boardId: '', stageId: '', phoneFieldKey: existing.phoneFieldKey } : m);
+        }
+        return prev.filter(m => m.formId !== formId);
+      }
       const existing = prev.find(m => m.formId === formId);
       const newMapping: LeadgenFormMapping = {
         formId, formName, boardId, stageId,
@@ -538,8 +607,15 @@ export default function FormulariosPage() {
   const handleFormPhoneFieldChange = useCallback((formId: string, phoneFieldKey: string) => {
     setFormMappings(prev => {
       const idx = prev.findIndex(m => m.formId === formId);
-      if (idx < 0) return prev;
-      const u = [...prev]; u[idx] = { ...u[idx], phoneFieldKey: phoneFieldKey || undefined }; return u;
+      if (idx >= 0) {
+        const u = [...prev]; u[idx] = { ...u[idx], phoneFieldKey: phoneFieldKey || undefined }; return u;
+      }
+      // Sem mapping ainda: cria entrada parcial só com phoneFieldKey
+      // (boardId vazio = não roteado, mas phoneFieldKey fica salvo para quando o board for selecionado)
+      if (phoneFieldKey) {
+        return [...prev, { formId, boardId: '', stageId: '', phoneFieldKey }];
+      }
+      return prev;
     });
   }, []);
 

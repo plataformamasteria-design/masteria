@@ -68,27 +68,56 @@ export function formatAccountId(raw: string): string {
 /**
  * Helper para extrair leads de actions da Meta API.
  */
+/**
+ * Identifica se um action_type é de formulário nativo Meta (EndForm / Lead Ad).
+ * EndForms: leadgen_grouped, onsite_conversion.lead_grouped, lead_grouped
+ */
+function isEndFormAction(actionType: string): boolean {
+  const t = actionType.toLowerCase();
+  return (
+    t === "leadgen_grouped" ||
+    t === "onsite_conversion.lead_grouped" ||
+    t === "lead_grouped" ||
+    t.includes("leadgen.lead_grouped") ||
+    t.includes("onsite_conversion.lead")
+  );
+}
+
 export function extractActionsData(actions: any[], actionValues: any[]) {
-  let ld = 0, pur = 0, rev = 0, chk = 0, lpv = 0, msg = 0, thruplay = 0, profile_visits = 0, link_clicks = 0, total_actions = 0;
+  let ld = 0, pur = 0, rev = 0, chk = 0, lpv = 0, msg = 0, thruplay = 0,
+      profile_visits = 0, link_clicks = 0, total_actions = 0, endforms = 0;
   for (const a of (actions || [])) {
     const val = parseFloat(a.value || "0");
     const t = a.action_type || "";
     total_actions += val;
     
-    if (t === "lead" || t === "omni_lead" || t.includes("pixel_lead")) ld += val;
-    else if (t === "purchase" || t === "omni_purchase" || t.includes("pixel_purchase")) pur += val;
-    else if (t === "initiate_checkout" || t === "omni_initiated_checkout") chk += val;
-    else if (t === "landing_page_view" || t.includes("landing_page_view")) lpv += val;
-    else if (t.includes("messaging_conversation_started") || t.includes("messaging_first_reply") || t === "onsite_conversion.messaging_conversation_started_7d") msg += val;
-    else if (t === "thruplay" || t === "video_view_thruplay") thruplay += val;
-    else if (t.includes("profile_visit")) profile_visits += val;
-    else if (t === "link_click" || t === "outbound_click") link_clicks += val;
+    if (isEndFormAction(t)) {
+      // Formulário Nativo (EndForm / Lead Ad) — conta em endforms E em ld
+      endforms += val;
+      ld += val;
+    } else if (t === "lead" || t === "omni_lead" || t.includes("pixel_lead")) {
+      ld += val;
+    } else if (t === "purchase" || t === "omni_purchase" || t.includes("pixel_purchase")) {
+      pur += val;
+    } else if (t === "initiate_checkout" || t === "omni_initiated_checkout") {
+      chk += val;
+    } else if (t === "landing_page_view" || t.includes("landing_page_view")) {
+      lpv += val;
+    } else if (t.includes("messaging_conversation_started") || t.includes("messaging_first_reply") || t === "onsite_conversion.messaging_conversation_started_7d") {
+      msg += val;
+    } else if (t === "thruplay" || t === "video_view_thruplay") {
+      thruplay += val;
+    } else if (t.includes("profile_visit")) {
+      profile_visits += val;
+    } else if (t === "link_click" || t === "outbound_click") {
+      link_clicks += val;
+    }
   }
   for (const v of (actionValues || [])) {
     const t = v.action_type || "";
     if (t === "purchase" || t === "omni_purchase" || t.includes("pixel_purchase")) rev += parseFloat(v.value || "0");
   }
-  return { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions };
+  return { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions, endforms };
 }
 
 /**
@@ -99,11 +128,13 @@ export function injectDerivedMetrics(kpi: {
   reach: number; revenue: number; purchases: number; checkouts: number;
   inline_link_clicks: number; landing_page_views: number; total_actions: number;
   messages?: number; thruplays?: number; profile_visits?: number; link_clicks?: number;
+  endforms?: number;
 }) {
   const { spend: sp, leads: ld, impressions: im, clicks: cl, reach: re,
     purchases: pur, revenue: rev, inline_link_clicks: ilc,
     landing_page_views: lpv, total_actions: acts,
-    messages: msg = 0, thruplays: thru = 0, profile_visits: pv = 0, link_clicks: lc = 0 } = kpi;
+    messages: msg = 0, thruplays: thru = 0, profile_visits: pv = 0, link_clicks: lc = 0,
+    endforms: ef = 0 } = kpi;
 
   const actual_link_clicks = ilc > 0 ? ilc : lc;
 
@@ -114,6 +145,7 @@ export function injectDerivedMetrics(kpi: {
     thruplays: thru,
     profile_visits: pv,
     link_clicks: actual_link_clicks,
+    endforms: ef,
     cpl: ld > 0 ? sp / ld : null,
     cpm: im > 0 ? (sp / im) * 1000 : null,
     cpc: cl > 0 ? sp / cl : null,
@@ -127,5 +159,6 @@ export function injectDerivedMetrics(kpi: {
     cost_per_message: msg > 0 ? sp / msg : null,
     cost_per_thruplay: thru > 0 ? sp / thru : null,
     cost_per_profile_visit: pv > 0 ? sp / pv : null,
+    cost_per_endform: ef > 0 ? sp / ef : null,
   };
 }
