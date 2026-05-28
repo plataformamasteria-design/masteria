@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     const account = accountParam ? (accountParam.startsWith("act_") ? accountParam : `act_${accountParam}`) : auth.accountId;
 
     // 1. Estrutura de campanhas
-    const campaignFields = "id,name,status,effective_status,objective,buying_type,daily_budget,lifetime_budget,budget_remaining,start_time,stop_time,created_time,adsets{status,daily_budget,lifetime_budget}";
+    const campaignFields = "id,name,status,effective_status,objective,buying_type,daily_budget,lifetime_budget,budget_remaining,start_time,stop_time,created_time,adsets{status,daily_budget,lifetime_budget,promoted_object}";
     const structureRes = await getCachedMetaData<{ data: any[] }>(
       `campaigns-structure-${auth.companyId}`,
       { account, limit: "500" },
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     // 2. Insights por período (nível campanha)
     const insightsParams = new URLSearchParams({
       access_token: auth.token,
-      fields: "campaign_id,spend,impressions,clicks,reach,inline_link_clicks,actions,action_values",
+      fields: "campaign_id,spend,impressions,clicks,reach,inline_link_clicks,actions,action_values,conversions",
       time_range: JSON.stringify({ since, until }),
       level: "campaign",
       limit: "500",
@@ -120,8 +120,28 @@ export async function GET(req: NextRequest) {
       const cl = parseInt(row.clicks || "0");
       const re = parseInt(row.reach || "0");
       const ilc = parseInt(row.inline_link_clicks || "0");
-      const { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions, endforms } = extractActionsData(row.actions || [], row.action_values || []);
       const id = row.campaign_id;
+
+      // Extract optimization goal from adset to identify Custom Conversion name
+      let optimizedEventName: string | undefined = undefined;
+      const cStruct = structureRes.data?.find((c) => c.id === id);
+      if (cStruct && cStruct.adsets && cStruct.adsets.data && cStruct.adsets.data.length > 0) {
+        const po = cStruct.adsets.data[0].promoted_object;
+        if (po) {
+          if (po.custom_event_type === "OTHER" && po.custom_event_str) {
+            optimizedEventName = po.custom_event_str;
+          } else if (po.custom_event_type) {
+            optimizedEventName = po.custom_event_type;
+          }
+        }
+      }
+
+      const { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions, endforms } = extractActionsData(
+        row.actions || [], 
+        row.action_values || [], 
+        (row as any).conversions || [], 
+        optimizedEventName
+      );
       const cur = campMap.get(id) || { ...emptyKPI };
       campMap.set(id, {
         spend: cur.spend + sp, impressions: cur.impressions + im, clicks: cur.clicks + cl,

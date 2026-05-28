@@ -77,11 +77,11 @@ function isEndFormAction(actionType: string): boolean {
   return t === "onsite_conversion.lead_grouped" || t === "leadgen_grouped";
 }
 
-export function extractActionsData(actions: any[], actionValues: any[]) {
+export function extractActionsData(actions: any[], actionValues: any[], conversions?: any[], optimizedEventName?: string) {
   let ld = 0, pur = 0, rev = 0, chk = 0, lpv = 0, msg = 0, thruplay = 0,
       profile_visits = 0, link_clicks = 0, total_actions = 0, endforms = 0;
   
-  let max_custom_conversion = 0;
+  let matched_optimized_conversion = 0;
 
   for (const a of (actions || [])) {
     const val = parseFloat(a.value || "0");
@@ -106,15 +106,25 @@ export function extractActionsData(actions: any[], actionValues: any[]) {
       profile_visits += val;
     } else if (t === "link_click") {
       link_clicks += val;
-    } else if (t.startsWith("offsite_conversion.custom.")) {
-      if (val > max_custom_conversion) {
-        max_custom_conversion = val;
+    }
+  }
+
+  // Busca o valor exato da Custom Conversion caso a campanha esteja otimizando para ela
+  if (conversions && optimizedEventName && optimizedEventName !== "LEAD" && optimizedEventName !== "OTHER") {
+    for (const c of conversions) {
+      if (c.action_type && c.action_type.endsWith(`.${optimizedEventName}`)) {
+        matched_optimized_conversion = parseFloat(c.value || "0");
+        break;
       }
     }
   }
 
-  // Previne double-counting resolvendo com o maior valor entre leads padrão, formulários nativos e conversões customizadas
-  ld = Math.max(ld, endforms, max_custom_conversion);
+  if (matched_optimized_conversion > 0) {
+    ld = matched_optimized_conversion; // Assume o valor exato da conversão customizada (ex: "EndForm")
+  } else {
+    // Previne double-counting resolvendo com o maior valor entre leads padrão e formulários nativos
+    ld = Math.max(ld, endforms);
+  }
 
   for (const v of (actionValues || [])) {
     const t = v.action_type || "";
