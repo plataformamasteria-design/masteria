@@ -92,9 +92,126 @@ function FieldTypeIcon({ type }: { type: string }) {
   return <MessageSquare className="h-3 w-3 text-foreground/40" />;
 }
 
+// ─── TagSelector ──────────────────────────────────────────────────────────────
+
+interface Tag { id: string; name: string; color: string; }
+
+function TagSelector({ selectedIds, onChange }: {
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const { data: tagsData, mutate: mutateTags } = useSWR<{ data: Tag[] }>(
+    '/api/v1/tags?limit=100', fetcher, { revalidateOnFocus: false }
+  );
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newColor, setNewColor] = useState('#8B5CF6');
+  const [saving2, setSaving2] = useState(false);
+
+  const allTags: Tag[] = tagsData?.data || [];
+  const selected = allTags.filter(t => selectedIds.includes(t.id));
+  const filtered = allTags.filter(t =>
+    !selectedIds.includes(t.id) && t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggle = (id: string) =>
+    onChange(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id]);
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return;
+    setSaving2(true);
+    try {
+      const res = await fetch('/api/v1/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim(), color: newColor }),
+      });
+      const tag = await res.json();
+      if (tag.id) {
+        onChange([...selectedIds, tag.id]);
+        setNewName('');
+        setCreating(false);
+        mutateTags();
+      }
+    } finally { setSaving2(false); }
+  };
+
+  return (
+    <div className="relative">
+      <div className="flex flex-wrap gap-1.5 mb-1">
+        {selected.map(t => (
+          <span key={t.id} style={{ backgroundColor: t.color + '22', borderColor: t.color + '55', color: t.color }}
+            className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border">
+            {t.name}
+            <button onClick={() => toggle(t.id)} className="ml-0.5 opacity-60 hover:opacity-100 leading-none">×</button>
+          </span>
+        ))}
+        <button onClick={() => setOpen(v => !v)}
+          className="text-[11px] text-foreground/50 hover:text-primary px-2 py-0.5 rounded-full border border-dashed border-border hover:border-primary transition-all">
+          + Etiqueta
+        </button>
+      </div>
+      {open && (
+        <div className="absolute top-full left-0 z-20 mt-1 w-64 rounded-xl border border-border bg-background shadow-xl p-2 space-y-1.5">
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar etiqueta…"
+            className="w-full text-xs bg-white/5 border border-border rounded-lg px-2.5 py-1.5 outline-none focus:border-primary" />
+          <div className="max-h-36 overflow-y-auto space-y-0.5">
+            {filtered.map(t => (
+              <button key={t.id} onClick={() => { toggle(t.id); }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 text-left">
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
+                <span className="text-xs truncate">{t.name}</span>
+              </button>
+            ))}
+            {filtered.length === 0 && !creating && (
+              <p className="text-[11px] text-foreground/30 px-2 py-1">Nenhuma encontrada</p>
+            )}
+          </div>
+          {creating ? (
+            <div className="pt-1.5 border-t border-border space-y-1.5">
+              <div className="flex gap-1.5">
+                <input value={newName} onChange={e => setNewName(e.target.value)}
+                  placeholder="Nome da etiqueta"
+                  className="flex-1 text-xs bg-white/5 border border-border rounded-lg px-2 py-1.5 outline-none" />
+                <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)}
+                  className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-transparent p-0.5" />
+              </div>
+              <div className="flex gap-1.5">
+                <button onClick={handleCreate} disabled={saving2 || !newName.trim()}
+                  className="flex-1 text-xs px-2 py-1.5 bg-primary text-primary-foreground rounded-lg font-bold disabled:opacity-50">
+                  {saving2 ? '…' : 'Criar'}
+                </button>
+                <button onClick={() => setCreating(false)}
+                  className="text-xs px-2 py-1.5 bg-white/5 rounded-lg">Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setCreating(true)}
+              className="w-full text-[11px] text-primary/70 hover:text-primary py-1 text-left px-2">
+              + Criar nova etiqueta
+            </button>
+          )}
+          <button onClick={() => setOpen(false)}
+            className="w-full text-[11px] text-foreground/30 hover:text-foreground py-0.5">Fechar</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function _placeholder() { return null;
+}
+
 // ─── FormDetailsPanel ─────────────────────────────────────────────────────────
 
-function FormDetailsPanel({ formId }: { formId: string }) {
+function FormDetailsPanel({ formId, phoneFieldKey, onPhoneFieldChange }: {
+  formId: string;
+  phoneFieldKey?: string;
+  onPhoneFieldChange: (key: string) => void;
+}) {
   const { data, isLoading, error } = useSWR<FormDetails>(
     `/api/meta/leadforms/${formId}/details`,
     fetcher,
@@ -125,13 +242,28 @@ function FormDetailsPanel({ formId }: { formId: string }) {
             Campos do formulário
           </p>
           <div className="space-y-1.5">
-            {data.questions.map((q, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/[0.03] border border-border">
-                <FieldTypeIcon type={q.type} />
-                <span className="text-xs text-foreground/80 font-medium">{q.label || q.key}</span>
-                <span className="ml-auto text-[10px] text-foreground/30 font-mono">{q.type}</span>
-              </div>
-            ))}
+            {data.questions.map((q, i) => {
+              const isPhone = phoneFieldKey === q.key ||
+                (!phoneFieldKey && ['phone_number','telefone','phone','celular','whatsapp'].includes(q.key.toLowerCase()));
+              return (
+                <div key={i} className={`flex items-center gap-2 p-2 rounded-lg border ${
+                  isPhone ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/[0.03] border-border'
+                }`}>
+                  <FieldTypeIcon type={q.type} />
+                  <span className="text-xs text-foreground/80 font-medium flex-1">{q.label || q.key}</span>
+                  {isPhone && (
+                    <span className="text-[10px] text-emerald-400 font-bold">📞 tel</span>
+                  )}
+                  {!isPhone && q.type === 'CUSTOM' && (
+                    <button onClick={() => onPhoneFieldChange(q.key)}
+                      className="text-[10px] text-foreground/30 hover:text-emerald-400 transition-colors px-1.5 py-0.5 rounded border border-transparent hover:border-emerald-500/30">
+                      usar como tel
+                    </button>
+                  )}
+                  <span className="text-[10px] text-foreground/30 font-mono">{q.type}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -209,16 +341,20 @@ function FormDetailsPanel({ formId }: { formId: string }) {
 // ─── FormCard ─────────────────────────────────────────────────────────────────
 
 function FormCard({
-  form, boards, mapping, onMappingChange,
+  form, boards, mapping, onMappingChange, onTagsChange, onPhoneFieldChange,
 }: {
   form: MetaLeadForm;
   boards: KanbanBoard[];
   mapping: LeadgenFormMapping | null;
   onMappingChange: (formId: string, boardId: string, stageId: string, formName: string) => void;
+  onTagsChange: (formId: string, tagIds: string[]) => void;
+  onPhoneFieldChange: (formId: string, key: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const boardId = mapping?.boardId || "";
   const stageId = mapping?.stageId || "";
+  const tagIds = mapping?.tagIds || [];
+  const phoneFieldKey = mapping?.phoneFieldKey || "";
 
   return (
     <div className={`rounded-2xl border transition-all duration-200 ${
@@ -262,6 +398,16 @@ function FormCard({
                 </span>
               </div>
             )}
+            <a
+              id={`btn-download-leads-${form.id}`}
+              href={`/api/meta/leadforms/${form.id}/leads-export`}
+              download
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-foreground/50 hover:text-emerald-400 hover:bg-emerald-500/5 border border-border hover:border-emerald-500/20 transition-all"
+              title="Baixar leads como CSV"
+            >
+              <ArrowRight className="h-3 w-3 rotate-90" />
+              CSV
+            </a>
             <button
               id={`btn-expand-form-${form.id}`}
               onClick={() => setExpanded(v => !v)}
@@ -275,32 +421,56 @@ function FormCard({
         </div>
 
         {/* Routing config */}
-        <div>
-          <p className="text-[10px] text-foreground/40 uppercase tracking-widest font-bold mb-2">
-            Enviar leads para →
-          </p>
-          <BoardStageSelector
-            boards={boards}
-            selectedBoardId={boardId}
-            selectedStageId={stageId}
-            onBoardChange={bid => onMappingChange(form.id, bid, stageId, form.name)}
-            onStageChange={sid => onMappingChange(form.id, boardId, sid, form.name)}
-            uid={form.id}
-          />
-        </div>
-
-        {boardId && (
-          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-emerald-400">
-            <CheckCircle2 className="h-3 w-3" />
-            <span>Configurado — leads serão enviados para este pipeline automaticamente</span>
+        <div className="space-y-3">
+          <div>
+            <p className="text-[10px] text-foreground/40 uppercase tracking-widest font-bold mb-2">
+              Enviar leads para →
+            </p>
+            <BoardStageSelector
+              boards={boards}
+              selectedBoardId={boardId}
+              selectedStageId={stageId}
+              onBoardChange={bid => onMappingChange(form.id, bid, stageId, form.name)}
+              onStageChange={sid => onMappingChange(form.id, boardId, sid, form.name)}
+              uid={form.id}
+            />
           </div>
-        )}
+
+          {boardId && (
+            <div>
+              <p className="text-[10px] text-foreground/40 uppercase tracking-widest font-bold mb-2">
+                Etiquetas do lead →
+              </p>
+              <TagSelector
+                selectedIds={tagIds}
+                onChange={ids => onTagsChange(form.id, ids)}
+              />
+              {phoneFieldKey && (
+                <p className="text-[10px] text-foreground/40 mt-1">
+                  📞 Campo de telefone: <code className="bg-white/10 px-1 rounded">{phoneFieldKey}</code>
+                  <button onClick={() => onPhoneFieldChange(form.id, '')} className="ml-1 text-foreground/20 hover:text-foreground/50">×</button>
+                </p>
+              )}
+            </div>
+          )}
+
+          {boardId && (
+            <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>Configurado — leads serão enviados para este pipeline automaticamente</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Expandable details */}
       {expanded && (
         <div className="border-t border-border px-5 pb-5">
-          <FormDetailsPanel formId={form.id} />
+          <FormDetailsPanel
+            formId={form.id}
+            phoneFieldKey={phoneFieldKey}
+            onPhoneFieldChange={key => onPhoneFieldChange(form.id, key)}
+          />
         </div>
       )}
     </div>
@@ -345,10 +515,31 @@ export default function FormulariosPage() {
   ) => {
     setFormMappings(prev => {
       if (!boardId) return prev.filter(m => m.formId !== formId);
-      const newMapping: LeadgenFormMapping = { formId, formName, boardId, stageId };
+      const existing = prev.find(m => m.formId === formId);
+      const newMapping: LeadgenFormMapping = {
+        formId, formName, boardId, stageId,
+        tagIds: existing?.tagIds,
+        phoneFieldKey: existing?.phoneFieldKey,
+      };
       const idx = prev.findIndex(m => m.formId === formId);
       if (idx >= 0) { const u = [...prev]; u[idx] = newMapping; return u; }
       return [...prev, newMapping];
+    });
+  }, []);
+
+  const handleFormTagsChange = useCallback((formId: string, tagIds: string[]) => {
+    setFormMappings(prev => {
+      const idx = prev.findIndex(m => m.formId === formId);
+      if (idx < 0) return prev;
+      const u = [...prev]; u[idx] = { ...u[idx], tagIds }; return u;
+    });
+  }, []);
+
+  const handleFormPhoneFieldChange = useCallback((formId: string, phoneFieldKey: string) => {
+    setFormMappings(prev => {
+      const idx = prev.findIndex(m => m.formId === formId);
+      if (idx < 0) return prev;
+      const u = [...prev]; u[idx] = { ...u[idx], phoneFieldKey: phoneFieldKey || undefined }; return u;
     });
   }, []);
 
@@ -539,6 +730,8 @@ export default function FormulariosPage() {
               boards={boards}
               mapping={formMappings.find(m => m.formId === form.id) || null}
               onMappingChange={handleFormMappingChange}
+              onTagsChange={handleFormTagsChange}
+              onPhoneFieldChange={handleFormPhoneFieldChange}
             />
           ))}
         </div>

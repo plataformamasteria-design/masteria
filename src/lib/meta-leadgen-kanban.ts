@@ -9,8 +9,8 @@
  */
 
 import { db } from '@/lib/db';
-import { contacts, kanbanLeads, kanbanBoards, companies, marketingCredentials } from '@/lib/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { contacts, kanbanLeads, kanbanBoards, companies, marketingCredentials, contactsToTags } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { emitToCompany } from '@/lib/socket';
 
 export interface LeadFieldItem {
@@ -45,8 +45,12 @@ export function normalizePhone(raw: string | null): string | null {
 /**
  * Extrai campos padrão do fieldData do Meta Lead Form.
  * Suporta campos em PT e EN.
+ * @param phoneFieldKey - chave customizada que contém o telefone (ex: "whatsapp_number")
  */
-export function extractLeadFields(fieldData: LeadFieldItem[]): {
+export function extractLeadFields(
+  fieldData: LeadFieldItem[],
+  phoneFieldKey?: string | null,
+): {
   nome: string | null;
   telefone: string | null;
   email: string | null;
@@ -57,13 +61,17 @@ export function extractLeadFields(fieldData: LeadFieldItem[]): {
   let email: string | null = null;
   const extraFields: Record<string, string> = {};
 
+  // Chaves padrão de telefone + chave customizada no topo da lista
+  const PHONE_KEYS = new Set(['phone_number', 'telefone', 'phone', 'celular', 'whatsapp']);
+  if (phoneFieldKey) PHONE_KEYS.add(phoneFieldKey.toLowerCase());
+
   for (const field of fieldData) {
     const key = field.name.toLowerCase();
     const val = field.values?.[0] || null;
     if (!val) continue;
 
     if (['full_name', 'nome', 'name'].includes(key)) nome = val;
-    else if (['phone_number', 'telefone', 'phone', 'celular', 'whatsapp'].includes(key)) telefone = val;
+    else if (PHONE_KEYS.has(key)) telefone = val;
     else if (['email', 'e-mail', 'email_address'].includes(key)) email = val;
     else extraFields[field.name] = val;
   }
@@ -153,6 +161,8 @@ export interface LeadgenFormMapping {
   formName?: string;
   boardId: string;
   stageId: string;
+  tagIds?: string[];        // Etiquetas a aplicar automaticamente no lead
+  phoneFieldKey?: string;   // Chave do campo customizado que contém o telefone
 }
 
 export interface LeadgenRoutingConfig {
@@ -318,8 +328,13 @@ export async function persistLeadInKanban(
     // Resolver board e stage via config (se não fornecido explicitamente)
     let targetBoardId = boardId;
     let targetStageId = stageId;
+    let formMapping: import('@/lib/meta-leadgen-kanban').LeadgenFormMapping | undefined;
 
     if (!targetBoardId) {
+      // Busca o mapping específico do formulário (se existir)
+      if (leadData.formId && config.leadgenConfig?.formMappings?.length) {
+        formMapping = config.leadgenConfig.formMappings.find(m => m.formId === leadData.formId);
+      }
       const routing = resolveRoutingTarget(leadData.formId, config.leadgenConfig, config.defaultBoardId);
       targetBoardId = routing.boardId ?? undefined;
       targetStageId = targetStageId || routing.stageId || undefined;
@@ -329,8 +344,11 @@ export async function persistLeadInKanban(
       return { ok: false, reason: 'Nenhum Kanban Board configurado. Configure em Marketing → Formulários.' };
     }
 
-    // Extrair campos do formulário
-    const { nome, telefone, email, extraFields } = extractLeadFields(leadData.fieldData);
+    // Extrair campos do formulário (usa phoneFieldKey do mapping se configurado)
+    const { nome, telefone, email, extraFields } = extractLeadFields(
+      leadData.fieldData,
+      formMapping?.phoneFieldKey,
+    );
 
     // Montar customFields para o contato
     const customFields = buildCustomFields(
@@ -402,6 +420,19 @@ export async function persistLeadInKanban(
       });
     } catch (socketErr) {
       console.warn('[meta-leadgen-kanban] Socket emit falhou:', socketErr);
+    }
+
+    // Aplicar etiquetas do mapping ao contato (onConflictDoNothing para idempotência)
+    const tagIds = formMapping?.tagIds || [];
+    if (tagIds.length > 0) {
+      try {
+        await db.insert(contactsToTags)
+          .values(tagIds.map(tagId => ({ contactId: contact.id, tagId, companyId })))
+          .onConflictDoNothing();
+        console.log(`[meta-leadgen-kanban] ✅ ${tagIds.length} etiqueta(s) aplicada(s) ao contato ${contact.id}`);
+      } catch (tagErr: any) {
+        console.warn('[meta-leadgen-kanban] Falha ao aplicar etiquetas:', tagErr.message);
+      }
     }
 
     return { ok: true, kanbanLeadId: newLead.id };
