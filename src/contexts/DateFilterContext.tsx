@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useMemo, type ReactNode } from "react";
+import { useAccountId } from "@/contexts/ad-account-context";
 
 export type PresetOption = "this_month" | "this_week" | "yesterday" | "last_7d" | "last_14d" | "last_30d" | "custom";
 export type StatusFilter = "todos" | "ativo" | "pausado";
@@ -44,9 +45,11 @@ export function DateFilterProvider({ children }: { children: ReactNode }) {
   const setPreset = (p: PresetOption) => { setPresetRaw(p); if (p !== "custom") setCustomRangeRaw(null); };
   const setCustomRange = (range: { since: string; until: string }) => { setCustomRangeRaw(range); setPresetRaw("custom"); };
 
+  const accountId = useAccountId();
+
   const resolved = useMemo(() => resolveDates(preset, customRange), [preset, customRange]);
   const statusParam = statusFilter === "ativo" ? "ACTIVE" : statusFilter === "pausado" ? "PAUSED" : "ALL";
-  const queryString = `since=${resolved.since}&until=${resolved.until}&status=${statusParam}`;
+  const queryString = `since=${resolved.since}&until=${resolved.until}&status=${statusParam}${accountId ? `&account_id=${accountId}` : ""}`;
 
   return (
     <DateFilterContext.Provider value={{

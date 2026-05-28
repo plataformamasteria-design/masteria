@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMetaAuthForSession } from "@/lib/meta-ads";
 import { db } from "@/lib/db";
 import { marketingAds, marketingCampaigns } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -15,16 +15,31 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get("status") || "ALL";
+    const accountParam = searchParams.get("account_id");
+    
+    // Determine the target account ID
+    const targetAccountId = accountParam ? (accountParam.startsWith("act_") ? accountParam : `act_${accountParam}`) : (auth.accountId.startsWith("act_") ? auth.accountId : `act_${auth.accountId}`);
 
-    // 1. Get ads from Drizzle for this company
-    const allAds = await db.select().from(marketingAds).where(eq(marketingAds.companyId, auth.companyId));
+    // 1. Get ads from Drizzle for this company and account
+    const allAds = await db.select().from(marketingAds).where(
+      and(
+        eq(marketingAds.companyId, auth.companyId),
+        eq(marketingAds.accountId, targetAccountId)
+      )
+    );
+    
     if (!allAds.length) {
       return NextResponse.json({ data: [] });
     }
 
     // Fetch campaigns to map names
     const campaignMap = new Map();
-    const allCampaigns = await db.select().from(marketingCampaigns).where(eq(marketingCampaigns.companyId, auth.companyId));
+    const allCampaigns = await db.select().from(marketingCampaigns).where(
+      and(
+        eq(marketingCampaigns.companyId, auth.companyId),
+        eq(marketingCampaigns.accountId, targetAccountId)
+      )
+    );
     allCampaigns.forEach(c => campaignMap.set(c.campaignId, c.campaignName));
 
     // 3. Map into EnrichedCreative
