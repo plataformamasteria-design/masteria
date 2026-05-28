@@ -849,7 +849,7 @@ export default function TrafegoGerenciarPage() {
                       {/* Expanded AdSets (lazy loaded) */}
                       {isExp && isTreeLoading && (
                         <tr className="border-b border-border">
-                          <td colSpan={colHeaders.length} className="px-12 py-3">
+                          <td colSpan={metricCols.length + 3} className="px-12 py-3">
                             <div className="flex items-center gap-2 text-xs text-foreground/90">
                               <RefreshCw className="h-3 w-3 animate-spin text-primary" />
                               Carregando conjuntos e anúncios...
