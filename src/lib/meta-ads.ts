@@ -74,48 +74,54 @@ export function formatAccountId(raw: string): string {
  */
 function isEndFormAction(actionType: string): boolean {
   const t = actionType.toLowerCase();
-  return (
-    t === "leadgen_grouped" ||
-    t === "onsite_conversion.lead_grouped" ||
-    t === "lead_grouped" ||
-    t.includes("leadgen.lead_grouped") ||
-    t.includes("onsite_conversion.lead")
-  );
+  return t === "onsite_conversion.lead_grouped" || t === "leadgen_grouped";
 }
 
 export function extractActionsData(actions: any[], actionValues: any[]) {
   let ld = 0, pur = 0, rev = 0, chk = 0, lpv = 0, msg = 0, thruplay = 0,
       profile_visits = 0, link_clicks = 0, total_actions = 0, endforms = 0;
+  
+  let max_custom_conversion = 0;
+
   for (const a of (actions || [])) {
     const val = parseFloat(a.value || "0");
     const t = a.action_type || "";
     total_actions += val;
     
     if (isEndFormAction(t)) {
-      // Formulário Nativo (EndForm / Lead Ad) — conta em endforms E em ld
       endforms += val;
+    } else if (t === "lead") {
       ld += val;
-    } else if (t === "lead" || t === "omni_lead" || t.includes("pixel_lead")) {
-      ld += val;
-    } else if (t === "purchase" || t === "omni_purchase" || t.includes("pixel_purchase")) {
+    } else if (t === "purchase") {
       pur += val;
-    } else if (t === "initiate_checkout" || t === "omni_initiated_checkout") {
+    } else if (t === "initiate_checkout") {
       chk += val;
-    } else if (t === "landing_page_view" || t.includes("landing_page_view")) {
+    } else if (t === "landing_page_view") {
       lpv += val;
-    } else if (t.includes("messaging_conversation_started") || t.includes("messaging_first_reply") || t === "onsite_conversion.messaging_conversation_started_7d") {
+    } else if (t.includes("messaging_conversation_started") || t.includes("messaging_first_reply")) {
       msg += val;
-    } else if (t === "thruplay" || t === "video_view_thruplay") {
+    } else if (t === "thruplay") {
       thruplay += val;
-    } else if (t.includes("profile_visit")) {
+    } else if (t === "profile_visit" || t === "onsite_conversion.profile_visit") {
       profile_visits += val;
-    } else if (t === "link_click" || t === "outbound_click") {
+    } else if (t === "link_click") {
       link_clicks += val;
+    } else if (t.startsWith("offsite_conversion.custom.")) {
+      if (val > max_custom_conversion) {
+        max_custom_conversion = val;
+      }
     }
   }
+
+  // Previne double-counting resolvendo com o maior valor entre leads padrão, formulários nativos e conversões customizadas
+  ld = Math.max(ld, endforms, max_custom_conversion);
+
   for (const v of (actionValues || [])) {
     const t = v.action_type || "";
-    if (t === "purchase" || t === "omni_purchase" || t.includes("pixel_purchase")) rev += parseFloat(v.value || "0");
+    if (t === "purchase" || t === "omni_purchase") {
+      const pVal = parseFloat(v.value || "0");
+      if (pVal > rev) rev = pVal; // Usa o maior valor reportado para evitar soma dupla
+    }
   }
   return { ld, pur, rev, chk, lpv, msg, thruplay, profile_visits, link_clicks, total_actions, endforms };
 }
