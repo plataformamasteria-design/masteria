@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
 
       // Extract optimization goal from adset to identify Custom Conversion name
       let optimizedEventName: string | undefined = undefined;
-      const cStruct = structureRes.data?.find((c) => c.id === id);
+      const cStruct = (structureRes.data as any)?.data?.find((c: any) => c.id === id);
       if (cStruct && cStruct.adsets && cStruct.adsets.data && cStruct.adsets.data.length > 0) {
         const po = cStruct.adsets.data[0].promoted_object;
         if (po) {
