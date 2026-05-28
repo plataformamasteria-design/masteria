@@ -43,7 +43,16 @@ function getResultType(
   endforms: number,
   messages: number,
   leads: number,
+  optimizedEventName?: string
 ): string {
+  if (optimizedEventName) {
+    const optLower = optimizedEventName.toLowerCase();
+    if (optLower.includes("form")) return "endform";
+    if (optLower === "lead") return "lead_pixel";
+    // Mapeamento extra se for Custom Conversion
+    if (optLower !== "other") return "lead_pixel"; 
+  }
+
   const obj = objective?.toUpperCase() || "";
   if (obj.includes("LEAD")) {
     // Distingue formulário nativo (EndForm) de pixel de site
@@ -219,9 +228,21 @@ export async function GET(req: NextRequest) {
           : "no_pace"
         : "unknown";
 
+      let optimizedEventName: string | undefined = undefined;
+      if (c.adsets && c.adsets.data && c.adsets.data.length > 0) {
+        const po = c.adsets.data[0].promoted_object;
+        if (po) {
+          optimizedEventName = po.custom_event_str || po.custom_event_type;
+        }
+      }
+
       let dynamicResults = 0;
       const obj = c.objective || "";
-      if (obj.includes("LEAD")) dynamicResults = cMetrics.leads;
+      const isCustomEvent = optimizedEventName && optimizedEventName !== "LEAD" && optimizedEventName !== "OTHER" && optimizedEventName !== "PURCHASE" && optimizedEventName !== "LINK_CLICK";
+      if (optimizedEventName && (optimizedEventName === "LEAD" || isCustomEvent)) {
+        // Se a campanha otimiza especificamente para Lead ou Custom Conversion, força o uso de 'leads' (onde armazenamos esse valor)
+        dynamicResults = cMetrics.leads;
+      } else if (obj.includes("LEAD")) dynamicResults = cMetrics.leads;
       else if (obj.includes("SALE") || obj.includes("CONVERSION") || obj.includes("PURCHASE")) dynamicResults = cMetrics.purchases;
       else if (obj.includes("ENGAGEMENT") || obj.includes("MESSAGE")) dynamicResults = cMetrics.messages;
       else if (obj.includes("TRAFFIC") || obj.includes("LINK_CLICK")) dynamicResults = cMetrics.link_clicks;
@@ -244,7 +265,7 @@ export async function GET(req: NextRequest) {
         ...cMetrics,
         results: dynamicResults,
         cost_per_result: dynamicCpr,
-        result_type: getResultType(c.objective, kpi.endforms, kpi.messages, kpi.leads),
+        result_type: getResultType(c.objective, kpi.endforms, kpi.messages, kpi.leads, optimizedEventName),
       };
     });
 
