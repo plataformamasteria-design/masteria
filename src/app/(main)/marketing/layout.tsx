@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar, ChevronDown, Building2, CheckCircle2,
   Loader2, RefreshCw, AlertCircle, Megaphone,
+  Lock, Unlock
 } from "lucide-react";
 
 // ── Period Selector ─────────────────────────────────────────────────────────────
@@ -67,15 +68,48 @@ function PeriodoSelector() {
 function TrafegoAccountBar() {
   const { account, accounts, setAccount, isLoading, error } = useAdAccount();
   const [open, setOpen] = useState(false);
+  const [lockPassword, setLockPassword] = useState<string | null>(null);
+  const [isPromptOpen, setIsPromptOpen] = useState(false);
+  const [promptMode, setPromptMode] = useState<"lock" | "unlock">("lock");
+  const [inputValue, setInputValue] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const saved = localStorage.getItem("masteria_ad_account_lock");
+    if (saved) setLockPassword(saved);
+  }, []);
+
+  useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+         setOpen(false);
+         setIsPromptOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const handleLockSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+    
+    if (promptMode === "lock") {
+       localStorage.setItem("masteria_ad_account_lock", inputValue);
+       setLockPassword(inputValue);
+       setIsPromptOpen(false);
+       setInputValue("");
+    } else {
+       if (inputValue === lockPassword) {
+          localStorage.removeItem("masteria_ad_account_lock");
+          setLockPassword(null);
+          setIsPromptOpen(false);
+          setInputValue("");
+       } else {
+          alert("Senha incorreta!");
+       }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -115,20 +149,82 @@ function TrafegoAccountBar() {
         </div>
 
         {accounts.length > 1 && (
-          <button
-            onClick={() => setOpen((o) => !o)}
-            className={`flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.1em] px-4 py-2.5 rounded-xl transition-all duration-300 ${
-              open
-                ? "bg-foreground text-background shadow-md shadow-foreground/20"
-                : "bg-black/5 dark:bg-white/5 border border-border text-foreground/90 hover:text-foreground hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 border-border"
-            }`}
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Trocar
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setOpen(false);
+                if (lockPassword) {
+                   setPromptMode("unlock");
+                   setIsPromptOpen((o) => !o);
+                } else {
+                   setPromptMode("lock");
+                   setIsPromptOpen((o) => !o);
+                }
+              }}
+              title={lockPassword ? "Desbloquear" : "Bloquear troca de conta"}
+              className={`h-9 w-9 flex items-center justify-center rounded-xl transition-all ${
+                lockPassword 
+                  ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20" 
+                  : "bg-black/5 dark:bg-white/5 text-foreground/50 hover:text-foreground border border-border"
+              }`}
+            >
+              {lockPassword ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+            </button>
+
+            <button
+              onClick={() => {
+                 if (lockPassword) {
+                    setPromptMode("unlock");
+                    setIsPromptOpen(true);
+                    return;
+                 }
+                 setOpen((o) => !o);
+                 setIsPromptOpen(false);
+              }}
+              className={`flex items-center gap-2 text-[10px] uppercase font-bold tracking-[0.1em] px-4 py-2.5 rounded-xl transition-all duration-300 ${
+                open
+                  ? "bg-foreground text-background shadow-md shadow-foreground/20"
+                  : "bg-black/5 dark:bg-white/5 border border-border text-foreground/90 hover:text-foreground hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10"
+              } ${lockPassword ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Trocar
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
+            </button>
+          </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {isPromptOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            className="absolute right-0 top-full mt-3 z-[60] w-64 rounded-2xl border border-border bg-background shadow-2xl p-4"
+          >
+            <h4 className="text-xs font-bold uppercase tracking-wider mb-3 text-foreground/90">
+              {promptMode === "lock" ? "Definir Senha de Bloqueio" : "Digite a Senha"}
+            </h4>
+            <form onSubmit={handleLockSubmit} className="flex flex-col gap-3">
+              <input 
+                type="password" 
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                placeholder={promptMode === "lock" ? "Criar senha..." : "Sua senha..."}
+                className="bg-black/5 dark:bg-white/5 border border-border rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => { setIsPromptOpen(false); setInputValue(""); }} className="px-3 py-1.5 text-xs font-bold text-foreground/60 hover:text-foreground transition-colors">Cancelar</button>
+                <button type="submit" className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg font-bold shadow-md hover:bg-primary/90 transition-all">
+                  {promptMode === "lock" ? "Bloquear" : "Desbloquear"}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {open && (
@@ -196,7 +292,7 @@ function MarketingLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="mb-4">
           <TrafegoSubnav />
         </div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 relative z-50">
           <PeriodoSelector />
           <TrafegoAccountBar />
         </div>

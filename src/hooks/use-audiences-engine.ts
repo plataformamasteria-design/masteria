@@ -55,6 +55,7 @@ interface AudiencesEngineProps {
     statusFiltro: string;
     somenteComDados: boolean;
     tipoFiltro: string;
+    accountId?: string | null;
 }
 
 export function useAudiencesEngine({
@@ -63,11 +64,12 @@ export function useAudiencesEngine({
     statusFiltro,
     somenteComDados,
     tipoFiltro,
+    accountId,
 }: AudiencesEngineProps) {
 
     // Fetch das audiências cacheadas no background sem bloquear a UI se travar
     const { data: audienceDataRaw, isLoading: loadingAudiences, error } = useSWR(
-        "/api/meta-audiences",
+        accountId ? `/api/meta-audiences?account_id=${accountId}` : null,
         async (url) => {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Falha na API de Públicos");

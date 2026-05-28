@@ -75,6 +75,7 @@ type MetricPreset = "PERFORMANCE" | "PERFORMANCE_CLICKS" | "ENGAGEMENT";
 type DatePreset = "7d" | "30d" | "3m" | "custom";
 type PrimaryMetric = "LEADS" | "COMPRAS" | "MENSAGENS" | "CLIQUES" | "THRUPLAY" | "VISITAS_PERFIL";
 type MetricColumn = { key: string; label: string; fmt: (v: any, row?: any) => React.ReactNode };
+type SortConfig = { key: string | null; direction: "asc" | "desc" };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const OBJECTIVE_PT: Record<string, string> = {
@@ -159,6 +160,7 @@ function getMetricCols(preset: MetricPreset) {
       { key: cprKey, label: resCostLabel, fmt: (v) => v ? fmtExact(v) : "—" },
       { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
       { key: "impressions", label: "Impressões", fmt: (v) => fmtNum(v || 0) },
+      { key: "profile_visits", label: "Visitas ao Perfil", fmt: (v) => fmtNum(v || 0) },
     ],
     PERFORMANCE_CLICKS: [
       { key: pmKey, label: resLabel, fmt: resultsFmt },
@@ -176,12 +178,14 @@ function getMetricCols(preset: MetricPreset) {
       { key: "cpc", label: "CPC (todos)", fmt: (v) => v ? fmtExact(v) : "—" },
       { key: "landing_page_views", label: "Visual. da pág. de destino", fmt: (v) => fmtNum(v || 0) },
       { key: "cost_per_lpv", label: "Custo por visualização", fmt: (v) => v ? fmtExact(v) : "—" },
+      { key: "profile_visits", label: "Visitas ao Perfil", fmt: (v) => fmtNum(v || 0) },
     ],
     ENGAGEMENT: [
       { key: "spend", label: "Valor Gasto", fmt: (v) => fmtExact(v || 0) },
       { key: "actions", label: "Engajamentos", fmt: (v) => fmtNum(v || 0) },
       { key: "reach", label: "Alcance", fmt: (v) => fmtNum(v || 0) },
       { key: "frequency", label: "Frequência", fmt: (v) => v ? v.toFixed(2) : "—" },
+      { key: "profile_visits", label: "Visitas ao Perfil", fmt: (v) => fmtNum(v || 0) },
     ],
   };
   return cols[preset];
@@ -246,18 +250,16 @@ function AdRow({
   const isActive = ad.status === "ACTIVE";
   return (
     <tr className="border-b border-border bg-black/5 dark:bg-black/5 dark:bg-black/40 hover:bg-black/[0.03] dark:bg-white/[0.03] transition-colors duration-200 group">
-      {/* Name + thumbnail */}
-      <td className="px-4 py-2.5 pl-[72px] max-w-[220px]">
-        <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-md overflow-hidden bg-muted border border-border flex-shrink-0 flex items-center justify-center">
-            {ad.creative?.thumbnail_url
-              ? <img src={ad.creative.thumbnail_url} className="w-full h-full object-cover" alt="" />
-              : <Eye  className="h-3.5 w-3.5 text-foreground/90" />}
-          </div>
-          <div className="min-w-0">
-            <div className="font-medium text-foreground text-xs truncate max-w-[140px]">{ad.name}</div>
-            <div className="text-[10px] text-foreground/90 font-mono">{ad.id}</div>
-          </div>
+      <td className="px-6 py-2.5 pl-[72px]">
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+          {ad.creative?.thumbnail_url ? (
+            <img src={ad.creative.thumbnail_url} alt="" className="h-6 w-6 rounded shrink-0 object-cover border border-border" />
+          ) : (
+            <div className="h-6 w-6 rounded shrink-0 bg-black/5 dark:bg-white/5 border border-border flex items-center justify-center">
+              <Eye className="h-3 w-3 text-foreground/40" />
+            </div>
+          )}
+          <span className="text-xs text-foreground/80 font-medium truncate flex-1" title={ad.name}>{ad.name}</span>
         </div>
       </td>
       <td className="px-4 py-2.5">
@@ -383,7 +385,9 @@ export default function TrafegoGerenciarPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [bulkSwapTarget, setBulkSwapTarget] = useState<{ id: string; name: string } | null>(null);
   const [dupTarget, setDupTarget] = useState<DupCampaignSource | null>(null);
-  const [visibleCount, setVisibleCount] = useState(20);
+  const [visibleCount, setVisibleCount] = useState(25);
+
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: "desc" });
 
   const accountId = useAccountId();
   const acct = accountId ? `&account_id=${accountId}` : "";
@@ -431,7 +435,21 @@ export default function TrafegoGerenciarPage() {
     const searchOk = !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase());
     return statusOk && searchOk;
   }).sort((a, b) => {
-    // Active first, then by spend descending
+    if (sortConfig.key) {
+      const key = sortConfig.key;
+      let valA = a[key] !== undefined ? a[key] : 0;
+      let valB = b[key] !== undefined ? b[key] : 0;
+      
+      if (key === "cost_per_result") {
+        valA = a.results > 0 ? a.spend / a.results : Infinity;
+        valB = b.results > 0 ? b.spend / b.results : Infinity;
+      }
+      
+      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    }
+    // Default: Active first, then by spend descending
     if (a.status === "ACTIVE" && b.status !== "ACTIVE") return -1;
     if (a.status !== "ACTIVE" && b.status === "ACTIVE") return 1;
     return b.spend - a.spend;
@@ -499,7 +517,13 @@ export default function TrafegoGerenciarPage() {
   }, [refresh]);
 
   const metricCols = getMetricCols(metricPreset);
-  const colHeaders = ["Estrutura", "Ações", "Status", "Budget/Dia", ...metricCols.map(c => c.label)];
+  const fixedHeaders = [
+    { label: "Estrutura", key: null },
+    { label: "Ações", key: null },
+    { label: "Status", key: null },
+    { label: "Budget/Dia", key: null },
+  ];
+  const tableHeaders = [...fixedHeaders, ...metricCols.map(c => ({ label: c.label, key: c.key }))];
 
   const metricOptions: { key: PrimaryMetric; label: string; value: number; icon: any }[] = [
     { key: "LEADS", label: "Leads Gerados", value: totalLeads + totalMessages, icon: Users },
@@ -667,13 +691,33 @@ export default function TrafegoGerenciarPage() {
             <p className="text-xs font-medium uppercase tracking-[0.15em] text-foreground/60 text-center">Nenhuma campanha na estação</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-max text-sm">
               <thead>
                 <tr className="border-b border-border bg-transparent sticky top-0 z-10 backdrop-blur-md">
-                  {colHeaders.map((h) => (
-                    <th key={h} className="px-6 py-4 text-left text-[9px] font-bold tracking-[0.15em] uppercase text-foreground/60 whitespace-nowrap">
-                      {h}
+                  {tableHeaders.map((h) => (
+                    <th 
+                      key={h.label} 
+                      className={`px-6 py-4 text-left text-[9px] font-bold tracking-[0.15em] uppercase text-foreground/60 whitespace-nowrap ${h.key ? "cursor-pointer hover:text-foreground transition-colors group/th" : ""}`}
+                      onClick={() => {
+                        if (!h.key) return;
+                        if (sortConfig.key === h.key) {
+                           setSortConfig({ key: h.key, direction: sortConfig.direction === "asc" ? "desc" : "asc" });
+                        } else {
+                           setSortConfig({ key: h.key, direction: "desc" });
+                        }
+                      }}
+                    >
+                      <div className={h.label === "Estrutura" ? "resize-x overflow-hidden min-w-[200px] w-[280px] max-w-[1000px] pr-2 pb-1" : ""}>
+                        <div className="flex items-center gap-1.5 select-none w-full h-full">
+                          {h.label}
+                          {h.key && (
+                            <div className={`transition-opacity ${sortConfig.key === h.key ? "opacity-100" : "opacity-0 group-hover/th:opacity-50"}`}>
+                              <ChevronDown className={`h-3 w-3 transition-transform ${sortConfig.key === h.key && sortConfig.direction === "asc" ? "rotate-180" : ""}`} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </th>
                   ))}
                 </tr>
@@ -690,7 +734,7 @@ export default function TrafegoGerenciarPage() {
                     <React.Fragment key={c.id}>
                       <tr className="border-b border-border hover:bg-black/[0.02] dark:bg-white/[0.02] transition-colors group">
                         {/* Campaign Name */}
-                        <td className="px-6 py-4 max-w-[280px]">
+                        <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <button onClick={() => toggleCamp(c.id)} className="h-5 w-5 flex items-center justify-center rounded bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-black/10 dark:bg-white/10 text-foreground flex-shrink-0">
                               {isTreeLoading
@@ -699,9 +743,9 @@ export default function TrafegoGerenciarPage() {
                                   ? <ChevronDown className="h-3 w-3" />
                                   : <ChevronRight className="h-3 w-3" />}
                             </button>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 font-bold text-foreground text-xs">
-                                <span className="truncate max-w-[160px]">{c.name}</span>
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <div className="flex items-center gap-1.5 font-bold text-foreground text-xs w-full">
+                                <span className="truncate inline-block flex-1" title={c.name}>{c.name}</span>
                                 {/nova campanha|tree build/i.test(c.name) && (
                                   <span className="text-amber-400 shrink-0 cursor-help group/alert relative">
                                     <AlertTriangle className="h-3.5 w-3.5" />

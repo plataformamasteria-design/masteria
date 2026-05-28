@@ -14,8 +14,9 @@ export async function GET(req: NextRequest) {
     const since = searchParams.get("since") || new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
     const until = searchParams.get("until") || new Date().toISOString().slice(0, 10);
     const breakdown = searchParams.get("breakdown") || "age_gender";
+    const accountParam = searchParams.get("account_id");
     
-    const account = auth.accountId.startsWith("act_") ? auth.accountId : `act_${auth.accountId}`;
+    const account = accountParam ? (accountParam.startsWith("act_") ? accountParam : `act_${accountParam}`) : (auth.accountId.startsWith("act_") ? auth.accountId : `act_${auth.accountId}`);
 
     let metaBreakdowns = "age,gender";
     if (breakdown === "region") metaBreakdowns = "region";

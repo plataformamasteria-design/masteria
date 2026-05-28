@@ -98,7 +98,7 @@ export function extractActionsData(actions: any[], actionValues: any[], conversi
       chk += val;
     } else if (t === "landing_page_view") {
       lpv += val;
-    } else if (t.includes("messaging_conversation_started") || t.includes("messaging_first_reply")) {
+    } else if (t.startsWith("onsite_conversion.messaging_conversation_started")) {
       msg += val;
     } else if (t === "thruplay") {
       thruplay += val;

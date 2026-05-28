@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Conta de anúncios não selecionada" }, { status: 400 });
     }
 
-    const account = auth.accountId.startsWith("act_") ? auth.accountId : `act_${auth.accountId}`;
+    const { searchParams } = new URL(req.url);
+    const accountParam = searchParams.get("account_id");
+
+    const account = accountParam ? (accountParam.startsWith("act_") ? accountParam : `act_${accountParam}`) : (auth.accountId.startsWith("act_") ? auth.accountId : `act_${auth.accountId}`);
 
     // Fetch adsets with targeting information
     const r = await fetch(`${META_BASE}/${account}/adsets?fields=id,name,status,campaign{id,name},targeting&limit=500&access_token=${auth.token}`);
