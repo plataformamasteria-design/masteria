@@ -133,7 +133,7 @@ function startUnattendedLeadsMonitor() {
     const startTime = Date.now();
 
     try {
-      const { detectUnattendedLeads, recoverUnattendedLead } = require('@/services/unattended-leads-detector.service');
+      const { detectUnattendedLeads, recoverUnattendedLead } = await import('@/services/unattended-leads-detector.service');
 
       // Get active tenants and process each one
       const companyIds = await getActiveCompanyIds();

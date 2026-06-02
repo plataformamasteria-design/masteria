@@ -28,14 +28,13 @@ interface KanbanViewProps {
   companyTeams?: any[];
   connections?: any[];
   availableTags?: any[];
-  availableUtms?: string[];
   availableCustomFields?: Record<string, string[]>;
+  availableCustomFieldValues?: Record<string, string[]>;
   customFieldSourceTypes?: Record<string, 'automation' | 'webhook' | 'unknown'>;
   onSaveFilters?: () => void;
   onClearSavedFilters?: () => void;
 }
-
-export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections, availableTags, availableUtms, availableCustomFields, customFieldSourceTypes, onSaveFilters, onClearSavedFilters }: KanbanViewProps): JSX.Element | null {
+export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections, availableTags, availableUtms, availableCustomFields, availableCustomFieldValues, customFieldSourceTypes, onSaveFilters, onClearSavedFilters }: KanbanViewProps): JSX.Element | null {
   const [showLossStages, setShowLossStages] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -116,10 +115,24 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
-  // --- Active Filter Chips ---
-  const removeFilterChip = (type: keyof KanbanFilters, value: string) => {
+  const removeFilterChip = (type: string, value: string) => {
     if (!filters || !onFiltersChange) return;
-    const arr = filters[type] as string[];
+    
+    if (type === 'customFieldValues') {
+      const [fieldKey, val] = value.split(':::');
+      const currentValues = filters.customFieldValues?.[fieldKey] || [];
+      const newValues = currentValues.filter(v => v !== val);
+      onFiltersChange({
+        ...filters,
+        customFieldValues: {
+          ...filters.customFieldValues,
+          [fieldKey]: newValues
+        }
+      });
+      return;
+    }
+
+    const arr = filters[type as keyof KanbanFilters] as string[];
     onFiltersChange({ ...filters, [type]: arr.filter(v => v !== value) });
   };
 
@@ -162,6 +175,13 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
       chips.push({ type: 'customFields', id: cf, label: cf.length > 25 ? cf.substring(0, 25) + '...' : cf, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400' });
     });
 
+    Object.entries(filters.customFieldValues || {}).forEach(([fieldKey, values]) => {
+      values.forEach(val => {
+        const lbl = `${fieldKey}: ${val}`;
+        chips.push({ type: 'customFieldValues', id: `${fieldKey}:::${val}`, label: lbl.length > 30 ? lbl.substring(0, 30) + '...' : lbl, color: 'bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400' });
+      });
+    });
+
     return chips;
   };
 
@@ -194,6 +214,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         availableTags={availableTags}
         availableUtms={availableUtms}
         availableCustomFields={availableCustomFields}
+        availableCustomFieldValues={availableCustomFieldValues}
         customFieldSourceTypes={customFieldSourceTypes}
         onSaveFilters={onSaveFilters}
         onClearSavedFilters={onClearSavedFilters}
@@ -217,7 +238,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
             <button
               onClick={() => onFiltersChange?.({
                 stages: [], priority: [], valueMin: null, valueMax: null,
-                dateRange: 'all', dateFrom: null, dateTo: null, assignedUsers: [], teams: [], connections: [], tags: [], utms: [], customFields: [],
+                dateRange: 'all', dateFrom: null, dateTo: null, assignedUsers: [], teams: [], connections: [], tags: [], utms: [], customFields: [], customFieldValues: {},
               })}
               className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2 transition-colors ml-1"
             >

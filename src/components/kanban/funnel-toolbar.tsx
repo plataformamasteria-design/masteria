@@ -32,6 +32,7 @@ interface FunnelToolbarProps {
   availableTags?: any[];
   availableUtms?: string[];
   availableCustomFields?: Record<string, string[]>;
+  availableCustomFieldValues?: Record<string, string[]>;
   customFieldSourceTypes?: Record<string, 'automation' | 'webhook' | 'unknown'>;
   onSaveFilters?: () => void;
   onClearSavedFilters?: () => void;
@@ -130,6 +131,57 @@ function FilterCheckItem({
   );
 }
 
+// ─── CustomFieldFilterGroup ──────────────────────────────────────────────────
+function CustomFieldFilterGroup({
+  fieldKey,
+  values,
+  selectedValues,
+  onToggleValue,
+}: {
+  fieldKey: string;
+  values: string[];
+  selectedValues: string[];
+  onToggleValue: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeCount = selectedValues.length;
+
+  return (
+    <div className="mb-1 border border-border/40 rounded-md overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-2 py-1.5 bg-muted/20 hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-1.5 overflow-hidden">
+          <span className="text-[13px] font-medium truncate">{fieldKey}</span>
+          {activeCount > 0 && (
+            <Badge className="h-4 px-1 py-0 text-[10px] bg-primary/15 text-primary border border-primary/30 font-semibold">{activeCount}</Badge>
+          )}
+        </div>
+        {open ? <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" /> : <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />}
+      </button>
+      {open && (
+        <div className="p-1 space-y-0.5 bg-background border-t border-border/40 max-h-40 overflow-y-auto">
+          {values.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground px-2 py-1">Nenhuma resposta registrada.</p>
+          ) : (
+            values.map(val => (
+              <FilterCheckItem
+                key={val}
+                id={`filter-cfv-${fieldKey}-${val}`}
+                label={val}
+                checked={selectedValues.includes(val)}
+                onToggle={() => onToggleValue(val)}
+              />
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── SectionSearch ───────────────────────────────────────────────────────────
 function SectionSearch({
   value,
@@ -156,7 +208,7 @@ function SectionSearch({
 // ─── Main Component ──────────────────────────────────────────────────────────
 export function FunnelToolbar({
   funnel, totalLeadsCount, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount,
-  companyUsers, companyTeams, connections, availableTags, availableUtms, availableCustomFields, customFieldSourceTypes, onSaveFilters, onClearSavedFilters
+  companyUsers, companyTeams, connections, availableTags, availableUtms, availableCustomFields, availableCustomFieldValues, customFieldSourceTypes, onSaveFilters, onClearSavedFilters
 }: FunnelToolbarProps): JSX.Element {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [connSearch, setConnSearch] = useState('');
@@ -175,12 +227,29 @@ export function FunnelToolbar({
     onFiltersChange({ ...filters, [key]: next });
   };
 
+  const toggleCustomFieldValue = (fieldKey: string, value: string) => {
+    if (!filters || !onFiltersChange) return;
+    const currentValues = filters.customFieldValues?.[fieldKey] || [];
+    const nextValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    
+    onFiltersChange({
+      ...filters,
+      customFieldValues: {
+        ...(filters.customFieldValues || {}),
+        [fieldKey]: nextValues
+      }
+    });
+  };
+
   const handleClearFilters = () => {
     if (!onFiltersChange) return;
     onFiltersChange({
       stages: [], priority: [], valueMin: null, valueMax: null,
       dateRange: 'all', dateFrom: null, dateTo: null,
       assignedUsers: [], teams: [], connections: [], tags: [], utms: [],
+      customFields: [], customFieldValues: {}
     });
   };
 
@@ -430,7 +499,7 @@ export function FunnelToolbar({
                   <FilterSection
                     icon={<Layers className="h-3.5 w-3.5" />}
                     title="Campos Personalizados"
-                    count={filters?.customFields?.length || 0}
+                    count={Object.values(filters?.customFieldValues || {}).reduce((acc, vals) => acc + vals.length, 0)}
                   >
                     <div className="px-2 pb-2">
                       <Select
@@ -465,15 +534,17 @@ export function FunnelToolbar({
                     {currentCustomFields.length > 4 && (
                       <SectionSearch value={customFieldSearch} onChange={setCustomFieldSearch} placeholder="Buscar campo..." />
                     )}
-                    {filteredCustomFields.map(cf => (
-                      <FilterCheckItem
-                        key={cf}
-                        id={`filter-cf-${cf}`}
-                        label={cf}
-                        checked={filters?.customFields?.includes(cf) ?? false}
-                        onToggle={() => toggle('customFields', cf)}
-                      />
-                    ))}
+                    <div className="px-1">
+                      {filteredCustomFields.map(cf => (
+                        <CustomFieldFilterGroup
+                          key={cf}
+                          fieldKey={cf}
+                          values={availableCustomFieldValues?.[cf] || []}
+                          selectedValues={filters?.customFieldValues?.[cf] || []}
+                          onToggleValue={(val) => toggleCustomFieldValue(cf, val)}
+                        />
+                      ))}
+                    </div>
                     {filteredCustomFields.length === 0 && (
                       <p className="text-xs text-muted-foreground px-2 py-1">Nenhum campo encontrado.</p>
                     )}

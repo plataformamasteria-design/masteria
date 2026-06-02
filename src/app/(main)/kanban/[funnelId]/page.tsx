@@ -29,6 +29,7 @@ export interface KanbanFilters {
   tags: string[];
   utms: string[];
   customFields: string[];
+  customFieldValues: Record<string, string[]>;
 }
 
 const DEFAULT_FILTERS: KanbanFilters = {
@@ -45,6 +46,7 @@ const DEFAULT_FILTERS: KanbanFilters = {
   tags: [],
   utms: [],
   customFields: [],
+  customFieldValues: {},
 };
 
 export default function FunnelPage({ params }: { params: Promise<{ funnelId: string }> }) {
@@ -287,6 +289,32 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     return formattedMap;
   }, [cards, contactAutomationMap, automationFieldsMap]);
 
+  // Extrair valores únicos para cada campo personalizado
+  const availableCustomFieldValues = useMemo(() => {
+    const valuesMap: Record<string, Set<string>> = {};
+    
+    cards.forEach(card => {
+      let customFields = (card as any).contact?.customFields;
+      if (typeof customFields === 'string') {
+        try { customFields = JSON.parse(customFields); } catch(e) { customFields = {}; }
+      }
+      if (!customFields || typeof customFields !== 'object') return;
+
+      Object.entries(customFields).forEach(([key, value]) => {
+        if (!isTracking(key) && value !== null && value !== undefined && value !== '') {
+          if (!valuesMap[key]) valuesMap[key] = new Set();
+          valuesMap[key].add(String(value).trim());
+        }
+      });
+    });
+
+    const result: Record<string, string[]> = {};
+    for (const [key, set] of Object.entries(valuesMap)) {
+      result[key] = Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }
+    return result;
+  }, [cards]);
+
   // Mapa de tipo de origem → 'automation' | 'webhook' | 'unknown'
   // 'Campos Legados' é tratado como 'unknown'
   const customFieldSourceTypes = useMemo((): Record<string, 'automation' | 'webhook' | 'unknown'> => {
@@ -399,6 +427,25 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
            return filters.customFields.some(f => Object.keys(customFields).includes(f));
         }
         return false;
+      });
+    }
+
+    // Filtro por Respostas de Campos Personalizados (Verificação Exata)
+    if (filters.customFieldValues && Object.keys(filters.customFieldValues).length > 0) {
+      result = result.filter(card => {
+        let customFields = (card as any).contact?.customFields;
+        if (typeof customFields === 'string') {
+          try { customFields = JSON.parse(customFields); } catch(e) { customFields = {}; }
+        }
+        
+        // Deve bater com TODOS os campos filtrados (AND entre campos, OR entre valores do mesmo campo)
+        return Object.entries(filters.customFieldValues).every(([fieldKey, selectedValues]) => {
+          if (!selectedValues || selectedValues.length === 0) return true;
+          if (!customFields || typeof customFields !== 'object') return false;
+          
+          const leadValue = String(customFields[fieldKey] || '').trim();
+          return selectedValues.includes(leadValue);
+        });
       });
     }
 
@@ -609,6 +656,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
             availableTags={availableTags}
             availableUtms={availableUtms}
             availableCustomFields={availableCustomFields}
+            availableCustomFieldValues={availableCustomFieldValues}
             customFieldSourceTypes={customFieldSourceTypes}
             onSaveFilters={handleSaveFilters}
             onClearSavedFilters={handleClearSavedFilters}
