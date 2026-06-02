@@ -107,25 +107,25 @@ export function MetaAdsIntegration() {
 
     if (loading) {
         return (
-            <Card>
+            <Card className="bg-white/[0.02] border-white/5 backdrop-blur-xl shadow-2xl">
                 <CardContent className="flex items-center justify-center py-10">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
                 </CardContent>
             </Card>
         );
     }
 
     return (
-        <Card>
+        <Card className="bg-white/[0.02] border-white/5 backdrop-blur-xl shadow-2xl">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                            <Facebook className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                            <Facebook className="h-6 w-6 text-blue-400" />
                         </div>
                         <div>
-                            <CardTitle className="text-lg">Meta Ads & Marketing</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="text-lg text-white">Meta Ads & Marketing</CardTitle>
+                            <CardDescription className="text-zinc-400 mt-1">
                                 Conecte sua conta do Facebook/Instagram para sincronizar campanhas e métricas.
                             </CardDescription>
                         </div>

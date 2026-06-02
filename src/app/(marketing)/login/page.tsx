@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import VersionBadge from '@/components/version-badge';
 import { ThemeToggle } from '@/components/landing/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 
 // Refactored Components
 import { SocialButtons } from '@/components/auth/social-buttons';
@@ -102,19 +102,10 @@ function LoginPageContent() {
 
   return (
     <>
-      <div className="w-full min-h-screen flex items-center justify-center overflow-hidden bg-background relative" suppressHydrationWarning>
-
-        {/* Background Elements for "Premium" Feel - Centered */}
-        <div className="absolute top-0 right-0 p-8 z-20">
-          <ThemeToggle />
-        </div>
+      <div className="w-full min-h-screen flex items-center justify-center relative py-12" suppressHydrationWarning>
         <div className="absolute top-4 left-4 z-20">
           <VersionBadge prefix="v" />
         </div>
-
-        {/* Decorative Gradient Blob - Adjusted for centered layout */}
-        <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '10s' }} />
-        <div className="absolute bottom-[10%] right-[20%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[80px] pointer-events-none animate-pulse" style={{ animationDuration: '7s' }} />
 
         {/* Main Content Container with Glassmorphism */}
         <div className="w-full max-w-lg relative z-10 px-6">
@@ -126,29 +117,23 @@ function LoginPageContent() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.5, type: "spring" }}
-                className="bg-background/60 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl p-8 sm:p-10 space-y-8 text-center"
+                className="bg-black/[0.03] dark:bg-zinc-900/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 shadow-2xl rounded-3xl p-8 sm:p-10 space-y-8 text-center"
               >
                 <div className="flex justify-center mb-8">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-                    <div className="relative bg-background border border-primary/20 p-6 rounded-3xl shadow-2xl">
-                      <Bot className="h-16 w-16 text-primary" />
-                    </div>
-                    <div className="absolute -top-1 -right-1">
-                      <span className="flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-primary"></span>
-                      </span>
+                    <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
+                    <div className="relative bg-zinc-950/80 border border-emerald-500/30 p-6 rounded-3xl shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                      <Bot className="h-16 w-16 text-emerald-400" />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h2 className="text-4xl font-bold tracking-tight">
-                    <span className="text-primary">Master IA</span>
+                  <h2 className="text-4xl font-bold tracking-tight text-foreground dark:text-white">
+                    Master <span className="text-emerald-500 dark:text-emerald-400">IA</span>
                   </h2>
-                  <div className="h-12 flex items-center justify-center text-xl text-muted-foreground font-medium leading-relaxed">
-                    {isMounted && "Olá! Sou Amanda, Como posso ajudar você hoje?"}
+                  <div className="h-12 flex items-center justify-center text-xl text-zinc-400 font-medium leading-relaxed">
+                    {isMounted && "Olá! Sou o MasterIA, como posso ajudar você hoje?"}
                   </div>
                 </div>
 
@@ -156,9 +141,8 @@ function LoginPageContent() {
                   <Button
                     size="lg"
                     onClick={() => setViewState('login')}
-                    className="group relative overflow-hidden h-14 text-base shadow-lg hover:shadow-primary/25 transition-all duration-300 w-full"
+                    className="group relative overflow-hidden h-14 text-base shadow-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all duration-300 w-full rounded-full font-bold"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <span className="flex items-center justify-center gap-2">
                       Fazer Login
                       <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -169,27 +153,22 @@ function LoginPageContent() {
                     variant="ghost"
                     size="lg"
                     onClick={handleRegisterClick}
-                    className="h-14 text-base hover:bg-primary/5 transition-all duration-300 w-full"
+                    className="h-14 text-base hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-300 w-full rounded-full border border-transparent hover:border-black/10 dark:hover:border-white/10 text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white"
                   >
-                    <span className="flex items-center justify-center gap-2 text-muted-foreground hover:text-primary">
-                      <Sparkles className="h-4 w-4 text-amber-500" />
-                      Cadastrar 3 dias grátis
+                    <span className="flex items-center justify-center gap-2">
+                      <Sparkles className="h-4 w-4 text-emerald-400" />
+                      Criar nova conta
                     </span>
                   </Button>
                 </div>
 
-                <p className="text-xs text-muted-foreground pt-4 opacity-40">
-                  Secure Automation Platform powered by PLATAFORMAAI Autonomous
-                </p>
-
-                {/* Termos e Políticas - Vista de Boas-vindas */}
-                <div className="mt-6 text-center text-sm text-gray-800 bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-primary/20 shadow-lg">
+                <div className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-500 bg-black/5 dark:bg-black/20 backdrop-blur-md p-4 rounded-2xl border border-black/5 dark:border-white/5">
                   Ao entrar, você concorda com nossos{" "}
-                  <Link href="/terms" className="underline text-primary hover:text-primary/80 transition-colors">
+                  <Link href="/termos" className="underline text-emerald-400 hover:text-emerald-300 transition-colors">
                     Termos de Uso
                   </Link>{" "}
                   e{" "}
-                  <Link href="/privacy" className="underline text-primary hover:text-primary/80 transition-colors">
+                  <Link href="/politicas" className="underline text-emerald-400 hover:text-emerald-300 transition-colors">
                     Política de Privacidade
                   </Link>
                   .
@@ -201,14 +180,14 @@ function LoginPageContent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="bg-background/60 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl p-8 sm:p-10"
+                className="bg-black/[0.03] dark:bg-zinc-900/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 shadow-2xl rounded-3xl p-8 sm:p-10"
               >
                 <div className="mb-8 text-center">
-                  <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-xl mb-4">
-                    <Bot className="h-8 w-8 text-primary" />
+                  <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <Bot className="h-8 w-8 text-emerald-400" />
                   </div>
-                  <h2 className="text-2xl font-bold tracking-tight">Bem-vindo de volta!</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground dark:text-white">Bem-vindo de volta!</h2>
+                  <p className="mt-2 text-sm text-zinc-400">
                     Acesse sua conta para continuar.
                   </p>
                 </div>
@@ -222,36 +201,23 @@ function LoginPageContent() {
                 <LoginForm />
 
                 {isMounted && (
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 gap-3 mt-6">
                     <SocialButtons />
                   </div>
                 )}
 
-                <p className="mt-8 text-center text-sm text-muted-foreground">
+                <p className="mt-8 text-center text-sm text-zinc-400">
                   <button
                     onClick={() => setViewState('greeting')}
-                    className="text-xs hover:text-foreground transition-colors mb-4 block mx-auto underline-offset-4 hover:underline"
+                    className="text-xs hover:text-white transition-colors mb-4 block mx-auto underline-offset-4 hover:underline"
                   >
-                    ← Voltar para o início
+                    ← Voltar
                   </button>
                   Ainda não tem uma conta?{' '}
-                  <Link href="/register" className="font-semibold text-primary hover:underline decoration-primary/30 underline-offset-4">
+                  <Link href="/register" className="font-semibold text-emerald-400 hover:underline decoration-emerald-400/30 underline-offset-4">
                     Cadastre-se gratuitamente
                   </Link>
                 </p>
-
-                {/* Termos e Políticas - Vista de Formulário */}
-                <div className="mt-8 pt-6 border-t border-primary/10 text-center text-sm text-gray-800">
-                  Ao entrar, você concorda com nossos{" "}
-                  <Link href="/terms" className="underline text-primary hover:text-primary/80 transition-colors">
-                    Termos de Uso
-                  </Link>{" "}
-                  e{" "}
-                  <Link href="/privacy" className="underline text-primary hover:text-primary/80 transition-colors">
-                    Política de Privacidade
-                  </Link>
-                  .
-                </div>
               </motion.div>
             )}
           </AnimatePresence>

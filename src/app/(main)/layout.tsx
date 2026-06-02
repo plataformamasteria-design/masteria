@@ -7,6 +7,7 @@ import { getUserSession } from '@/app/actions';
 import { redirect } from 'next/navigation';
 import { AnalyticsProvider } from '@/contexts/analytics-context';
 import { LazyDevTools } from '@/components/dev/lazy-dev-tools';
+import { PrefsApplier } from '@/components/prefs-applier';
 
 
 export default async function MainLayout({
@@ -35,14 +36,17 @@ export default async function MainLayout({
   return (
     <SessionProvider value={session}>
       <AnalyticsProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <SidebarProvider>
-            <div className="flex h-screen w-full bg-background overflow-hidden">
+        <SidebarProvider>
+          <PrefsApplier />
+          <div className="flex h-screen w-full bg-background overflow-hidden relative text-foreground selection:bg-emerald-500/30">
+            {/* Luzes globais para o ambiente interno */}
+            <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+              <div className="absolute -top-[20%] -left-[10%] h-[600px] w-[600px] rounded-full bg-emerald-500/10 blur-[120px]" />
+              <div className="absolute top-[20%] -right-[10%] h-[400px] w-[400px] rounded-full bg-cyan-500/5 blur-[100px]" />
+              <div className="absolute -bottom-[10%] left-[20%] h-[600px] w-[600px] rounded-full bg-purple-500/5 blur-[150px]" />
+            </div>
+            
+            <div className="relative z-10 flex h-full w-full">
               <MobileMenuButton />
               <AppSidebar />
               <MainContent>
@@ -50,9 +54,9 @@ export default async function MainLayout({
               </MainContent>
               <MobileNav />
             </div>
-          </SidebarProvider>
-          <LazyDevTools />
-        </ThemeProvider>
+          </div>
+        </SidebarProvider>
+        <LazyDevTools />
       </AnalyticsProvider>
     </SessionProvider>
   );

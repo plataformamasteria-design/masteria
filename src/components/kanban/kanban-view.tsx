@@ -28,9 +28,14 @@ interface KanbanViewProps {
   companyTeams?: any[];
   connections?: any[];
   availableTags?: any[];
+  availableUtms?: string[];
+  availableCustomFields?: Record<string, string[]>;
+  customFieldSourceTypes?: Record<string, 'automation' | 'webhook' | 'unknown'>;
+  onSaveFilters?: () => void;
+  onClearSavedFilters?: () => void;
 }
 
-export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections, availableTags }: KanbanViewProps): JSX.Element | null {
+export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateLead, onDeleteLead, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount, companyUsers, companyTeams, connections, availableTags, availableUtms, availableCustomFields, customFieldSourceTypes, onSaveFilters, onClearSavedFilters }: KanbanViewProps): JSX.Element | null {
   const [showLossStages, setShowLossStages] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   
@@ -139,12 +144,22 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
 
     filters.tags.forEach(id => {
       const tag = availableTags?.find(t => t.id === id);
-      chips.push({ type: 'tags', id, label: tag?.name || 'Tag', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' });
+      const label = tag?.name || 'Tag';
+      chips.push({ type: 'tags', id, label: label.length > 25 ? label.substring(0, 25) + '...' : label, color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' });
     });
 
     filters.stages.forEach(id => {
       const stage = funnel?.stages?.find(s => s.id === id);
-      chips.push({ type: 'stages', id, label: stage?.title || 'Etapa', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400' });
+      const label = stage?.title || 'Etapa';
+      chips.push({ type: 'stages', id, label: label.length > 25 ? label.substring(0, 25) + '...' : label, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400' });
+    });
+
+    filters.utms?.forEach(utm => {
+      chips.push({ type: 'utms', id: utm, label: utm.length > 25 ? utm.substring(0, 25) + '...' : utm, color: 'bg-pink-500/10 text-pink-600 border-pink-500/20 dark:text-pink-400' });
+    });
+
+    filters.customFields?.forEach(cf => {
+      chips.push({ type: 'customFields', id: cf, label: cf.length > 25 ? cf.substring(0, 25) + '...' : cf, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400' });
     });
 
     return chips;
@@ -177,6 +192,11 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         companyTeams={companyTeams}
         connections={connections}
         availableTags={availableTags}
+        availableUtms={availableUtms}
+        availableCustomFields={availableCustomFields}
+        customFieldSourceTypes={customFieldSourceTypes}
+        onSaveFilters={onSaveFilters}
+        onClearSavedFilters={onClearSavedFilters}
       />
 
       {/* Active Filter Chips Row */}
@@ -197,7 +217,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
             <button
               onClick={() => onFiltersChange?.({
                 stages: [], priority: [], valueMin: null, valueMax: null,
-                dateRange: 'all', dateFrom: null, dateTo: null, assignedUsers: [], teams: [], connections: [], tags: [],
+                dateRange: 'all', dateFrom: null, dateTo: null, assignedUsers: [], teams: [], connections: [], tags: [], utms: [], customFields: [],
               })}
               className="text-[11px] text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2 transition-colors ml-1"
             >

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowLeft, Loader2, GripVertical, Plus, Trash2, AlertCircle, Link2 } from 'lucide-react';
+import { Zap, ArrowLeft, Loader2, GripVertical, Plus, Trash2, AlertCircle, Link2, Target, Cpu, Eye, Layers, Save } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
@@ -71,7 +71,9 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
   const [users, setUsers] = useState<any[]>([]);
   const [automations, setAutomations] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
-  const [availableCustomFields, setAvailableCustomFields] = useState<string[]>([]);
+  const [customFieldsBySource, setCustomFieldsBySource] = useState<Record<string, string[]>>({});
+  const [customFieldSourceTypes, setCustomFieldSourceTypes] = useState<Record<string, 'automation' | 'webhook' | 'unknown'>>({});
+  const [selectedSource, setSelectedSource] = useState<string>('Todas as Origens');
 
   const [settings, setSettings] = useState({
     autoAssignTeamId: '',
@@ -86,13 +88,15 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [funnelRes, connectionsRes, teamsRes, automationsRes, tagsRes, leadsRes] = await Promise.all([
+        const [funnelRes, connectionsRes, teamsRes, automationsRes, tagsRes, leadsRes, webhooksRes, fieldsMapRes] = await Promise.all([
           fetch(`/api/v1/kanbans/${funnelId}`),
           fetch('/api/v1/connections'),
           fetch('/api/v1/team'),
           fetch('/api/v1/automations'),
           fetch('/api/v1/tags'),
           fetch(`/api/v1/leads?boardId=${funnelId}`),
+          fetch('/api/v1/webhooks/incoming?limit=100'),
+          fetch('/api/v1/automations/fields-map').catch(() => null)
         ]);
 
         if (!funnelRes.ok) throw new Error('Falha ao carregar funil');
@@ -125,11 +129,60 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
            setTeams(Array.isArray(td.teams) ? td.teams : (Array.isArray(td) ? td : [])); 
            setUsers(Array.isArray(td.members) ? td.members : []); 
         }
-        if (automationsRes.ok) { const ad = await automationsRes.json(); setAutomations(Array.isArray(ad.data) ? ad.data : []); }
+        let automationsList: any[] = [];
+        let flowsList: any[] = [];
+        if (automationsRes.ok) { 
+          const ad = await automationsRes.json(); 
+          automationsList = Array.isArray(ad.data) ? ad.data : [];
+          setAutomations(automationsList); 
+        }
+        
+        try {
+          flowsList = await getAutomationFlowsForDropdown();
+        } catch(e) {}
+        
+        let webhooksList: any[] = [];
+        if (webhooksRes && webhooksRes.ok) {
+          const wd = await webhooksRes.json();
+          webhooksList = Array.isArray(wd.data) ? wd.data : [];
+        }
+        
+        let automationFieldsMap: Record<string, { name: string; fields: string[] }> = {};
+        if (fieldsMapRes && fieldsMapRes.ok) {
+          const fmd: { flowId: string; flowName: string; fields: string[] }[] = await fieldsMapRes.json();
+          for (const entry of (Array.isArray(fmd) ? fmd : [])) {
+            automationFieldsMap[entry.flowId] = { name: entry.flowName, fields: entry.fields };
+          }
+        }
+
         if (tagsRes.ok) { const tg = await tagsRes.json(); setTags(Array.isArray(tg) ? tg : []); }
         if (leadsRes.ok) {
           const leads = await leadsRes.json();
-          const customFieldsSet = new Set<string>();
+          const LEGACY_GROUP = '📋 Campos Legados';
+          const UTM_P = ['utm_', 'gclid', 'fbclid', 'ttclid', 'msclkid'];
+          const isTracking = (k: string) => UTM_P.some(p => k.toLowerCase().startsWith(p));
+          const sourceMap: Record<string, Set<string>> = { 'Todas as Origens': new Set() };
+
+          // Buscar mapa contactId → automação via automation_flow_executions
+          let contactAutomationMap: Record<string, { flowId: string; flowName: string }> = {};
+          try {
+            const sourcesRes = await fetch(`/api/v1/leads/automation-sources?boardId=${funnelId}`);
+            if (sourcesRes.ok) {
+              const sourcesData: { contactId: string; flowId: string; flowName: string }[] = await sourcesRes.json();
+              for (const s of (Array.isArray(sourcesData) ? sourcesData : [])) {
+                contactAutomationMap[s.contactId] = { flowId: s.flowId, flowName: s.flowName };
+              }
+            }
+          } catch (e) {
+            console.warn('[edit/page] automation-sources fetch failed:', e);
+          }
+
+          // Lookup rápido: flowId → campos definidos pela automação
+          const automationDefinedFields = new Map<string, Set<string>>();
+          for (const [flowId, entry] of Object.entries(automationFieldsMap)) {
+            automationDefinedFields.set(flowId, new Set(entry.fields));
+          }
+
           if (Array.isArray(leads)) {
             leads.forEach((lead: any) => {
               let cf = lead.contact?.customFields;
@@ -137,12 +190,76 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
                 try { cf = JSON.parse(cf); } catch(e) { cf = null; }
               }
               if (cf && typeof cf === 'object') {
-                Object.keys(cf).forEach(key => customFieldsSet.add(key));
+                const keys = Object.keys(cf).filter(k => !isTracking(k));
+                if (keys.length === 0) return;
+
+                const contactId = lead.contactId || lead.contact?.id;
+                const execEntry = contactId ? contactAutomationMap[contactId] : undefined;
+
+                if (execEntry) {
+                  // Separar: campos definidos pela automação vs legados
+                  const defined = automationDefinedFields.get(execEntry.flowId) || new Set<string>();
+                  const automationKeys = keys.filter(k => defined.has(k));
+                  const legacyKeys     = keys.filter(k => !defined.has(k));
+
+                  if (automationKeys.length > 0) {
+                    if (!sourceMap[execEntry.flowName]) sourceMap[execEntry.flowName] = new Set();
+                    automationKeys.forEach(k => {
+                      sourceMap[execEntry.flowName].add(k);
+                      sourceMap['Todas as Origens'].add(k);
+                    });
+                  }
+                  if (legacyKeys.length > 0) {
+                    if (!sourceMap[LEGACY_GROUP]) sourceMap[LEGACY_GROUP] = new Set();
+                    legacyKeys.forEach(k => {
+                      sourceMap[LEGACY_GROUP].add(k);
+                      sourceMap['Todas as Origens'].add(k);
+                    });
+                  }
+                } else {
+                  // Sem execução de automação → tudo vai para Campos Legados
+                  if (!sourceMap[LEGACY_GROUP]) sourceMap[LEGACY_GROUP] = new Set();
+                  keys.forEach(key => {
+                    sourceMap[LEGACY_GROUP].add(key);
+                    sourceMap['Todas as Origens'].add(key);
+                  });
+                }
               }
             });
           }
-          setAvailableCustomFields(Array.from(customFieldsSet).sort());
+
+          // Complementar com campos das automações V4 (mesmo sem leads)
+          for (const [, entry] of Object.entries(automationFieldsMap)) {
+            if (entry.fields.length === 0) continue;
+            if (!sourceMap[entry.name]) sourceMap[entry.name] = new Set();
+            entry.fields.forEach(f => {
+              sourceMap[entry.name].add(f);
+              sourceMap['Todas as Origens'].add(f);
+            });
+          }
+
+          const formattedMap: Record<string, string[]> = {};
+          formattedMap['Todas as Origens'] = Array.from(sourceMap['Todas as Origens']).sort();
+          // Automações em ordem alfabética
+          Object.keys(sourceMap)
+            .filter(k => k !== 'Todas as Origens' && k !== LEGACY_GROUP)
+            .sort()
+            .forEach(k => { formattedMap[k] = Array.from(sourceMap[k]).sort(); });
+          // Campos Legados sempre por último
+          if (sourceMap[LEGACY_GROUP]) {
+            formattedMap[LEGACY_GROUP] = Array.from(sourceMap[LEGACY_GROUP]).sort();
+          }
+          setCustomFieldsBySource(formattedMap);
+
+          // Montar mapa de tipos de origem
+          const types: Record<string, 'automation' | 'webhook' | 'unknown'> = {};
+          for (const entry of Object.values(automationFieldsMap)) { types[entry.name] = 'automation'; }
+          for (const entry of Object.values(contactAutomationMap)) { types[entry.flowName] = 'automation'; }
+          for (const w of webhooksList) { types[w.name] = 'webhook'; }
+          types[LEGACY_GROUP] = 'unknown'; // Campos Legados sempre 'unknown'
+          setCustomFieldSourceTypes(types);
         }
+
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -173,7 +290,7 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
 
   const toggleCustomField = (field: string) => {
     setSettings(prev => {
-      const current = prev.visibleCustomFields || availableCustomFields;
+      const current = prev.visibleCustomFields || (customFieldsBySource['Todas as Origens'] || []);
       const next = current.includes(field) 
         ? current.filter(f => f !== field)
         : [...current, field];
@@ -308,352 +425,409 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
   }
 
   return (
-    <div className="container max-w-4xl py-8">
-      <div className="mb-6">
-        <Link href={`/kanban/${funnelId}`}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para o Funil
+    <div className="min-h-screen bg-background text-foreground pb-24">
+      {/* HEADER FLUTUANTE (ACTION BAR) */}
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl border-b border-zinc-200 dark:border-white/5 py-4 px-6 md:px-12 flex items-center justify-between shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-4">
+          <Link href={`/kanban/${funnelId}`}>
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-zinc-100 dark:hover:bg-white/10 text-zinc-500 dark:text-muted-foreground hover:text-zinc-900 dark:hover:text-white">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl md:text-2xl font-black tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+              <span className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-500 bg-clip-text text-transparent">Configuração de Funil</span>
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">{funnelName || 'Carregando...'}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSubmit} disabled={loading} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] rounded-full px-6 transition-all duration-300">
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Salvar Funil
           </Button>
-        </Link>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Editar Funil Kanban</CardTitle>
-          <CardDescription>
-            Configure os estágios e automações do seu funil
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome do Funil *</Label>
-              <Input
-                id="name"
-                placeholder="Ex: Pipeline de Vendas"
-                value={funnelName}
-                onChange={(e) => setFunnelName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="funnelType">Tipo de Funil (opcional)</Label>
-              <Select value={funnelType} onValueChange={setFunnelType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de funil..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {FUNNEL_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {funnelType && (
-                <p className="text-sm text-muted-foreground">
-                  {FUNNEL_TYPES.find(t => t.value === funnelType)?.description}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="objective">Objetivo (opcional)</Label>
-              <Input
-                id="objective"
-                placeholder="Ex: Aumentar conversão em 20%"
-                value={objective}
-                onChange={(e) => setObjective(e.target.value)}
-              />
-            </div>
-
-            {/* Conexões Vinculadas */}
-            {availableConnections.length > 0 && (
-              <div className="space-y-3">
-                <div>
-                  <Label className="flex items-center gap-2">
-                    <Link2 className="h-4 w-4" />
-                    Conexões Vinculadas (opcional)
-                  </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Contatos que chegarem por essas conexões serão adicionados automaticamente como leads neste funil
-                  </p>
-                </div>
-                <div className="space-y-2 rounded-md border p-3">
-                  {availableConnections.map(conn => (
-                    <label
-                      key={conn.id}
-                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                    >
-                      <Checkbox
-                        checked={selectedConnectionIds.includes(conn.id)}
-                        onCheckedChange={() => toggleConnection(conn.id)}
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{conn.config_name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {conn.phoneNumber || conn.phone || 'Sem número'} · {conn.connectionType === 'meta_api' ? 'Meta API' : 'Baileys'}
-                        </span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Configurações de Entrada do Funil */}
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="text-lg font-semibold">Automações de Entrada (Opcional)</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                Configure o que deve acontecer automaticamente quando um lead entrar neste funil.
-              </p>
+      <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8">
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            
+            {/* COLUNA ESQUERDA: IDENTIDADE E FONTES */}
+            <div className="xl:col-span-4 space-y-6">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Atribuir a Usuário Específico</Label>
-                  <Select value={settings.autoAssignUserId} onValueChange={(val) => setSettings(s => ({ ...s, autoAssignUserId: val === 'none' ? '' : val }))}>
-                    <SelectTrigger><SelectValue placeholder="Nenhum Usuário..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum Usuário</SelectItem>
-                      {users.map(u => <SelectItem key={u.id || u.user?.id} value={u.id || u.user?.id}>{u.name || u.user?.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* BENTO BOX 1: Identidade */}
+              <div className="bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-3xl p-6 shadow-sm dark:shadow-2xl backdrop-blur-md">
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white/90 mb-6 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> Identidade do Funil
+                </h2>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-xs text-zinc-500 dark:text-muted-foreground uppercase tracking-wider">Nome do Funil *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Ex: Pipeline de Vendas"
+                      value={funnelName}
+                      onChange={(e) => setFunnelName(e.target.value)}
+                      required
+                      className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 focus:bg-white dark:focus:bg-white/[0.05] transition-colors"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Disparar Fluxo de Automação</Label>
-                  <Select value={settings.autoTriggerAutomationId} onValueChange={(val) => setSettings(s => ({ ...s, autoTriggerAutomationId: val === 'none' ? '' : val }))}>
-                    <SelectTrigger><SelectValue placeholder="Nenhum Fluxo..." /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum Fluxo</SelectItem>
-                      {automations.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label htmlFor="funnelType" className="text-xs text-zinc-500 dark:text-muted-foreground uppercase tracking-wider">Tipo de Funil</Label>
+                    <Select value={funnelType} onValueChange={setFunnelType}>
+                      <SelectTrigger className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 focus:bg-white dark:focus:bg-white/[0.05] transition-colors">
+                        <SelectValue placeholder="Selecione o tipo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FUNNEL_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {funnelType && (
+                      <p className="text-[11px] text-emerald-400/70 font-medium">
+                        {FUNNEL_TYPES.find(t => t.value === funnelType)?.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="objective" className="text-xs text-zinc-500 dark:text-muted-foreground uppercase tracking-wider">Objetivo (Opcional)</Label>
+                    <Input
+                      id="objective"
+                      placeholder="Ex: Aumentar conversão em 20%"
+                      value={objective}
+                      onChange={(e) => setObjective(e.target.value)}
+                      className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 focus:bg-white dark:focus:bg-white/[0.05] transition-colors"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {tags.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <Label>Adicionar Tags Automaticamente</Label>
-                  <div className="flex flex-wrap gap-2 p-3 border rounded-md">
-                    {tags.map(t => (
-                      <label key={t.id} className="flex items-center gap-2 cursor-pointer bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors text-sm">
-                        <Checkbox 
-                          checked={settings.autoTags.includes(t.id)} 
-                          onCheckedChange={() => toggleTag(t.id)} 
+              {/* BENTO BOX 2: Conexões */}
+              {availableConnections.length > 0 && (
+                <div className="bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-3xl p-6 shadow-sm dark:shadow-2xl backdrop-blur-md">
+                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-white/90 mb-2 flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> Fontes de Captação
+                  </h2>
+                  <p className="text-[13px] text-zinc-500 dark:text-muted-foreground mb-4">Contatos que chegarem por essas conexões entrarão automaticamente no funil.</p>
+                  
+                  <div className="space-y-2">
+                    {availableConnections.map(conn => (
+                      <label
+                        key={conn.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+                          selectedConnectionIds.includes(conn.id)
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500/30 shadow-[inset_0_0_10px_rgba(16,185,129,0.1)]'
+                            : 'bg-zinc-50 dark:bg-zinc-900/40 border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedConnectionIds.includes(conn.id)}
+                          onCheckedChange={() => toggleConnection(conn.id)}
+                          className={selectedConnectionIds.includes(conn.id) ? 'data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:bg-emerald-500 data-[state=checked]:text-white' : ''}
                         />
-                        <div className="flex items-center gap-1">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: t.color || '#cbd5e1' }} />
-                          {t.name}
+                        <div className="flex flex-col">
+                          <span className={`text-sm font-semibold ${selectedConnectionIds.includes(conn.id) ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white/80'}`}>{conn.config_name}</span>
+                          <span className="text-[11px] text-zinc-500 dark:text-muted-foreground">
+                            {conn.phoneNumber || conn.phone || 'Sem número'} · {conn.connectionType === 'meta_api' ? 'Meta API' : 'Baileys'}
+                          </span>
                         </div>
                       </label>
                     ))}
                   </div>
                 </div>
               )}
+
+              {/* BENTO BOX 3: Visibilidade de Campos */}
+              <div className="bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-3xl p-6 shadow-sm dark:shadow-2xl backdrop-blur-md">
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white/90 mb-2 flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> Interface dos Cards
+                </h2>
+                <p className="text-[13px] text-zinc-500 dark:text-muted-foreground mb-4">Selecione quais campos personalizados exibir diretamente na visualização Kanban.</p>
+                
+                {!customFieldsBySource['Todas as Origens'] || customFieldsBySource['Todas as Origens'].length === 0 ? (
+                  <div className="text-[13px] text-zinc-500 dark:text-muted-foreground italic p-4 rounded-xl border border-zinc-200 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900/30">
+                    Nenhum campo personalizado encontrado nos leads atuais deste funil.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Button type="button" variant="ghost" size="sm" className="text-xs h-7 px-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-white/70" onClick={() => setSettings(s => ({ ...s, visibleCustomFields: [...(customFieldsBySource['Todas as Origens'] || [])] }))}>
+                          Todos
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" className="text-xs h-7 px-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-white/70" onClick={() => setSettings(s => ({ ...s, visibleCustomFields: [] }))}>
+                          Nenhum
+                        </Button>
+                      </div>
+                      <div className="w-full md:w-64">
+                         <Select value={selectedSource} onValueChange={setSelectedSource}>
+                            <SelectTrigger className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 h-8 text-xs">
+                               <SelectValue placeholder="Filtrar por formulário/origem..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.keys(customFieldsBySource).map(source => {
+                                  const srcType = customFieldSourceTypes[source];
+                                  const icon = source === 'Todas as Origens' ? '🔍'
+                                    : srcType === 'automation' ? '⚡'
+                                    : srcType === 'webhook' ? '🔗'
+                                    : '📋';
+                                  return (
+                                    <SelectItem key={source} value={source} className="text-xs">
+                                      <span className="flex items-center gap-1.5">
+                                        <span>{icon}</span>
+                                        <span className="truncate max-w-[160px]">{source}</span>
+                                        <span className="text-muted-foreground flex-shrink-0">({customFieldsBySource[source].length})</span>
+                                      </span>
+                                    </SelectItem>
+                                  );
+                                })}
+                             </SelectContent>
+                         </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto p-2 bg-zinc-50 dark:bg-black/20 rounded-xl border border-zinc-200 dark:border-white/5">
+                      {(customFieldsBySource[selectedSource] || customFieldsBySource['Todas as Origens'] || []).map(field => {
+                        const isChecked = settings.visibleCustomFields === undefined || settings.visibleCustomFields.includes(field);
+                        return (
+                          <label key={field} className={`flex items-center gap-2 cursor-pointer p-2 px-3 rounded-lg transition-all text-xs border ${
+                            isChecked
+                              ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-medium'
+                              : 'bg-zinc-100 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-muted-foreground hover:bg-zinc-200 dark:hover:bg-white/5'
+                          }`}>
+                            <Checkbox 
+                              checked={isChecked}
+                              onCheckedChange={() => toggleCustomField(field)}
+                              className="h-3 w-3"
+                            />
+                            {field.length > 35 ? field.substring(0, 35) + '...' : field}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t">
-              <Label className="text-lg font-semibold">Visibilidade de Campos Personalizados</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                Selecione quais campos personalizados devem ficar visíveis nos cards deste funil. 
-                Isso ajuda a manter o card limpo e focado nas informações mais importantes.
-              </p>
+            {/* COLUNA DIREITA: PIPELINE E INTELIGÊNCIA */}
+            <div className="xl:col-span-8 space-y-6">
               
-              {availableCustomFields.length === 0 ? (
-                <div className="text-sm text-muted-foreground italic p-4 border rounded-md bg-muted/20">
-                  Nenhum campo personalizado encontrado nos leads atuais deste funil. 
-                  À medida que leads com campos personalizados entrarem, eles aparecerão aqui para configuração.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setSettings(s => ({ ...s, visibleCustomFields: [...availableCustomFields] }))}>
-                      Marcar Todos
-                    </Button>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setSettings(s => ({ ...s, visibleCustomFields: [] }))}>
-                      Desmarcar Todos
-                    </Button>
+              {/* BENTO BOX 4: Regras de Roteamento Inteligente */}
+              <div className="bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-3xl p-6 shadow-sm dark:shadow-2xl backdrop-blur-md">
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-white/90 mb-2 flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> Inteligência de Entrada (Roteamento)
+                </h2>
+                <p className="text-[13px] text-zinc-500 dark:text-muted-foreground mb-6">Automações executadas instantaneamente assim que um lead entrar neste funil.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-zinc-500 dark:text-muted-foreground uppercase tracking-wider">Atribuir a Usuário Padrão</Label>
+                    <Select value={settings.autoAssignUserId} onValueChange={(val) => setSettings(s => ({ ...s, autoAssignUserId: val === 'none' ? '' : val }))}>
+                      <SelectTrigger className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 focus:bg-white dark:focus:bg-white/[0.05]"><SelectValue placeholder="Nenhum..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Deixar sem dono</SelectItem>
+                        {users.map(u => <SelectItem key={u.id || u.user?.id} value={u.id || u.user?.id}>{u.name || u.user?.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="flex flex-wrap gap-2 p-3 border rounded-md">
-                    {availableCustomFields.map(field => {
-                    const isChecked = settings.visibleCustomFields === undefined || settings.visibleCustomFields.includes(field);
-                    return (
-                      <label key={field} className="flex items-center gap-2 cursor-pointer bg-muted/50 p-2 rounded-md hover:bg-muted transition-colors text-sm">
-                        <Checkbox 
-                          checked={isChecked}
-                          onCheckedChange={() => toggleCustomField(field)}
-                        />
-                        <span className="font-medium">{field}</span>
-                      </label>
-                    );
-                  })}
-                  </div>
-                </div>
-              )}
-            </div>
 
-            <div className="space-y-4 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <Label>Estágios do Funil *</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addStage}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Estágio
-                </Button>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-zinc-500 dark:text-muted-foreground uppercase tracking-wider">Disparar Automação Padrão</Label>
+                    <Select value={settings.autoTriggerAutomationId} onValueChange={(val) => setSettings(s => ({ ...s, autoTriggerAutomationId: val === 'none' ? '' : val }))}>
+                      <SelectTrigger className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 focus:bg-white dark:focus:bg-white/[0.05]"><SelectValue placeholder="Nenhum Fluxo..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum Fluxo</SelectItem>
+                        {automations.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {tags.length > 0 && (
+                  <div className="space-y-2 pt-4 border-t border-zinc-200 dark:border-white/5">
+                    <Label className="text-xs text-zinc-500 dark:text-muted-foreground uppercase tracking-wider">Tagueamento Automático</Label>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {tags.map(t => (
+                        <label key={t.id} className={`flex items-center gap-2 cursor-pointer p-2 px-3 rounded-lg transition-all text-xs border ${
+                          settings.autoTags.includes(t.id)
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-white shadow-[inset_0_0_10px_rgba(16,185,129,0.1)]'
+                            : 'bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 text-zinc-600 dark:text-muted-foreground hover:bg-zinc-100 dark:hover:bg-white/5'
+                        }`}>
+                          <Checkbox 
+                            checked={settings.autoTags.includes(t.id)} 
+                            onCheckedChange={() => toggleTag(t.id)} 
+                            className="h-3 w-3"
+                          />
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.color || '#cbd5e1' }} />
+                          {t.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Tipos Semânticos:</strong> Configure automações inteligentes marcando etapas especiais.
-                  Por exemplo, marque uma etapa como &quot;Reunião Marcada&quot; para que leads sejam movidos automaticamente
-                  quando a IA detectar agendamento de reunião na conversa.
-                </AlertDescription>
-              </Alert>
+              {/* BENTO BOX 5: Pipeline Builder */}
+              <div className="bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 rounded-3xl p-6 shadow-sm dark:shadow-2xl backdrop-blur-md">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
+                  <h2 className="text-sm font-semibold text-zinc-900 dark:text-white/90 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> Construtor de Estágios
+                  </h2>
+                  <Button type="button" variant="outline" size="sm" onClick={addStage} className="bg-zinc-50 dark:bg-white/5 border-zinc-200 dark:border-white/10 hover:bg-zinc-100 dark:hover:bg-white/10 text-xs h-8 rounded-full">
+                    <Plus className="h-3 w-3 mr-1" /> Adicionar Estágio
+                  </Button>
+                </div>
+                <p className="text-[13px] text-zinc-500 dark:text-muted-foreground mb-6">Arraste para reordenar. Defina o tipo de encerramento e os gatilhos semânticos da inteligência artificial.</p>
 
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="stages">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="space-y-3"
-                    >
-                      {stages.map((stage, index) => (
-                        <Draggable key={stage.id} draggableId={stage.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              style={provided.draggableProps.style}
-                              className={`space-y-2 p-4 border rounded-lg transition-colors ${snapshot.isDragging
-                                ? 'bg-primary/10 border-primary shadow-lg'
-                                : 'bg-muted/30'
+                <Alert className="bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-200 mb-6">
+                  <AlertCircle className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                  <AlertDescription className="text-xs">
+                    <strong>Dica de Automação:</strong> Associe estágios a &quot;Tipos Semânticos&quot; (Ex: Reunião Marcada) para que a IA do bot mova o card automaticamente quando identificar o evento na conversa do lead.
+                  </AlertDescription>
+                </Alert>
+
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="stages">
+                    {(provided) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="space-y-3"
+                      >
+                        {stages.map((stage, index) => (
+                          <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                style={provided.draggableProps.style}
+                                className={`group relative p-4 border rounded-2xl transition-all duration-300 ${
+                                  snapshot.isDragging
+                                    ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)] dark:shadow-[0_0_30px_rgba(16,185,129,0.3)] scale-[1.02] z-50 backdrop-blur-xl'
+                                    : 'bg-white dark:bg-zinc-900/60 border-zinc-200 dark:border-white/5 hover:border-zinc-300 dark:hover:bg-zinc-900/80 dark:hover:border-white/10 shadow-sm'
                                 }`}
-                            >
-                              <div className="flex gap-2 items-start">
-                                <div {...provided.dragHandleProps} className="pt-5 cursor-grab active:cursor-grabbing">
-                                  <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                                <div className="flex-1">
-                                  <Label className="text-xs text-muted-foreground">Título do Estágio</Label>
-                                  <Input
-                                    placeholder={`Estágio ${index + 1}`}
-                                    value={stage.title}
-                                    onChange={(e) => updateStage(stage.id, 'title', e.target.value)}
-                                    required
-                                  />
-                                </div>
-                                <div className="w-[140px]">
-                                  <Label className="text-xs text-muted-foreground">Tipo</Label>
-                                  <Select
-                                    value={stage.type}
-                                    onValueChange={(value: StageType) => updateStage(stage.id, 'type', value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="NEUTRAL">Neutro</SelectItem>
-                                      <SelectItem value="WIN">Vitória</SelectItem>
-                                      <SelectItem value="LOSS">Perda</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="pt-5">
+                              >
+                                {/* Top Row: Drag Handle, Name, Type, Delete */}
+                                <div className="flex gap-3 items-center mb-4">
+                                  <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-zinc-400 dark:text-muted-foreground hover:text-zinc-700 dark:hover:text-white transition-colors p-1">
+                                    <GripVertical className="h-5 w-5" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <Input
+                                      placeholder={`Nome do Estágio ${index + 1}`}
+                                      value={stage.title}
+                                      onChange={(e) => updateStage(stage.id, 'title', e.target.value)}
+                                      required
+                                      className="bg-transparent border-0 border-b border-transparent focus-visible:ring-0 focus-visible:border-emerald-500 rounded-none px-1 text-base font-semibold text-zinc-900 dark:text-white/90 shadow-none h-8 transition-colors placeholder:text-zinc-400 dark:placeholder:text-muted-foreground/30"
+                                    />
+                                  </div>
+                                  <div className="w-[130px]">
+                                    <Select
+                                      value={stage.type}
+                                      onValueChange={(value: StageType) => updateStage(stage.id, 'type', value)}
+                                    >
+                                      <SelectTrigger className={`h-8 text-xs font-medium border-0 shadow-none ${
+                                        stage.type === 'WIN' ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                        stage.type === 'LOSS' ? 'bg-red-50 dark:bg-red-500/20 text-red-600 dark:text-red-400' :
+                                        'bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-muted-foreground'
+                                      }`}>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="NEUTRAL" className="text-xs">Neutro</SelectItem>
+                                        <SelectItem value="WIN" className="text-xs text-emerald-500">Vitória (Win)</SelectItem>
+                                        <SelectItem value="LOSS" className="text-xs text-red-500">Perda (Loss)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
+                                    className="h-8 w-8 text-zinc-400 dark:text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={() => removeStage(stage.id)}
                                     disabled={stages.length <= 1}
                                   >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
-                              </div>
 
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Tipo Semântico (Automação)</Label>
-                                  <Select
-                                    value={stage.semanticType || 'NONE'}
-                                    onValueChange={(value: SemanticType | 'NONE') => updateStage(stage.id, 'semanticType', value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="NONE">Nenhum</SelectItem>
-                                      {SEMANTIC_TYPES.map((st) => (
-                                        <SelectItem key={st.value} value={st.value}>
-                                          {st.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label className="text-xs text-muted-foreground flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> Automação ao Entrar na Etapa</Label>
-                                  <Select
-                                    value={stage.entryAutomationId || 'none'}
-                                    onValueChange={(value: string) => updateStage(stage.id, 'entryAutomationId', value === 'none' ? undefined : value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Nenhum fluxo selecionado" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">Nenhum fluxo</SelectItem>
-                                      {automations.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                              <div className="pt-2 border-t border-muted-foreground/10 flex items-center">
-                                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
-                                  <input 
-                                    type="radio" 
-                                    name="defaultEntryStage" 
-                                    checked={settings.defaultEntryStageId === stage.id || (!settings.defaultEntryStageId && index === 0)}
-                                    onChange={() => setSettings(s => ({ ...s, defaultEntryStageId: stage.id }))}
-                                    className="accent-primary w-4 h-4"
-                                  />
-                                  Definir como Etapa Padrão de Entrada (Leads Novos)
-                                </label>
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            </div>
+                                {/* Bottom Row: Semantic Type & Automation & Default Check */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-zinc-50 dark:bg-black/40 rounded-xl border border-zinc-200 dark:border-white/5">
+                                  <div className="space-y-1.5">
+                                    <Label className="text-[10px] text-zinc-500 dark:text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                      <Target className="w-3 h-3" /> Evento IA (Semântico)
+                                    </Label>
+                                    <Select
+                                      value={stage.semanticType || 'NONE'}
+                                      onValueChange={(value: SemanticType | 'NONE') => updateStage(stage.id, 'semanticType', value)}
+                                    >
+                                      <SelectTrigger className="h-7 text-xs bg-white dark:bg-white/5 border-zinc-200 dark:border-white/5 focus:bg-zinc-50 dark:focus:bg-white/10">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="NONE" className="text-xs">Desabilitado</SelectItem>
+                                        {SEMANTIC_TYPES.filter(st => st.value !== 'NONE').map((st) => (
+                                          <SelectItem key={st.value} value={st.value} className="text-xs">
+                                            {st.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
 
-            <div className="flex gap-3 justify-end pt-4 border-t">
-              <Link href={`/kanban/${funnelId}`}>
-                <Button type="button" variant="outline">
-                  Cancelar
-                </Button>
-              </Link>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  'Salvar Alterações'
-                )}
-              </Button>
+                                  <div className="space-y-1.5">
+                                    <Label className="text-[10px] text-zinc-500 dark:text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                      <Zap className="w-3 h-3 text-amber-500" /> Disparo ao Entrar
+                                    </Label>
+                                    <Select
+                                      value={stage.entryAutomationId || 'none'}
+                                      onValueChange={(value: string) => updateStage(stage.id, 'entryAutomationId', value === 'none' ? undefined : value)}
+                                    >
+                                      <SelectTrigger className="h-7 text-xs bg-white dark:bg-white/5 border-zinc-200 dark:border-white/5 focus:bg-zinc-50 dark:focus:bg-white/10">
+                                        <SelectValue placeholder="Sem disparo" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none" className="text-xs">Nenhum fluxo</SelectItem>
+                                        {automations.map(a => <SelectItem key={a.id} value={a.id} className="text-xs">{a.name}</SelectItem>)}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                <div className="mt-3 flex items-center px-1">
+                                  <label className="flex items-center gap-2 cursor-pointer text-[11px] font-medium text-zinc-500 dark:text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                                    <input 
+                                      type="radio" 
+                                      name="defaultEntryStage" 
+                                      checked={settings.defaultEntryStageId === stage.id || (!settings.defaultEntryStageId && index === 0)}
+                                      onChange={() => setSettings(s => ({ ...s, defaultEntryStageId: stage.id }))}
+                                      className="accent-emerald-500 w-3.5 h-3.5"
+                                    />
+                                    Etapa Padrão (Entrada de Novos Leads)
+                                  </label>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

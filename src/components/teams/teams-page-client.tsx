@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Users, Settings2, Trash2, ShieldAlert, Edit2, PauseCircle, PlayCircle, MoreVertical } from "lucide-react";
-import { motion } from "framer-motion";
+import { m as motion } from 'framer-motion';
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,38 +103,40 @@ export function TeamsPageClient({ initialTeams, allUsers }: { initialTeams: any[
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Header / Metrics */}
-            <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-border shadow-sm">
+            <div className="flex justify-between items-center glass-card rounded-[2rem] overflow-hidden p-6">
                 <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Users className="h-5 w-5 text-primary" />
+                    <div className="h-12 w-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+                        <Users className="h-6 w-6 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-card-foreground">{teams.length} Departamento(s)</h3>
-                        <p className="text-xs text-muted-foreground">Times criados na plataforma</p>
+                        <h3 className="text-xl font-bold tracking-tight text-foreground">{teams.length} Departamento(s)</h3>
+                        <p className="text-sm font-medium text-muted-foreground">Times criados na plataforma</p>
                     </div>
                 </div>
 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2 shadow-lg shadow-primary/20"><Plus className="h-4 w-4" /> Criar Equipe</Button>
+                        <Button className="h-11 rounded-2xl px-6 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold tracking-wide shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all active:scale-95 hover:shadow-[0_0_25px_rgba(16,185,129,0.2)]">
+                            <Plus className="mr-2 h-5 w-5 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" /> Criar Equipe
+                        </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="bg-zinc-950/90 backdrop-blur-3xl border-white/10 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[2rem]">
                         <DialogHeader>
                             <DialogTitle>Novo Departamento</DialogTitle>
                             <DialogDescription>Crie uma nova área de atendimento para separar as tratativas.</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 pt-4">
                             <div className="space-y-2">
-                                <Label>Nome da Equipe</Label>
-                                <Input value={newTeamName} onChange={e => setNewTeamName(e.target.value)} placeholder="Ex: Comercial, Suporte Avançado..." />
+                                <Label className="text-zinc-300 font-semibold">Nome da Equipe</Label>
+                                <Input className="bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-emerald-500/50" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} placeholder="Ex: Comercial, Suporte Avançado..." />
                             </div>
                             <div className="space-y-2">
-                                <Label>Descrição (Opcional)</Label>
-                                <Input value={newTeamDesc} onChange={e => setNewTeamDesc(e.target.value)} placeholder="Agentes de Nível 1" />
+                                <Label className="text-zinc-300 font-semibold">Descrição (Opcional)</Label>
+                                <Input className="bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-emerald-500/50" value={newTeamDesc} onChange={e => setNewTeamDesc(e.target.value)} placeholder="Agentes de Nível 1" />
                             </div>
-                            <Button onClick={handleCreateTeam} disabled={isCreating} className="w-full">
+                            <Button onClick={handleCreateTeam} disabled={isCreating} className="w-full h-11 rounded-xl bg-emerald-500 text-black font-bold hover:bg-emerald-400 mt-2">
                                 {isCreating ? "Criando..." : "Confirmar e Salvar"}
                             </Button>
                         </div>
@@ -159,32 +161,32 @@ export function TeamsPageClient({ initialTeams, allUsers }: { initialTeams: any[
                             hidden: { opacity: 0, y: 15, scale: 0.98 },
                             show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
                         }}
-                        className="group relative bg-card border border-border/60 hover:border-primary/30 transition-all duration-300 rounded-2xl p-6 shadow-sm hover:shadow-md"
+                        className="group relative glass-card hover:border-emerald-500/30 hover:bg-black/[0.02] dark:hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] transition-all duration-300 rounded-[2rem] p-6 flex flex-col"
                     >
                         <div className="flex justify-between items-start mb-5">
-                            <div className="space-y-1.5 pr-6">
-                                <h3 className="text-lg font-bold flex items-center gap-2.5 text-card-foreground">
+                            <div className="space-y-2 pr-6">
+                                <h3 className="text-xl font-bold tracking-tight flex items-center gap-2.5 text-foreground drop-shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                                     {t.name}
                                     {!t.active && (
-                                        <span className="flex items-center gap-1.5 bg-destructive/10 border border-destructive/20 text-destructive text-[10px] px-2.5 py-0.5 rounded-full font-semibold tracking-wide">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                                        <span className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)] text-[10px] px-2.5 py-0.5 rounded-full font-semibold tracking-wide">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.8)]" />
                                             Inativo
                                         </span>
                                     )}
                                 </h3>
-                                <p className="text-[13px] text-muted-foreground line-clamp-1 font-medium">{t.description || "Nenhuma descrição fornecida."}</p>
+                                <p className="text-sm font-medium text-zinc-400 line-clamp-2">{t.description || "Nenhuma descrição fornecida."}</p>
                             </div>
 
                             {/* Options Dropdown */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 -mr-2 -mt-2">
-                                        <MoreVertical className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground border border-transparent hover:border-black/10 dark:hover:border-white/10 hover:bg-black/[0.02] dark:hover:bg-white/[0.05] rounded-xl shrink-0 -mr-2 -mt-2 transition-all">
+                                        <MoreVertical className="h-5 w-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuLabel>Opções da Equipe</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
+                                <DropdownMenuContent align="end" className="w-48 bg-zinc-900 border-white/10 text-zinc-200 rounded-xl shadow-xl">
+                                    <DropdownMenuLabel className="text-zinc-400">Opções da Equipe</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-white/10" />
                                     <DropdownMenuItem onClick={() => openEditModal(t)} className="gap-2 cursor-pointer">
                                         <Edit2 className="h-4 w-4" /> Editar Detalhes
                                     </DropdownMenuItem>
@@ -196,14 +198,14 @@ export function TeamsPageClient({ initialTeams, allUsers }: { initialTeams: any[
                                         )}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => setTeamToDelete(t.id)} className="gap-2 text-destructive focus:text-destructive cursor-pointer">
+                                    <DropdownMenuItem onClick={() => setTeamToDelete(t.id)} className="gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10 cursor-pointer">
                                         <Trash2 className="h-4 w-4" /> Excluir Departamento
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
 
-                        <div className="flex items-center justify-between border-t border-border/40 pt-4 mt-2">
+                        <div className="mt-auto border-t border-white/5 pt-5 flex items-center justify-between">
                             <TeamMembersDialog team={t} allUsers={allUsers} />
                             
                             {/* Secondary visual indicator, completely optional now that we have Dropdown */}
@@ -217,34 +219,34 @@ export function TeamsPageClient({ initialTeams, allUsers }: { initialTeams: any[
                 {teams.length === 0 && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                        className="col-span-full py-16 flex flex-col items-center justify-center border-2 border-dashed border-border/80 rounded-2xl bg-muted/30"
+                        className="col-span-full py-16 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-[2rem] bg-white/[0.01]"
                     >
-                        <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4 border border-border">
-                            <ShieldAlert className="h-8 w-8 text-muted-foreground" />
+                        <div className="h-16 w-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+                            <ShieldAlert className="h-8 w-8 text-zinc-400" />
                         </div>
-                        <h3 className="font-semibold text-card-foreground text-lg">Nenhum departamento</h3>
-                        <p className="text-sm text-muted-foreground mt-1">Crie sua primeira equipe para segmentar os atendimentos.</p>
+                        <h3 className="text-lg font-bold text-white tracking-tight">Nenhum departamento</h3>
+                        <p className="text-sm font-medium text-zinc-400 mt-1">Crie sua primeira equipe para segmentar os atendimentos.</p>
                     </motion.div>
                 )}
             </motion.div>
 
             {/* Modal de Edição */}
             <Dialog open={!!teamToEdit} onOpenChange={(open) => !open && setTeamToEdit(null)}>
-                <DialogContent>
+                <DialogContent className="bg-zinc-950/90 backdrop-blur-3xl border-white/10 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[2rem]">
                     <DialogHeader>
                         <DialogTitle>Editar Departamento</DialogTitle>
                         <DialogDescription>Altere as informações da equipe.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                         <div className="space-y-2">
-                            <Label>Nome da Equipe</Label>
-                            <Input value={editTeamName} onChange={e => setEditTeamName(e.target.value)} />
+                            <Label className="text-zinc-300 font-semibold">Nome da Equipe</Label>
+                            <Input className="bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-emerald-500/50" value={editTeamName} onChange={e => setEditTeamName(e.target.value)} />
                         </div>
                         <div className="space-y-2">
-                            <Label>Descrição (Opcional)</Label>
-                            <Input value={editTeamDesc} onChange={e => setEditTeamDesc(e.target.value)} />
+                            <Label className="text-zinc-300 font-semibold">Descrição (Opcional)</Label>
+                            <Input className="bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-emerald-500/50" value={editTeamDesc} onChange={e => setEditTeamDesc(e.target.value)} />
                         </div>
-                        <Button onClick={handleEditTeam} disabled={isEditing} className="w-full">
+                        <Button onClick={handleEditTeam} disabled={isEditing} className="w-full h-11 rounded-xl bg-emerald-500 text-black font-bold hover:bg-emerald-400 mt-2">
                             {isEditing ? "Salvando..." : "Salvar Alterações"}
                         </Button>
                     </div>
@@ -253,16 +255,16 @@ export function TeamsPageClient({ initialTeams, allUsers }: { initialTeams: any[
 
             {/* Modal de Exclusão */}
             <AlertDialog open={!!teamToDelete} onOpenChange={(open) => !open && setTeamToDelete(null)}>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-zinc-950/90 backdrop-blur-3xl border-white/10 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-[2rem]">
                     <AlertDialogHeader>
                         <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
                         <AlertDialogDescription>
                             Esta ação removerá a base de membros atrelados ao time (os colaboradores não serão excluídos da plataforma, apenas desvinculados do departamento).
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteTeam} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    <AlertDialogFooter className="mt-4">
+                        <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteTeam} className="bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 rounded-xl font-bold">
                             Confirmar Exclusão
                         </AlertDialogAction>
                     </AlertDialogFooter>

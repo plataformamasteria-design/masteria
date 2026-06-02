@@ -225,11 +225,11 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
     <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
       <SheetContent 
         hideOverlay
-        className={`w-full ${isChatMode && isContactDetailsOpen ? 'sm:max-w-5xl' : 'sm:max-w-2xl'} p-0 flex flex-col h-full bg-background dark:bg-[#09090b] border-l border-border/40 shadow-2xl transition-all duration-300`}
+        className={`w-full ${isChatMode && isContactDetailsOpen ? 'sm:max-w-5xl' : 'sm:max-w-2xl'} p-0 flex flex-col h-full bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl border-l border-zinc-200 dark:border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.2)] dark:shadow-[0_0_50px_rgba(0,0,0,0.7)] transition-all duration-300 text-zinc-900 dark:text-zinc-200`}
       >
         {/* HEADER EXPANSO */}
         {!isChatMode && (
-          <div className="px-6 py-4 border-b bg-card">
+          <div className="px-6 py-5 border-b border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-white/[0.01]">
           <SheetHeader className="text-left space-y-0">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
@@ -262,7 +262,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                   )}
                 </Button>
                 {card.contact?.id && (
-                  <Button size="sm" onClick={(e) => { e.stopPropagation(); setIsChatMode(true); }}>
+                  <Button size="sm" onClick={(e) => { e.stopPropagation(); setIsChatMode(true); }} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all border border-emerald-400/50">
                     <MessageCircle className="h-4 w-4 mr-1" /> Chat
                   </Button>
                 )}
@@ -362,8 +362,8 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                   preselectedConversationId={mainConv.id}
                   preselectedConversation={mainConv as any}
                   initialConversations={syntheticConversations as any}
-                  hideConversationList={false}
-                  hideContactDetails={false}
+                  hideConversationList={true}
+                  hideContactDetails={true}
                   onBack={() => setIsChatMode(false)}
                   forceShowBack={true}
                   onContactDetailsToggle={(isOpen) => setIsContactDetailsOpen(isOpen)}
@@ -387,19 +387,9 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
           </div>
         ) : (
           <div className="flex-1 overflow-hidden flex flex-col">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-              <div className="px-6 pt-2 border-b">
-                <TabsList className="bg-transparent border-b-0 space-x-4">
-                  <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Resumo</TabsTrigger>
-                  <TabsTrigger value="details" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Detalhes</TabsTrigger>
-                  <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0">Histórico</TabsTrigger>
-                </TabsList>
-              </div>
-
-              <div className="flex-1 min-h-0 overflow-hidden relative">
-                <ScrollArea className="h-full p-6">
-                  {/* TAB OVERVIEW */}
-                  <TabsContent value="overview" className="mt-0 space-y-6">
+            <div className="flex-1 min-h-0 overflow-hidden relative">
+              <ScrollArea className="h-full p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
                 
                 {/* Loss Reason Alert */}
                 {currentStage?.type === 'LOSS' && leadNotes && (
@@ -410,33 +400,33 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 )}
 
                 {/* Lead Edit Quick Form */}
-                <Card className="border-border/50 shadow-sm">
+                <Card className="border border-zinc-200 dark:border-white/10 !bg-white dark:!bg-white/[0.02] shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md rounded-2xl md:col-span-2">
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-sm">Informações do Lead no Funil</CardTitle>
-                    <Button size="sm" onClick={handleSaveLead} disabled={isSaving}>
+                    <Button size="sm" onClick={handleSaveLead} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all">
                       {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-1" />} Salvar Lead
                     </Button>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>Título da Oportunidade</Label>
-                        <Input value={leadTitle} onChange={(e) => setLeadTitle(e.target.value)} />
+                        <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Título da Oportunidade</Label>
+                        <Input value={leadTitle} onChange={(e) => setLeadTitle(e.target.value)} className="bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 transition-colors" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Valor (R$)</Label>
-                        <Input type="number" value={leadValue} onChange={(e) => setLeadValue(Number(e.target.value))} />
+                        <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Valor (R$)</Label>
+                        <Input type="number" value={leadValue} onChange={(e) => setLeadValue(Number(e.target.value))} className="bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 transition-colors" />
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label>Anotações do Lead</Label>
-                      <Textarea rows={3} value={leadNotes} onChange={(e) => setLeadNotes(e.target.value)} placeholder="Anotações sobre a negociação..." />
+                      <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Anotações do Lead</Label>
+                      <Textarea rows={3} value={leadNotes} onChange={(e) => setLeadNotes(e.target.value)} placeholder="Anotações sobre a negociação..." className="bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 transition-colors custom-scrollbar resize-none" />
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Contact Profile Summary */}
-                <Card className="border-border/50 shadow-sm">
+                <Card className="border border-zinc-200 dark:border-white/10 !bg-white dark:!bg-white/[0.02] shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md rounded-2xl h-full flex flex-col">
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-sm flex items-center gap-2"><User className="h-4 w-4" /> Contato</CardTitle>
                     {editingSection !== 'profile' && (
@@ -447,13 +437,13 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                     {editingSection === 'profile' ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5"><Label>Nome</Label><Input value={contactForm.name || ''} onChange={e => setContactForm({...contactForm, name: e.target.value})} /></div>
-                          <div className="space-y-1.5"><Label>Telefone</Label><Input value={contactForm.phone || ''} onChange={e => setContactForm({...contactForm, phone: e.target.value})} /></div>
-                          <div className="space-y-1.5"><Label>Email</Label><Input value={contactForm.email || ''} onChange={e => setContactForm({...contactForm, email: e.target.value})} /></div>
+                          <div className="space-y-1.5"><Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Nome</Label><Input value={contactForm.name || ''} onChange={e => setContactForm({...contactForm, name: e.target.value})} className="bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 h-8 text-xs" /></div>
+                          <div className="space-y-1.5"><Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Telefone</Label><Input value={contactForm.phone || ''} onChange={e => setContactForm({...contactForm, phone: e.target.value})} className="bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 h-8 text-xs" /></div>
+                          <div className="space-y-1.5"><Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Email</Label><Input value={contactForm.email || ''} onChange={e => setContactForm({...contactForm, email: e.target.value})} className="bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 h-8 text-xs" /></div>
                         </div>
-                        <div className="flex justify-end gap-2 pt-2">
+                        <div className="flex justify-end gap-2 pt-2 mt-auto">
                           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>Cancelar</Button>
-                          <Button size="sm" onClick={handleSaveContact} disabled={isSaving}>Salvar</Button>
+                          <Button size="sm" onClick={handleSaveContact} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]">Salvar</Button>
                         </div>
                       </div>
                     ) : (
@@ -466,7 +456,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 </Card>
 
                 {/* Segments and Tags */}
-                <Card className="border-border/50 shadow-sm">
+                <Card className="border border-zinc-200 dark:border-white/10 !bg-white dark:!bg-white/[0.02] shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md rounded-2xl h-full flex flex-col">
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-sm flex items-center gap-2"><TagIcon className="h-4 w-4" /> Segmentação (Tags)</CardTitle>
                     {editingSection !== 'segmentation' && (
@@ -482,9 +472,9 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                           onChange={setSelectedTagIds}
                           placeholder="Selecione as tags..."
                         />
-                        <div className="flex justify-end gap-2 pt-2">
+                        <div className="flex justify-end gap-2 pt-2 mt-auto">
                           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>Cancelar</Button>
-                          <Button size="sm" onClick={handleSaveContact} disabled={isSaving}>Salvar</Button>
+                          <Button size="sm" onClick={handleSaveContact} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]">Salvar</Button>
                         </div>
                       </div>
                     ) : (
@@ -498,13 +488,10 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                   </CardContent>
                 </Card>
 
-              </TabsContent>
-
-              {/* TAB DETAILS (Custom Fields, Neurolinguistic, Address) */}
-              <TabsContent value="details" className="mt-0 space-y-6">
+              {/* DETAILS (Custom Fields, Neurolinguistic) */}
                 
                 {/* Custom Fields */}
-                <Card className="border-border/50 shadow-sm">
+                <Card className="border border-zinc-200 dark:border-white/10 !bg-white dark:!bg-white/[0.02] shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md rounded-2xl h-full flex flex-col">
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-sm">Campos Personalizados</CardTitle>
                     {editingSection !== 'customFields' && (
@@ -516,17 +503,17 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                       <div className="space-y-3">
                         {customFieldsArray.map((field) => (
                           <div key={field.id} className="flex items-center gap-2">
-                            <Input placeholder="Nome do Campo" value={field.key} onChange={(e) => setCustomFieldsArray(prev => prev.map(f => f.id === field.id ? {...f, key: e.target.value} : f))} className="flex-1" />
-                            <Input placeholder="Valor" value={field.value} onChange={(e) => setCustomFieldsArray(prev => prev.map(f => f.id === field.id ? {...f, value: e.target.value} : f))} className="flex-1" />
-                            <Button variant="ghost" size="icon" onClick={() => setCustomFieldsArray(prev => prev.filter(f => f.id !== field.id))} className="text-destructive"><X className="h-4 w-4" /></Button>
+                            <Input placeholder="Nome do Campo" value={field.key} onChange={(e) => setCustomFieldsArray(prev => prev.map(f => f.id === field.id ? {...f, key: e.target.value} : f))} className="flex-1 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 h-8 text-xs" />
+                            <Input placeholder="Valor" value={field.value} onChange={(e) => setCustomFieldsArray(prev => prev.map(f => f.id === field.id ? {...f, value: e.target.value} : f))} className="flex-1 bg-zinc-50 dark:bg-black/50 border border-zinc-200 dark:border-white/10 shadow-inner focus-visible:ring-emerald-500/50 h-8 text-xs" />
+                            <Button variant="ghost" size="icon" onClick={() => setCustomFieldsArray(prev => prev.filter(f => f.id !== field.id))} className="text-destructive h-8 w-8"><X className="h-4 w-4" /></Button>
                           </div>
                         ))}
                         <Button variant="outline" size="sm" className="w-full border-dashed" onClick={() => setCustomFieldsArray(prev => [...prev, { id: Date.now().toString(), key: '', value: '' }])}>
                           + Adicionar Campo
                         </Button>
-                        <div className="flex justify-end gap-2 pt-2">
+                        <div className="flex justify-end gap-2 pt-2 mt-auto">
                           <Button variant="ghost" size="sm" onClick={() => setEditingSection(null)}>Cancelar</Button>
-                          <Button size="sm" onClick={handleSaveContact} disabled={isSaving}>Salvar</Button>
+                          <Button size="sm" onClick={handleSaveContact} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]">Salvar</Button>
                         </div>
                       </div>
                     ) : (
@@ -556,24 +543,19 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                   />
                 )}
 
-              </TabsContent>
-
-              {/* TAB HISTORY */}
-              <TabsContent value="history" className="mt-0 space-y-6">
+              {/* HISTORY */}
                 {card.contact?.id && (
                   <ContactHistoryTimeline contactId={card.contact.id} hideAvatar />
                 )}
-              </TabsContent>
-
+                </div>
               </ScrollArea>
             </div>
-          </Tabs>
           </div>
         )}
 
         {/* BOTTOM ACTIONS */}
         {!isChatMode && (
-          <div className="px-6 py-4 border-t bg-card flex justify-between items-center">
+          <div className="px-6 py-4 border-t border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-white/[0.02] flex justify-between items-center">
             <Button variant="destructive" size="sm" onClick={() => { onOpenChange(false); onDelete(card.id); }}>
               <Trash2 className="h-4 w-4 mr-1" /> Excluir Lead
             </Button>

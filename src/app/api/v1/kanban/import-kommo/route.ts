@@ -20,6 +20,31 @@ function cleanPhone(phone: string | undefined | null) {
   return cleaned;
 }
 
+function extractFunnelFromUTM(row: any): string | null {
+  // Find any UTM campaign key (case insensitive)
+  const utmKey = Object.keys(row).find(k => k.toLowerCase().includes('utm_campaign') || k.toLowerCase().includes('utm campaing') || k.toLowerCase().includes('utm campaign'));
+  
+  if (!utmKey) return null;
+  const utmValue = String(row[utmKey] || '').toUpperCase();
+  
+  if (!utmValue) return null;
+
+  if (utmValue.includes('EVENTO-GCR') || utmValue.includes('GCR')) {
+    return 'FUNIL EVENTO GCR';
+  }
+  if (utmValue.includes('ENCONTRO DE NEGOCIOS') || utmValue.includes('ENCONTRO PARA CASAIS') || utmValue.includes('CASAL DE NEGOCIOS') || utmValue.includes('EVENTO-CASAL')) {
+    return 'FUNIL ENCONTRO DE CASAIS';
+  }
+  if (utmValue.includes('EDN')) {
+    return 'FUNIL EDN [ATUAL]';
+  }
+  if (utmValue.includes('MENTORIA')) {
+    return 'FUNIL MENTORIA';
+  }
+  
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const companyId = await getCompanyIdFromSession();
@@ -29,6 +54,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const targetFunnelName = formData.get('targetFunnelName') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado.' }, { status: 400 });
@@ -69,7 +95,16 @@ export async function POST(request: NextRequest) {
     let dummyCounter = 0;
 
     for (const row of data) {
-      const funnelName = (row['Funil de vendas'] || 'Funil Importado').toString().trim();
+      let funnelName = extractFunnelFromUTM(row);
+      
+      if (!funnelName) {
+        if (targetFunnelName) {
+          funnelName = targetFunnelName;
+        } else {
+          funnelName = (row['Funil de vendas'] || 'Funil Importado').toString().trim();
+        }
+      }
+
       const stageName = (row['Etapa do lead'] || 'Nova Oportunidade').toString().trim();
       const leadTitle = (row['Lead título'] || 'Lead sem nome').toString().trim();
       const contactName = (row['Contato principal'] || row['Nome'] || leadTitle).toString().trim();

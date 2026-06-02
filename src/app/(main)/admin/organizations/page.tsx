@@ -25,7 +25,7 @@ export default async function OrganizationsPage() {
 
     return (
         <div className="h-full flex-1 bg-background flex flex-col min-h-0 w-full overflow-hidden">
-            <OrganizationsClient initialData={data} />
+            <OrganizationsClient initialData={data} currentCompanyId={session.user?.companyId} />
         </div>
     );
 }

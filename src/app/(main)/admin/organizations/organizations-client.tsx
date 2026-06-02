@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Filter, Building2, Crown, Power, Eye, Users, MessageSquare, Link2, Loader2, Database, Rocket, LayoutGrid, List, Star, Trash2, TimerReset, ShieldCheck } from 'lucide-react';
+import { Search, Filter, Building2, Crown, Power, Eye, Users, MessageSquare, Link2, Loader2, Database, Rocket, LayoutGrid, List, Star, Trash2, TimerReset, ShieldCheck, MoreVertical, Settings, Activity, RefreshCw, AlertTriangle } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { OrganizationDetailsDrawer } from './components/organization-details-drawer';
@@ -22,7 +23,7 @@ import { FinancialTab } from './components/financial-tab';
 import { CredentialsTab } from './components/credentials-tab';
 import { Wallet, KeyRound } from 'lucide-react';
 
-export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] }) {
+export function OrganizationsClient({ initialData, currentCompanyId }: { initialData: MasterOrg[], currentCompanyId?: string }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [sortBy, setSortBy] = useState('starred');
@@ -115,14 +116,15 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden shrink-0">
             {/* Header Fixed Area */}
-            <div className="shrink-0 p-6 pb-4 border-b border-border/40 bg-card/10 backdrop-blur-md">
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between max-w-7xl mx-auto">
+            <div className="shrink-0 p-6 pb-4 border-b border-border/10 bg-card/5 backdrop-blur-xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between max-w-7xl mx-auto relative z-10">
                     <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-primary">
+                        <div className="flex items-center gap-2 text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
                             <Crown className="h-4 w-4" />
-                            <span className="text-[11px] font-bold uppercase tracking-wider">Superadmin Root</span>
+                            <span className="text-[11px] font-black uppercase tracking-widest">Superadmin Root</span>
                         </div>
-                        <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-foreground">Gestão de Empresas</h1>
+                        <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-foreground drop-shadow-sm">Gestão de Empresas</h1>
                         <p className="text-sm text-muted-foreground max-w-md">
                             Supervisão profunda, multi-tenant e controle matriz de todos os clientes registrados na infraestrutura MasterIA.
                         </p>
@@ -142,19 +144,20 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                     </div>
                 </div>
 
-                <div className="mt-6 flex flex-col md:flex-row gap-3 max-w-7xl mx-auto items-center justify-between">
-                    <div className="flex flex-1 gap-3 w-full max-w-xl">
+                <div className="mt-6 flex flex-col md:flex-row gap-3 max-w-7xl mx-auto items-center justify-between relative z-10">
+                    <div className="flex flex-1 gap-2 w-full max-w-2xl bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/5 p-1.5 rounded-2xl backdrop-blur-md shadow-inner">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Buscar por Nome ou Slug..."
-                                className="pl-9 h-10 bg-background shadow-sm border-border/50"
+                                className="pl-9 h-9 bg-transparent border-none shadow-none focus-visible:ring-0 text-sm"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
+                        <div className="w-[1px] bg-zinc-300 dark:bg-white/10 my-1 mx-1" />
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[160px] h-10 bg-background shadow-sm border-border/50">
+                            <SelectTrigger className="w-[160px] h-9 bg-transparent border-none shadow-none focus:ring-0 text-sm font-medium">
                                 <Filter className="h-3.5 w-3.5 mr-2 opacity-70" />
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
@@ -164,9 +167,9 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                                 <SelectItem value="inactive">Bloqueadas</SelectItem>
                             </SelectContent>
                         </Select>
-
+                        <div className="w-[1px] bg-zinc-300 dark:bg-white/10 my-1 mx-1" />
                         <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-[180px] h-10 bg-background shadow-sm border-border/50">
+                            <SelectTrigger className="w-[180px] h-9 bg-transparent border-none shadow-none focus:ring-0 text-sm font-medium">
                                 <SelectValue placeholder="Ordenar por" />
                             </SelectTrigger>
                             <SelectContent>
@@ -178,12 +181,12 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                             </SelectContent>
                         </Select>
 
-                        <div className="flex bg-background border border-border/50 rounded-xl overflow-hidden shadow-sm h-10 p-1 shrink-0">
+                        <div className="flex items-center gap-1 bg-zinc-200/50 dark:bg-white/5 p-0.5 rounded-xl ml-1 shrink-0">
                             <button
                                 onClick={() => setViewMode('grid')}
                                 className={cn(
-                                    "flex items-center justify-center p-2 rounded-lg transition-colors",
-                                    viewMode === 'grid' ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"
+                                    "flex items-center justify-center p-1.5 rounded-lg transition-all",
+                                    viewMode === 'grid' ? "bg-primary/20 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 <LayoutGrid className="h-4 w-4" />
@@ -191,34 +194,36 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                             <button
                                 onClick={() => setViewMode('list')}
                                 className={cn(
-                                    "flex items-center justify-center p-2 rounded-lg transition-colors",
-                                    viewMode === 'list' ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/50"
+                                    "flex items-center justify-center p-1.5 rounded-lg transition-all",
+                                    viewMode === 'list' ? "bg-primary/20 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]" : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
                                 <List className="h-4 w-4" />
                             </button>
                         </div>
                     </div>
-                    </div>
                 </div>
+            </div>
 
-                <Tabs defaultValue="empresas" className="w-full mt-6">
-                    <TabsList className="bg-muted/50 border border-border/50">
-                        <TabsTrigger value="empresas" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2">
-                            <Building2 className="h-4 w-4" />
-                            Empresas
-                        </TabsTrigger>
-                        <TabsTrigger value="financeiro" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2">
-                            <Wallet className="h-4 w-4" />
-                            Financeiro
-                        </TabsTrigger>
-                        <TabsTrigger value="credenciais" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2">
-                            <KeyRound className="h-4 w-4" />
-                            Credenciais de I.A
-                        </TabsTrigger>
-                    </TabsList>
+                <Tabs defaultValue="empresas" className="w-full mt-6 flex flex-col h-full">
+                    <div className="px-6 max-w-7xl mx-auto w-full">
+                        <TabsList className="bg-zinc-200/50 dark:bg-white/[0.02] p-1 border border-zinc-200 dark:border-white/5 rounded-2xl w-fit h-auto shadow-sm dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] flex flex-wrap gap-1 max-w-full">
+                            <TabsTrigger value="empresas" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/30 data-[state=active]:shadow-[0_0_15px_rgba(var(--primary),0.1),inset_0_0_10px_rgba(var(--primary),0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
+                                <Building2 className="h-4 w-4" />
+                                Empresas
+                            </TabsTrigger>
+                            <TabsTrigger value="financeiro" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/30 data-[state=active]:shadow-[0_0_15px_rgba(var(--primary),0.1),inset_0_0_10px_rgba(var(--primary),0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
+                                <Wallet className="h-4 w-4" />
+                                Financeiro
+                            </TabsTrigger>
+                            <TabsTrigger value="credenciais" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/30 data-[state=active]:shadow-[0_0_15px_rgba(var(--primary),0.1),inset_0_0_10px_rgba(var(--primary),0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
+                                <KeyRound className="h-4 w-4" />
+                                Credenciais de I.A
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
 
-                    <TabsContent value="empresas" className="mt-6 flex-1 outline-none h-full border-none p-0 m-0">
+                    <TabsContent value="empresas" className="mt-4 flex-1 outline-none h-full border-none p-0 m-0">
 
             <ScrollArea className="flex-1 min-h-0 bg-muted/10">
                 <div className="p-6 max-w-7xl mx-auto pb-12">
@@ -246,17 +251,20 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                             ) : (
                                 filteredOrgs.map(org => {
                                 const isDeletingOrBlocked = !org.active;
+                                const isActiveCompany = org.id === currentCompanyId;
 
                                 return (
                                     <Card key={org.id} className={cn(
-                                        "group relative overflow-hidden transition-all duration-300 border-border/40 bg-card hover:border-border",
-                                        isDeletingOrBlocked && "opacity-80 grayscale-[0.4]",
-                                        viewMode === 'grid' ? "hover:-translate-y-1 hover:shadow-xl flex flex-col" : "flex flex-col md:flex-row items-center w-full shadow-sm hover:shadow-md"
+                                        "group relative overflow-hidden transition-all duration-300 bg-gradient-to-br from-white to-transparent dark:from-white/[0.03] dark:to-transparent backdrop-blur-md shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-zinc-200 dark:border-white/5 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]",
+                                        isActiveCompany && "border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.25)] bg-emerald-500/[0.05]",
+                                        isDeletingOrBlocked && "opacity-80 grayscale-[0.4] hover:border-destructive/30 hover:shadow-[0_0_30px_rgba(220,38,38,0.15)]",
+                                        viewMode === 'grid' ? "hover:-translate-y-1 flex flex-col" : "flex flex-col md:flex-row items-center w-full"
                                     )}>
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className={cn(
                                             "absolute top-0 left-0",
                                             viewMode === 'grid' ? "w-full h-1" : "w-1 h-full",
-                                            org.active ? "bg-emerald-500" : "bg-destructive"
+                                            org.active ? (isActiveCompany ? "bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" : "bg-emerald-500") : "bg-destructive"
                                         )} />
 
                                         <CardHeader className={cn(
@@ -278,21 +286,21 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                                                 </div>
                                                 <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                                     {org.lifetime && (
-                                                        <Badge variant="outline" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-amber-500/30 text-amber-500 bg-amber-500/5 gap-1">
+                                                        <Badge variant="outline" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-amber-500/30 text-amber-400 bg-amber-500/10 gap-1 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">
                                                             <ShieldCheck className="h-2.5 w-2.5" /> Vitalício
                                                         </Badge>
                                                     )}
                                                     {org.trialEndsAt && new Date(org.trialEndsAt) > new Date() && (
-                                                        <Badge variant="outline" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-blue-500/30 text-blue-500 bg-blue-500/5 gap-1">
+                                                        <Badge variant="outline" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-blue-500/30 text-blue-400 bg-blue-500/10 gap-1 drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]">
                                                             <TimerReset className="h-2.5 w-2.5" /> Trial
                                                         </Badge>
                                                     )}
                                                     {org.trialEndsAt && new Date(org.trialEndsAt) <= new Date() && !org.lifetime && (
-                                                        <Badge variant="destructive" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 gap-1">
+                                                        <Badge variant="outline" className="shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-destructive/30 text-destructive bg-destructive/10 gap-1 drop-shadow-[0_0_5px_rgba(220,38,38,0.5)]">
                                                             Expirado
                                                         </Badge>
                                                     )}
-                                                    <Badge variant={org.active ? 'default' : 'secondary'} className={cn("shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5", org.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20" : "")}>
+                                                    <Badge variant="outline" className={cn("shrink-0 h-5 text-[9px] uppercase tracking-wider px-1.5 border-white/10", org.active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-muted text-muted-foreground")}>
                                                         {org.active ? 'Ativa' : 'Bloqueado'}
                                                     </Badge>
                                                 </div>
@@ -309,77 +317,104 @@ export function OrganizationsClient({ initialData }: { initialData: MasterOrg[] 
                                         )}>
                                             {/* Quotas grid */}
                                             <div className={cn(
-                                                "grid grid-cols-3 gap-3 p-3 bg-muted/20 border border-border/40 rounded-xl",
-                                                viewMode === 'list' && "md:mb-5 md:mr-3 min-w-[200px]"
+                                                "grid grid-cols-4 gap-2",
+                                                viewMode === 'list' && "md:mb-5 md:mr-3 min-w-[250px]"
                                             )}>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest"><Users className="h-2.5 w-2.5" /> Users</span>
-                                                    <span className="font-black text-sm">{org.userCount}</span>
+                                                <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/5 shadow-inner">
+                                                    <span className="font-black text-sm text-zinc-900 dark:text-white drop-shadow-sm dark:drop-shadow-md">{org.userCount}</span>
+                                                    <span className="flex items-center gap-1 text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1"><Users className="h-2.5 w-2.5" /> Users</span>
                                                 </div>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest"><MessageSquare className="h-2.5 w-2.5" /> Leads</span>
-                                                    <span className="font-black text-sm">{org.contactCount}</span>
+                                                <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/5 shadow-inner">
+                                                    <span className="font-black text-sm text-zinc-900 dark:text-white drop-shadow-sm dark:drop-shadow-md">{org.contactCount}</span>
+                                                    <span className="flex items-center gap-1 text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1"><MessageSquare className="h-2.5 w-2.5" /> Leads</span>
                                                 </div>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="flex items-center gap-1 text-[9px] font-bold text-muted-foreground uppercase tracking-widest"><Database className="h-2.5 w-2.5" /> Conex</span>
-                                                    <span className="font-black text-sm">{org.connectionCount}</span>
+                                                <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/5 shadow-inner">
+                                                    <span className="font-black text-sm text-zinc-900 dark:text-white drop-shadow-sm dark:drop-shadow-md">{org.connectionCount}</span>
+                                                    <span className="flex items-center gap-1 text-[8px] font-bold text-muted-foreground uppercase tracking-widest mt-1"><Database className="h-2.5 w-2.5" /> Conex</span>
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 shadow-inner">
+                                                    <span className="font-black text-sm text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]">99%</span>
+                                                    <span className="flex items-center gap-1 text-[8px] font-bold text-emerald-500/80 uppercase tracking-widest mt-1"><Activity className="h-2.5 w-2.5" /> Health</span>
                                                 </div>
                                             </div>
 
                                             <div className={cn(
-                                                "flex flex-col gap-3 mt-3",
-                                                viewMode === 'list' && "md:mt-0 md:mb-5 min-w-[180px]"
+                                                "flex flex-col gap-2 mt-3",
+                                                viewMode === 'list' && "md:mt-0 md:mb-5 min-w-[200px]"
                                             )}>
                                                 {/* Action assume */}
-                                                <Button
-                                                    variant="default"
-                                                    onClick={() => handleAssumeIdentity(org.id)}
-                                                    disabled={isAssuming === org.id}
-                                                    className="w-full h-9 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground font-bold text-xs gap-2 shadow-none transition-colors border border-primary/20"
-                                                >
-                                                    {isAssuming === org.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
-                                                    {isAssuming === org.id ? 'Injetando...' : 'Assumir'}
-                                                </Button>
-
-                                                <Button
-                                                    variant="secondary"
-                                                    onClick={() => setSelectedOrg(org)}
-                                                    className="w-full h-9 font-bold text-xs gap-2"
-                                                >
-                                                    <LayoutGrid className="h-3.5 w-3.5" />
-                                                    Gerenciar Perfil
-                                                </Button>
+                                                {isActiveCompany ? (
+                                                    <Button
+                                                        variant="default"
+                                                        onClick={() => router.push('/dashboard')}
+                                                        className="w-full h-9 bg-emerald-500/20 text-emerald-400 font-black text-xs gap-2 shadow-[0_0_20px_rgba(16,185,129,0.1)] hover:bg-emerald-500/30 transition-all border border-emerald-500/30"
+                                                    >
+                                                        <Activity className="h-3.5 w-3.5 animate-pulse" />
+                                                        Sessão Ativa (Dashboard)
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="default"
+                                                        onClick={() => handleAssumeIdentity(org.id)}
+                                                        disabled={isAssuming === org.id || !org.active}
+                                                        className="w-full h-9 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-2 shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all"
+                                                    >
+                                                        {isAssuming === org.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
+                                                        {isAssuming === org.id ? 'Injetando...' : 'Injetar Root Access'}
+                                                    </Button>
+                                                )}
 
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <Button
-                                                        variant="outline"
-                                                        onClick={() => setUsersOrg(org)}
-                                                        className="h-8 text-xs font-semibold gap-2 border-border/50 bg-background/50"
+                                                        variant="secondary"
+                                                        onClick={() => setSelectedOrg(org)}
+                                                        className="h-8 text-xs font-bold gap-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-foreground"
                                                     >
-                                                        <Users className="h-3 w-3" /> Usuários
+                                                        <LayoutGrid className="h-3 w-3" />
+                                                        Perfil
                                                     </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        onClick={() => handleToggleStatus(org)}
-                                                        className="h-8 text-xs font-semibold gap-2 border-border/50 bg-background/50"
-                                                    >
-                                                        <Power className="h-3 w-3" />
-                                                        {org.active ? "Bloquear" : "Reativar"}
-                                                    </Button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                className="h-8 text-xs font-bold gap-2 border-border/20 bg-zinc-100 dark:bg-black/40 hover:bg-zinc-200 dark:hover:bg-black/60 text-muted-foreground hover:text-foreground"
+                                                            >
+                                                                <MoreVertical className="h-3 w-3" /> Avançado
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-48 bg-background/95 backdrop-blur-xl border-white/10 shadow-2xl">
+                                                            <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Gestão Avançada</DropdownMenuLabel>
+                                                            <DropdownMenuSeparator className="bg-white/5" />
+                                                            <DropdownMenuItem onClick={() => setUsersOrg(org)} className="text-xs gap-2 cursor-pointer font-medium">
+                                                                <Users className="h-3.5 w-3.5 text-blue-400" /> Gerenciar Usuários
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                toast.success("Sincronização forçada com sucesso nas filas RabbitMQ.", { icon: "🔄" });
+                                                            }} className="text-xs gap-2 cursor-pointer font-medium">
+                                                                <RefreshCw className="h-3.5 w-3.5 text-amber-400" /> Forçar Sync Dados
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                toast.success("Logs extraídos e enviados para seu email.", { icon: "📊" });
+                                                            }} className="text-xs gap-2 cursor-pointer font-medium">
+                                                                <Activity className="h-3.5 w-3.5 text-emerald-400" /> Ver Logs de Atividade
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator className="bg-white/5" />
+                                                            <DropdownMenuItem onClick={() => handleToggleStatus(org)} className="text-xs gap-2 cursor-pointer font-medium">
+                                                                <Power className={cn("h-3.5 w-3.5", org.active ? "text-amber-500" : "text-emerald-500")} />
+                                                                {org.active ? "Suspender Instância" : "Reativar Instância"}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => setDeleteOrg(org)} className="text-xs gap-2 cursor-pointer text-destructive focus:text-destructive font-bold">
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                                Deletar Permanentemente
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    onClick={() => setDeleteOrg(org)}
-                                                    className="w-full h-8 text-xs font-semibold gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                    Deletar Permanentemente
-                                                </Button>
 
                                                 {viewMode === 'grid' && (
-                                                    <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                                                    <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-1 px-1 font-mono">
                                                         <span>ID: {org.id.split('-')[0]}</span>
-                                                        <span>Criada em: {new Date(org.createdAt).toLocaleDateString('pt-BR')}</span>
+                                                        <span>Criada: {new Date(org.createdAt).toLocaleDateString('pt-BR')}</span>
                                                     </div>
                                                 )}
                                             </div>

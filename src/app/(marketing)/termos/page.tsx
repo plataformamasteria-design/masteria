@@ -10,19 +10,19 @@ export const metadata: Metadata = {
 
 export default function TermosPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <header className="flex items-center gap-2 mb-12 border-b pb-8">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <FileText className="w-8 h-8 text-white" />
+    <div className="relative z-10 w-full min-h-screen flex items-center justify-center py-20 px-4">
+      <div className="w-full max-w-4xl bg-zinc-900/40 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl p-8 md:p-12">
+        <header className="flex items-center gap-4 mb-12 border-b border-white/10 pb-8">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <FileText className="w-8 h-8 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Termos de Serviço</h1>
-            <p className="text-slate-500 mt-1">Última atualização: {new Date().toLocaleDateString('pt-BR')}</p>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Termos de Serviço</h1>
+            <p className="text-zinc-400 mt-1">Última atualização: {new Date().toLocaleDateString('pt-BR')}</p>
           </div>
         </header>
 
-        <main className="prose prose-slate max-w-none">
+        <main className="prose prose-invert prose-zinc max-w-none prose-p:text-zinc-400 prose-headings:text-white prose-strong:text-emerald-400">
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">1. Aceitação dos Termos</h2>
             <p>
@@ -57,10 +57,10 @@ export default function TermosPage() {
               Nosso serviço permite que você conecte contas de serviços de terceiros (ex: Facebook Ads, WhatsApp API). 
               Ao utilizar essas integrações:
             </p>
-            <ul className="list-disc pl-6 mt-2 space-y-2">
+            <ul className="list-disc pl-6 mt-2 space-y-2 text-zinc-400">
               <li>Você confirma que tem permissão legal e autoridade para acessar e vincular essas contas à MasterIA.</li>
               <li>A MasterIA não se responsabiliza pelas políticas, disponibilidade ou mudanças nas APIs desses provedores terceiros.</li>
-              <li>Você concorda em cumprir os Termos de Serviço e Políticas das plataformas integradas (como os <a href="https://developers.facebook.com/terms/" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Termos da Plataforma Meta</a>).</li>
+              <li>Você concorda em cumprir os Termos de Serviço e Políticas das plataformas integradas (como os <a href="https://developers.facebook.com/terms/" target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 hover:underline">Termos da Plataforma Meta</a>).</li>
             </ul>
           </section>
 
@@ -80,7 +80,7 @@ export default function TermosPage() {
               incluindo, sem limitação, perda de lucros, dados, uso, boa vontade ou outras perdas intangíveis, 
               resultantes de:
             </p>
-            <ul className="list-disc pl-6 mt-2 space-y-2">
+            <ul className="list-disc pl-6 mt-2 space-y-2 text-zinc-400">
               <li>Seu acesso ou uso ou incapacidade de acessar ou usar o Serviço;</li>
               <li>Qualquer conduta ou conteúdo de terceiros no Serviço;</li>
               <li>Acesso, uso ou alteração não autorizados de suas transmissões ou conteúdo.</li>
@@ -106,12 +106,12 @@ export default function TermosPage() {
           </section>
         </main>
 
-        <footer className="mt-16 pt-8 border-t text-center text-sm text-slate-500">
+        <footer className="mt-16 pt-8 border-t border-white/10 text-center text-sm text-zinc-500">
           <p>&copy; {new Date().getFullYear()} MasterIA. Todos os direitos reservados.</p>
           <div className="mt-4 space-x-4">
-            <Link href="/" className="hover:text-blue-600 transition-colors">Voltar para a página inicial</Link>
+            <Link href="/" className="text-emerald-400 hover:text-emerald-300 transition-colors">Voltar para a página inicial</Link>
             <span>•</span>
-            <Link href="/politicas" className="hover:text-blue-600 transition-colors">Política de Privacidade</Link>
+            <Link href="/politicas" className="text-emerald-400 hover:text-emerald-300 transition-colors">Política de Privacidade</Link>
           </div>
         </footer>
       </div>

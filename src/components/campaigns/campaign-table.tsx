@@ -165,10 +165,17 @@ const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify,
   }
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader>
+    <Card className="flex flex-col bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-white/5 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all group overflow-hidden relative">
+      {/* Decorative top glow */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <CardHeader className="pb-3 z-10 relative">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-bold line-clamp-2">{campaign.name}</CardTitle>
+          <div className="flex flex-col gap-1 pr-2">
+            <CardTitle className="text-lg font-black tracking-tight line-clamp-2 drop-shadow-md">{campaign.name}</CardTitle>
+            <Badge variant="outline" className={cn("w-fit text-[9px] uppercase tracking-wider", isSms ? "border-white/20 text-white" : (!campaign.templateId ? "border-blue-500/50 text-blue-400 bg-blue-500/10" : "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"))}>
+              {isSms ? 'SMS' : (!campaign.templateId ? 'Baileys' : 'Oficial')}
+            </Badge>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -242,46 +249,43 @@ const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify,
       </CardHeader>
       <CardContent className="flex-1 space-y-4">
         <div className="space-y-2">
-          <Badge variant={status.variant} className={cn(status.className, "mt-2")}>{status.text}</Badge>
+          <Badge variant={status.variant} className={cn(status.className, "mt-1 mb-2 bg-opacity-20 backdrop-blur-sm border shadow-[0_0_10px_currentColor] text-[10px] font-bold tracking-wider uppercase")}>{status.text}</Badge>
           <div className="space-y-2 text-sm text-muted-foreground pt-2">
             <div className="flex items-center gap-2">
-              {isSms ? <SendIcon className="h-4 w-4" /> : <GitBranch className="h-4 w-4" />}
-              <span>{connectionOrGatewayName || (isSms ? 'Gateway Padrão' : 'Conexão Padrão')}</span>
+              {isSms ? <SendIcon className="h-4 w-4 text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" /> : <GitBranch className="h-4 w-4 text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />}
+              <span className="font-medium text-foreground/80">{connectionOrGatewayName || (isSms ? 'Gateway Padrão' : 'Conexão Padrão')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <MessageSquareText className="h-4 w-4" />
-              <span className="truncate">{templateName}</span>
+              <MessageSquareText className="h-4 w-4 text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+              <span className="truncate font-medium text-foreground/80">{templateName}</span>
             </div>
           </div>
         </div>
-        <div className={cn("grid text-center border-t pt-4", isSms ? "grid-cols-2" : "grid-cols-3")}>
-          <div>
-            <p className="text-lg font-bold">{campaign.sent}</p>
-            <p className="text-xs text-muted-foreground">Enviadas</p>
+        <div className={cn("grid gap-2 border-t border-white/10 pt-4 bg-black/20 -mx-6 -mb-6 px-6 pb-6 mt-2 rounded-b-2xl", isSms ? "grid-cols-2" : "grid-cols-3")}>
+          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+            <p className="text-xl font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">{campaign.sent}</p>
+            <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Enviadas</p>
           </div>
           {!isSms && (
             <>
-              <div>
-                <p className="text-lg font-bold">{campaign.delivered}</p>
-                <p className="text-xs text-muted-foreground">Entregues</p>
+              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+                <p className="text-xl font-black">{campaign.delivered}</p>
+                <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Entregues</p>
               </div>
-              <div>
-                <p className="text-lg font-bold">{campaign.read}</p>
-                <p className="text-xs text-muted-foreground">Lidas</p>
+              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+                <p className="text-xl font-black">{campaign.read}</p>
+                <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Lidas</p>
               </div>
             </>
           )}
           {isSms && (
-            <div>
-              <p className="text-lg font-bold">{campaign.failed}</p>
-              <p className="text-xs text-muted-foreground">Falhas</p>
+            <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+              <p className="text-xl font-black text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">{campaign.failed}</p>
+              <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Falhas</p>
             </div>
           )}
         </div>
       </CardContent>
-      <CardFooter>
-        {/* A data foi movida para o CardHeader */}
-      </CardFooter>
     </Card>
   );
 });
@@ -353,8 +357,6 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
 
         if (baileysOnly) {
           filteredData = data.data.filter((c: Campaign) => c.templateId === null);
-        } else if (channel === 'WHATSAPP') {
-          filteredData = data.data.filter((c: Campaign) => c.templateId !== null);
         }
 
         setCampaigns(filteredData);
@@ -492,7 +494,14 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
                 const isSms = campaign.channel === 'SMS';
                 return (
                   <TableRow key={campaign.id}>
-                    <TableCell className="font-medium">{campaign.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col gap-1">
+                        <span>{campaign.name}</span>
+                        <Badge variant="outline" className={cn("w-fit text-[9px] uppercase tracking-wider", isSms ? "border-white/20 text-white" : (!campaign.templateId ? "border-blue-500/50 text-blue-400 bg-blue-500/10" : "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"))}>
+                          {isSms ? 'SMS' : (!campaign.templateId ? 'Baileys' : 'Oficial')}
+                        </Badge>
+                      </div>
+                    </TableCell>
                     <TableCell><Badge variant={status.variant} className={cn(status.className)}>{status.text}</Badge></TableCell>
                     <TableCell>{campaignDate ? new Date(campaignDate).toLocaleString('pt-BR') : '-'}</TableCell>
                     <TableCell>{campaign.sent}</TableCell>
@@ -521,16 +530,16 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="p-4">
+      <Card className="bg-black/5 dark:bg-black/40 border border-black/5 dark:border-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(0,0,0,0.5)] rounded-2xl">
+        <CardContent className="p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end">
             <div className="xl:col-span-1">
-              <Label>Período</Label>
+              <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 block">Período</Label>
               <DateRangePicker onDateChange={setDateRange} initialDate={dateRange} />
             </div>
             <div className="grid grid-cols-2 gap-4 xl:col-span-2">
               <div>
-                <Label htmlFor="filter-type">Filtrar por</Label>
+                <Label htmlFor="filter-type" className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 block">Filtrar por</Label>
                 <Select value={filterType} onValueChange={handleFilterTypeChange}>
                   <SelectTrigger id="filter-type">
                     <SelectValue placeholder="Selecione um tipo de filtro" />
@@ -543,7 +552,7 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
                 </Select>
               </div>
               <div>
-                <Label htmlFor="filter-value">Valor</Label>
+                <Label htmlFor="filter-value" className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 block">Valor</Label>
                 <Select value={selectedId} onValueChange={setSelectedId} disabled={filterType === 'all'}>
                   <SelectTrigger id="filter-value">
                     <SelectValue placeholder="Selecione um valor" />
@@ -565,12 +574,12 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
             </div>
             <div className="flex items-end justify-end gap-2">
               <div className="space-y-2">
-                <Label>Visualização</Label>
-                <div className="flex items-center gap-2">
-                  <Button variant={view === 'grid' ? 'default' : 'outline'} size="icon" onClick={() => setView('grid')}>
+                <Label className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2 block">Visão</Label>
+                <div className="flex items-center gap-1 bg-black/5 dark:bg-black/50 p-1 rounded-xl border border-black/5 dark:border-white/10 shadow-inner">
+                  <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", view === 'grid' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-muted-foreground hover:text-foreground dark:hover:text-white')} onClick={() => setView('grid')}>
                     <LayoutGrid className="h-4 w-4" />
                   </Button>
-                  <Button variant={view === 'table' ? 'default' : 'outline'} size="icon" onClick={() => setView('table')}>
+                  <Button variant="ghost" size="icon" className={cn("h-8 w-8 rounded-lg", view === 'table' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-muted-foreground hover:text-foreground dark:hover:text-white')} onClick={() => setView('table')}>
                     <List className="h-4 w-4" />
                   </Button>
                 </div>

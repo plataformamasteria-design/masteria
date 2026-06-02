@@ -85,7 +85,7 @@ export function FunnelList() {
           <UnassignedLeadsDrawer funnels={funnels} />
           <ImportKommoModal />
           <Link href="/kanban/new" passHref>
-            <Button>
+            <Button className="w-full sm:w-auto rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all">
               <PlusCircle className="mr-2 h-4 w-4" />
               Criar Funil
             </Button>
@@ -107,7 +107,7 @@ export function FunnelList() {
           {funnels.map((funnel) => (
             <div
               key={funnel.id}
-              className="group relative rounded-lg border bg-card p-5 shadow-sm transition-all hover:shadow-md"
+              className="group relative rounded-3xl glass-card p-6 transition-all hover:bg-black/[0.02] dark:hover:bg-white/[0.04] hover:border-black/20 dark:hover:border-white/20 hover:shadow-2xl"
             >
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -148,15 +148,15 @@ export function FunnelList() {
 
               <Link href={`/kanban/${funnel.id}`} passHref>
                 <div className="cursor-pointer">
-                  <h3 className="text-lg font-bold text-primary">{funnel.name}</h3>
-                  <div className="mt-4 flex items-center justify-between text-muted-foreground">
+                  <h3 className="text-xl font-bold text-foreground/90 group-hover:text-emerald-400 transition-colors duration-300">{funnel.name}</h3>
+                  <div className="mt-5 flex items-center justify-between text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span className="text-sm">{(funnel.totalLeads || 0).toLocaleString()} Leads</span>
+                      <Users className="h-4 w-4 opacity-70" />
+                      <span className="text-sm font-medium">{(funnel.totalLeads || 0).toLocaleString()} Leads</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      <span className="text-sm">{(funnel.totalValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      <DollarSign className="h-4 w-4 opacity-70 text-emerald-500" />
+                      <span className="text-sm font-bold text-emerald-500/90">{(funnel.totalValue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                     </div>
                   </div>
                 </div>

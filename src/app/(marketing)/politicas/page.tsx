@@ -10,19 +10,19 @@ export const metadata: Metadata = {
 
 export default function PoliticasPage() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <header className="flex items-center gap-2 mb-12 border-b pb-8">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <Shield className="w-8 h-8 text-white" />
+    <div className="relative z-10 w-full min-h-screen flex items-center justify-center py-20 px-4">
+      <div className="w-full max-w-4xl bg-zinc-900/40 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl p-8 md:p-12">
+        <header className="flex items-center gap-4 mb-12 border-b border-white/10 pb-8">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <Shield className="w-8 h-8 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Política de Privacidade</h1>
-            <p className="text-slate-500 mt-1">Última atualização: {new Date().toLocaleDateString('pt-BR')}</p>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Política de Privacidade</h1>
+            <p className="text-zinc-400 mt-1">Última atualização: {new Date().toLocaleDateString('pt-BR')}</p>
           </div>
         </header>
 
-        <main className="prose prose-slate max-w-none">
+        <main className="prose prose-invert prose-zinc max-w-none prose-p:text-zinc-400 prose-headings:text-white prose-strong:text-emerald-400">
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">1. Introdução</h2>
             <p>
@@ -36,7 +36,7 @@ export default function PoliticasPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">2. Coleta de Dados</h2>
             <p>Podemos coletar os seguintes tipos de informações:</p>
-            <ul className="list-disc pl-6 mt-2 space-y-2">
+            <ul className="list-disc pl-6 mt-2 space-y-2 text-zinc-400">
               <li><strong>Dados de Registro:</strong> Nome, endereço de e-mail, informações da empresa e credenciais de login.</li>
               <li><strong>Dados de Integração:</strong> Tokens de acesso, IDs de contas de anúncios e dados analíticos (apenas quando você autoriza explicitamente a conexão com plataformas parceiras como a Meta).</li>
               <li><strong>Dados de Uso:</strong> Informações sobre como você interage com a nossa plataforma.</li>
@@ -46,7 +46,7 @@ export default function PoliticasPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">3. Uso das Informações</h2>
             <p>Utilizamos os dados coletados para:</p>
-            <ul className="list-disc pl-6 mt-2 space-y-2">
+            <ul className="list-disc pl-6 mt-2 space-y-2 text-zinc-400">
               <li>Fornecer, operar e manter os serviços da MasterIA;</li>
               <li>Processar as integrações autorizadas por você (ex: exibir métricas de campanhas do Meta Ads no seu dashboard);</li>
               <li>Melhorar e personalizar a experiência do usuário;</li>
@@ -71,7 +71,7 @@ export default function PoliticasPage() {
             <p>
               Nós não compartilhamos suas informações pessoais com terceiros, exceto nos seguintes casos:
             </p>
-            <ul className="list-disc pl-6 mt-2 space-y-2">
+            <ul className="list-disc pl-6 mt-2 space-y-2 text-zinc-400">
               <li>Com o seu consentimento explícito;</li>
               <li>Para provedores de infraestrutura estritamente necessários para operar a plataforma;</li>
               <li>Para cumprir ordens judiciais ou exigências legais.</li>
@@ -105,12 +105,12 @@ export default function PoliticasPage() {
           </section>
         </main>
 
-        <footer className="mt-16 pt-8 border-t text-center text-sm text-slate-500">
+        <footer className="mt-16 pt-8 border-t border-white/10 text-center text-sm text-zinc-500">
           <p>&copy; {new Date().getFullYear()} MasterIA. Todos os direitos reservados.</p>
           <div className="mt-4 space-x-4">
-            <Link href="/" className="hover:text-blue-600 transition-colors">Voltar para a página inicial</Link>
+            <Link href="/" className="text-emerald-400 hover:text-emerald-300 transition-colors">Voltar para a página inicial</Link>
             <span>•</span>
-            <Link href="/termos" className="hover:text-blue-600 transition-colors">Termos de Uso</Link>
+            <Link href="/termos" className="text-emerald-400 hover:text-emerald-300 transition-colors">Termos de Uso</Link>
           </div>
         </footer>
       </div>

@@ -212,10 +212,7 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
     const flows = await db.query.automationFlows.findMany({
         where: and(
             eq(automationFlows.isActive, true),
-            or(
-                eq(automationFlows.companyId, companyId),
-                eq(automationFlows.companyId, 'current-company')
-            )
+            eq(automationFlows.companyId, companyId)
         )
     });
 
@@ -388,10 +385,7 @@ export async function evaluateWebhookTriggers(companyId: string, contactId: stri
     const flows = await db.query.automationFlows.findMany({
         where: and(
             eq(automationFlows.isActive, true),
-            or(
-                eq(automationFlows.companyId, companyId),
-                eq(automationFlows.companyId, 'current-company')
-            )
+            eq(automationFlows.companyId, companyId)
         )
     });
 
@@ -453,10 +447,7 @@ export async function evaluateContactCreatedTriggers(companyId: string, contactI
     const flows = await db.query.automationFlows.findMany({
         where: and(
             eq(automationFlows.isActive, true),
-            or(
-                eq(automationFlows.companyId, companyId),
-                eq(automationFlows.companyId, 'current-company')
-            )
+            eq(automationFlows.companyId, companyId)
         )
     });
 
@@ -500,10 +491,7 @@ export async function evaluateTagAddedTriggers(companyId: string, contactId: str
     const flows = await db.query.automationFlows.findMany({
         where: and(
             eq(automationFlows.isActive, true),
-            or(
-                eq(automationFlows.companyId, companyId),
-                eq(automationFlows.companyId, 'current-company')
-            )
+            eq(automationFlows.companyId, companyId)
         )
     });
 
@@ -615,10 +603,7 @@ export async function triggerFlow(flowId: string, companyId: string, contactId: 
     const flow = await db.query.automationFlows.findFirst({
         where: and(
             eq(automationFlows.id, flowId),
-            or(
-                eq(automationFlows.companyId, companyId),
-                eq(automationFlows.companyId, 'current-company')
-            )
+            eq(automationFlows.companyId, companyId)
         )
     });
 
@@ -1023,6 +1008,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         await db.insert(messages).values({
                             companyId: ctx.companyId,
                             conversationId: activeConv.id,
+                            connectionId: overrideConnectionId || activeConv.connectionId,
                             senderType: 'AI',
                             senderId: 'automation_node',
                             content: text,

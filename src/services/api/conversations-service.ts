@@ -10,6 +10,8 @@ export interface AdvancedFilters {
     filterAgentId: string | null;
     filterTagId: string | null;
     filterKanbanId: string | null;
+    filterConnectionId?: string | null;
+    filterSource?: string | null;
 }
 
 class ConversationService {
@@ -40,6 +42,8 @@ class ConversationService {
             if (advancedFilters.filterAgentId) params.set('filterAgentId', advancedFilters.filterAgentId);
             if (advancedFilters.filterTagId) params.set('filterTagId', advancedFilters.filterTagId);
             if (advancedFilters.filterKanbanId) params.set('filterKanbanId', advancedFilters.filterKanbanId);
+            if (advancedFilters.filterConnectionId) params.set('filterConnectionId', advancedFilters.filterConnectionId);
+            if (advancedFilters.filterSource) params.set('filterSource', advancedFilters.filterSource);
         }
 
         const response = await this.fetchCall<{ data: Conversation[] } | Conversation[]>(`${API_BASE}?${params}`);

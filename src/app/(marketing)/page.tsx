@@ -1,26 +1,17 @@
+import { SiteHeader } from './_components/site-header';
+import { HeroSection } from './_components/hero-section';
+import { FeaturesGrid } from './_components/features-grid';
+import { SiteFooter } from './_components/footer';
 
-import { Header } from '@/components/landing/header';
-import { HeroSection } from '@/components/landing/hero-section';
-import { FeaturesSection } from '@/components/landing/features-section';
-import { TestimonialsSection } from '@/components/landing/testimonials-section';
-import { PricingSection } from '@/components/landing/pricing-section';
-import { ContactSection } from '@/components/landing/contact-section';
-import { Footer } from '@/components/landing/footer';
-import { ThemeToggle } from '@/components/landing/theme-toggle';
-
-export default function LandingPage() {
+export default function SitePage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="flex-1">
+    <div className="relative z-10 flex min-h-screen flex-col w-full">
+      <SiteHeader />
+      <main className="flex-1 w-full relative z-10">
         <HeroSection />
-        <FeaturesSection />
-        <TestimonialsSection />
-        <PricingSection />
-        <ContactSection />
+        <FeaturesGrid />
       </main>
-      <Footer />
-      <ThemeToggle />
+      <SiteFooter />
     </div>
   );
 }

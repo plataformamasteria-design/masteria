@@ -163,28 +163,28 @@ export function TagsManager() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+      <div className="glass-card rounded-[2rem] w-full overflow-hidden relative mt-4">
+        <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 border-b border-black/5 dark:border-white/5 bg-black/5 dark:bg-black/20">
            <div className="relative w-full sm:w-auto sm:flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
               <Input
                 placeholder="Buscar por nome..."
-                className="pl-9 w-full sm:w-64"
+                className="pl-9 w-full sm:w-64 bg-black/5 dark:bg-white/[0.02] border-black/10 dark:border-white/10 text-foreground dark:text-white placeholder:text-zinc-500 rounded-xl focus-visible:ring-emerald-500/30"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-          <Button className="w-full sm:w-auto" onClick={() => handleOpenModal(null)}>
-            <PlusCircle className="mr-2" />
+          <Button className="w-full sm:w-auto rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] transition-all" onClick={() => handleOpenModal(null)}>
+            <PlusCircle className="mr-2 h-4 w-4 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
             Criar Nova Tag
           </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="w-full border rounded-lg relative">
-            <div className="w-full overflow-auto">
+        </div>
+        <div className="p-6">
+          <div className="w-full border-none rounded-lg relative">
+            <div className="w-full overflow-auto custom-scrollbar">
                 <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="bg-muted/50 dark:bg-black/20 border-b border-black/5 dark:border-white/5">
+                <TableRow className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] border-black/5 dark:border-white/5 transition-colors">
                   <TableHead>Preview</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Cor</TableHead>
@@ -207,7 +207,7 @@ export function TagsManager() {
                   </TableRow>
                 ) : (
                   tags.map((tag) => (
-                    <TableRow key={tag.id}>
+                    <TableRow key={tag.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.04] border-black/5 dark:border-white/5 transition-colors">
                         <TableCell>
                             <Badge style={{ backgroundColor: tag.color, color: '#fff' }}>{tag.name}</Badge>
                         </TableCell>
@@ -275,8 +275,8 @@ export function TagsManager() {
                     </div>
                 </div>
             )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogContent>

@@ -26,31 +26,43 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
   const stageCards = cards.filter(card => card.stageId === stage.id);
   const totalValue = stageCards.reduce((sum, card) => sum + (Number(card.value) || 0), 0);
   
-  const getHeaderColor = (type: string, idx: number) => {
-    if (type === 'WIN') return 'bg-green-500/10 text-green-700 dark:text-green-400';
-    if (type === 'LOSS') return 'bg-red-500/10 text-red-700 dark:text-red-400';
+  const getHeaderStyle = (type: string, idx: number) => {
+    let glow = '';
+    let textColor = '';
     
-    const colors = [
-      'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-      'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
-      'bg-purple-500/10 text-purple-700 dark:text-purple-400',
-      'bg-pink-500/10 text-pink-700 dark:text-pink-400',
-      'bg-orange-500/10 text-orange-700 dark:text-orange-400',
-      'bg-amber-500/10 text-amber-700 dark:text-amber-400',
-      'bg-teal-500/10 text-teal-700 dark:text-teal-400',
-      'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400'
-    ];
-    return colors[idx % colors.length];
+    if (type === 'WIN') {
+      glow = 'border-t-emerald-500 shadow-[0_-10px_20px_-10px_rgba(16,185,129,0.3)]';
+      textColor = 'text-emerald-400';
+    } else if (type === 'LOSS') {
+      glow = 'border-t-red-500 shadow-[0_-10px_20px_-10px_rgba(239,68,68,0.3)]';
+      textColor = 'text-red-400';
+    } else {
+      const colors = [
+        { glow: 'border-t-blue-500 shadow-[0_-10px_20px_-10px_rgba(59,130,246,0.3)]', text: 'text-blue-400' },
+        { glow: 'border-t-indigo-500 shadow-[0_-10px_20px_-10px_rgba(99,102,241,0.3)]', text: 'text-indigo-400' },
+        { glow: 'border-t-violet-500 shadow-[0_-10px_20px_-10px_rgba(139,92,246,0.3)]', text: 'text-violet-400' },
+        { glow: 'border-t-fuchsia-500 shadow-[0_-10px_20px_-10px_rgba(217,70,239,0.3)]', text: 'text-fuchsia-400' },
+        { glow: 'border-t-orange-500 shadow-[0_-10px_20px_-10px_rgba(249,115,22,0.3)]', text: 'text-orange-400' },
+        { glow: 'border-t-amber-500 shadow-[0_-10px_20px_-10px_rgba(245,158,11,0.3)]', text: 'text-amber-400' },
+        { glow: 'border-t-teal-500 shadow-[0_-10px_20px_-10px_rgba(20,184,166,0.3)]', text: 'text-teal-400' },
+        { glow: 'border-t-cyan-500 shadow-[0_-10px_20px_-10px_rgba(6,182,212,0.3)]', text: 'text-cyan-400' }
+      ];
+      const color = colors[idx % colors.length];
+      glow = color.glow;
+      textColor = color.text;
+    }
+
+    return `bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/5 border-t-2 ${glow} ${textColor}`;
   };
 
   return (
-    <div className="flex flex-col h-full max-h-full overflow-hidden w-full md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] bg-zinc-50 dark:bg-zinc-900/40 rounded-xl md:flex-1 md:min-h-[400px] transition-colors border border-border/40">
-      <div className={`p-3 m-2 rounded-lg flex-shrink-0 flex flex-col gap-1 ${getHeaderColor(stage.type, index)}`}>
+    <div className="flex flex-col h-full max-h-full overflow-hidden w-full md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] bg-zinc-50 dark:bg-white/[0.01] backdrop-blur-md rounded-2xl md:flex-1 md:min-h-[400px] transition-colors border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.3)]">
+      <div className={`p-3 m-2 rounded-lg flex-shrink-0 flex flex-col gap-1 ${getHeaderStyle(stage.type, index)}`}>
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-[13px] uppercase tracking-wide truncate">
             {stage.title}
           </h3>
-          <Badge variant="secondary" className="bg-white/60 dark:bg-black/40 text-current hover:bg-white/60 border-0 text-[10px] px-1.5 py-0 h-4">
+          <Badge variant="secondary" className="bg-zinc-200/50 dark:bg-black/40 text-current hover:bg-zinc-200/50 dark:hover:bg-white/60 border-0 text-[10px] px-1.5 py-0 h-4">
             {stageCards.length}
           </Badge>
         </div>

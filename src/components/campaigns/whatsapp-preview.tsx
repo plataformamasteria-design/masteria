@@ -27,29 +27,29 @@ export function WhatsAppPreview({
   return (
     <div className={cn("w-full max-w-md mx-auto", className)}>
       <div className="relative">
-        <p className="text-center text-xs text-muted-foreground mb-4 font-medium">
+        <p className="text-center text-xs text-zinc-500 mb-4 font-medium uppercase tracking-wider">
           Prévia do modelo
         </p>
         
-        {/* WhatsApp Background Pattern */}
-        <div className="relative rounded-lg overflow-hidden bg-[#e5ddd5] p-4 min-h-[300px]"
+        {/* WhatsApp Background Pattern (Dark Mode) */}
+        <div className="relative rounded-xl overflow-hidden bg-[#0b141a] p-4 min-h-[300px] shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] border border-white/5"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d9d9d9' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
           }}
         >
-          {/* Message Bubble */}
-          <div className="relative max-w-[340px] ml-auto">
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          {/* Message Bubble (Incoming Dark) */}
+          <div className="relative max-w-[340px]">
+            <div className="bg-[#202c33] rounded-lg shadow-sm overflow-hidden rounded-tl-none mt-2">
               {/* Header */}
               {header && (
-                <div className="border-b border-gray-100">
+                <div className="border-b border-white/5">
                   {header.type === 'text' && header.content && (
-                    <div className="p-3 font-semibold text-gray-900">
+                    <div className="p-3 font-semibold text-[#e9edef]">
                       {header.content}
                     </div>
                   )}
                   {header.type === 'image' && header.url && (
-                    <div className="relative w-full h-48 bg-gray-100">
+                    <div className="relative w-full h-48 bg-[#111b21]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src={header.url} 
@@ -59,7 +59,7 @@ export function WhatsAppPreview({
                     </div>
                   )}
                   {header.type === 'video' && header.url && (
-                    <div className="relative w-full h-48 bg-gray-100 flex items-center justify-center">
+                    <div className="relative w-full h-48 bg-[#111b21] flex items-center justify-center">
                       <video 
                         src={header.url} 
                         className="w-full h-full object-cover"
@@ -68,11 +68,11 @@ export function WhatsAppPreview({
                     </div>
                   )}
                   {header.type === 'document' && header.content && (
-                    <div className="p-3 flex items-center gap-2 bg-gray-50">
-                      <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="p-3 flex items-center gap-2 bg-[#111b21]/50">
+                      <svg className="w-5 h-5 text-[#8696a0]" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                       </svg>
-                      <span className="text-sm text-gray-700 truncate">{header.content}</span>
+                      <span className="text-sm text-[#e9edef] truncate">{header.content}</span>
                     </div>
                   )}
                 </div>
@@ -80,7 +80,7 @@ export function WhatsAppPreview({
               
               {/* Body */}
               <div className="p-3">
-                <div className="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                <div className="text-[14.2px] leading-snug text-[#e9edef] whitespace-pre-wrap break-words">
                   {body}
                 </div>
               </div>
@@ -88,7 +88,7 @@ export function WhatsAppPreview({
               {/* Footer */}
               {footer && (
                 <div className="px-3 pb-2">
-                  <p className="text-xs text-gray-500 italic">
+                  <p className="text-xs text-[#8696a0]">
                     {footer}
                   </p>
                 </div>
@@ -96,7 +96,7 @@ export function WhatsAppPreview({
               
               {/* Timestamp */}
               <div className="px-3 pb-2 flex items-center justify-end gap-1">
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[10px] text-[#8696a0]">
                   00:13
                 </span>
               </div>
@@ -104,11 +104,11 @@ export function WhatsAppPreview({
             
             {/* Buttons */}
             {buttons && buttons.length > 0 && (
-              <div className="mt-1 bg-white rounded-lg shadow-sm overflow-hidden divide-y divide-gray-100">
+              <div className="mt-1 bg-[#202c33] rounded-lg shadow-sm overflow-hidden divide-y divide-white/5">
                 {buttons.map((button, index) => (
                   <button
                     key={index}
-                    className="w-full p-3 text-sm font-medium text-[#00a884] hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                    className="w-full p-3 text-sm font-medium text-[#00a884] hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
                     disabled
                   >
                     {button.type === 'url' && (
@@ -134,8 +134,8 @@ export function WhatsAppPreview({
             
             {/* Footer Text */}
             <div className="mt-3 text-center">
-              <p className="text-[11px] text-gray-500">
-                Número Privado Antônio Fogaça e Pablo Marçal
+              <p className="text-[11px] text-zinc-500 font-medium">
+                Sua marca aparecerá aqui
               </p>
             </div>
           </div>

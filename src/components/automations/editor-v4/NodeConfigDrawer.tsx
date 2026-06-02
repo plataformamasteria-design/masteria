@@ -3,8 +3,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Settings2 } from 'lucide-react';
 import type { Node } from '@xyflow/react';
-import { NodeConfigPanel } from '../NodeConfigPanel';
-import { NodeOutputPanel } from '../NodeOutputPanel';
+import dynamic from 'next/dynamic';
+
+const NodeConfigPanel = dynamic(() => import('../NodeConfigPanel').then(m => m.NodeConfigPanel), {
+    loading: () => <div className="flex justify-center items-center h-full text-zinc-400">Carregando painel...</div>
+});
+
+const NodeOutputPanel = dynamic(() => import('../NodeOutputPanel').then(m => m.NodeOutputPanel), {
+    loading: () => <div className="flex justify-center items-center h-full text-zinc-400">Carregando teste...</div>
+});
 import type { NodeTestOutput } from '@/hooks/useNodeTestOutputs';
 
 interface NodeConfigDrawerProps {

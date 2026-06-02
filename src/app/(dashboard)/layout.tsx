@@ -27,16 +27,9 @@ export default async function DashboardLayout({
 
   return (
     <SessionProvider value={session}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <div className="flex h-screen w-full bg-background overflow-hidden">
-          <MainContent>{children}</MainContent>
-        </div>
-      </ThemeProvider>
+      <div className="flex h-screen w-full bg-background overflow-hidden">
+        <MainContent>{children}</MainContent>
+      </div>
     </SessionProvider>
   );
 }

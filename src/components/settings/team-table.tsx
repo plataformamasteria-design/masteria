@@ -574,18 +574,18 @@ export function TeamTable(): JSX.Element {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+      <Card className="bg-white/[0.02] border-white/5 backdrop-blur-xl shadow-2xl">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 border-b border-white/5 pb-6">
           <div>
-            <CardTitle>Gerenciamento de Equipe</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-bold text-white">Gerenciamento de Equipe</CardTitle>
+            <CardDescription className="text-zinc-400 mt-1">
               Convide e gerencie os usuários da sua equipe.
             </CardDescription>
           </div>
           <Dialog open={isInviteModalOpen} onOpenChange={setInviteModalOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <PlusCircle className="mr-2" />
+              <Button className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all">
+                <PlusCircle className="mr-2 h-4 w-4" />
                 Convidar Usuário
               </Button>
             </DialogTrigger>
@@ -646,43 +646,43 @@ export function TeamTable(): JSX.Element {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+            <div className="flex justify-center items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-emerald-500" /></div>
           ) : isMobile ? (
             <TeamListMobile users={users} onEdit={openEditModal} onDeactivate={openDeactivateAlert} onRemove={openRemoveAlert} onResendInvite={handleResendInvite} onResetPassword={openResetPasswordDialog} isResending={isResending} onMarkAsVerified={handleMarkAsVerified} onEditPermissions={openPermissionsDialog} />
           ) : (
-            <div className="w-full border rounded-lg relative">
+            <div className="w-full border border-white/5 rounded-xl relative overflow-hidden bg-black/20">
               <div className="w-full overflow-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Cargo</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                  <TableHeader className="bg-white/[0.02]">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="text-zinc-400 font-medium">Nome</TableHead>
+                      <TableHead className="text-zinc-400 font-medium">Email</TableHead>
+                      <TableHead className="text-zinc-400 font-medium">Cargo</TableHead>
+                      <TableHead className="text-zinc-400 font-medium">Status</TableHead>
+                      <TableHead className="text-right text-zinc-400 font-medium">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">Nenhum usuário na equipe.</TableCell>
+                      <TableRow className="border-white/5 hover:bg-transparent">
+                        <TableCell colSpan={5} className="h-24 text-center text-zinc-500">Nenhum usuário na equipe.</TableCell>
                       </TableRow>
                     ) : users.map((user) => (
-                      <TableRow key={user.id} className="hover:bg-muted/40 transition-colors">
-                        <TableCell className="font-medium">
+                      <TableRow key={user.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <TableCell className="font-medium text-white">
                           <div className="flex items-center gap-3">
-                            <Avatar>
+                            <Avatar className="h-9 w-9 border border-white/10">
                               <AvatarImage
                                 src={user.avatarUrl || ''}
                                 alt={user.name}
                                 data-ai-hint="avatar user"
                               />
-                              <AvatarFallback>{user.name?.substring(0, 2) || 'U'}</AvatarFallback>
+                              <AvatarFallback className="bg-zinc-800 text-zinc-300">{user.name?.substring(0, 2) || 'U'}</AvatarFallback>
                             </Avatar>
                             <span className="font-medium whitespace-nowrap">{user.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell className="whitespace-nowrap text-zinc-300">
                           {user.email}
                         </TableCell>
                         <TableCell>
@@ -701,7 +701,7 @@ export function TeamTable(): JSX.Element {
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10">
                                 <span className="sr-only">Abrir menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>

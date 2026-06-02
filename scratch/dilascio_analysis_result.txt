@@ -1,0 +1,1866 @@
+﻿
+=== ESTAT├ìSTICAS GERAIS ===
+{
+  "total": 263,
+  "byType": {
+    "outro": 21,
+    "agendamento": 223,
+    "plano_saude": 8,
+    "retorno_pos_consulta": 3,
+    "confirma├º├úo": 1,
+    "sondagem_inicial": 7
+  },
+  "byOutcome": {
+    "em_aberto": 188,
+    "positivo": 42,
+    "sem_resposta": 33
+  },
+  "byPlano": {
+    "Particular": 19,
+    "Hapvida": 9,
+    "Amil": 4,
+    "Unimed": 1
+  },
+  "semResposta": 33,
+  "urgencias": 29,
+  "pedidosHorario": 221,
+  "frios": 129,
+  "muitoFrios": 34
+}
+
+=== AGENDAMENTOS ===
+Total: 223
+  [EM_ABERTO] dilascioclinica1 | +553132411738 | msgs:79 | ├║ltimo:2026-05-28 21:39
+    Primeiro: ""
+    ├Ültimo: "(31)99171-7681" (de: AGENT)
+  [EM_ABERTO] Isabel | +5531991114357 | msgs:5 | ├║ltimo:2026-05-28 21:37
+    Primeiro: "Confirmado"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531982538024 | msgs:16 | ├║ltimo:2026-05-28 21:36
+    Primeiro: "Consegue remarcar pra mim por favor"
+    ├Ültimo: "Definitiva" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988850344 | msgs:218 | ├║ltimo:2026-05-28 21:35
+    Primeiro: "Γëí╞Æ├┤Γòû Imagem"
+    ├Ültimo: "(31)99171-7681" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531971083190 | msgs:252 | ├║ltimo:2026-05-28 21:32
+    Primeiro: "Γëí╞Æ├ª├▒ Contato compartilhado
+Nome: Dra Laura endo PM
+Telefone: +55 31 3444-5956"
+    ├Ültimo: "Agenda de amanhΓö£├║" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986749068 | msgs:32 | ├║ltimo:2026-05-28 21:31
+    Primeiro: "Γëí╞Æ├äΓòí Γö£├╝udio"
+    ├Ültimo: "Esse paciente esta amanhΓö£├║" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531983116816 | msgs:5 | ├║ltimo:2026-05-28 21:26
+    Primeiro: "Ok. Obrigado."
+    ├Ültimo: "Posso confirmar ?" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531982195854 | msgs:6 | ├║ltimo:2026-05-28 21:24
+    Primeiro: "Solicito reagendamento"
+    ├Ültimo: "Ok" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531997025170 | msgs:7 | ├║ltimo:2026-05-28 21:23
+    Primeiro: "Boa noite, pode remarcar por favor"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] Clovis Vieira | +5531992470171 | msgs:17 | ├║ltimo:2026-05-28 21:23
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] Ana Gabriele | +5531988225698 | msgs:7 | ├║ltimo:2026-05-28 21:23
+    Primeiro: "Boa Tarde."
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531993663778 | msgs:6 | ├║ltimo:2026-05-28 21:17
+    Primeiro: "Boa noite"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531991717681 | msgs:2 | ├║ltimo:2026-05-28 21:17
+    Primeiro: ""
+    ├Ültimo: "Posso confirmar ?" (de: AGENT)
+  [EM_ABERTO] Gilvanda | +5531994007977 | msgs:5 | ├║ltimo:2026-05-28 21:09
+    Primeiro: "Boa tarde
+Gostaria de marcar um orΓö£┬║amento com Dr Mauro no primeiro ou no Γö£Γòæltimo horΓö£├¡rio 
+Nos dias 23 ou 24/06/2026"
+    ├Ültimo: "Gilvanda Maria de Souza Vaz" (de: CONTACT)
+  [EM_ABERTO] Regina Celia | +5531988439090 | msgs:8 | ├║ltimo:2026-05-28 20:57
+    Primeiro: "Oi"
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988748614 | msgs:3 | ├║ltimo:2026-05-28 20:52
+    Primeiro: "╬ô┬ú├á"
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531993696374 | msgs:11 | ├║ltimo:2026-05-28 20:22
+    Primeiro: "Confirma consulta"
+    ├Ültimo: "Ok, vamos manter as 19h." (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531998060807 | msgs:14 | ├║ltimo:2026-05-28 20:03
+    Primeiro: "boa tarde"
+    ├Ültimo: "18:00 horas" (de: CONTACT)
+  [POSITIVO] Luan Franco | +5531983495880 | msgs:2 | ├║ltimo:2026-05-28 18:49
+    Primeiro: "Boa tarde tudo bem?
+Sou o Luan, que tem uma consulta com o doutor nathan, estou a caminho, garrado no trΓö£├│nsito aqui"
+    ├Ültimo: "Ok" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531997229502 | msgs:99 | ├║ltimo:2026-05-28 18:49
+    Primeiro: "Oxi kkk"
+    ├Ültimo: "Ok" (de: AGENT)
+  [POSITIVO] Γëí╞Æ┬¼├╢Andriele Raiane | +5531982165995 | msgs:40 | ├║ltimo:2026-05-28 18:27
+    Primeiro: "Marcar o paciente Silvio MoisΓö£ΓîÉs com dra Ana"
+    ├Ültimo: "Ok" (de: AGENT)
+  [SEM_RESPOSTA] Mauro | +5531999534949 | msgs:2 | ├║ltimo:2026-05-28 18:22
+    Primeiro: "Boa tarde!
+Pode marcar um horΓö£├¡rio segunda-feira, 01/06, com a Dra. Carla. JΓö£├¡ sou cliente e estava viajando. Espero resposta."
+    ├Ültimo: "Meu nome: Mauro Passos" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531984849242 | msgs:7 | ├║ltimo:2026-05-28 18:18
+    Primeiro: "Realmente vai ficar apertado esta agenda, porque viajarei no inΓö£┬ício de junho, e estava sΓö£Γöé no aguardo da peΓö£┬║a. Tem que ver a disponibilidade do Dr. Mauro."
+    ├Ültimo: "Tem algum horΓö£├¡rio por volta das 17 hs. Ou 12 hs.?" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531987738864 | msgs:9 | ├║ltimo:2026-05-28 18:09
+    Primeiro: "Oi boa noite. Sim pode agendar por favor . obrigado"
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531992252289 | msgs:4 | ├║ltimo:2026-05-28 17:33
+    Primeiro: "Ok confirmada"
+    ├Ültimo: "Jonas, lembrando que sua consulta serΓö£├¡ 25/06/2026 Γö£├çS 13:00
+ClΓö£┬ínica Dilascio 
+(31)3241-1738" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531996128588 | msgs:8 | ├║ltimo:2026-05-28 17:13
+    Primeiro: "Bom dia. Aguardo remarcaΓö£┬║Γö£├║o depois do dia 16/06, as 13h"
+    ├Ültimo: "Por nada" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531992292923 | msgs:11 | ├║ltimo:2026-05-28 16:56
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] Leni Alves | +5531971262130 | msgs:11 | ├║ltimo:2026-05-28 16:23
+    Primeiro: "Bom dia, tudo bem,  a Dr Ana, pediu, que, assim que a tomografia tiver pronta, Γö£ΓîÉ pra mandar pra ela, oq acontece, vou pegar tomografia so na sexta feira , passa pra ela, por favor . Obrigada"
+    ├Ültimo: "Sim, pode ser" (de: CONTACT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531984011735 | msgs:1 | ├║ltimo:2026-05-28 16:23
+    Primeiro: ""
+    ├Ültimo: "OlΓö£├¡, Clara de Almeida Coelho , tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve " (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531987751977 | msgs:2 | ├║ltimo:2026-05-28 16:19
+    Primeiro: ""
+    ├Ültimo: "OlΓö£├¡, Caroline GonΓö£┬║alves Ribeiro De Almeida , tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. Vo" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531987388604 | msgs:1 | ├║ltimo:2026-05-28 16:06
+    Primeiro: ""
+    ├Ültimo: "OlΓö£├¡,  Carlos Aparecido , tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve conosc" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531985330800 | msgs:1 | ├║ltimo:2026-05-28 16:05
+    Primeiro: ""
+    ├Ültimo: "OlΓö£├¡ Claudia Valeria, tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve conosco em" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531986163264 | msgs:2 | ├║ltimo:2026-05-28 16:00
+    Primeiro: ""
+    ├Ültimo: "ZELIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+16/06/2026 09:30
+dra Ana Luisa" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531995892999 | msgs:1 | ├║ltimo:2026-05-28 15:55
+    Primeiro: ""
+    ├Ültimo: "OlΓö£├¡ Christian Yuri, tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve conosco em " (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531983411295 | msgs:39 | ├║ltimo:2026-05-28 15:42
+    Primeiro: "Assim que puder, vou verificar a data. Blz"
+    ├Ültimo: "obrigada, na segunda irei verificar e lhe dou retorno Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥╬ô┬ú├áΓëí╞Æ├û├àΓëí╞Æ├àΓòùΓëí╞Æ├å┬ú" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531998545620 | msgs:10 | ├║ltimo:2026-05-28 15:36
+    Primeiro: "Pode ser na sexta"
+    ├Ültimo: "posso confirmar?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999399157 | msgs:6 | ├║ltimo:2026-05-28 14:41
+    Primeiro: "Estaremos aΓö£┬í ok?"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999753079 | msgs:11 | ├║ltimo:2026-05-28 14:29
+    Primeiro: "Quando ele retornar me arranja um horΓö£├¡rio mais  depressa possivel porque nΓö£├║o estΓö£├¡ fΓö£├¡cil esperar, por favor"
+    ├Ültimo: "Agendada" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988502752 | msgs:32 | ├║ltimo:2026-05-28 14:27
+    Primeiro: "Quem Γö£ΓîÉ esta?"
+    ├Ültimo: "Ta bom" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531996441719 | msgs:25 | ├║ltimo:2026-05-28 14:08
+    Primeiro: "Vc"
+    ├Ültimo: "Γëí╞Æ├û├àΓëí╞Æ├àΓò¥" (de: CONTACT)
+  [EM_ABERTO] Isabel Rodrigues | +5531991766248 | msgs:9 | ├║ltimo:2026-05-28 14:03
+    Primeiro: "Bom dia VocΓö£┬¼ teria um horΓö£├¡rio dia 9 de Junho com a Dr Laura depois de 11 horas"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] sofia | +5531971412884 | msgs:14 | ├║ltimo:2026-05-28 14:02
+    Primeiro: "Pessoal, bom dia!
+Tudo bem?
+Vou precisar desmarcar a limpeza, mas manter a consulta com a Dra Fatima.
+Obrigada."
+    ├Ültimo: "Reagendada" (de: AGENT)
+  [EM_ABERTO] talytta╬ô┬Ñ├▒Γê⌐Γòò├àΓëí╞Æ├û├«Γëí╞Æ├àΓò£Γëí╞Æ├å┬¼Γëí╞Æ├àΓò£Γëí╞Æ├¼├ç | +5531999067346 | msgs:18 | ├║ltimo:2026-05-28 14:01
+    Primeiro: "Oi"
+    ├Ültimo: "Podemos agendar no dia 11/06 as 11h?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531997207256 | msgs:3 | ├║ltimo:2026-05-28 14:00
+    Primeiro: "bom dia! ╬ô┬ú├á"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531975078699 | msgs:5 | ├║ltimo:2026-05-28 14:00
+    Primeiro: "Boa noite"
+    ├Ültimo: "Podemos agendar no dia 09/06 as 15h?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988230530 | msgs:7 | ├║ltimo:2026-05-28 13:55
+    Primeiro: "Bom dia!"
+    ├Ültimo: "Reagendada" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531983522574 | msgs:49 | ├║ltimo:2026-05-28 13:51
+    Primeiro: "Ok"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531991278246 | msgs:9 | ├║ltimo:2026-05-28 13:51
+    Primeiro: "Confirmado"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] Chris | +5531999022130 | msgs:5 | ├║ltimo:2026-05-28 13:44
+    Primeiro: "Bom dia!!!! Poderia confirmar meu horΓö£├¡rio em julho com Dr Mauro? NΓö£├║o recebi confirmaΓö£┬║Γö£├║o de agendamento.
+Estive na consulta com ele dia 04/05 e pediu para marcar dia 06/07 ou 13/07."
+    ├Ültimo: "Por nada !!" (de: AGENT)
+  [POSITIVO] Ronald | +5531988702469 | msgs:30 | ├║ltimo:2026-05-28 13:43
+    Primeiro: "antes do dia 8. Se tiver desistΓö£┬¼ncia a tarde"
+    ├Ültimo: "OK" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531991167832 | msgs:31 | ├║ltimo:2026-05-28 13:38
+    Primeiro: "Boa tarde, uai eu estou marcado com ele dia 28/05. !!!
+Como vai ser !
+Vou ver o horΓö£├¡rio com minha esposa"
+    ├Ültimo: "Ok" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531986768348 | msgs:7 | ├║ltimo:2026-05-28 13:37
+    Primeiro: "Obrigado"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999994737 | msgs:6 | ├║ltimo:2026-05-28 13:34
+    Primeiro: "Confirmado"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531992166021 | msgs:4 | ├║ltimo:2026-05-28 13:07
+    Primeiro: "Sim, podemos"
+    ├Ültimo: "ATAILSON,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+03/06/2026 13:00" (de: AGENT)
+  [EM_ABERTO] Daniel | +5531998936677 | msgs:4 | ├║ltimo:2026-05-28 12:59
+    Primeiro: "Bom dia.
+
+Gostaria de agendar uma limpeza odonto pelo IPSM.
+
+Obrigado."
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531996407282 | msgs:13 | ├║ltimo:2026-05-28 12:57
+    Primeiro: "╬ô┬ú├á"
+    ├Ültimo: "Bom dia !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531994989222 | msgs:4 | ├║ltimo:2026-05-28 12:53
+    Primeiro: "Bom dia ,ok, obrigada Γëí╞Æ├û├àΓëí╞Æ├àΓò£"
+    ├Ültimo: "Por nada!" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531994706425 | msgs:5 | ├║ltimo:2026-05-28 12:51
+    Primeiro: "╬ô┬ú├á consulta confirmada"
+    ├Ültimo: "Bom dia !" (de: AGENT)
+  [EM_ABERTO] Thais Oliveira | +5531999105623 | msgs:15 | ├║ltimo:2026-05-28 12:50
+    Primeiro: "Bom dia!
+
+JΓö£├¡ tem o retorno do IPSM?"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531986049692 | msgs:13 | ├║ltimo:2026-05-27 21:35
+    Primeiro: "Confirmado"
+    ├Ültimo: "Ok" (de: CONTACT)
+  [POSITIVO] dilascioclinica1 | +5531996663769 | msgs:4 | ├║ltimo:2026-05-27 20:18
+    Primeiro: "MARLY,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+01/06/2026 09:30"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531991752153 | msgs:11 | ├║ltimo:2026-05-27 20:06
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531971727312 | msgs:9 | ├║ltimo:2026-05-27 20:04
+    Primeiro: "Sim"
+    ├Ültimo: "ok" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531993652279 | msgs:14 | ├║ltimo:2026-05-27 19:55
+    Primeiro: "Ok! Confirmado"
+    ├Ültimo: "Γö£├╝LVARO,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+01/06/2026 13:00" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999073466 | msgs:2 | ├║ltimo:2026-05-27 19:51
+    Primeiro: ""
+    ├Ültimo: "Posso confirmar ?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +14804656632 | msgs:29 | ├║ltimo:2026-05-27 19:46
+    Primeiro: "Oi, querida"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531982495688 | msgs:4 | ├║ltimo:2026-05-27 19:44
+    Primeiro: "MuitΓö£┬íssimos , obrigada!"
+    ├Ültimo: "Por nada ╬ô├┐ΓòæΓê⌐Γòò├à╬ô┬ú┬┐" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531972669899 | msgs:7 | ├║ltimo:2026-05-27 19:40
+    Primeiro: "Ola, boa tarde"
+    ├Ültimo: "Seu procedimento seria uma limpeza? Tenho disponibilidade com a Dra. Clara, que faz parte da mesma equipe do Dr. Mauro. TambΓö£ΓîÉm tenho horΓö£├¡rios com o Dr. Matheus, que possui disponibilidade antes." (de: AGENT)
+  [EM_ABERTO] Γëí╞Æ├å├▓ | +5531975009828 | msgs:20 | ├║ltimo:2026-05-27 19:33
+    Primeiro: "Bom dia pergunta a Ana se pode ser terΓö£┬║a que vem"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531998475194 | msgs:4 | ├║ltimo:2026-05-27 19:30
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "LUIZ,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+12/06/2026 13:00" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531991680211 | msgs:4 | ├║ltimo:2026-05-27 18:46
+    Primeiro: "OlΓö£├¡, boa tarde"
+    ├Ültimo: "NΓö£├║o" (de: AGENT)
+  [EM_ABERTO] Paulo Roberto | +5531996261517 | msgs:8 | ├║ltimo:2026-05-27 18:43
+    Primeiro: "Boa tarde Γëí╞Æ├¼├ç
+Preciso remarcar um horΓö£├¡rio com Mauro.
+
+Meu horΓö£├¡rio seria 29/05 Γö£├ís 17h. 
+
+Poderia por gentileza remarcar para 01/06?
+
+Γëí╞Æ├û├¬Γëí╞Æ├û├¿"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531991377811 | msgs:1 | ├║ltimo:2026-05-27 18:39
+    Primeiro: ""
+    ├Ültimo: "Boa Tarde, KENIA  ! VocΓö£┬¼ tinha uma consulta agendada com o Dr. Mauro no dia 29/05, porΓö£ΓîÉm ele estarΓö£├¡ em SΓö£├║o Paulo essa semana. Por esse motivo, precisaremos cancelar essa consulta.
+
+Fico no aguardo" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5532999288496 | msgs:1 | ├║ltimo:2026-05-27 18:37
+    Primeiro: ""
+    ├Ültimo: "Boa Tarde, FERNANDA  ! VocΓö£┬¼ tinha uma consulta agendada com o Dr. Mauro no dia 29/05, porΓö£ΓîÉm ele estarΓö£├¡ em SΓö£├║o Paulo essa semana. Por esse motivo, precisaremos cancelar essa consulta.
+
+Fico no agua" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531973572261 | msgs:8 | ├║ltimo:2026-05-27 18:24
+    Primeiro: "Ok"
+    ├Ültimo: "Aguardo o retorno" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531989772558 | msgs:10 | ├║ltimo:2026-05-27 18:24
+    Primeiro: "Bom dia!"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531998233633 | msgs:9 | ├║ltimo:2026-05-27 18:22
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "Reagendada" (de: AGENT)
+  [EM_ABERTO] Ednalva | +5531996410093 | msgs:16 | ├║ltimo:2026-05-27 18:21
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531998408741 | msgs:9 | ├║ltimo:2026-05-27 18:16
+    Primeiro: "Ok"
+    ├Ültimo: "Γëí╞Æ├ª├¼Γëí╞Æ├àΓòùΓëí╞Æ├ª├¼Γëí╞Æ├àΓòù" (de: CONTACT)
+  [EM_ABERTO] ElΓö£Γöñ | +5531997314111 | msgs:3 | ├║ltimo:2026-05-27 17:58
+    Primeiro: "Bom dia! Estou com muita sinusite e portanto nΓö£├║o posso comparecer amanhΓö£├║ a consulta, gentileza desmarcar. Obrigada."
+    ├Ültimo: "Podemos reagendar para o dia 25/06 as 09h?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999945622 | msgs:6 | ├║ltimo:2026-05-27 17:56
+    Primeiro: "Γëí╞Æ├äΓòí Γö£├╝udio"
+    ├Ültimo: "Reagendado" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986481693 | msgs:9 | ├║ltimo:2026-05-27 17:55
+    Primeiro: "Γö£├╝ tarde.ok"
+    ├Ültimo: "Sticker" (de: CONTACT)
+  [EM_ABERTO] Raquel | +5531998400252 | msgs:8 | ├║ltimo:2026-05-27 17:49
+    Primeiro: "Oi. Bom dia. Tudo bem? Pode remarcar por favor?"
+    ├Ültimo: "Temos disponibilidade com o Dr. Mauro no dia 26/06 as 14h" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531991855070 | msgs:6 | ├║ltimo:2026-05-27 17:42
+    Primeiro: "Ola estaremos viajando no dia 02"
+    ├Ültimo: "Vou verificar com ela" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531989355430 | msgs:7 | ├║ltimo:2026-05-27 17:13
+    Primeiro: "╬ô┬ú├á"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531995606364 | msgs:5 | ├║ltimo:2026-05-27 16:51
+    Primeiro: "Confirmado ╬ô┬ú├á"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] . | +5531974008535 | msgs:27 | ├║ltimo:2026-05-27 16:33
+    Primeiro: "Oi tudo bem"
+    ├Ültimo: "Sim" (de: AGENT)
+  [EM_ABERTO] Silvana B.Baptista | +5531986540810 | msgs:5 | ├║ltimo:2026-05-27 16:28
+    Primeiro: "Bom dia!
+Confirmando dia 28/05 Γö£├ís 11h, alΓö£ΓîÉm da limpeza tem 2 dentes que soltaram a obturaΓö£┬║Γö£├║o,  do dente normal e do implantado."
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999139977 | msgs:2 | ├║ltimo:2026-05-27 15:51
+    Primeiro: ""
+    ├Ültimo: "Gostaria de agendar ?" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531994167290 | msgs:11 | ├║ltimo:2026-05-27 15:48
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5533988124003 | msgs:24 | ├║ltimo:2026-05-27 15:35
+    Primeiro: "Pode remarcar para o dia mais prΓö£Γöéximo possΓö£┬ível"
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [POSITIVO] Meload | +5531987136484 | msgs:63 | ├║ltimo:2026-05-27 15:35
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988718603 | msgs:16 | ├║ltimo:2026-05-27 15:35
+    Primeiro: "Boa tarde
+Provavelmente vocΓö£┬¼s digitaram o nr errado, pois jΓö£├¡ entrei em contato com o IPSM e a carteira estava vΓö£├¡lida. Na terΓö£┬║a feira da semana passada eu cobrei uma posiΓö£┬║Γö£├║o da clΓö£┬ínica e sΓö£Γöé hoj"
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999205185 | msgs:8 | ├║ltimo:2026-05-27 15:24
+    Primeiro: "Pode ser 16 de junho"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531991835116 | msgs:10 | ├║ltimo:2026-05-27 15:02
+    Primeiro: "A tarde 
+Gengiva inflamada"
+    ├Ültimo: "Sticker" (de: CONTACT)
+  [POSITIVO] Valdineia Camilo | +5531997969996 | msgs:23 | ├║ltimo:2026-05-27 15:02
+    Primeiro: "oi bom dia ! Td bem? estou precisando agendar consulta com Dra Fatima"
+    ├Ültimo: "Ok, confirmado" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531991752181 | msgs:11 | ├║ltimo:2026-05-27 15:02
+    Primeiro: "VocΓö£┬¼s podem marca pra outro dia"
+    ├Ültimo: "Me informa o seu nome completo" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531984640938 | msgs:6 | ├║ltimo:2026-05-27 15:00
+    Primeiro: "OlΓö£├¡ vou ter que pegar o resultado do RX e remarcar. AΓö£┬í te chamo novamente"
+    ├Ültimo: "Bom dia" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531997016131 | msgs:5 | ├║ltimo:2026-05-27 14:55
+    Primeiro: "Pode realizar um novo agendamento"
+    ├Ültimo: "Reagendada" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531983486040 | msgs:7 | ├║ltimo:2026-05-27 14:43
+    Primeiro: "Pode sim"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [POSITIVO] PatrΓö£┬ícia Barbosa | +5531982016546 | msgs:7 | ├║ltimo:2026-05-27 14:39
+    Primeiro: "Vou precisar  remarcar de novo pra depois do dia 6/6"
+    ├Ültimo: "OlΓö£├¡ ( PatrΓö£┬ícia ) Sua consulta com a Dr(a). ( ANA ) na ClΓö£┬ínica Dilascio estΓö£├¡ marcada! Γëí╞Æ├┐├¼Γëí╞Æ┬¼├æ  
+Γëí╞Æ├┤├á Dia: *28/05/2026*
+Γëí╞Æ├╣├┤Γê⌐Γòò├à Semana: *QUINTA*
+╬ô├àΓûæ HorΓö£├¡rio: *17:00*
+
+Γëí╞Æ├┤├¼ Rua Domingos Vieira, 587" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986255767 | msgs:4 | ├║ltimo:2026-05-27 14:23
+    Primeiro: ""
+    ├Ültimo: "VocΓö£┬¼ tem um agendamento hoje Γö£├ís 14:00, deseja manter no particular ?" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999085842 | msgs:1 | ├║ltimo:2026-05-27 14:15
+    Primeiro: ""
+    ├Ültimo: "Boa Tarde, ADRIANA  ! VocΓö£┬¼ tinha uma consulta agendada com o Dr. Mauro no dia 28/05, porΓö£ΓîÉm ele estarΓö£├¡ em SΓö£├║o Paulo essa semana. Por esse motivo, precisaremos cancelar essa consulta.
+
+Fico no aguar" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986387303 | msgs:4 | ├║ltimo:2026-05-27 13:55
+    Primeiro: "Opa, bom dia"
+    ├Ültimo: "Reagendado" (de: AGENT)
+  [EM_ABERTO] Tatiane | +5531971240285 | msgs:8 | ├║ltimo:2026-05-27 13:55
+    Primeiro: "Bom dia!"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988531843 | msgs:3 | ├║ltimo:2026-05-27 13:54
+    Primeiro: "╬ô┬ú├á Consulta confirmada"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531995793434 | msgs:6 | ├║ltimo:2026-05-27 13:42
+    Primeiro: "Bom dia, tudo bem?"
+    ├Ültimo: "Ok, consulta cancelada" (de: AGENT)
+  [EM_ABERTO] Guilherme | +5531988732923 | msgs:12 | ├║ltimo:2026-05-27 13:35
+    Primeiro: "Boa tarde! Tudo bem? 
+Gostaria de marcar uma consulta com o dr. Matheus."
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531995200706 | msgs:17 | ├║ltimo:2026-05-27 13:35
+    Primeiro: "Pode"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5571992937908 | msgs:3 | ├║ltimo:2026-05-27 13:26
+    Primeiro: ""
+    ├Ültimo: "VocΓö£┬¼ tem um agendamento hoje Γö£├ís 16:00, deseja manter no particular ?" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531986310049 | msgs:12 | ├║ltimo:2026-05-27 13:20
+    Primeiro: "Confirmo"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5532998561835 | msgs:26 | ├║ltimo:2026-05-27 13:06
+    Primeiro: "Quarta-feira."
+    ├Ültimo: "Rua Domingos Vieira 587 sala  1208 santa efigΓö£┬¼nia bh" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531984490252 | msgs:3 | ├║ltimo:2026-05-27 13:04
+    Primeiro: "Pode sim"
+    ├Ültimo: "Reagendado" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531997337793 | msgs:1 | ├║ltimo:2026-05-27 12:58
+    Primeiro: ""
+    ├Ültimo: "Bom dia, Maria ! Seu retorno com a Dra. FΓö£├¡tima estava marcado para o dia 16/06, porΓö£ΓîÉm ela nΓö£├║o estarΓö£├¡ na clΓö£┬ínica nessa data. Ela pediu para anteciparmos sua consulta para o dia 09/06 Γö£├ís 11h00. Po" (de: AGENT)
+  [EM_ABERTO] Eliane | +5532991315116 | msgs:11 | ├║ltimo:2026-05-27 12:20
+    Primeiro: "B dia favor enviar CPF dr.mauro p entregar ao contador p imposto de renda . EstΓö£├¡ faltando isso no documento.."
+    ├Ültimo: "o dr estΓö£├¡ ausente no momento, mas em breve ele irΓö£├¡ lhe responder." (de: AGENT)
+  [EM_ABERTO] Vivi | +5531995735469 | msgs:15 | ├║ltimo:2026-05-27 12:14
+    Primeiro: "Oi"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531988503518 | msgs:13 | ├║ltimo:2026-05-27 12:02
+    Primeiro: "Boa tarde, nΓö£├║o poderia ser dia 16?"
+    ├Ültimo: "Vou te passar nΓö£Γòæmero da dra Fatima, peΓö£┬║o por gentileza que entre em contato com a mesma para que ela possa verificar essas informaΓö£┬║Γö£Γòíes, devido ela jΓö£├¡ realizar recibos, no sistema saΓö£Γòæde. Bom dia!" (de: AGENT)
+  [EM_ABERTO] Enio Gentil | +5532999941564 | msgs:3 | ├║ltimo:2026-05-27 11:53
+    Primeiro: "Bom dia!
+O Dr. Mauro vai me encaixar para apertar um dente,  favor encaminhar uma confirmaΓö£┬║Γö£├║o de consulta para mim conseguir o transporte da prefeitura,  se possΓö£┬ível para amanhΓö£├║."
+    ├Ültimo: "o Mesmo disse que seria para sua esposa, qual o horario vocΓö£┬¼s conseguem vir amanha para que possa verificar para vocΓö£┬¼s?" (de: AGENT)
+  [EM_ABERTO] JΓö£ΓîÉssica AraujoΓëí╞Æ┬¬├» | +5531991253666 | msgs:35 | ├║ltimo:2026-05-27 11:40
+    Primeiro: "Boa noite!"
+    ├Ültimo: "Tudo bem?" (de: AGENT)
+  [EM_ABERTO] Daniela | +5531984558332 | msgs:10 | ├║ltimo:2026-05-26 22:09
+    Primeiro: "SICOOB_2026_26_05_18_39_42_PIX.pdf"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531993015893 | msgs:19 | ├║ltimo:2026-05-26 21:55
+    Primeiro: "Bom dia"
+    ├Ültimo: "Conforme informado na mensagem, as duas desmarcaΓö£┬║Γö£Γòíes ocorreram por motivos tΓö£ΓîÉcnicos da clΓö£┬ínica e, infelizmente, nΓö£├║o seria possΓö£┬ível realizar o atendimento nesse dia." (de: AGENT)
+  [EM_ABERTO] Paula Nery Γëí╞Æ├«Γò¥ | +5531988183546 | msgs:38 | ├║ltimo:2026-05-26 21:39
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531984763264 | msgs:12 | ├║ltimo:2026-05-26 21:35
+    Primeiro: "Oi boa tarde"
+    ├Ültimo: "VERA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+24/06/2026 09:00" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999121306 | msgs:2 | ├║ltimo:2026-05-26 21:32
+    Primeiro: ""
+    ├Ültimo: "Aguardo o retorno para reagendar a consulta" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988863339 | msgs:6 | ├║ltimo:2026-05-26 21:14
+    Primeiro: "Consulta confirmada"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531989343992 | msgs:16 | ├║ltimo:2026-05-26 21:05
+    Primeiro: "Confirmado"
+    ├Ültimo: "Reagendados" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999470465 | msgs:13 | ├║ltimo:2026-05-26 20:59
+    Primeiro: "Bom dia!!"
+    ├Ültimo: "Por nada" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988914420 | msgs:12 | ├║ltimo:2026-05-26 20:11
+    Primeiro: "Bom dia!"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531981054969 | msgs:10 | ├║ltimo:2026-05-26 20:07
+    Primeiro: "boa tarde! 
+confirmados ╬ô┬ú├á"
+    ├Ültimo: "OK" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986356743 | msgs:5 | ├║ltimo:2026-05-26 19:59
+    Primeiro: "Pode sim"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999681062 | msgs:2 | ├║ltimo:2026-05-26 19:59
+    Primeiro: ""
+    ├Ültimo: "Posso confirmar ?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531987637775 | msgs:18 | ├║ltimo:2026-05-26 19:58
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "Segundo a Dr, FΓö£├¡tima ele teria um retorno com ela, visto que nΓö£├║o foi possivel colocar o aparelho nesta data do dia 28/04 procede?" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531991554984 | msgs:10 | ├║ltimo:2026-05-26 19:06
+    Primeiro: "Γëí╞Æ├äΓòí Γö£├╝udio"
+    ├Ültimo: "Γëí╞ÆΓîÉΓòû" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531985736886 | msgs:6 | ├║ltimo:2026-05-26 18:58
+    Primeiro: "Pode sim"
+    ├Ültimo: "LUCIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+09/09/2026 14:00" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531995565875 | msgs:5 | ├║ltimo:2026-05-26 18:44
+    Primeiro: "Ok."
+    ├Ültimo: "ok" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531986467517 | msgs:5 | ├║ltimo:2026-05-26 18:43
+    Primeiro: "AΓö£┬í aqui pode cancelar"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5532999096790 | msgs:18 | ├║ltimo:2026-05-26 18:13
+    Primeiro: "Recibo-IRPF-020.125.25.00054.pdf"
+    ├Ültimo: "Ele chegou a realizar o pagamento?" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531994334301 | msgs:5 | ├║ltimo:2026-05-26 18:11
+    Primeiro: "Confirmado"
+    ├Ültimo: "oK" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531987422899 | msgs:13 | ├║ltimo:2026-05-26 17:20
+    Primeiro: "Bom dia!"
+    ├Ültimo: "ANCELMA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+24/06/2026 11:00" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531992286265 | msgs:3 | ├║ltimo:2026-05-26 16:59
+    Primeiro: "Γëí╞Æ├ª├¼"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] rosangela FΓö£├¡tima | +5531972226986 | msgs:20 | ├║ltimo:2026-05-26 16:24
+    Primeiro: "RosΓö£├│ngela de FΓö£├¡tima Alves"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531986904224 | msgs:2 | ├║ltimo:2026-05-26 16:11
+    Primeiro: "Estou chegando"
+    ├Ültimo: "Estou chegando" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531982050725 | msgs:3 | ├║ltimo:2026-05-26 15:45
+    Primeiro: "Consulta confirmada"
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531985804052 | msgs:13 | ├║ltimo:2026-05-26 15:01
+    Primeiro: "Bom dia, tudo bem?  NΓö£├║o entendi?"
+    ├Ültimo: "Confirmado" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986258795 | msgs:12 | ├║ltimo:2026-05-26 14:46
+    Primeiro: "Γëí╞Æ├äΓòí Γö£├╝udio"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥Γëí╞Æ├û├àΓëí╞Æ├àΓòù" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531997668327 | msgs:12 | ├║ltimo:2026-05-26 14:39
+    Primeiro: "Bom dia 
+Seria  amanhΓö£├║, ele nΓö£├║o estarΓö£├¡?"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999412341 | msgs:10 | ├║ltimo:2026-05-26 14:35
+    Primeiro: "╬ô┬ú├á"
+    ├Ültimo: "Bom dia" (de: AGENT)
+  [EM_ABERTO] Smith | +5531994191980 | msgs:9 | ├║ltimo:2026-05-26 14:35
+    Primeiro: "Bom dia"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] Marcos Oliveira | +5531999420170 | msgs:43 | ├║ltimo:2026-05-26 14:28
+    Primeiro: "Pessoal, boa tarde. Tudo bem?
+
+Aqui Γö£ΓîÉ o Marcos Paulo da Silva Oliveira. Fiz vΓö£├¡rios procedimentos ai no ano passado: enxerto de gengiva, troquei as coroas dentΓö£├¡rias, clareamento, etc. Mas, poucas de"
+    ├Ültimo: "Marcos, jΓö£├¡ passamos para o dr. Mauro sobre o seu caso, porΓö£ΓîÉm ele vai estΓö£├¡ na clΓö£┬ínica na segunda feira !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531984908929 | msgs:9 | ├║ltimo:2026-05-26 14:25
+    Primeiro: "Bom dia"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531991021434 | msgs:3 | ├║ltimo:2026-05-26 14:22
+    Primeiro: "Γëí╞Æ├┤Γòû Imagem"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] ~Maria Eduarda | +5531982283989 | msgs:14 | ├║ltimo:2026-05-26 14:20
+    Primeiro: "Oi, boa noite! Tudo bem? Minha irmΓö£├║ me passou seu contato e eu queria marcar uma consulta de rotina. VocΓö£┬¼ teria algum horΓö£├¡rio disponΓö£┬ível?"
+    ├Ültimo: "Maria, estamos passando por uma mudanΓö£┬║a aqui na clΓö£┬ínica e estamos encerrando o contrato com o plano HAPVIDA. Portanto, nΓö£├║o iremos mais realizar atendimentos pelo plano odontolΓö£Γöégico. Deseja agendar" (de: AGENT)
+  [EM_ABERTO] MarΓö£┬ília | +5531997836536 | msgs:12 | ├║ltimo:2026-05-26 14:19
+    Primeiro: "Bom dia!"
+    ├Ültimo: "Por nada" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531998181459 | msgs:18 | ├║ltimo:2026-05-26 14:18
+    Primeiro: "Confirmado Γëí╞Æ├ª├¼"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988848345 | msgs:16 | ├║ltimo:2026-05-26 14:06
+    Primeiro: "Ok"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] FlΓö£├¡via da Silva GonΓö£┬║alves | +5531971526361 | msgs:10 | ├║ltimo:2026-05-26 14:05
+    Primeiro: "Bom dia!
+Tudo bem?
+Me chamo FlΓö£├¡via da Silva GonΓö£┬║alves.
+Tenho uma consulta agendada com a Dra Ana LuΓö£┬ísa sexta feira Γö£├ís 11h00.
+Gostaria de confirmar.
+ConvΓö£┬¼nio Hapvida.
+TambΓö£ΓîÉm gostaria de saber se "
+    ├Ültimo: "Γö£├┤tima dia !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531999385714 | msgs:4 | ├║ltimo:2026-05-26 14:05
+    Primeiro: "Obrigada"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +41792523865 | msgs:5 | ├║ltimo:2026-05-26 13:47
+    Primeiro: "Tudo bem pode confirmar"
+    ├Ültimo: "ok" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531971149590 | msgs:4 | ├║ltimo:2026-05-26 13:38
+    Primeiro: "AmanhΓö£├║ eu ligo pra vocΓö£┬¼s. Mas nesta data acho que nΓö£├║o conseguirei ir."
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] Aparecida | +5531996602491 | msgs:7 | ├║ltimo:2026-05-26 12:58
+    Primeiro: "Boa tarde poderia agendar uma consulta para mim para semana que vem Γö£├ís 19:00 horas por favor obrigada"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531989412154 | msgs:15 | ├║ltimo:2026-05-26 12:44
+    Primeiro: "Confirmado Γëí╞Æ├┐├½Γëí╞Æ├┐├½"
+    ├Ültimo: "ok" (de: AGENT)
+  [EM_ABERTO] LetΓö£┬ícia Moura | +5531993904807 | msgs:5 | ├║ltimo:2026-05-26 12:44
+    Primeiro: "Oi, boa tarde Γëí╞Æ┬╜ΓòóΓëí╞Æ├àΓò¥Γëí╞Æ├å┬Ñ
+Gostaria de agendar limpeza para
+
+BENJAMIN BARUK MOURA COUTO 
+
+MICAELA MOURA COUTO 
+
+LETΓö£├¼CIA SOMONE DE MOURA COUTO"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531992087331 | msgs:7 | ├║ltimo:2026-05-26 12:40
+    Primeiro: "Sticker"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] Luana Bonfanti | +5531994481436 | msgs:11 | ├║ltimo:2026-05-26 12:28
+    Primeiro: "OlΓö£├¡! Tudo bem? Bom dia!!"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] Rafaela Assis | +5531988241848 | msgs:6 | ├║ltimo:2026-05-25 23:58
+    Primeiro: "1500,00 da metade e o resto quero dividir 
+500,00"
+    ├Ültimo: "╬ô┬ú├╢Γê⌐Γòò├à" (de: CONTACT)
+  [EM_ABERTO] Stella | +5531996985187 | msgs:15 | ├║ltimo:2026-05-25 21:25
+    Primeiro: "OlΓö£├¡"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] Maria Luiza | +5531988631251 | msgs:4 | ├║ltimo:2026-05-25 21:24
+    Primeiro: "Bom dia! Remarque para a data mais prΓö£Γöéxima, Maria Luiza e FlΓö£├¡vio."
+    ├Ültimo: "MARIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+22/06/2026 14:00" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531982517889 | msgs:12 | ├║ltimo:2026-05-25 21:22
+    Primeiro: "Bom dia!
+
+Que Deus te proteja sempre juntamente com toda sua famΓö£┬ília!"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531982482739 | msgs:5 | ├║ltimo:2026-05-25 18:30
+    Primeiro: "Confirmado"
+    ├Ültimo: "CALEBE,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+02/06/2026 14:00" (de: AGENT)
+  [EM_ABERTO] Igor Alves BitarΓö£├║es | +5531995123542 | msgs:12 | ├║ltimo:2026-05-25 17:42
+    Primeiro: "OlΓö£├¡, sou um paciente que foi atendido a mais de uma dΓö£ΓîÉcada e gostaria de agendar uma consulta com o Dr Mauro. No fim de tarde"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] Lari Almeida | +5531992365433 | msgs:16 | ├║ltimo:2026-05-25 17:40
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531983815802 | msgs:16 | ├║ltimo:2026-05-25 17:37
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531984646777 | msgs:3 | ├║ltimo:2026-05-25 17:32
+    Primeiro: "Nossa"
+    ├Ültimo: "Deseja manter essa consulta no particular ?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5535988518811 | msgs:7 | ├║ltimo:2026-05-25 17:19
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] Patricia | +5531992707376 | msgs:11 | ├║ltimo:2026-05-25 17:17
+    Primeiro: "Mensagem nΓö£├║o suportada"
+    ├Ültimo: "PATRICIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+23/06/2026 18:00" (de: AGENT)
+  [EM_ABERTO] Dayse | +5531984601919 | msgs:11 | ├║ltimo:2026-05-25 17:17
+    Primeiro: "Bom dia!
+Por favor Dr Mauro ficou de me encaixar antes da viagem e esqueceu"
+    ├Ültimo: "DAISY,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+01/06/2026 11:00" (de: AGENT)
+  [EM_ABERTO] Keilla | +5531982300291 | msgs:15 | ├║ltimo:2026-05-25 17:16
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "KEILLA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+02/06/2026 09:00" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986411260 | msgs:10 | ├║ltimo:2026-05-25 17:04
+    Primeiro: "Oi boa tarde"
+    ├Ültimo: "Podemos agendar no dia 28/05 as 18h?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531986104978 | msgs:5 | ├║ltimo:2026-05-25 16:53
+    Primeiro: "Consulta confirmada"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] jacquelinesmatos | +5531992295195 | msgs:13 | ├║ltimo:2026-05-25 16:53
+    Primeiro: "Bom dia"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531989058943 | msgs:5 | ├║ltimo:2026-05-25 16:53
+    Primeiro: "Ok"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531981111203 | msgs:2 | ├║ltimo:2026-05-25 16:29
+    Primeiro: "Mensagem nΓö£├║o suportada"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531989571029 | msgs:4 | ├║ltimo:2026-05-25 15:13
+    Primeiro: "Olaaa"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531992058646 | msgs:4 | ├║ltimo:2026-05-25 15:08
+    Primeiro: "Sim"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988211289 | msgs:3 | ├║ltimo:2026-05-25 15:07
+    Primeiro: "Consulta confirmada, obrigado"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988479015 | msgs:3 | ├║ltimo:2026-05-25 15:04
+    Primeiro: "Confirmada!"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531971189792 | msgs:6 | ├║ltimo:2026-05-25 15:02
+    Primeiro: "╬ô┬ú├á"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531985076674 | msgs:5 | ├║ltimo:2026-05-25 15:00
+    Primeiro: "Consulta confirmada"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531985338670 | msgs:3 | ├║ltimo:2026-05-25 14:51
+    Primeiro: "Ok"
+    ├Ültimo: "Estamos tambΓö£ΓîÉm encerrando com o plano odontologico" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531995159663 | msgs:1 | ├║ltimo:2026-05-25 14:25
+    Primeiro: ""
+    ├Ültimo: "OlΓö£├¡ ( Ana Paula  ) Sua consulta com a Dr(a). ( Fatima ) na ClΓö£┬ínica Dilascio estΓö£├¡ marcada! Γëí╞Æ├┐├¼Γëí╞Æ┬¼├æ  
+Γëí╞Æ├┤├á Dia: *26/05/2026*
+Γëí╞Æ├╣├┤Γê⌐Γòò├à Semana: *TerΓö£┬║a*
+╬ô├àΓûæ HorΓö£├¡rio: 10:00
+
+Γëí╞Æ├┤├¼ Rua Domingos Vieira, 5" (de: AGENT)
+  [EM_ABERTO] Γëí╞Æ├┐├¿ | +5531987650938 | msgs:8 | ├║ltimo:2026-05-25 13:43
+    Primeiro: "Bom dia 
+Teria como marcar um dentista para minha filha ? Se tiver com dra ana se nΓö£├║o pode ser com outro
+
+ConvΓö£┬¼nio MET LIFE"
+    ├Ültimo: "Sim" (de: AGENT)
+  [EM_ABERTO] Studio's Biig Productions | +5531975113543 | msgs:6 | ├║ltimo:2026-05-25 13:43
+    Primeiro: "Ola bom diiah"
+    ├Ültimo: "No momento nΓö£├║o estamos mais atendendo plano odontologico" (de: AGENT)
+  [EM_ABERTO] Lay | +5531994830355 | msgs:6 | ├║ltimo:2026-05-25 13:42
+    Primeiro: "Boom dia"
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531986296360 | msgs:7 | ├║ltimo:2026-05-25 13:21
+    Primeiro: "Sim"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] Jaime Faria | +5531988059610 | msgs:4 | ├║ltimo:2026-05-25 12:59
+    Primeiro: "Prezados, b dia. Eu sou o Jaime Faria. Venho solicitar agendamento limpeza dental pelo INPAO."
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [POSITIVO] Erika Ludmila | +5531993946714 | msgs:5 | ├║ltimo:2026-05-25 12:28
+    Primeiro: "Oi bom dia!!"
+    ├Ültimo: "Ok, consulta cancelada" (de: AGENT)
+  [EM_ABERTO] . | +5531985092868 | msgs:8 | ├║ltimo:2026-05-22 21:49
+    Primeiro: "Oii"
+    ├Ültimo: "Podemos agendar para semana que vem?" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531992496424 | msgs:4 | ├║ltimo:2026-05-22 21:40
+    Primeiro: "Sim obrigado"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5532999139977 | msgs:21 | ├║ltimo:2026-05-22 21:24
+    Primeiro: "╬ô┬ú├á"
+    ├Ültimo: "Por nada ╬ô├┐ΓòæΓê⌐Γòò├à" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531992088734 | msgs:4 | ├║ltimo:2026-05-22 17:29
+    Primeiro: ""
+    ├Ültimo: "Essa dentista nΓö£├║o Γö£ΓîÉ no nosso consultΓö£Γöério, indicamos para caso de retratamento ou necessidade de microscΓö£Γöépio 
+Ela atende pelo IPSM" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531983266116 | msgs:2 | ├║ltimo:2026-05-22 16:56
+    Primeiro: "Ok"
+    ├Ültimo: "Ok" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531998269198 | msgs:19 | ├║ltimo:2026-05-22 16:44
+    Primeiro: "Bom dia, tudo bem?"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [POSITIVO] dilascioclinica1 | +5531992041470 | msgs:11 | ├║ltimo:2026-05-22 16:43
+    Primeiro: "Boa tarde"
+    ├Ültimo: "Combinado" (de: CONTACT)
+  [EM_ABERTO] JoΓö£├║o Carlos Diniz | +5531992773057 | msgs:4 | ├║ltimo:2026-05-22 16:38
+    Primeiro: "Ok. Grato. Pode agendar o  horario para o proximo mΓö£┬¼s , uma vez que essa seria a Γö£Γòæltima do mΓö£┬¼s.  Aguardo confirmaΓö£┬║Γö£├║o."
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531984278463 | msgs:10 | ├║ltimo:2026-05-22 16:32
+    Primeiro: "Mensagem nΓö£├║o suportada"
+    ├Ültimo: "Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos trabalhando junt" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999304480 | msgs:2 | ├║ltimo:2026-05-22 16:30
+    Primeiro: "╬ô┬ú├á"
+    ├Ültimo: "╬ô┬ú├á" (de: CONTACT)
+  [POSITIVO] dilascioclinica1 | +5533991043995 | msgs:11 | ├║ltimo:2026-05-22 16:26
+    Primeiro: "Boa tarde!!"
+    ├Ültimo: "Ok, reagendada" (de: AGENT)
+  [EM_ABERTO] Ju | +5531991840089 | msgs:12 | ├║ltimo:2026-05-22 15:27
+    Primeiro: "Bom dia dr Mauro!
+Marca uma consulta pra mim ,por favor."
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531987449455 | msgs:5 | ├║ltimo:2026-05-22 15:14
+    Primeiro: "Ok pode sim"
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  [EM_ABERTO] Deza | +5531988946490 | msgs:3 | ├║ltimo:2026-05-22 14:21
+    Primeiro: "OlΓö£├¡ recebi mensagem que meu convΓö£┬¼nio foi descredenciado"
+    ├Ültimo: "Sim" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531989720436 | msgs:5 | ├║ltimo:2026-05-22 14:19
+    Primeiro: "Cancela por favor"
+    ├Ültimo: "Ok" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531996718548 | msgs:2 | ├║ltimo:2026-05-22 13:53
+    Primeiro: "Mensagem nΓö£├║o suportada"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] Ana CecΓö£┬ília | +5531992792728 | msgs:5 | ├║ltimo:2026-05-22 13:41
+    Primeiro: "Bom dia,
+Fiz uma avaliaΓö£┬║Γö£├║o e limpeza na terΓö£┬║a feira com dr. Matheus, porΓö£ΓîÉm apΓö£Γöés a limpeza percebi que fiquei com muita sensibilidade em um dos dentes alΓö£ΓîÉm do dente canino estar com um quebrado. "
+    ├Ültimo: "Ta bom" (de: AGENT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531986854023 | msgs:1 | ├║ltimo:2026-05-22 13:21
+    Primeiro: ""
+    ├Ültimo: "Podemos agendar no dia 02/06 as 11h" (de: AGENT)
+  [EM_ABERTO] Naty Campos | +5531994075288 | msgs:3 | ├║ltimo:2026-05-22 13:17
+    Primeiro: "Bom dia....queria agendar limpeza da minha filha LARISSA CAMPOS ITAMOCY NORΓö£├½...Odontoprev...teria pra quando ?"
+    ├Ültimo: "No momento nΓö£├║o estamos mais atendendo o plano da Odonto prev" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531997910534 | msgs:5 | ├║ltimo:2026-05-22 13:12
+    Primeiro: "Pode sim, esse horΓö£├¡rio Γö£ΓîÉ bom."
+    ├Ültimo: "Por nada !" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531988014806 | msgs:6 | ├║ltimo:2026-05-21 22:39
+    Primeiro: "pode ser"
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  [EM_ABERTO] dilascioclinica1 | +5531985868788 | msgs:8 | ├║ltimo:2026-05-21 22:23
+    Primeiro: "NΓö£├║o"
+    ├Ültimo: "Reagendado" (de: AGENT)
+  [POSITIVO] dilascioclinica1 | +5531986735430 | msgs:7 | ├║ltimo:2026-05-21 22:18
+    Primeiro: "Qual e a outra"
+    ├Ültimo: "Ok" (de: AGENT)
+  [EM_ABERTO] Vagner Silva( Γö£├╢ \ ! / Γö£├╢ ) | +5531997867691 | msgs:3 | ├║ltimo:2026-05-21 22:02
+    Primeiro: "Cancela por favor"
+    ├Ültimo: "Sim pode ser" (de: CONTACT)
+  [SEM_RESPOSTA] dilascioclinica1 | +5531982047716 | msgs:1 | ├║ltimo:2026-05-21 21:59
+    Primeiro: ""
+    ├Ültimo: "LUANA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+02/06/2026 17:30" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531990800051 | msgs:4 | ├║ltimo:2026-05-21 21:28
+    Primeiro: "Ok."
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  [EM_ABERTO] dilascioclinica1 | +5531991352577 | msgs:3 | ├║ltimo:2026-05-21 21:28
+    Primeiro: "Oi, eu cancelei pelo aplicativo"
+    ├Ültimo: "Ta bom" (de: AGENT)
+
+=== REAGENDAMENTOS ===
+Total: 0
+
+=== CONFIRMA├ç├òES ===
+Total: 1
+  [EM_ABERTO] dilascioclinica1 | +5531999218709 | msgs:5
+    ├Ültimo: "Γëí╞Æ├ª├¼Γëí╞Æ├àΓòù"
+
+=== PLANOS DE SA├ÜDE ===
+Total: 8
+  [EM_ABERTO] Giulia | Plano: Hapvida | msgs:3
+    Primeiro: "Boa tarde, tudo bem? VocΓö£┬¼s atendem o plano Hapvida, para fazer raspagem e limpeza?"
+    ├Ültimo: "NΓö£├║o estamos mais atendendo o plano da Hap vida"
+  [EM_ABERTO] Jane | Plano: null | msgs:5
+    Primeiro: "Boa tarde!"
+    ├Ültimo: "NΓö£├║o"
+  [EM_ABERTO] Deus e fiel | Plano: Hapvida | msgs:5
+    Primeiro: "Bom dia"
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥"
+  [EM_ABERTO] dilascioclinica1 | Plano: null | msgs:4
+    Primeiro: "Boa tarde.
+Nossa quanta confusΓö£├║o nΓö£├║o tem o tratamento e apenas pra dar inΓö£┬ício ao tratamento.
+Mais tranquilo vou ver la com o plano assim que tiver uma resposta ou tratamento aviso pra vocΓö£┬¼s."
+    ├Ültimo: "Ta bom"
+  [EM_ABERTO] Thais | Plano: Unimed | msgs:5
+    Primeiro: "OlΓö£├¡"
+    ├Ültimo: "NΓö£├║o"
+  [EM_ABERTO] dilascioclinica1 | Plano: null | msgs:6
+    Primeiro: "Bom dia ."
+    ├Ültimo: "Ta bom"
+  [EM_ABERTO] MariaΓëí╞Æ├å├▓ | Plano: null | msgs:6
+    Primeiro: "Boa tarde"
+    ├Ültimo: "No momento nΓö£├║o estamos mais atendendo nenhum plano aqui na clinica"
+  [EM_ABERTO] Daniel P. | Plano: null | msgs:7
+    Primeiro: "Oi boa tarde vcs estΓö£├║o atendendo o plano odonto empresa"
+    ├Ültimo: "Por nada !!"
+
+=== URG├èNCIAS / SINTOMAS ===
+Total: 29
+  dilascioclinica1 | +5531982538024 | tipo:agendamento
+    "Consegue remarcar pra mim por favor"
+  dilascioclinica1 | +5531988850344 | tipo:agendamento
+    "Γëí╞Æ├┤Γòû Imagem"
+  dilascioclinica1 | +5511970213670 | tipo:outro
+    ""
+  dilascioclinica1 | +5531997229502 | tipo:agendamento
+    "Oxi kkk"
+  dilascioclinica1 | +5537991154159 | tipo:retorno_pos_consulta
+    "N sei quem Γö£ΓîÉ"
+  dilascioclinica1 | +5531993652279 | tipo:agendamento
+    "Ok! Confirmado"
+  Meload | +5531987136484 | tipo:agendamento
+    "Boa tarde"
+  dilascioclinica1 | +5531986255767 | tipo:agendamento
+    ""
+  dilascioclinica1 | +5531995793434 | tipo:agendamento
+    "Bom dia, tudo bem?"
+  dilascioclinica1 | +5571992937908 | tipo:agendamento
+    ""
+  Eliane | +5532991315116 | tipo:agendamento
+    "B dia favor enviar CPF dr.mauro p entregar ao contador p imposto de renda . EstΓö£├¡ faltando isso no documento.."
+  dilascioclinica1 | +5531993015893 | tipo:agendamento
+    "Bom dia"
+  dilascioclinica1 | +5531996064313 | tipo:outro
+    "Boa tarde!"
+  Marcos Oliveira | +5531999420170 | tipo:agendamento
+    "Pessoal, boa tarde. Tudo bem?
+
+Aqui Γö£ΓîÉ o Marcos Paulo da Silva Oliveira. Fiz vΓö£├¡rios procedimentos ai no ano passado: enxerto de gengiva, troquei as coroas dentΓö£├¡rias, clareamento, etc. Mas, poucas de"
+  dilascioclinica1 | +5531984908929 | tipo:agendamento
+    "Bom dia"
+  FlΓö£├¡via da Silva GonΓö£┬║alves | +5531971526361 | tipo:agendamento
+    "Bom dia!
+Tudo bem?
+Me chamo FlΓö£├¡via da Silva GonΓö£┬║alves.
+Tenho uma consulta agendada com a Dra Ana LuΓö£┬ísa sexta feira Γö£├ís 11h00.
+Gostaria de confirmar.
+ConvΓö£┬¼nio Hapvida.
+TambΓö£ΓîÉm gostaria de saber se "
+  dilascioclinica1 | +5531994884421 | tipo:outro
+    "Mensagem nΓö£├║o suportada"
+  dilascioclinica1 | +5531975349167 | tipo:outro
+    ""
+  dilascioclinica1 | +5531987639253 | tipo:outro
+    ""
+  dilascioclinica1 | +553132972224 | tipo:outro
+    "OlΓö£├¡! Γëí╞Æ├ª├» Bem-vindo Γö£├í *ConfianΓö£┬║a Conservadora*."
+  dilascioclinica1 | +5531999619757 | tipo:outro
+    ""
+  dilascioclinica1 | +5531984174937 | tipo:outro
+    ""
+  dilascioclinica1 | +5531981029313 | tipo:outro
+    ""
+  dilascioclinica1 | +5531983815802 | tipo:agendamento
+    "Boa tarde"
+  dilascioclinica1 | +5531984646777 | tipo:agendamento
+    "Nossa"
+  dilascioclinica1 | +5531984892270 | tipo:outro
+    "Quando abrir vaga para avaliaΓö£┬║Γö£├║o vocΓö£┬¼s me avisam? Obg"
+  Erika Ludmila | +5531993946714 | tipo:agendamento
+    "Oi bom dia!!"
+  Ana Maria | +5531994550022 | tipo:sondagem_inicial
+    "Boa tarde"
+  dilascioclinica1 | +5531984278463 | tipo:agendamento
+    "Mensagem nΓö£├║o suportada"
+
+=== LEADS FRIOS (sem intera├º├úo > 1 dia, ainda abertos) ===
+Total: 129
+  7d - dilascioclinica1 | +5531990800051 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  7d - dilascioclinica1 | +5531991352577 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Ta bom" (de: AGENT)
+  7d - Maristela Reis | +5531987342945 | msgs:2 | tipo:outro
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  6d - dilascioclinica1 | +5531992496424 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  6d - dilascioclinica1 | +5532999139977 | msgs:21 | tipo:agendamento
+    ├Ültimo: "Por nada ╬ô├┐ΓòæΓê⌐Γòò├à" (de: AGENT)
+  6d - FlΓö£├¡via Rodrigues Γëí╞Æ├å├» | +5531989893801 | msgs:2 | tipo:sondagem_inicial
+    ├Ültimo: "CNH-e.pdf.pdf" (de: CONTACT)
+  6d - dilascioclinica1 | +5531992088734 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Essa dentista nΓö£├║o Γö£ΓîÉ no nosso consultΓö£Γöério, indicamos para caso de retratamento ou necessidade de microscΓö£Γöépio 
+Ela atende pelo IPSM" (de: AGENT)
+  6d - Ana Maria | +5531994550022 | msgs:3 | tipo:sondagem_inicial
+    ├Ültimo: "Prezados(as),
+Informamos que, a partir do dia 20/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr" (de: AGENT)
+  6d - Daniel P. | +5531971624731 | msgs:7 | tipo:plano_saude
+    ├Ültimo: "Por nada !!" (de: AGENT)
+  6d - dilascioclinica1 | +5531983266116 | msgs:2 | tipo:agendamento
+    ├Ültimo: "Ok" (de: CONTACT)
+  6d - dilascioclinica1 | +5531998269198 | msgs:19 | tipo:agendamento
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  6d - dilascioclinica1 | +5531992041470 | msgs:11 | tipo:agendamento
+    ├Ültimo: "Combinado" (de: CONTACT)
+  6d - JoΓö£├║o Carlos Diniz | +5531992773057 | msgs:4 | tipo:agendamento
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  6d - dilascioclinica1 | +5531984278463 | msgs:10 | tipo:agendamento
+    ├Ültimo: "Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos trabalhando junt" (de: AGENT)
+  6d - dilascioclinica1 | +5531999304480 | msgs:2 | tipo:agendamento
+    ├Ültimo: "╬ô┬ú├á" (de: CONTACT)
+  6d - dilascioclinica1 | +5533991043995 | msgs:11 | tipo:agendamento
+    ├Ültimo: "Ok, reagendada" (de: AGENT)
+  6d - Ju | +5531991840089 | msgs:12 | tipo:agendamento
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  6d - dilascioclinica1 | +5531987449455 | msgs:5 | tipo:agendamento
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  6d - Deza | +5531988946490 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Sim" (de: AGENT)
+  6d - dilascioclinica1 | +5531989720436 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Ok" (de: AGENT)
+  6d - dilascioclinica1 | +5531996718548 | msgs:2 | tipo:agendamento
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  6d - Ana CecΓö£┬ília | +5531992792728 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Ta bom" (de: AGENT)
+  6d - dilascioclinica1 | +5531975707345 | msgs:3 | tipo:sondagem_inicial
+    ├Ültimo: "Ok" (de: AGENT)
+  6d - dilascioclinica1 | +5531997667897 | msgs:1 | tipo:outro
+    ├Ültimo: "Obrigada" (de: AGENT)
+  6d - dilascioclinica1 | +5531998138773 | msgs:1 | tipo:outro
+    ├Ültimo: "Pode ser dia 11/06 as 13h?" (de: AGENT)
+  6d - dilascioclinica1 | +5531986854023 | msgs:1 | tipo:agendamento
+    ├Ültimo: "Podemos agendar no dia 02/06 as 11h" (de: AGENT)
+  6d - Naty Campos | +5531994075288 | msgs:3 | tipo:agendamento
+    ├Ültimo: "No momento nΓö£├║o estamos mais atendendo o plano da Odonto prev" (de: AGENT)
+  6d - dilascioclinica1 | +5531997910534 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  6d - dilascioclinica1 | +5531988014806 | msgs:6 | tipo:agendamento
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  6d - dilascioclinica1 | +5531985687523 | msgs:4 | tipo:outro
+    ├Ültimo: "Γëí╞Æ┬╜ΓûÆΓëí╞Æ├àΓòù╬ô├ç├¼Γëí╞Æ┬╜ΓûôΓëí╞Æ├àΓò¥╬ô┬ú┬┐" (de: AGENT)
+  6d - dilascioclinica1 | +5531985868788 | msgs:8 | tipo:agendamento
+    ├Ültimo: "Reagendado" (de: AGENT)
+  6d - dilascioclinica1 | +5531986735430 | msgs:7 | tipo:agendamento
+    ├Ültimo: "Ok" (de: AGENT)
+  6d - Vagner Silva( Γö£├╢ \ ! / Γö£├╢ ) | +5531997867691 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Sim pode ser" (de: CONTACT)
+  6d - dilascioclinica1 | +5531982047716 | msgs:1 | tipo:agendamento
+    ├Ültimo: "LUANA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+02/06/2026 17:30" (de: AGENT)
+  5d - . | +5531985092868 | msgs:8 | tipo:agendamento
+    ├Ültimo: "Podemos agendar para semana que vem?" (de: AGENT)
+  3d - Stella | +5531996985187 | msgs:15 | tipo:agendamento
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  3d - Maria Luiza | +5531988631251 | msgs:4 | tipo:agendamento
+    ├Ültimo: "MARIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+22/06/2026 14:00" (de: AGENT)
+  3d - dilascioclinica1 | +5531982517889 | msgs:12 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  3d - alves | +5531972231210 | msgs:2 | tipo:sondagem_inicial
+    ├Ültimo: "Boa tarde" (de: AGENT)
+  3d - dilascioclinica1 | +5531982482739 | msgs:5 | tipo:agendamento
+    ├Ültimo: "CALEBE,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+02/06/2026 14:00" (de: AGENT)
+  3d - Igor Alves BitarΓö£├║es | +5531995123542 | msgs:12 | tipo:agendamento
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  3d - Lari Almeida | +5531992365433 | msgs:16 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  3d - dilascioclinica1 | +5531983815802 | msgs:16 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  3d - dilascioclinica1 | +5531984646777 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Deseja manter essa consulta no particular ?" (de: AGENT)
+  3d - dilascioclinica1 | +5531984892270 | msgs:3 | tipo:outro
+    ├Ültimo: "Avisamos sim" (de: AGENT)
+  3d - dilascioclinica1 | +5535988518811 | msgs:7 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  3d - Patricia | +5531992707376 | msgs:11 | tipo:agendamento
+    ├Ültimo: "PATRICIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+23/06/2026 18:00" (de: AGENT)
+  3d - Dayse | +5531984601919 | msgs:11 | tipo:agendamento
+    ├Ültimo: "DAISY,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+01/06/2026 11:00" (de: AGENT)
+  3d - Keilla | +5531982300291 | msgs:15 | tipo:agendamento
+    ├Ültimo: "KEILLA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+02/06/2026 09:00" (de: AGENT)
+  3d - dilascioclinica1 | +5531986411260 | msgs:10 | tipo:agendamento
+    ├Ültimo: "Podemos agendar no dia 28/05 as 18h?" (de: AGENT)
+  3d - dilascioclinica1 | +5531986104978 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - jacquelinesmatos | +5531992295195 | msgs:13 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - dilascioclinica1 | +5531989058943 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - dilascioclinica1 | +5531981111203 | msgs:2 | tipo:agendamento
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  3d - dilascioclinica1 | +5531989571029 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - dilascioclinica1 | +5531992058646 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - dilascioclinica1 | +5531988211289 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - dilascioclinica1 | +5531988479015 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - dilascioclinica1 | +5531971189792 | msgs:6 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - dilascioclinica1 | +5531985076674 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  3d - Lorrane  | +5531993431933 | msgs:4 | tipo:outro
+    ├Ültimo: "Γëí╞Æ├┤Γòû Imagem" (de: CONTACT)
+  3d - dilascioclinica1 | +5531985338670 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Estamos tambΓö£ΓîÉm encerrando com o plano odontologico" (de: AGENT)
+  3d - dilascioclinica1 | +5531995159663 | msgs:1 | tipo:agendamento
+    ├Ültimo: "OlΓö£├¡ ( Ana Paula  ) Sua consulta com a Dr(a). ( Fatima ) na ClΓö£┬ínica Dilascio estΓö£├¡ marcada! Γëí╞Æ├┐├¼Γëí╞Æ┬¼├æ  
+Γëí╞Æ├┤├á Dia: *26/05/2026*
+Γëí╞Æ├╣├┤Γê⌐Γòò├à Semana: *TerΓö£┬║a*
+╬ô├àΓûæ HorΓö£├¡rio: 10:00
+
+Γëí╞Æ├┤├¼ Rua Domingos Vieira, 5" (de: AGENT)
+  3d - Γëí╞Æ├┐├¿ | +5531987650938 | msgs:8 | tipo:agendamento
+    ├Ültimo: "Sim" (de: AGENT)
+  3d - Studio's Biig Productions | +5531975113543 | msgs:6 | tipo:agendamento
+    ├Ültimo: "No momento nΓö£├║o estamos mais atendendo plano odontologico" (de: AGENT)
+  3d - Lay | +5531994830355 | msgs:6 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  3d - dilascioclinica1 | +5531986296360 | msgs:7 | tipo:agendamento
+    ├Ültimo: "Ok" (de: AGENT)
+  3d - DΓö£ΓîÉbora Lisieux (France) | +5531994572723 | msgs:2 | tipo:sondagem_inicial
+    ├Ültimo: "Bom dia" (de: AGENT)
+  3d - Jaime Faria | +5531988059610 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  3d - Erika Ludmila | +5531993946714 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Ok, consulta cancelada" (de: AGENT)
+  2d - Paula Nery Γëí╞Æ├«Γò¥ | +5531988183546 | msgs:38 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531984763264 | msgs:12 | tipo:agendamento
+    ├Ültimo: "VERA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+24/06/2026 09:00" (de: AGENT)
+  2d - dilascioclinica1 | +5531999121306 | msgs:2 | tipo:agendamento
+    ├Ültimo: "Aguardo o retorno para reagendar a consulta" (de: AGENT)
+  2d - dilascioclinica1 | +5531988863339 | msgs:6 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  2d - dilascioclinica1 | +5531989343992 | msgs:16 | tipo:agendamento
+    ├Ültimo: "Reagendados" (de: AGENT)
+  2d - dilascioclinica1 | +5531999470465 | msgs:13 | tipo:agendamento
+    ├Ültimo: "Por nada" (de: AGENT)
+  2d - Ramon Rodriguez | +5531983074399 | msgs:2 | tipo:outro
+    ├Ültimo: "Obrigada" (de: AGENT)
+  2d - dilascioclinica1 | +5531988914420 | msgs:12 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531981054969 | msgs:10 | tipo:agendamento
+    ├Ültimo: "OK" (de: AGENT)
+  2d - dilascioclinica1 | +5531986356743 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531999681062 | msgs:2 | tipo:agendamento
+    ├Ültimo: "Posso confirmar ?" (de: AGENT)
+  2d - dilascioclinica1 | +5531987637775 | msgs:18 | tipo:agendamento
+    ├Ültimo: "Segundo a Dr, FΓö£├¡tima ele teria um retorno com ela, visto que nΓö£├║o foi possivel colocar o aparelho nesta data do dia 28/04 procede?" (de: CONTACT)
+  2d - Jacqueline | +5531992411826 | msgs:2 | tipo:sondagem_inicial
+    ├Ültimo: "OlΓö£├¡, boa tarde" (de: AGENT)
+  2d - dilascioclinica1 | +5531996064313 | msgs:8 | tipo:outro
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  2d - dilascioclinica1 | +5531991554984 | msgs:10 | tipo:agendamento
+    ├Ültimo: "Γëí╞ÆΓîÉΓòû" (de: CONTACT)
+  2d - dilascioclinica1 | +5531985736886 | msgs:6 | tipo:agendamento
+    ├Ültimo: "LUCIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+09/09/2026 14:00" (de: AGENT)
+  2d - dilascioclinica1 | +5531995565875 | msgs:5 | tipo:agendamento
+    ├Ültimo: "ok" (de: AGENT)
+  2d - dilascioclinica1 | +5531986467517 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Ok" (de: AGENT)
+  2d - dilascioclinica1 | +5532999096790 | msgs:18 | tipo:agendamento
+    ├Ültimo: "Ele chegou a realizar o pagamento?" (de: AGENT)
+  2d - dilascioclinica1 | +5531994334301 | msgs:5 | tipo:agendamento
+    ├Ültimo: "oK" (de: AGENT)
+  2d - dilascioclinica1 | +5531987422899 | msgs:13 | tipo:agendamento
+    ├Ültimo: "ANCELMA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+24/06/2026 11:00" (de: AGENT)
+  2d - Thadeu | +5531992131166 | msgs:3 | tipo:sondagem_inicial
+    ├Ültimo: "Γëí╞Æ├ª├▒ Contato compartilhado
+Nome: Dr Mauro
+Telefone: 553188540344" (de: AGENT)
+  2d - dilascioclinica1 | +5531992286265 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  2d - dilascioclinica1 | +5531973377516 | msgs:4 | tipo:plano_saude
+    ├Ültimo: "Ta bom" (de: AGENT)
+  2d - rosangela FΓö£├¡tima | +5531972226986 | msgs:20 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  2d - Thais | +5531994771427 | msgs:5 | tipo:plano_saude
+    ├Ültimo: "NΓö£├║o" (de: AGENT)
+  2d - dilascioclinica1 | +5531986904224 | msgs:2 | tipo:agendamento
+    ├Ültimo: "Estou chegando" (de: CONTACT)
+  2d - dilascioclinica1 | +5531982050725 | msgs:3 | tipo:agendamento
+    ├Ültimo: "╬ô┬ú├á" (de: AGENT)
+  2d - dilascioclinica1 | +5531985804052 | msgs:13 | tipo:agendamento
+    ├Ültimo: "Confirmado" (de: AGENT)
+  2d - dilascioclinica1 | +5531986258795 | msgs:12 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥Γëí╞Æ├û├àΓëí╞Æ├àΓòù" (de: AGENT)
+  2d - dilascioclinica1 | +5531997668327 | msgs:12 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531999412341 | msgs:10 | tipo:agendamento
+    ├Ültimo: "Bom dia" (de: AGENT)
+  2d - Smith | +5531994191980 | msgs:9 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  2d - Marcos Oliveira | +5531999420170 | msgs:43 | tipo:agendamento
+    ├Ültimo: "Marcos, jΓö£├¡ passamos para o dr. Mauro sobre o seu caso, porΓö£ΓîÉm ele vai estΓö£├¡ na clΓö£┬ínica na segunda feira !" (de: AGENT)
+  2d - dilascioclinica1 | +5531984908929 | msgs:9 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531991021434 | msgs:3 | tipo:agendamento
+    ├Ültimo: "Ok" (de: AGENT)
+  2d - ~Maria Eduarda | +5531982283989 | msgs:14 | tipo:agendamento
+    ├Ültimo: "Maria, estamos passando por uma mudanΓö£┬║a aqui na clΓö£┬ínica e estamos encerrando o contrato com o plano HAPVIDA. Portanto, nΓö£├║o iremos mais realizar atendimentos pelo plano odontolΓö£Γöégico. Deseja agendar" (de: AGENT)
+  2d - MarΓö£┬ília | +5531997836536 | msgs:12 | tipo:agendamento
+    ├Ültimo: "Por nada" (de: AGENT)
+  2d - dilascioclinica1 | +5531998181459 | msgs:18 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531986719430 | msgs:6 | tipo:plano_saude
+    ├Ültimo: "Ta bom" (de: AGENT)
+  2d - dilascioclinica1 | +5531988848345 | msgs:16 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  2d - FlΓö£├¡via da Silva GonΓö£┬║alves | +5531971526361 | msgs:10 | tipo:agendamento
+    ├Ültimo: "Γö£├┤tima dia !" (de: AGENT)
+  2d - dilascioclinica1 | +5531999385714 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Γëí╞Æ├▒┬ÑΓëí╞Æ├àΓò¥" (de: AGENT)
+  2d - dilascioclinica1 | +5531994884421 | msgs:3 | tipo:outro
+    ├Ültimo: "Mensagem nΓö£├║o suportada" (de: CONTACT)
+  2d - dilascioclinica1 | +5531975349167 | msgs:2 | tipo:outro
+    ├Ültimo: "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr" (de: AGENT)
+  2d - dilascioclinica1 | +5531987639253 | msgs:2 | tipo:outro
+    ├Ültimo: "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr" (de: AGENT)
+  2d - dilascioclinica1 | +553132972224 | msgs:4 | tipo:outro
+    ├Ültimo: "Qual Γö£ΓîÉ o seu nome?" (de: CONTACT)
+  2d - dilascioclinica1 | +5531999619757 | msgs:2 | tipo:outro
+    ├Ültimo: "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr" (de: AGENT)
+  2d - dilascioclinica1 | +5531984174937 | msgs:2 | tipo:outro
+    ├Ültimo: "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr" (de: AGENT)
+  2d - dilascioclinica1 | +41792523865 | msgs:5 | tipo:agendamento
+    ├Ültimo: "ok" (de: AGENT)
+  2d - dilascioclinica1 | +5531981029313 | msgs:2 | tipo:outro
+    ├Ültimo: "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr" (de: AGENT)
+  2d - dilascioclinica1 | +5531971149590 | msgs:4 | tipo:agendamento
+    ├Ültimo: "Ok" (de: AGENT)
+  2d - MariaΓëí╞Æ├å├▓ | +5531995323591 | msgs:6 | tipo:plano_saude
+    ├Ültimo: "No momento nΓö£├║o estamos mais atendendo nenhum plano aqui na clinica" (de: AGENT)
+  2d - Aparecida | +5531996602491 | msgs:7 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531989412154 | msgs:15 | tipo:agendamento
+    ├Ültimo: "ok" (de: AGENT)
+  2d - LetΓö£┬ícia Moura | +5531993904807 | msgs:5 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - dilascioclinica1 | +5531992087331 | msgs:7 | tipo:agendamento
+    ├Ültimo: "Ok" (de: AGENT)
+  2d - Luana Bonfanti | +5531994481436 | msgs:11 | tipo:agendamento
+    ├Ültimo: "Por nada !" (de: AGENT)
+  2d - Rafaela Assis | +5531988241848 | msgs:6 | tipo:agendamento
+    ├Ültimo: "╬ô┬ú├╢Γê⌐Γòò├à" (de: CONTACT)
+
+=== SEM NENHUMA RESPOSTA DO PACIENTE ===
+Total: 30
+  dilascioclinica1 | +553132411738 | msgs:79
+    ├Ültimo (IA): "(31)99171-7681"
+  dilascioclinica1 | +5531991717681 | msgs:2
+    ├Ültimo (IA): "Posso confirmar ?"
+  dilascioclinica1 | +5511970213670 | msgs:3
+    ├Ültimo (IA): "Boa tarde"
+  dilascioclinica1 | +5531984011735 | msgs:1
+    ├Ültimo (IA): "OlΓö£├¡, Clara de Almeida Coelho , tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve "
+  dilascioclinica1 | +5531987751977 | msgs:2
+    ├Ültimo (IA): "OlΓö£├¡, Caroline GonΓö£┬║alves Ribeiro De Almeida , tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. Vo"
+  dilascioclinica1 | +5531987388604 | msgs:1
+    ├Ültimo (IA): "OlΓö£├¡,  Carlos Aparecido , tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve conosc"
+  dilascioclinica1 | +5531985330800 | msgs:1
+    ├Ültimo (IA): "OlΓö£├¡ Claudia Valeria, tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve conosco em"
+  dilascioclinica1 | +5531986163264 | msgs:2
+    ├Ültimo (IA): "ZELIA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+16/06/2026 09:30
+dra Ana Luisa"
+  dilascioclinica1 | +5531995892999 | msgs:1
+    ├Ültimo (IA): "OlΓö£├¡ Christian Yuri, tudo bem?
+
+A ClΓö£┬ínica DilΓö£├¡scio tem mais de 30 anos de experiΓö£┬¼ncia cuidando da saΓö£Γòæde de nossos pacientes, sempre com dedicaΓö£┬║Γö£├║o e responsabilidade. VocΓö£┬¼ jΓö£├¡ esteve conosco em "
+  dilascioclinica1 | +5531999073466 | msgs:2
+    ├Ültimo (IA): "Posso confirmar ?"
+  dilascioclinica1 | +5531991377811 | msgs:1
+    ├Ültimo (IA): "Boa Tarde, KENIA  ! VocΓö£┬¼ tinha uma consulta agendada com o Dr. Mauro no dia 29/05, porΓö£ΓîÉm ele estarΓö£├¡ em SΓö£├║o Paulo essa semana. Por esse motivo, precisaremos cancelar essa consulta.
+
+Fico no aguardo"
+  dilascioclinica1 | +5532999288496 | msgs:1
+    ├Ültimo (IA): "Boa Tarde, FERNANDA  ! VocΓö£┬¼ tinha uma consulta agendada com o Dr. Mauro no dia 29/05, porΓö£ΓîÉm ele estarΓö£├¡ em SΓö£├║o Paulo essa semana. Por esse motivo, precisaremos cancelar essa consulta.
+
+Fico no agua"
+  dilascioclinica1 | +5531999139977 | msgs:2
+    ├Ültimo (IA): "Gostaria de agendar ?"
+  dilascioclinica1 | +5531986255767 | msgs:4
+    ├Ültimo (IA): "VocΓö£┬¼ tem um agendamento hoje Γö£├ís 14:00, deseja manter no particular ?"
+  dilascioclinica1 | +5531999085842 | msgs:1
+    ├Ültimo (IA): "Boa Tarde, ADRIANA  ! VocΓö£┬¼ tinha uma consulta agendada com o Dr. Mauro no dia 28/05, porΓö£ΓîÉm ele estarΓö£├¡ em SΓö£├║o Paulo essa semana. Por esse motivo, precisaremos cancelar essa consulta.
+
+Fico no aguar"
+  dilascioclinica1 | +5571992937908 | msgs:3
+    ├Ültimo (IA): "VocΓö£┬¼ tem um agendamento hoje Γö£├ís 16:00, deseja manter no particular ?"
+  dilascioclinica1 | +5531997337793 | msgs:1
+    ├Ültimo (IA): "Bom dia, Maria ! Seu retorno com a Dra. FΓö£├¡tima estava marcado para o dia 16/06, porΓö£ΓîÉm ela nΓö£├║o estarΓö£├¡ na clΓö£┬ínica nessa data. Ela pediu para anteciparmos sua consulta para o dia 09/06 Γö£├ís 11h00. Po"
+  dilascioclinica1 | +5531999121306 | msgs:2
+    ├Ültimo (IA): "Aguardo o retorno para reagendar a consulta"
+  dilascioclinica1 | +5531999681062 | msgs:2
+    ├Ültimo (IA): "Posso confirmar ?"
+  dilascioclinica1 | +5531975349167 | msgs:2
+    ├Ültimo (IA): "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr"
+  dilascioclinica1 | +5531987639253 | msgs:2
+    ├Ültimo (IA): "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr"
+  dilascioclinica1 | +5531999619757 | msgs:2
+    ├Ültimo (IA): "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr"
+  dilascioclinica1 | +5531984174937 | msgs:2
+    ├Ültimo (IA): "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr"
+  dilascioclinica1 | +5531981029313 | msgs:2
+    ├Ültimo (IA): "Prezados(as),
+Informamos que, a partir do dia 25/05, infelizmente estamos com o atendimento de novos pacientes pela operadora do convΓö£┬¼nio  suspenso devido a um acontecimento burocrΓö£├¡tico.  Estamos tr"
+  dilascioclinica1 | +5531995159663 | msgs:1
+    ├Ültimo (IA): "OlΓö£├¡ ( Ana Paula  ) Sua consulta com a Dr(a). ( Fatima ) na ClΓö£┬ínica Dilascio estΓö£├¡ marcada! Γëí╞Æ├┐├¼Γëí╞Æ┬¼├æ  
+Γëí╞Æ├┤├á Dia: *26/05/2026*
+Γëí╞Æ├╣├┤Γê⌐Γòò├à Semana: *TerΓö£┬║a*
+╬ô├àΓûæ HorΓö£├¡rio: 10:00
+
+Γëí╞Æ├┤├¼ Rua Domingos Vieira, 5"
+  dilascioclinica1 | +5531992088734 | msgs:4
+    ├Ültimo (IA): "Essa dentista nΓö£├║o Γö£ΓîÉ no nosso consultΓö£Γöério, indicamos para caso de retratamento ou necessidade de microscΓö£Γöépio 
+Ela atende pelo IPSM"
+  dilascioclinica1 | +5531997667897 | msgs:1
+    ├Ültimo (IA): "Obrigada"
+  dilascioclinica1 | +5531998138773 | msgs:1
+    ├Ültimo (IA): "Pode ser dia 11/06 as 13h?"
+  dilascioclinica1 | +5531986854023 | msgs:1
+    ├Ültimo (IA): "Podemos agendar no dia 02/06 as 11h"
+  dilascioclinica1 | +5531982047716 | msgs:1
+    ├Ültimo (IA): "LUANA,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+02/06/2026 17:30"
+
+=== DESFECHOS NEGATIVOS (paciente disse N├âO ou cancelou) ===
+Total: 0
+
+=== PEDIDOS DE HOR├üRIO ESPEC├ìFICO ===
+Total: 221
+  [EM_ABERTO] Γëí╞Æ├æΓûæ | +5531975068592
+    "Oi"
+  [EM_ABERTO] dilascioclinica1 | +553132411738
+    ""
+  [EM_ABERTO] Isabel | +5531991114357
+    "Confirmado"
+  [EM_ABERTO] dilascioclinica1 | +5531982538024
+    "Consegue remarcar pra mim por favor"
+  [EM_ABERTO] dilascioclinica1 | +5531988850344
+    "Γëí╞Æ├┤Γòû Imagem"
+  [EM_ABERTO] dilascioclinica1 | +5531971083190
+    "Γëí╞Æ├ª├▒ Contato compartilhado
+Nome: Dra Laura endo PM
+Telefone: +55 31 3444-5956"
+  [EM_ABERTO] dilascioclinica1 | +5531986749068
+    "Γëí╞Æ├äΓòí Γö£├╝udio"
+  [EM_ABERTO] dilascioclinica1 | +5531983116816
+    "Ok. Obrigado."
+  [POSITIVO] dilascioclinica1 | +5531982195854
+    "Solicito reagendamento"
+  [EM_ABERTO] dilascioclinica1 | +5531997025170
+    "Boa noite, pode remarcar por favor"
+  [EM_ABERTO] Clovis Vieira | +5531992470171
+    "Boa tarde!"
+  [EM_ABERTO] Ana Gabriele | +5531988225698
+    "Boa Tarde."
+  [EM_ABERTO] dilascioclinica1 | +5531993663778
+    "Boa noite"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531991717681
+    ""
+  [EM_ABERTO] Gilvanda | +5531994007977
+    "Boa tarde
+Gostaria de marcar um orΓö£┬║amento com Dr Mauro no primeiro ou no Γö£Γòæltimo horΓö£├¡rio 
+Nos dias 23 ou 24/06/2026"
+  [EM_ABERTO] Giulia | +5511971895056
+    "Boa tarde, tudo bem? VocΓö£┬¼s atendem o plano Hapvida, para fazer raspagem e limpeza?"
+  [EM_ABERTO] Regina Celia | +5531988439090
+    "Oi"
+  [EM_ABERTO] dilascioclinica1 | +5511970213670
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5531988748614
+    "╬ô┬ú├á"
+  [POSITIVO] dilascioclinica1 | +5531993696374
+    "Confirma consulta"
+  [EM_ABERTO] dilascioclinica1 | +5531998060807
+    "boa tarde"
+  [EM_ABERTO] Jane | +5531991512603
+    "Boa tarde!"
+  [POSITIVO] Regina Santolia | +5531991142712
+    "Γëí╞Æ├┤Γòû Imagem"
+  [POSITIVO] Luan Franco | +5531983495880
+    "Boa tarde tudo bem?
+Sou o Luan, que tem uma consulta com o doutor nathan, estou a caminho, garrado no trΓö£├│nsito aqui"
+  [POSITIVO] dilascioclinica1 | +5531997229502
+    "Oxi kkk"
+  [POSITIVO] Γëí╞Æ┬¼├╢Andriele Raiane | +5531982165995
+    "Marcar o paciente Silvio MoisΓö£ΓîÉs com dra Ana"
+  [SEM_RESPOSTA] Mauro | +5531999534949
+    "Boa tarde!
+Pode marcar um horΓö£├¡rio segunda-feira, 01/06, com a Dra. Carla. JΓö£├¡ sou cliente e estava viajando. Espero resposta."
+  [EM_ABERTO] dilascioclinica1 | +5531984849242
+    "Realmente vai ficar apertado esta agenda, porque viajarei no inΓö£┬ício de junho, e estava sΓö£Γöé no aguardo da peΓö£┬║a. Tem que ver a disponibilidade do Dr. Mauro."
+  [EM_ABERTO] dilascioclinica1 | +5531987738864
+    "Oi boa noite. Sim pode agendar por favor . obrigado"
+  [EM_ABERTO] dilascioclinica1 | +5531992252289
+    "Ok confirmada"
+  [EM_ABERTO] dilascioclinica1 | +5531996128588
+    "Bom dia. Aguardo remarcaΓö£┬║Γö£├║o depois do dia 16/06, as 13h"
+  [EM_ABERTO] dilascioclinica1 | +5531992292923
+    "Boa tarde"
+  [EM_ABERTO] Leni Alves | +5531971262130
+    "Bom dia, tudo bem,  a Dr Ana, pediu, que, assim que a tomografia tiver pronta, Γö£ΓîÉ pra mandar pra ela, oq acontece, vou pegar tomografia so na sexta feira , passa pra ela, por favor . Obrigada"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531986163264
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5537991154159
+    "N sei quem Γö£ΓîÉ"
+  [POSITIVO] dilascioclinica1 | +5531983411295
+    "Assim que puder, vou verificar a data. Blz"
+  [EM_ABERTO] dilascioclinica1 | +5531998545620
+    "Pode ser na sexta"
+  [EM_ABERTO] dilascioclinica1 | +5531999399157
+    "Estaremos aΓö£┬í ok?"
+  [EM_ABERTO] dilascioclinica1 | +5531999753079
+    "Quando ele retornar me arranja um horΓö£├¡rio mais  depressa possivel porque nΓö£├║o estΓö£├¡ fΓö£├¡cil esperar, por favor"
+  [EM_ABERTO] dilascioclinica1 | +5531988502752
+    "Quem Γö£ΓîÉ esta?"
+  [EM_ABERTO] dilascioclinica1 | +5531996441719
+    "Vc"
+  [EM_ABERTO] sofia | +5531971412884
+    "Pessoal, bom dia!
+Tudo bem?
+Vou precisar desmarcar a limpeza, mas manter a consulta com a Dra Fatima.
+Obrigada."
+  [EM_ABERTO] talytta╬ô┬Ñ├▒Γê⌐Γòò├àΓëí╞Æ├û├«Γëí╞Æ├àΓò£Γëí╞Æ├å┬¼Γëí╞Æ├àΓò£Γëí╞Æ├¼├ç | +5531999067346
+    "Oi"
+  [EM_ABERTO] dilascioclinica1 | +5531997207256
+    "bom dia! ╬ô┬ú├á"
+  [EM_ABERTO] dilascioclinica1 | +5531975078699
+    "Boa noite"
+  [EM_ABERTO] dilascioclinica1 | +5531988230530
+    "Bom dia!"
+  [EM_ABERTO] dilascioclinica1 | +5531983522574
+    "Ok"
+  [EM_ABERTO] dilascioclinica1 | +5531991278246
+    "Confirmado"
+  [EM_ABERTO] Chris | +5531999022130
+    "Bom dia!!!! Poderia confirmar meu horΓö£├¡rio em julho com Dr Mauro? NΓö£├║o recebi confirmaΓö£┬║Γö£├║o de agendamento.
+Estive na consulta com ele dia 04/05 e pediu para marcar dia 06/07 ou 13/07."
+  [POSITIVO] Ronald | +5531988702469
+    "antes do dia 8. Se tiver desistΓö£┬¼ncia a tarde"
+  [POSITIVO] dilascioclinica1 | +5531991167832
+    "Boa tarde, uai eu estou marcado com ele dia 28/05. !!!
+Como vai ser !
+Vou ver o horΓö£├¡rio com minha esposa"
+  [EM_ABERTO] dilascioclinica1 | +5531986768348
+    "Obrigado"
+  [EM_ABERTO] dilascioclinica1 | +5531999994737
+    "Confirmado"
+  [EM_ABERTO] Jener Rafael | +5541999574077
+    "Γëí╞Æ├äΓòí Γö£├╝udio"
+  [EM_ABERTO] dilascioclinica1 | +5531992166021
+    "Sim, podemos"
+  [EM_ABERTO] dilascioclinica1 | +5531996407282
+    "╬ô┬ú├á"
+  [EM_ABERTO] dilascioclinica1 | +5531988540344
+    "Marca comigo"
+  [EM_ABERTO] dilascioclinica1 | +5531994989222
+    "Bom dia ,ok, obrigada Γëí╞Æ├û├àΓëí╞Æ├àΓò£"
+  [EM_ABERTO] dilascioclinica1 | +5531994706425
+    "╬ô┬ú├á consulta confirmada"
+  [EM_ABERTO] Thais Oliveira | +5531999105623
+    "Bom dia!
+
+JΓö£├¡ tem o retorno do IPSM?"
+  [POSITIVO] dilascioclinica1 | +5531986049692
+    "Confirmado"
+  [POSITIVO] dilascioclinica1 | +5531996663769
+    "MARLY,
+
+Este lembrete Γö£ΓîÉ para CONFIRMAR sua consulta no dia:
+01/06/2026 09:30"
+  [EM_ABERTO] dilascioclinica1 | +5531999218709
+    "Sim"
+  [EM_ABERTO] dilascioclinica1 | +5531991752153
+    "Boa tarde!"
+  [POSITIVO] dilascioclinica1 | +5531971727312
+    "Sim"
+  [EM_ABERTO] dilascioclinica1 | +5531993652279
+    "Ok! Confirmado"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999073466
+    ""
+  [EM_ABERTO] dilascioclinica1 | +14804656632
+    "Oi, querida"
+  [EM_ABERTO] dilascioclinica1 | +5531982495688
+    "MuitΓö£┬íssimos , obrigada!"
+  [EM_ABERTO] dilascioclinica1 | +5531972669899
+    "Ola, boa tarde"
+  [EM_ABERTO] Γëí╞Æ├å├▓ | +5531975009828
+    "Bom dia pergunta a Ana se pode ser terΓö£┬║a que vem"
+  [EM_ABERTO] dilascioclinica1 | +5531998475194
+    "Boa tarde!"
+  [EM_ABERTO] dilascioclinica1 | +5531999573086
+    "Bom dia"
+  [EM_ABERTO] dilascioclinica1 | +5531991680211
+    "OlΓö£├¡, boa tarde"
+  [EM_ABERTO] Paulo Roberto | +5531996261517
+    "Boa tarde Γëí╞Æ├¼├ç
+Preciso remarcar um horΓö£├¡rio com Mauro.
+
+Meu horΓö£├¡rio seria 29/05 Γö£├ís 17h. 
+
+Poderia por gentileza remarcar para 01/06?
+
+Γëí╞Æ├û├¬Γëí╞Æ├û├¿"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531991377811
+    ""
+  [SEM_RESPOSTA] dilascioclinica1 | +5532999288496
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5531973572261
+    "Ok"
+  [EM_ABERTO] dilascioclinica1 | +5531989772558
+    "Bom dia!"
+  [EM_ABERTO] dilascioclinica1 | +5531998233633
+    "Boa tarde!"
+  [EM_ABERTO] Ednalva | +5531996410093
+    "Boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5531998408741
+    "Ok"
+  [EM_ABERTO] ElΓö£Γöñ | +5531997314111
+    "Bom dia! Estou com muita sinusite e portanto nΓö£├║o posso comparecer amanhΓö£├║ a consulta, gentileza desmarcar. Obrigada."
+  [EM_ABERTO] dilascioclinica1 | +5531999945622
+    "Γëí╞Æ├äΓòí Γö£├╝udio"
+  [EM_ABERTO] dilascioclinica1 | +5531986481693
+    "Γö£├╝ tarde.ok"
+  [EM_ABERTO] Raquel | +5531998400252
+    "Oi. Bom dia. Tudo bem? Pode remarcar por favor?"
+  [EM_ABERTO] dilascioclinica1 | +5531991855070
+    "Ola estaremos viajando no dia 02"
+  [EM_ABERTO] dilascioclinica1 | +5531989355430
+    "╬ô┬ú├á"
+  [POSITIVO] dilascioclinica1 | +5531995606364
+    "Confirmado ╬ô┬ú├á"
+  [EM_ABERTO] . | +5531974008535
+    "Oi tudo bem"
+  [EM_ABERTO] Silvana B.Baptista | +5531986540810
+    "Bom dia!
+Confirmando dia 28/05 Γö£├ís 11h, alΓö£ΓîÉm da limpeza tem 2 dentes que soltaram a obturaΓö£┬║Γö£├║o,  do dente normal e do implantado."
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999139977
+    ""
+  [POSITIVO] dilascioclinica1 | +5531994167290
+    "Boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5533988124003
+    "Pode remarcar para o dia mais prΓö£Γöéximo possΓö£┬ível"
+  [POSITIVO] Meload | +5531987136484
+    "Boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5531988718603
+    "Boa tarde
+Provavelmente vocΓö£┬¼s digitaram o nr errado, pois jΓö£├¡ entrei em contato com o IPSM e a carteira estava vΓö£├¡lida. Na terΓö£┬║a feira da semana passada eu cobrei uma posiΓö£┬║Γö£├║o da clΓö£┬ínica e sΓö£Γöé hoj"
+  [EM_ABERTO] dilascioclinica1 | +5531999205185
+    "Pode ser 16 de junho"
+  [EM_ABERTO] dilascioclinica1 | +5531991835116
+    "A tarde 
+Gengiva inflamada"
+  [POSITIVO] Valdineia Camilo | +5531997969996
+    "oi bom dia ! Td bem? estou precisando agendar consulta com Dra Fatima"
+  [EM_ABERTO] dilascioclinica1 | +5531991752181
+    "VocΓö£┬¼s podem marca pra outro dia"
+  [EM_ABERTO] dilascioclinica1 | +5531984640938
+    "OlΓö£├¡ vou ter que pegar o resultado do RX e remarcar. AΓö£┬í te chamo novamente"
+  [EM_ABERTO] dilascioclinica1 | +5531997016131
+    "Pode realizar um novo agendamento"
+  [EM_ABERTO] dilascioclinica1 | +5531983486040
+    "Pode sim"
+  [POSITIVO] PatrΓö£┬ícia Barbosa | +5531982016546
+    "Vou precisar  remarcar de novo pra depois do dia 6/6"
+  [EM_ABERTO] dilascioclinica1 | +5531986255767
+    ""
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999085842
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5531986387303
+    "Opa, bom dia"
+  [EM_ABERTO] dilascioclinica1 | +5531988531843
+    "╬ô┬ú├á Consulta confirmada"
+  [POSITIVO] dilascioclinica1 | +553132730684
+    "OlΓö£├¡! Γëí╞Æ├ª├»
+Seja bem-vindo(a) Γö£├í *ClΓö£┬ínica iDOC*.Γëí╞Æ┬║├¡
+
+Este Γö£ΓîÉ o nΓö£Γòæmero de *Raio-X do Centro OdontolΓö£Γöégico da PMMG*.
+Como podemos ajudar?
+
+╬ô├àΓöé Pedimos, por gentileza, que aguarde um momento, em breve "
+  [POSITIVO] dilascioclinica1 | +5531995793434
+    "Bom dia, tudo bem?"
+  [EM_ABERTO] Guilherme | +5531988732923
+    "Boa tarde! Tudo bem? 
+Gostaria de marcar uma consulta com o dr. Matheus."
+  [EM_ABERTO] dilascioclinica1 | +5531995200706
+    "Pode"
+  [EM_ABERTO] dilascioclinica1 | +5571992937908
+    ""
+  [POSITIVO] dilascioclinica1 | +5531986310049
+    "Confirmo"
+  [EM_ABERTO] dilascioclinica1 | +5532998561835
+    "Quarta-feira."
+  [EM_ABERTO] dilascioclinica1 | +5531984490252
+    "Pode sim"
+  [POSITIVO] dilascioclinica1 | +5531997337793
+    ""
+  [EM_ABERTO] Vivi | +5531995735469
+    "Oi"
+  [EM_ABERTO] dilascioclinica1 | +5531988503518
+    "Boa tarde, nΓö£├║o poderia ser dia 16?"
+  [EM_ABERTO] JΓö£ΓîÉssica AraujoΓëí╞Æ┬¬├» | +5531991253666
+    "Boa noite!"
+  [EM_ABERTO] Daniela | +5531984558332
+    "SICOOB_2026_26_05_18_39_42_PIX.pdf"
+  [EM_ABERTO] dilascioclinica1 | +5531993015893
+    "Bom dia"
+  [EM_ABERTO] Paula Nery Γëí╞Æ├«Γò¥ | +5531988183546
+    "Boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5531984763264
+    "Oi boa tarde"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999121306
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5531988863339
+    "Consulta confirmada"
+  [EM_ABERTO] dilascioclinica1 | +5531989343992
+    "Confirmado"
+  [EM_ABERTO] dilascioclinica1 | +5531999470465
+    "Bom dia!!"
+  [EM_ABERTO] dilascioclinica1 | +5531988914420
+    "Bom dia!"
+  [POSITIVO] dilascioclinica1 | +5531981054969
+    "boa tarde! 
+confirmados ╬ô┬ú├á"
+  [EM_ABERTO] dilascioclinica1 | +5531986356743
+    "Pode sim"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999681062
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5531987637775
+    "Boa tarde!"
+  [SEM_RESPOSTA] Jacqueline | +5531992411826
+    "Boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5531996064313
+    "Boa tarde!"
+  [EM_ABERTO] dilascioclinica1 | +5531991554984
+    "Γëí╞Æ├äΓòí Γö£├╝udio"
+  [EM_ABERTO] dilascioclinica1 | +5531985736886
+    "Pode sim"
+  [POSITIVO] dilascioclinica1 | +5531995565875
+    "Ok."
+  [POSITIVO] dilascioclinica1 | +5531986467517
+    "AΓö£┬í aqui pode cancelar"
+  [POSITIVO] dilascioclinica1 | +5531994334301
+    "Confirmado"
+  [EM_ABERTO] dilascioclinica1 | +5531987422899
+    "Bom dia!"
+  [EM_ABERTO] Thadeu | +5531992131166
+    "Boa tarde !!"
+  [EM_ABERTO] dilascioclinica1 | +5531992286265
+    "Γëí╞Æ├ª├¼"
+  [EM_ABERTO] dilascioclinica1 | +5531973377516
+    "Boa tarde.
+Nossa quanta confusΓö£├║o nΓö£├║o tem o tratamento e apenas pra dar inΓö£┬ício ao tratamento.
+Mais tranquilo vou ver la com o plano assim que tiver uma resposta ou tratamento aviso pra vocΓö£┬¼s."
+  [EM_ABERTO] rosangela FΓö£├¡tima | +5531972226986
+    "RosΓö£├│ngela de FΓö£├¡tima Alves"
+  [EM_ABERTO] Thais | +5531994771427
+    "OlΓö£├¡"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531986904224
+    "Estou chegando"
+  [EM_ABERTO] dilascioclinica1 | +5531982050725
+    "Consulta confirmada"
+  [POSITIVO] dilascioclinica1 | +5531985804052
+    "Bom dia, tudo bem?  NΓö£├║o entendi?"
+  [EM_ABERTO] dilascioclinica1 | +5531986258795
+    "Γëí╞Æ├äΓòí Γö£├╝udio"
+  [EM_ABERTO] dilascioclinica1 | +5531997668327
+    "Bom dia 
+Seria  amanhΓö£├║, ele nΓö£├║o estarΓö£├¡?"
+  [EM_ABERTO] dilascioclinica1 | +5531999412341
+    "╬ô┬ú├á"
+  [EM_ABERTO] Smith | +5531994191980
+    "Bom dia"
+  [EM_ABERTO] Marcos Oliveira | +5531999420170
+    "Pessoal, boa tarde. Tudo bem?
+
+Aqui Γö£ΓîÉ o Marcos Paulo da Silva Oliveira. Fiz vΓö£├¡rios procedimentos ai no ano passado: enxerto de gengiva, troquei as coroas dentΓö£├¡rias, clareamento, etc. Mas, poucas de"
+  [POSITIVO] dilascioclinica1 | +5531991021434
+    "Γëí╞Æ├┤Γòû Imagem"
+  [EM_ABERTO] ~Maria Eduarda | +5531982283989
+    "Oi, boa noite! Tudo bem? Minha irmΓö£├║ me passou seu contato e eu queria marcar uma consulta de rotina. VocΓö£┬¼ teria algum horΓö£├¡rio disponΓö£┬ível?"
+  [EM_ABERTO] MarΓö£┬ília | +5531997836536
+    "Bom dia!"
+  [EM_ABERTO] dilascioclinica1 | +5531998181459
+    "Confirmado Γëí╞Æ├ª├¼"
+  [EM_ABERTO] dilascioclinica1 | +5531986719430
+    "Bom dia ."
+  [EM_ABERTO] dilascioclinica1 | +5531988848345
+    "Ok"
+  [EM_ABERTO] FlΓö£├¡via da Silva GonΓö£┬║alves | +5531971526361
+    "Bom dia!
+Tudo bem?
+Me chamo FlΓö£├¡via da Silva GonΓö£┬║alves.
+Tenho uma consulta agendada com a Dra Ana LuΓö£┬ísa sexta feira Γö£├ís 11h00.
+Gostaria de confirmar.
+ConvΓö£┬¼nio Hapvida.
+TambΓö£ΓîÉm gostaria de saber se "
+  [EM_ABERTO] dilascioclinica1 | +5531999385714
+    "Obrigada"
+  [POSITIVO] dilascioclinica1 | +41792523865
+    "Tudo bem pode confirmar"
+  [EM_ABERTO] MariaΓëí╞Æ├å├▓ | +5531995323591
+    "Boa tarde"
+  [EM_ABERTO] Aparecida | +5531996602491
+    "Boa tarde poderia agendar uma consulta para mim para semana que vem Γö£├ís 19:00 horas por favor obrigada"
+  [POSITIVO] dilascioclinica1 | +5531989412154
+    "Confirmado Γëí╞Æ├┐├½Γëí╞Æ├┐├½"
+  [EM_ABERTO] LetΓö£┬ícia Moura | +5531993904807
+    "Oi, boa tarde Γëí╞Æ┬╜ΓòóΓëí╞Æ├àΓò¥Γëí╞Æ├å┬Ñ
+Gostaria de agendar limpeza para
+
+BENJAMIN BARUK MOURA COUTO 
+
+MICAELA MOURA COUTO 
+
+LETΓö£├¼CIA SOMONE DE MOURA COUTO"
+  [POSITIVO] dilascioclinica1 | +5531992087331
+    "Sticker"
+  [EM_ABERTO] Luana Bonfanti | +5531994481436
+    "OlΓö£├¡! Tudo bem? Bom dia!!"
+  [EM_ABERTO] Rafaela Assis | +5531988241848
+    "1500,00 da metade e o resto quero dividir 
+500,00"
+  [EM_ABERTO] Stella | +5531996985187
+    "OlΓö£├¡"
+  [EM_ABERTO] Maria Luiza | +5531988631251
+    "Bom dia! Remarque para a data mais prΓö£Γöéxima, Maria Luiza e FlΓö£├¡vio."
+  [EM_ABERTO] dilascioclinica1 | +5531982517889
+    "Bom dia!
+
+Que Deus te proteja sempre juntamente com toda sua famΓö£┬ília!"
+  [SEM_RESPOSTA] alves | +5531972231210
+    "Boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5531982482739
+    "Confirmado"
+  [EM_ABERTO] Igor Alves BitarΓö£├║es | +5531995123542
+    "OlΓö£├¡, sou um paciente que foi atendido a mais de uma dΓö£ΓîÉcada e gostaria de agendar uma consulta com o Dr Mauro. No fim de tarde"
+  [EM_ABERTO] Lari Almeida | +5531992365433
+    "Boa tarde!"
+  [EM_ABERTO] dilascioclinica1 | +5531983815802
+    "Boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5535988518811
+    "Boa tarde"
+  [EM_ABERTO] Patricia | +5531992707376
+    "Mensagem nΓö£├║o suportada"
+  [EM_ABERTO] Dayse | +5531984601919
+    "Bom dia!
+Por favor Dr Mauro ficou de me encaixar antes da viagem e esqueceu"
+  [EM_ABERTO] Keilla | +5531982300291
+    "Boa tarde!"
+  [EM_ABERTO] dilascioclinica1 | +5531986411260
+    "Oi boa tarde"
+  [EM_ABERTO] dilascioclinica1 | +5531986104978
+    "Consulta confirmada"
+  [EM_ABERTO] jacquelinesmatos | +5531992295195
+    "Bom dia"
+  [EM_ABERTO] dilascioclinica1 | +5531989058943
+    "Ok"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531981111203
+    "Mensagem nΓö£├║o suportada"
+  [EM_ABERTO] dilascioclinica1 | +5531989571029
+    "Olaaa"
+  [EM_ABERTO] dilascioclinica1 | +5531992058646
+    "Sim"
+  [EM_ABERTO] dilascioclinica1 | +5531988211289
+    "Consulta confirmada, obrigado"
+  [EM_ABERTO] dilascioclinica1 | +5531988479015
+    "Confirmada!"
+  [EM_ABERTO] dilascioclinica1 | +5531971189792
+    "╬ô┬ú├á"
+  [EM_ABERTO] dilascioclinica1 | +5531985076674
+    "Consulta confirmada"
+  [POSITIVO] dilascioclinica1 | +5531995159663
+    ""
+  [POSITIVO] dilascioclinica1 | +5531986296360
+    "Sim"
+  [EM_ABERTO] . | +5531985092868
+    "Oii"
+  [EM_ABERTO] dilascioclinica1 | +5531992496424
+    "Sim obrigado"
+  [EM_ABERTO] dilascioclinica1 | +5532999139977
+    "╬ô┬ú├á"
+  [EM_ABERTO] dilascioclinica1 | +5531992088734
+    ""
+  [EM_ABERTO] Ana Maria | +5531994550022
+    "Boa tarde"
+  [EM_ABERTO] Daniel P. | +5531971624731
+    "Oi boa tarde vcs estΓö£├║o atendendo o plano odonto empresa"
+  [POSITIVO] dilascioclinica1 | +5531983266116
+    "Ok"
+  [EM_ABERTO] dilascioclinica1 | +5531998269198
+    "Bom dia, tudo bem?"
+  [POSITIVO] dilascioclinica1 | +5531992041470
+    "Boa tarde"
+  [EM_ABERTO] JoΓö£├║o Carlos Diniz | +5531992773057
+    "Ok. Grato. Pode agendar o  horario para o proximo mΓö£┬¼s , uma vez que essa seria a Γö£Γòæltima do mΓö£┬¼s.  Aguardo confirmaΓö£┬║Γö£├║o."
+  [EM_ABERTO] dilascioclinica1 | +5531984278463
+    "Mensagem nΓö£├║o suportada"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531999304480
+    "╬ô┬ú├á"
+  [POSITIVO] dilascioclinica1 | +5533991043995
+    "Boa tarde!!"
+  [EM_ABERTO] Ju | +5531991840089
+    "Bom dia dr Mauro!
+Marca uma consulta pra mim ,por favor."
+  [EM_ABERTO] dilascioclinica1 | +5531987449455
+    "Ok pode sim"
+  [POSITIVO] dilascioclinica1 | +5531989720436
+    "Cancela por favor"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531996718548
+    "Mensagem nΓö£├║o suportada"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531998138773
+    ""
+  [SEM_RESPOSTA] dilascioclinica1 | +5531986854023
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5531997910534
+    "Pode sim, esse horΓö£├¡rio Γö£ΓîÉ bom."
+  [EM_ABERTO] dilascioclinica1 | +5531988014806
+    "pode ser"
+  [EM_ABERTO] dilascioclinica1 | +5531985687523
+    "AgradeΓö£┬║o"
+  [EM_ABERTO] dilascioclinica1 | +5531985868788
+    "NΓö£├║o"
+  [POSITIVO] dilascioclinica1 | +5531986735430
+    "Qual e a outra"
+  [SEM_RESPOSTA] dilascioclinica1 | +5531982047716
+    ""
+  [EM_ABERTO] dilascioclinica1 | +5531991352577
+    "Oi, eu cancelei pelo aplicativo"
+
+=== CONVERSAS APENAS COM A IA (SEM AGENTE HUMANO) ===
+Total (IA respondeu + paciente respondeu): 0
+
+=== RESUMO FINAL ===
+Total conversas analisadas: 263
+Agendamentos: 223
+Reagendamentos: 0
+Confirma├º├╡es: 1
+Planos de sa├║de: 8
+D├║vidas financeiras: 0
+Retorno p├│s-consulta: 3
+Informa├º├╡es de local: 0
+Sondagem inicial: 7
+Outros: 21
+
+Desfecho POSITIVO: 42
+Desfecho NEGATIVO: 0
+Desfecho EM ABERTO: 188
+Sem resposta: 33
+
+Leads frios (>1 dia): 129
+Leads muito frios (>5 dias): 34
+Urg├¬ncias/sintomas: 29
+Pedidos de hor├írio espec├¡fico: 221
+Planos mencionados: {"Particular":19,"Hapvida":9,"Amil":4,"Unimed":1}

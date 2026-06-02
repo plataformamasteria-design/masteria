@@ -140,6 +140,138 @@ export async function getFunnelsForDropdown() {
     return db.select({ id: funnels.id, name: funnels.name }).from(funnels).where(eq(funnels.companyId, auth.companyId));
 }
 
+export async function getAutomationFlowsForDropdown() {
+    const auth = await requireAuthOr401();
+    if ('status' in auth) throw new Error("Unauthorized");
+    return db.select({ id: automationFlows.id, name: automationFlows.name }).from(automationFlows).where(eq(automationFlows.companyId, auth.companyId));
+}
+
+/**
+ * Varre os nós de todas as automações V4 da empresa e extrai
+ * quais campos personalizados cada automação salva nos contatos.
+ *
+ * Nó principal: 'update_contact' (editor V4 "Atualizar Contato")
+ *   config.fields: Array<{ name: string; value: string }>
+ *   → campo salvo em contacts.customFields[field.name]
+ *
+ * Também cobre variantes legadas:
+ *   - 'edit_fields': mesma estrutura
+ *   - 'capture_info': config.field_key (ou custom_field_name)
+ *   - 'set_variable' / 'save_field': config.field_key
+ *
+ * Campos de UTM/tracking são filtrados (não são relevantes para segmentação Kanban).
+ *
+ * Retorna: Array<{ flowId, flowName, fields: string[] }>
+ */
+
+const UTM_PREFIXES = ['utm_', 'gclid', 'fbclid', 'ttclid', 'msclkid'];
+const isTrackingField = (key: string) =>
+    UTM_PREFIXES.some(p => key.toLowerCase().startsWith(p));
+
+/** Extrai os field names de um único nó (normalized ou visual) */
+function extractFieldsFromNodeData(nType: string, cfg: Record<string, any>): string[] {
+    const found: string[] = [];
+
+    if (nType === 'update_contact' || nType === 'edit_fields') {
+        // SCHEMA REAL: config.fields = [{ name: 'campo', value: '{{...}}' }]
+        const formFields: any[] = Array.isArray(cfg.fields) ? cfg.fields : [];
+        for (const f of formFields) {
+            const key = (f.name || f.key || f.field_key || '').toString().trim();
+            if (key && !isTrackingField(key)) found.push(key);
+        }
+        // Variante JSON mode
+        if (cfg.mode === 'json' && cfg.json_value) {
+            try {
+                const parsed = JSON.parse(cfg.json_value);
+                for (const k of Object.keys(parsed)) {
+                    if (k && !isTrackingField(k)) found.push(k);
+                }
+            } catch (_) {}
+        }
+
+    } else if (nType === 'capture_info') {
+        // Nó de captura individual de campo (legado)
+        const fieldKey = cfg.field_key === 'custom'
+            ? (cfg.custom_field_name || '').toString().trim()
+            : (cfg.field_key || '').toString().trim();
+        if (fieldKey && fieldKey !== 'custom' && !isTrackingField(fieldKey)) found.push(fieldKey);
+
+    } else if (nType === 'form' || nType === 'form_submit' || nType === 'webhook_form') {
+        const formFields: any[] = Array.isArray(cfg.fields) ? cfg.fields : [];
+        for (const f of formFields) {
+            const key = (f.key || f.field_key || f.name || '').toString().trim();
+            if (key && !isTrackingField(key)) found.push(key);
+        }
+
+    } else if (nType === 'set_variable' || nType === 'save_field') {
+        const key = (cfg.field_key || cfg.variable_name || cfg.key || '').toString().trim();
+        if (key && !isTrackingField(key)) found.push(key);
+    }
+
+    return found;
+}
+
+export async function getAutomationFieldsMap(): Promise<
+    { flowId: string; flowName: string; fields: string[] }[]
+> {
+    const auth = await requireAuthOr401();
+    if ('status' in auth) throw new Error("Unauthorized");
+    const { companyId } = auth;
+
+    // 1. Buscar todos os fluxos da empresa
+    const flows = await db
+        .select({ id: automationFlows.id, name: automationFlows.name, visualData: automationFlows.visualData })
+        .from(automationFlows)
+        .where(eq(automationFlows.companyId, companyId));
+
+    if (flows.length === 0) return [];
+
+    // 2. Buscar nós normalizados (tabela automation_nodes) em batch
+    const nodes = await db
+        .select({ automationId: automationNodes.automationId, nodeType: automationNodes.nodeType, config: automationNodes.config })
+        .from(automationNodes)
+        .where(eq(automationNodes.companyId, companyId));
+
+    // 3. Montar mapa flowId → Set<fieldKey>
+    const fieldsByFlow = new Map<string, Set<string>>();
+
+    const addFields = (flowId: string, fields: string[]) => {
+        if (fields.length === 0) return;
+        if (!fieldsByFlow.has(flowId)) fieldsByFlow.set(flowId, new Set<string>());
+        for (const f of fields) fieldsByFlow.get(flowId)!.add(f);
+    };
+
+    // 3a. Nós normalizados
+    for (const node of nodes) {
+        const cfg = (node.config || {}) as Record<string, any>;
+        addFields(node.automationId, extractFieldsFromNodeData(node.nodeType, cfg));
+    }
+
+    // 3b. Parsear visualData (principal fonte de verdade nos fluxos V4)
+    // Os fluxos V4 armazenam tudo no visualData.nodes antes de normalizar
+    for (const flow of flows) {
+        const vd = flow.visualData as any;
+        const vnodes: any[] = Array.isArray(vd?.nodes) ? vd.nodes : [];
+        for (const vnode of vnodes) {
+            // O type do nó no xyflow pode estar em vnode.type ou vnode.data?.type
+            const nType: string = vnode.type || vnode.data?.type || vnode.nodeType || '';
+            // Os dados de config podem estar em vnode.data diretamente
+            const cfg = (vnode.data || {}) as Record<string, any>;
+            addFields(flow.id, extractFieldsFromNodeData(nType, cfg));
+        }
+    }
+
+    // 4. Montar resultado final, ordenado por nome da automação
+    return flows
+        .map(flow => ({
+            flowId: flow.id,
+            flowName: flow.name,
+            fields: Array.from(fieldsByFlow.get(flow.id) || []).sort(),
+        }))
+        .sort((a, b) => a.flowName.localeCompare(b.flowName));
+}
+
+
 export async function getFunnelStagesForDropdown() {
     const auth = await requireAuthOr401();
     if ('status' in auth) throw new Error("Unauthorized");

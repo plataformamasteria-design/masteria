@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,12 @@ export function CreateSessionDialog({ onCreateSession, onSessionCreated }: Creat
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    const handleOpen = () => setOpen(true);
+    window.addEventListener('open-baileys-modal', handleOpen);
+    return () => window.removeEventListener('open-baileys-modal', handleOpen);
+  }, []);
 
   const handleCreate = async () => {
     if (!name.trim() || isCreating) return; // ✅ CORREÇÃO: Prevenir múltiplos cliques
@@ -49,12 +55,6 @@ export function CreateSessionDialog({ onCreateSession, onSessionCreated }: Creat
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nova Sessão
-        </Button>
-      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Criar Nova Sessão WhatsApp</DialogTitle>

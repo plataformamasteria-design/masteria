@@ -8,7 +8,11 @@ import { CreateWhatsappCampaignDialog } from './create-whatsapp-campaign-dialog'
 import type { Connection, Template } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
-export function CreateWhatsappCampaignWrapper() {
+interface Props {
+  children?: React.ReactNode;
+}
+
+export function CreateWhatsappCampaignWrapper({ children }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -69,10 +73,19 @@ export function CreateWhatsappCampaignWrapper() {
 
   return (
     <>
-      <Button onClick={handleOpen}>
-        <PlusCircle className="mr-2 h-4 w-4" />
-        Criar Campanha API
-      </Button>
+      {children ? (
+        React.cloneElement(children as React.ReactElement<any>, {
+          onClick: (e: React.MouseEvent) => {
+            handleOpen();
+            (children as React.ReactElement<any>).props.onClick?.(e);
+          },
+        })
+      ) : (
+        <Button onClick={handleOpen}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Criar Campanha API
+        </Button>
+      )}
 
       <CreateWhatsappCampaignDialog
         isOpen={isOpen}

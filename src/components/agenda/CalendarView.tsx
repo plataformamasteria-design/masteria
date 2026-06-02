@@ -147,23 +147,23 @@ export function CalendarView({ selectedDate, onSelectDate, refreshTrigger, calen
         className="rounded-md border-0 pointer-events-auto w-full"
         classNames={{
           months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-          month: "space-y-4 w-full",
-          caption: "flex justify-center pt-1 relative items-center mb-4",
-          caption_label: "text-base font-semibold",
+          month: "space-y-6 w-full p-2",
+          caption: "flex justify-center pt-1 relative items-center mb-6",
+          caption_label: "text-lg font-black tracking-wide text-zinc-900 dark:text-white uppercase",
           nav: "space-x-1 flex items-center",
-          nav_button: "h-8 w-8 bg-transparent p-0 opacity-50 hover:opacity-100 hover:bg-accent rounded-md transition-colors",
+          nav_button: "h-9 w-9 bg-zinc-100 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 p-0 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-white/10 hover:border-zinc-300 dark:hover:border-white/20 rounded-xl transition-all flex items-center justify-center shadow-sm",
           nav_button_previous: "absolute left-1",
           nav_button_next: "absolute right-1",
-          table: "w-full border-collapse",
-          head_row: "flex w-full mb-2",
-          head_cell: "text-muted-foreground rounded-md w-full font-medium text-[13px] h-9 flex items-center justify-center uppercase",
-          row: "flex w-full mt-1",
+          table: "w-full border-collapse space-y-2",
+          head_row: "flex w-full mb-4",
+          head_cell: "text-zinc-500 rounded-md w-full font-bold text-[11px] h-9 flex items-center justify-center uppercase tracking-[0.2em]",
+          row: "flex w-full mt-2 gap-2",
           cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-full aspect-square",
-          day: "h-full w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors flex items-start justify-center pt-2",
-          day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground font-semibold",
-          day_today: "bg-accent text-accent-foreground font-semibold",
-          day_outside: "text-muted-foreground opacity-30",
-          day_disabled: "text-muted-foreground opacity-50",
+          day: "h-full w-full p-0 font-medium text-zinc-700 dark:text-zinc-300 aria-selected:opacity-100 hover:bg-zinc-100 dark:hover:bg-white/[0.05] hover:text-zinc-900 dark:hover:text-white rounded-[14px] transition-all duration-300 flex items-start justify-center pt-2.5 border border-transparent hover:border-zinc-200 dark:hover:border-white/10 hover:shadow-sm dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.02)]",
+          day_selected: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15),inset_0_0_10px_rgba(16,185,129,0.1)] rounded-[14px]",
+          day_today: "bg-zinc-100 dark:bg-white/5 text-zinc-900 dark:text-white font-bold rounded-[14px] border border-zinc-200 dark:border-white/20 shadow-sm dark:shadow-[0_0_15px_rgba(255,255,255,0.05)]",
+          day_outside: "text-zinc-600 opacity-50 font-normal",
+          day_disabled: "text-zinc-700 opacity-50",
           day_hidden: "invisible",
         }}
         modifiers={{
@@ -171,8 +171,8 @@ export function CalendarView({ selectedDate, onSelectDate, refreshTrigger, calen
           hasTasks: (date) => hasTasksOnDay(date),
         }}
         modifiersClassNames={{
-          hasEvents: "border-b-2 border-blue-500",
-          hasTasks: "border-b-2 border-orange-500",
+          hasEvents: "after:absolute after:bottom-1.5 after:w-full after:h-[2px] after:bg-emerald-500/50 after:shadow-[0_0_8px_rgba(16,185,129,0.5)] after:rounded-full after:left-0",
+          hasTasks: "before:absolute before:top-1 before:right-1 before:w-[4px] before:h-[4px] before:bg-indigo-500 before:shadow-[0_0_8px_rgba(99,102,241,0.8)] before:rounded-full",
         }}
         components={{
           DayContent: ({ date }) => {
@@ -181,23 +181,23 @@ export function CalendarView({ selectedDate, onSelectDate, refreshTrigger, calen
             
             // Get unique calendar colors for events on this day
             const eventColors = isGeneralCalendar
-              ? [...new Set(dayEvents.map(e => e.calendar_id ? calendarsMap[e.calendar_id]?.color : '#3B82F6').filter(Boolean))]
+              ? [...new Set(dayEvents.map(e => e.calendar_id ? calendarsMap[e.calendar_id]?.color : '#10b981').filter(Boolean))]
               : dayEvents.length > 0 ? [selectedCalendarColor] : [];
             
             return (
               <div className="relative w-full h-full flex flex-col items-center justify-start pt-1">
                 <span className="text-sm">{date.getDate()}</span>
                 {(eventColors.length > 0 || taskCount > 0) && (
-                  <div className="flex gap-0.5 mt-1 flex-wrap justify-center px-1">
+                  <div className="flex gap-1 mt-1.5 flex-wrap justify-center px-1">
                     {eventColors.slice(0, 3).map((color, idx) => (
                       <div 
                         key={idx} 
-                        className="h-1.5 w-1.5 rounded-full" 
-                        style={{ backgroundColor: color || '#3B82F6' }}
+                        className="h-1.5 w-1.5 rounded-full shadow-sm" 
+                        style={{ backgroundColor: color || '#10b981', boxShadow: `0 0 8px ${color || '#10b981'}80` }}
                       />
                     ))}
                     {taskCount > 0 && (
-                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]" />
                     )}
                   </div>
                 )}

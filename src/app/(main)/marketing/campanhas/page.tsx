@@ -29,7 +29,7 @@ import { useTrafegoData } from "@/hooks/use-trafego-data";
 import { useAccountSpend } from "@/hooks/use-account-spend";
 import { useAudiencesEngine } from "@/hooks/use-audiences-engine";
 import { IAModelSelector } from "@/components/ia-model-selector";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { toast } from "sonner";
 import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/trafego/FunilCampanhaConfig";
 import { AdDetailDrawer } from "@/components/trafego/AdDetailDrawer";

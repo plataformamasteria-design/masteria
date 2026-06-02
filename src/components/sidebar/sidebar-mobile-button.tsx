@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 
 export function MobileMenuButton() {
     const { toggleMobile, isMobileOpen } = useSidebar();

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import useSWR from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, X, DollarSign, Users,
   CalendarCheck, TrendingDown, Lightbulb, Calendar,

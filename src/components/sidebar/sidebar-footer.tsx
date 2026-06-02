@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Settings, Bell, Moon, Sun } from 'lucide-react';
+import { LogOut, Settings, Bell, Moon, Sun, User, SlidersHorizontal, Plug, CreditCard } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
@@ -18,7 +18,7 @@ import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { createToastNotifier } from '@/lib/toast-helper';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 // Assuming useNotifications is available or we stub it inside if not needed here
 import { useNotifications } from '@/hooks/use-notifications';
 
@@ -64,14 +64,14 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
     };
 
     return (
-        <div className="mt-auto shrink-0 px-3 pb-4">
-            <div className="sidebar-separator mx-0 mb-3" />
+        <div className="mt-auto shrink-0 px-3 pb-4 pt-4">
+            <div className="sidebar-separator mx-0 mb-4" />
 
             <div className="flex flex-col gap-1">
                 {/* Utility Icon Bar */}
                 <div className={cn(
-                    "flex items-center justify-center gap-1 py-1",
-                    expanded && "px-1"
+                    "flex flex-wrap items-center justify-center gap-1.5 py-2 rounded-3xl bg-white/70 dark:bg-black/50 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_0_20px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)] transition-all duration-300",
+                    expanded ? "px-3 mx-4" : "px-1 mx-2 flex-col"
                 )}>
                     {/* Connection Status */}
                     <TooltipProvider>
@@ -96,7 +96,7 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="relative h-9 w-9 rounded-xl text-muted-foreground transition-all duration-200 hover:text-foreground hover:bg-white/[0.04]"
+                                            className="relative h-10 w-10 rounded-2xl text-muted-foreground transition-all duration-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                                         >
                                             <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
                                             <AnimatePresence>
@@ -120,7 +120,7 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                             </Tooltip>
                         </TooltipProvider>
 
-                        <DropdownMenuContent align="end" side="right" className="w-80 max-h-[400px] overflow-y-auto bg-card/95 backdrop-blur-2xl border-white/[0.05] shadow-2xl">
+                        <DropdownMenuContent align="end" side="right" className="w-80 max-h-[400px] overflow-y-auto bg-card/95 backdrop-blur-2xl border-border/50 shadow-2xl">
                             <DropdownMenuLabel className="font-bold tracking-tight">Registro de Alertas</DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-border/50" />
                             {notifications.length === 0 ? (
@@ -132,7 +132,7 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                                     <DropdownMenuItem
                                         key={notification.id}
                                         className={cn(
-                                            "flex flex-col items-start gap-1 cursor-pointer transition-colors focus:bg-white/[0.05]",
+                                            "flex flex-col items-start gap-1 cursor-pointer transition-colors focus:bg-black/[0.05] dark:focus:bg-white/[0.05]",
                                             !notification.isRead && "bg-primary/5"
                                         )}
                                         onClick={() => {
@@ -155,31 +155,7 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    {/* Settings */}
-                    {(userRole === 'admin' || userRole === 'superadmin') && !loading && (
-                        <TooltipProvider>
-                            <Tooltip delayDuration={300}>
-                                <TooltipTrigger asChild>
-                                    <Link
-                                        href="/settings"
-                                        className={cn(
-                                            'group flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-all duration-200 hover:text-foreground hover:bg-white/[0.04]',
-                                            pathname.startsWith('/settings') && 'bg-primary/10 text-primary'
-                                        )}
-                                        onClick={isMobile && onMobileClose ? onMobileClose : undefined}
-                                    >
-                                        <Settings className={cn(
-                                            "h-[18px] w-[18px] transition-colors duration-200",
-                                            pathname.startsWith('/settings') ? "text-primary saturate-150" : "group-hover:text-foreground"
-                                        )} strokeWidth={1.8} />
-                                    </Link>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="bg-card/95 backdrop-blur-md border border-white/[0.05] shadow-xl">
-                                    Configurações
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    )}
+
 
                     {/* Theme Toggle */}
                     <TooltipProvider>
@@ -188,7 +164,7 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-9 w-9 rounded-xl text-muted-foreground transition-all duration-200 hover:text-foreground hover:bg-white/[0.04]"
+                                    className="h-10 w-10 rounded-2xl text-muted-foreground transition-all duration-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"
                                     onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                                 >
                                     {mounted ? (
@@ -205,8 +181,6 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                     </TooltipProvider>
                 </div>
 
-                <div className="sidebar-separator mx-0 my-2" />
-
                 {/* User Card */}
                 <DropdownMenu>
                     <TooltipProvider>
@@ -216,13 +190,13 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                                     <Button
                                         variant="ghost"
                                         className={cn(
-                                            'group flex h-10 items-center justify-start rounded-xl text-muted-foreground transition-all duration-200 hover:text-foreground hover:bg-white/[0.05] outline-none',
-                                            !expanded && 'justify-center w-10 px-0 mx-auto'
+                                            'group flex items-center justify-start rounded-3xl text-muted-foreground transition-all duration-300 outline-none border hover:bg-black/5 dark:hover:bg-black/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.1)]',
+                                            expanded ? 'h-16 px-3 w-[calc(100%-1rem)] mx-2 border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02]' : 'h-14 w-14 justify-center px-0 mx-auto border-transparent hover:border-black/10 dark:hover:border-white/10 hover:bg-black/[0.05] dark:hover:bg-white/[0.05]'
                                         )}
                                     >
-                                        <Avatar className="h-7 w-7 shrink-0 shadow-sm border border-white/[0.05]">
+                                        <Avatar className={cn("shrink-0 shadow-[0_0_15px_rgba(0,0,0,0.1)] dark:shadow-[0_0_15px_rgba(0,0,0,0.5)] border border-black/10 dark:border-white/10 transition-transform duration-300 group-hover:scale-105 group-hover:border-emerald-500/30", expanded ? "h-10 w-10" : "h-10 w-10")}>
                                             <AvatarImage src={session?.userData?.avatarUrl || ''} alt={userName} />
-                                            <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-black tracking-tight">
+                                            <AvatarFallback className="text-[12px] bg-emerald-500/20 text-emerald-400 font-black tracking-tight">
                                                 {userName?.substring(0, 2).toUpperCase() || 'U'}
                                             </AvatarFallback>
                                         </Avatar>
@@ -251,19 +225,116 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                         </Tooltip>
                     </TooltipProvider>
 
-                    <DropdownMenuContent align="end" side={expanded ? "bottom" : "right"} className="w-56 bg-card/95 backdrop-blur-2xl border-white/[0.05] shadow-2xl p-2 rounded-xl">
-                        <div className="flex flex-col space-y-1 p-2">
-                            <p className="text-sm font-bold text-foreground tracking-tight leading-none">{userName}</p>
-                            <p className="text-[11px] text-muted-foreground leading-none">{userEmail}</p>
+                    <DropdownMenuContent align="end" side={expanded ? "bottom" : "right"} className="w-64 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl p-2 rounded-2xl">
+                        {/* User identity */}
+                        <div className="flex items-center gap-3 p-3 mb-1">
+                            <Avatar className="h-10 w-10 ring-1 ring-emerald-500/30">
+                                <AvatarImage src={session?.userData?.avatarUrl || ''} alt={userName} />
+                                <AvatarFallback className="text-xs bg-emerald-500/20 text-emerald-400 font-black">
+                                    {userName?.substring(0, 2).toUpperCase() || 'U'}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                                <p className="text-sm font-bold text-foreground dark:text-white truncate">{userName}</p>
+                                <p className="text-[11px] text-muted-foreground dark:text-zinc-500 truncate">{userEmail}</p>
+                            </div>
                         </div>
-                        <DropdownMenuSeparator className="bg-border/50" />
+                        <DropdownMenuSeparator className="bg-black/5 dark:bg-white/5 my-1" />
+
+                        {/* Navigation Items */}
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href="/perfil"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 group"
+                                onClick={isMobile && onMobileClose ? onMobileClose : undefined}
+                            >
+                                <div className="p-1.5 rounded-lg bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                                    <User className="h-3.5 w-3.5 text-emerald-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[13px] font-semibold">Perfil</p>
+                                    <p className="text-[10px] text-muted-foreground dark:text-zinc-500">Dados pessoais e segurança</p>
+                                </div>
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href="/preferencias"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 group"
+                                onClick={isMobile && onMobileClose ? onMobileClose : undefined}
+                            >
+                                <div className="p-1.5 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                                    <SlidersHorizontal className="h-3.5 w-3.5 text-purple-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[13px] font-semibold">Preferências</p>
+                                    <p className="text-[10px] text-muted-foreground dark:text-zinc-500">Tema, idioma e notificações</p>
+                                </div>
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href="/conexoes"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 group"
+                                onClick={isMobile && onMobileClose ? onMobileClose : undefined}
+                            >
+                                <div className="p-1.5 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                                    <Plug className="h-3.5 w-3.5 text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[13px] font-semibold">Conexões</p>
+                                    <p className="text-[10px] text-muted-foreground dark:text-zinc-500">WhatsApp e dispositivos</p>
+                                </div>
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href="/faturamento"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 group"
+                                onClick={isMobile && onMobileClose ? onMobileClose : undefined}
+                            >
+                                <div className="p-1.5 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+                                    <CreditCard className="h-3.5 w-3.5 text-amber-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[13px] font-semibold">Faturamento</p>
+                                    <p className="text-[10px] text-muted-foreground dark:text-zinc-500">Plano, uso e faturas</p>
+                                </div>
+                            </Link>
+                        </DropdownMenuItem>
+
+                        {(userRole === 'admin' || userRole === 'superadmin') && !loading && (
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/settings"
+                                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all duration-150 group"
+                                    onClick={isMobile && onMobileClose ? onMobileClose : undefined}
+                                >
+                                    <div className="p-1.5 rounded-lg bg-zinc-500/10 group-hover:bg-zinc-500/20 transition-colors">
+                                        <Settings className="h-3.5 w-3.5 text-muted-foreground dark:text-zinc-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[13px] font-semibold">Configurações</p>
+                                        <p className="text-[10px] text-muted-foreground dark:text-zinc-500">Empresa, equipe e integrações</p>
+                                    </div>
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+
+                        <DropdownMenuSeparator className="bg-black/5 dark:bg-white/5 my-1" />
+
                         <DropdownMenuItem
-                            className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer font-semibold tracking-tight rounded-lg mt-1"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-150 font-semibold"
                             onClick={handleLogout}
                             disabled={isLoggingOut}
                         >
-                            <LogOut className="mr-2 h-4 w-4" />
-                            {isLoggingOut ? 'Saindo...' : 'Encerrar Sessão'}
+                            <div className="p-1.5 rounded-lg bg-red-500/10">
+                                <LogOut className="h-3.5 w-3.5" />
+                            </div>
+                            <span className="text-[13px]">{isLoggingOut ? 'Saindo...' : 'Encerrar Sessão'}</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

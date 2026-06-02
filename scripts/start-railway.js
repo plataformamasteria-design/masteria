@@ -10,6 +10,16 @@ console.log('REDIS_URL:', process.env.REDIS_URL ? 'PRESENT' : 'MISSING');
 
 console.log('Restoring sessions...');
 const { execSync } = require('child_process');
+
+try {
+    console.log('Running database migrations (optimizations)...');
+    execSync('npm run db:push', { stdio: 'inherit' });
+    console.log('✅ Migrations completed automatically.');
+} catch (e) {
+    console.error('❌ Error running migrations on startup:', e.message);
+    // Não impede o boot, apenas alerta
+}
+
 try {
     execSync('node scripts/restore-sessions.js', { stdio: 'inherit' });
 } catch (e) {

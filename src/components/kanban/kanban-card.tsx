@@ -102,17 +102,17 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                 if ((e.target as HTMLElement).closest('button, [role="menuitem"], a')) return;
                 onOpenCard(card, 'overview');
               }}
-              className={`cursor-pointer transition-all duration-200 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              className={`cursor-pointer transition-all duration-300 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 snapshot.isDragging 
-                  ? 'bg-background dark:bg-zinc-900/90 shadow-xl scale-[1.02] rotate-1 ring-1 ring-primary/20 z-50' 
-                  : 'bg-white dark:bg-zinc-950 shadow-sm border border-border/40 hover:border-border/80 hover:shadow-md'
+                  ? 'bg-black/80 backdrop-blur-3xl shadow-[0_0_50px_rgba(16,185,129,0.3)] scale-[1.02] rotate-2 border border-emerald-500/50 ring-1 ring-emerald-500/30 z-50' 
+                  : 'bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.4)] border border-white/5 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] group'
               }`}
             >
-              <div className="p-3 flex flex-col gap-2 relative group">
+              <div className="p-4 flex flex-col gap-2.5 relative">
                 {/* Linha 1: Nome, Handle e Menu */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="font-bold text-[13px] text-foreground truncate">
+                    <span className="font-black tracking-tight text-[14px] text-foreground truncate drop-shadow-md">
                       {contact?.name || 'Lead sem nome'}
                     </span>
                   </div>
@@ -169,7 +169,7 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
 
                 {/* Linha 2: Título da Oportunidade */}
                 <div className="flex items-center min-w-0">
-                  <span className="text-[12px] text-muted-foreground/90 truncate">
+                  <span className="text-[11px] font-medium tracking-wide text-muted-foreground/80 uppercase truncate">
                     {card.title || 'Oportunidade'}
                   </span>
                 </div>
@@ -199,14 +199,14 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                     {displayTags.map((tag: any) => (
                       <div
                         key={tag.id}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium border"
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)] backdrop-blur-md"
                         style={{
-                          backgroundColor: tag.color ? `${tag.color}18` : undefined,
-                          borderColor: tag.color ? `${tag.color}40` : undefined,
-                          color: tag.color || undefined,
+                          backgroundColor: tag.color ? `${tag.color}15` : 'rgba(255,255,255,0.05)',
+                          borderColor: tag.color ? `${tag.color}30` : 'rgba(255,255,255,0.1)',
+                          color: tag.color || '#fff',
                         }}
                       >
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color || '#888' }} />
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 shadow-[0_0_5px_currentColor]" style={{ backgroundColor: tag.color || '#888' }} />
                         {tag.name}
                       </div>
                     ))}
@@ -222,7 +222,7 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                 <div className="flex items-center justify-between gap-2 mt-1">
                   <div className="flex items-center gap-1 min-w-0">
                     {displayTags.length === 0 && (card.value !== null && card.value !== undefined && Number(card.value) > 0) && (
-                      <div className="border border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px]">
+                      <div className="border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                         R$ {Number(card.value).toLocaleString('pt-BR')}
                       </div>
                     )}

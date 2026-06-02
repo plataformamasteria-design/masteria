@@ -8,7 +8,7 @@ import { formatCurrency, formatPercent, formatRoas } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useTrafegoData } from "@/hooks/use-trafego-data";
 import { Loader2, Users, Target, Sparkles, Globe, UserCheck, TrendingUp, DollarSign, ArrowUpDown, Smartphone, Monitor, Tablet, MapPin, Calendar, Radio } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { useAudiencesEngine } from "@/hooks/use-audiences-engine";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Card, CardContent } from "@/components/ui/card";

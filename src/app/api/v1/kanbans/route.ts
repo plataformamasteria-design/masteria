@@ -6,6 +6,7 @@ import { eq, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { ensureCancelledStage, type KanbanStage } from '@/lib/kanban/ensure-cancelled-stage';
+import { getCachedOrFetch, CacheTTL } from '@/lib/api-cache';
 
 const boardSchema = z.object({
     name: z.string().min(1, 'Nome do funil é obrigatório'),
@@ -36,21 +37,25 @@ export async function GET(_request: NextRequest) {
 
         // Otimização: Em vez de buscar e depois fazer loop (problema N+1),
         // usamos um LEFT JOIN e agregamos os dados diretamente no banco.
-        const boardsWithCounts = await db
-            .select({
-                id: kanbanBoards.id,
-                name: kanbanBoards.name,
-                stages: kanbanBoards.stages,
-                createdAt: kanbanBoards.createdAt,
-                companyId: kanbanBoards.companyId,
-                totalLeads: sql<number>`count(${kanbanLeads.id})`.mapWith(Number),
-                totalValue: sql<number>`sum(${kanbanLeads.value})`.mapWith(Number),
-            })
-            .from(kanbanBoards)
-            .leftJoin(kanbanLeads, eq(kanbanBoards.id, kanbanLeads.boardId))
-            .where(eq(kanbanBoards.companyId, companyId))
-            .groupBy(kanbanBoards.id)
-            .orderBy(desc(kanbanBoards.createdAt));
+        // Além disso, cacheados para aliviar o banco
+        const cacheKey = `kanbans:${companyId}:list`;
+        const boardsWithCounts = await getCachedOrFetch(cacheKey, async () => {
+            return await db
+                .select({
+                    id: kanbanBoards.id,
+                    name: kanbanBoards.name,
+                    stages: kanbanBoards.stages,
+                    createdAt: kanbanBoards.createdAt,
+                    companyId: kanbanBoards.companyId,
+                    totalLeads: sql<number>`count(${kanbanLeads.id})`.mapWith(Number),
+                    totalValue: sql<number>`sum(${kanbanLeads.value})`.mapWith(Number),
+                })
+                .from(kanbanBoards)
+                .leftJoin(kanbanLeads, eq(kanbanBoards.id, kanbanLeads.boardId))
+                .where(eq(kanbanBoards.companyId, companyId))
+                .groupBy(kanbanBoards.id)
+                .orderBy(desc(kanbanBoards.createdAt));
+        }, CacheTTL.SHORT);
 
         return NextResponse.json(boardsWithCounts);
     } catch (error) {

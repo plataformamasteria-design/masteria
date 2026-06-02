@@ -13,6 +13,7 @@ import { CreateLeadDialog } from '@/components/kanban/lead-dialogs';
 import { FunnelReport } from '@/components/kanban/funnel-report';
 import { getCompanyUsers, getTeams } from '@/app/actions/teams';
 import { fetchAvailableConnections } from '@/app/actions/chat';
+import { getAutomationFlowsForDropdown } from '@/app/actions/automations-builder';
 
 export interface KanbanFilters {
   stages: string[];
@@ -26,6 +27,8 @@ export interface KanbanFilters {
   teams: string[];
   connections: string[];
   tags: string[];
+  utms: string[];
+  customFields: string[];
 }
 
 const DEFAULT_FILTERS: KanbanFilters = {
@@ -40,6 +43,8 @@ const DEFAULT_FILTERS: KanbanFilters = {
   teams: [],
   connections: [],
   tags: [],
+  utms: [],
+  customFields: [],
 };
 
 export default function FunnelPage({ params }: { params: Promise<{ funnelId: string }> }) {
@@ -50,24 +55,36 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
   const [createOpen, setCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<KanbanFilters>(DEFAULT_FILTERS);
+  const [isFiltersLoaded, setIsFiltersLoaded] = useState(false);
   
   const [companyUsers, setCompanyUsers] = useState<any[]>([]);
   const [companyTeams, setCompanyTeams] = useState<any[]>([]);
   const [connections, setConnections] = useState<any[]>([]);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [automationsList, setAutomationsList] = useState<any[]>([]);
+  const [flowsList, setFlowsList] = useState<any[]>([]);
+  const [webhooksList, setWebhooksList] = useState<any[]>([]);
+  // Map of automation V4 fields: { flowId → { name, fields[] } }
+  const [automationFieldsMap, setAutomationFieldsMap] = useState<Record<string, { name: string; fields: string[] }>>({});
+  // contactId → { flowId, flowName } — fonte de verdade: automation_flow_executions
+  const [contactAutomationMap, setContactAutomationMap] = useState<Record<string, { flowId: string; flowName: string }>>({}); 
   
   const { toast } = useToast();
 
   const fetchFunnelData = async () => {
     try {
       setLoading(true);
-      const [funnelRes, leadsRes, tagsRes, usersData, teamsData, connsData] = await Promise.all([
+      const [funnelRes, leadsRes, tagsRes, usersData, teamsData, connsData, automationsRes, webhooksRes, flowsData, fieldsMapRes] = await Promise.all([
         fetch(`/api/v1/kanbans/${funnelId}`),
         fetch(`/api/v1/leads?boardId=${funnelId}`),
         fetch(`/api/v1/tags?limit=200`),
         getCompanyUsers(),
         getTeams(),
-        fetchAvailableConnections()
+        fetchAvailableConnections(),
+        fetch('/api/v1/automations'),
+        fetch('/api/v1/webhooks/incoming?limit=100'),
+        getAutomationFlowsForDropdown().catch(() => []),
+        fetch('/api/v1/automations/fields-map').catch(() => null)
       ]);
 
       if (!funnelRes.ok || !leadsRes.ok) throw new Error('Falha ao carregar dados do funil.');
@@ -82,6 +99,42 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
       setCompanyTeams(teamsData);
       setConnections(connsData);
       setAvailableTags(tagsData.data || []);
+      
+      if (automationsRes.ok) {
+        const ad = await automationsRes.json();
+        setAutomationsList(Array.isArray(ad.data) ? ad.data : []);
+      }
+      if (webhooksRes.ok) {
+        const wd = await webhooksRes.json();
+        setWebhooksList(Array.isArray(wd.data) ? wd.data : []);
+      }
+      setFlowsList(Array.isArray(flowsData) ? flowsData : []);
+
+      // Processar mapa de campos das automações V4
+      let fMap: Record<string, { name: string; fields: string[] }> = {};
+      if (fieldsMapRes && fieldsMapRes.ok) {
+        const fieldsMapData: { flowId: string; flowName: string; fields: string[] }[] = await fieldsMapRes.json();
+        for (const entry of (Array.isArray(fieldsMapData) ? fieldsMapData : [])) {
+          fMap[entry.flowId] = { name: entry.flowName, fields: entry.fields };
+        }
+        setAutomationFieldsMap(fMap);
+      }
+
+      // Buscar mapa contactId → automação (via automation_flow_executions)
+      // Feito APÓS ter os leads carregados para usar o boardId correto
+      try {
+        const sourcesRes = await fetch(`/api/v1/leads/automation-sources?boardId=${funnelId}`);
+        if (sourcesRes.ok) {
+          const sourcesData: { contactId: string; flowId: string; flowName: string }[] = await sourcesRes.json();
+          const cMap: Record<string, { flowId: string; flowName: string }> = {};
+          for (const s of (Array.isArray(sourcesData) ? sourcesData : [])) {
+            cMap[s.contactId] = { flowId: s.flowId, flowName: s.flowName };
+          }
+          setContactAutomationMap(cMap);
+        }
+      } catch (e) {
+        console.warn('[Kanban] Não foi possível carregar automation-sources:', e);
+      }
 
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro', description: (error as Error).message });
@@ -95,8 +148,165 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [funnelId, toast]);
 
+  // Carregar filtros salvos do localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`kanban_filters_${funnelId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setFilters((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch (e) {
+      console.error("Erro ao ler filtros do localStorage", e);
+    } finally {
+      setIsFiltersLoaded(true);
+    }
+  }, [funnelId]);
+
+  const handleSaveFilters = () => {
+    try {
+      localStorage.setItem(`kanban_filters_${funnelId}`, JSON.stringify(filters));
+      toast({ title: 'Sucesso', description: 'Filtros salvos como padrão para este funil.' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível salvar os filtros.' });
+    }
+  };
+
+  const handleClearSavedFilters = () => {
+    try {
+      localStorage.removeItem(`kanban_filters_${funnelId}`);
+      toast({ title: 'Sucesso', description: 'Filtros padrão removidos.' });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Extrair UTMs únicas
+  const availableUtms = useMemo(() => {
+    const utms = new Set<string>();
+    cards.forEach(card => {
+      let customFields = (card as any).contact?.customFields;
+      if (typeof customFields === 'string') {
+        try { customFields = JSON.parse(customFields); } catch(e) { customFields = {}; }
+      }
+      if (customFields && typeof customFields === 'object') {
+        const utmKey = Object.keys(customFields).find(k => k.toLowerCase().includes('utm_campaign') || k.toLowerCase().includes('utm campaing') || k.toLowerCase().includes('utm campaign'));
+        if (utmKey && customFields[utmKey]) {
+          utms.add(String(customFields[utmKey]).toUpperCase().trim());
+        }
+      }
+    });
+    return Array.from(utms).sort();
+  }, [cards]);
+
+  // Extrair campos personalizados agrupados por AUTOMAÇÃO DE ORIGEM
+  // Regra: cada automação mostra SOMENTE os campos que ELA DEFINE no nó update_contact
+  // Campos do contato que não pertencem a nenhuma automação → vão para "📋 Campos Legados"
+  const LEGACY_GROUP = '📋 Campos Legados';
+  const UTM_PREFIXES_PAGE = ['utm_', 'gclid', 'fbclid', 'ttclid', 'msclkid'];
+  const isTracking = (k: string) => UTM_PREFIXES_PAGE.some(p => k.toLowerCase().startsWith(p));
+
+  const availableCustomFields = useMemo(() => {
+    const sourceMap: Record<string, Set<string>> = { 'Todas as Origens': new Set() };
+
+    // Construir lookup rápido: flowId → Set<fieldKey> (somente campos definidos na automação)
+    const automationDefinedFields = new Map<string, Set<string>>();
+    for (const [flowId, entry] of Object.entries(automationFieldsMap)) {
+      automationDefinedFields.set(flowId, new Set(entry.fields));
+    }
+
+    // Para cada card, separar campos por origem ESTRITA
+    cards.forEach(card => {
+      const contactId = (card as any).contactId || (card as any).contact?.id;
+      let customFields = (card as any).contact?.customFields;
+      if (typeof customFields === 'string') {
+        try { customFields = JSON.parse(customFields); } catch(e) { customFields = {}; }
+      }
+      if (!customFields || typeof customFields !== 'object') return;
+
+      const keys = Object.keys(customFields).filter(k => !isTracking(k));
+      if (keys.length === 0) return;
+
+      const execEntry = contactId ? contactAutomationMap[contactId] : undefined;
+
+      if (execEntry) {
+        // Contato veio de uma automação — separar campos por "definido" vs "não definido"
+        const defined = automationDefinedFields.get(execEntry.flowId) || new Set<string>();
+        const automationKeys = keys.filter(k => defined.has(k));
+        const legacyKeys     = keys.filter(k => !defined.has(k));
+
+        // Campos definidos → grupo da automação
+        if (automationKeys.length > 0) {
+          if (!sourceMap[execEntry.flowName]) sourceMap[execEntry.flowName] = new Set();
+          automationKeys.forEach(k => {
+            sourceMap[execEntry.flowName].add(k);
+            sourceMap['Todas as Origens'].add(k);
+          });
+        }
+        // Campos NÃO definidos → Campos Legados
+        if (legacyKeys.length > 0) {
+          if (!sourceMap[LEGACY_GROUP]) sourceMap[LEGACY_GROUP] = new Set();
+          legacyKeys.forEach(k => {
+            sourceMap[LEGACY_GROUP].add(k);
+            sourceMap['Todas as Origens'].add(k);
+          });
+        }
+      } else {
+        // Contato sem execução de automação registrada → tudo vai para Campos Legados
+        if (!sourceMap[LEGACY_GROUP]) sourceMap[LEGACY_GROUP] = new Set();
+        keys.forEach(k => {
+          sourceMap[LEGACY_GROUP].add(k);
+          sourceMap['Todas as Origens'].add(k);
+        });
+      }
+    });
+
+    // Adicionar campos definidos nas automações V4 (mesmo que o funil ainda não tenha leads)
+    // Só adiciona campos que são EXATAMENTE os definidos pela automação
+    for (const [, entry] of Object.entries(automationFieldsMap)) {
+      if (entry.fields.length === 0) continue;
+      if (!sourceMap[entry.name]) sourceMap[entry.name] = new Set();
+      entry.fields.forEach(f => {
+        sourceMap[entry.name].add(f);
+        sourceMap['Todas as Origens'].add(f);
+      });
+    }
+
+    const formattedMap: Record<string, string[]> = {};
+    // 'Todas as Origens' sempre primeiro
+    formattedMap['Todas as Origens'] = Array.from(sourceMap['Todas as Origens']).sort();
+    // Automações em ordem alfabética
+    Object.keys(sourceMap)
+      .filter(k => k !== 'Todas as Origens' && k !== LEGACY_GROUP)
+      .sort()
+      .forEach(k => { formattedMap[k] = Array.from(sourceMap[k]).sort(); });
+    // 'Campos Legados' sempre por último
+    if (sourceMap[LEGACY_GROUP]) {
+      formattedMap[LEGACY_GROUP] = Array.from(sourceMap[LEGACY_GROUP]).sort();
+    }
+    return formattedMap;
+  }, [cards, contactAutomationMap, automationFieldsMap]);
+
+  // Mapa de tipo de origem → 'automation' | 'webhook' | 'unknown'
+  // 'Campos Legados' é tratado como 'unknown'
+  const customFieldSourceTypes = useMemo((): Record<string, 'automation' | 'webhook' | 'unknown'> => {
+    const types: Record<string, 'automation' | 'webhook' | 'unknown'> = {};
+    for (const entry of Object.values(automationFieldsMap)) {
+      types[entry.name] = 'automation';
+    }
+    for (const entry of Object.values(contactAutomationMap)) {
+      types[entry.flowName] = 'automation';
+    }
+    for (const w of webhooksList) { types[w.name] = 'webhook'; }
+    // Campos Legados sempre 'unknown'
+    types[LEGACY_GROUP] = 'unknown';
+    return types;
+  }, [automationFieldsMap, contactAutomationMap, webhooksList]);
+
   // Filtrar cards com base em busca e filtros
   const filteredCards = useMemo(() => {
+    if (!isFiltersLoaded) return cards; // Evita piscar estado errado antes de carregar filtros
+    
     let result = cards;
 
     // Busca por texto (nome ou telefone)
@@ -160,6 +370,38 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
       });
     }
 
+    // Filtro por UTMs
+    if (filters.utms?.length > 0) {
+      result = result.filter(card => {
+        let customFields = (card as any).contact?.customFields;
+        if (typeof customFields === 'string') {
+          try { customFields = JSON.parse(customFields); } catch(e) { customFields = {}; }
+        }
+        if (customFields && typeof customFields === 'object') {
+          const utmKey = Object.keys(customFields).find(k => k.toLowerCase().includes('utm_campaign') || k.toLowerCase().includes('utm campaing') || k.toLowerCase().includes('utm campaign'));
+          if (utmKey && customFields[utmKey]) {
+            const utmValue = String(customFields[utmKey]).toUpperCase().trim();
+            return filters.utms.includes(utmValue);
+          }
+        }
+        return false;
+      });
+    }
+
+    // Filtro por Campos Personalizados (verifica se o lead possui o campo)
+    if (filters.customFields?.length > 0) {
+      result = result.filter(card => {
+        let customFields = (card as any).contact?.customFields;
+        if (typeof customFields === 'string') {
+          try { customFields = JSON.parse(customFields); } catch(e) { customFields = {}; }
+        }
+        if (customFields && typeof customFields === 'object') {
+           return filters.customFields.some(f => Object.keys(customFields).includes(f));
+        }
+        return false;
+      });
+    }
+
     // Filtro por data de criação
     if (filters.dateRange !== 'all') {
       const now = new Date();
@@ -196,7 +438,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     }
 
     return result;
-  }, [cards, searchQuery, filters]);
+  }, [cards, searchQuery, filters, isFiltersLoaded]);
 
   const handleMoveCard = async (result: DropResult) => {
     const { destination, draggableId } = result;
@@ -320,29 +562,33 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
   return (
     <div className="h-full flex flex-col min-h-0">
       <Tabs defaultValue="kanban" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent flex-shrink-0">
-          <TabsTrigger
-            value="kanban"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-          >
-            <KanbanIcon className="h-4 w-4 mr-2" />
-            Visualização do Funil
-          </TabsTrigger>
-          <TabsTrigger
-            value="agents"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-          >
-            <Bot className="h-4 w-4 mr-2" />
-            Agentes IA por Estágio
-          </TabsTrigger>
-          <TabsTrigger
-            value="report"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
-          >
-            <BarChart2 className="h-4 w-4 mr-2" />
-            Relatório
-          </TabsTrigger>
-        </TabsList>
+        <div className="w-full border-b border-border/10 bg-zinc-100/80 dark:bg-black/40">
+          <div className="px-4 py-3 flex justify-center">
+            <TabsList className="bg-zinc-200/50 dark:bg-white/[0.02] p-1 border border-zinc-200 dark:border-white/5 rounded-2xl w-fit h-auto shadow-sm dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+              <TabsTrigger
+                value="kanban"
+                className="rounded-xl px-5 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground"
+              >
+                <KanbanIcon className="h-4 w-4 mr-2" />
+                Visualização do Funil
+              </TabsTrigger>
+              <TabsTrigger
+                value="agents"
+                className="rounded-xl px-5 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground"
+              >
+                <Bot className="h-4 w-4 mr-2" />
+                Agentes IA por Estágio
+              </TabsTrigger>
+              <TabsTrigger
+                value="report"
+                className="rounded-xl px-5 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground"
+              >
+                <BarChart2 className="h-4 w-4 mr-2" />
+                Relatório
+              </TabsTrigger>
+            </TabsList>
+          </div>
+        </div>
 
         <TabsContent value="kanban" className="flex-1 mt-0 min-h-0">
           <KanbanView
@@ -361,6 +607,11 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
             companyTeams={companyTeams}
             connections={connections}
             availableTags={availableTags}
+            availableUtms={availableUtms}
+            availableCustomFields={availableCustomFields}
+            customFieldSourceTypes={customFieldSourceTypes}
+            onSaveFilters={handleSaveFilters}
+            onClearSavedFilters={handleClearSavedFilters}
           />
         </TabsContent>
 

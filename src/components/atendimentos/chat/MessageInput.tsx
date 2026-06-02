@@ -185,8 +185,8 @@ export function MessageInput({
             <div className={cn(
               "relative flex-1 border shadow-sm rounded-3xl overflow-hidden focus-within:ring-1 transition-all duration-200",
               isInternalNote 
-                ? "bg-amber-50 dark:bg-amber-500/5 border-amber-500/40 focus-within:ring-amber-500/40 focus-within:border-amber-500/60" 
-                : "bg-white dark:bg-zinc-900 border-border/80 focus-within:ring-primary/20 focus-within:border-primary/50"
+                ? "bg-amber-50 dark:bg-amber-500/10 border-amber-500/40 focus-within:ring-amber-500/40 focus-within:border-amber-500/60" 
+                : "bg-white dark:bg-zinc-950/50 backdrop-blur-md border-zinc-200 dark:border-white/10 focus-within:ring-emerald-500/30 focus-within:border-emerald-500/50 text-zinc-900 dark:text-zinc-100"
             )}>
               <textarea
                 ref={textareaRef}

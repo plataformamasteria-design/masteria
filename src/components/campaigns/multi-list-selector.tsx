@@ -86,12 +86,12 @@ export function MultiListSelector({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
           <Input
             placeholder="Buscar listas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 h-9"
+            className="pl-8 h-9 bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
           />
         </div>
         <div className="flex gap-1">
@@ -102,6 +102,7 @@ export function MultiListSelector({
             onClick={handleSelectAll}
             disabled={allFilteredSelected || filteredLists.length === 0}
             title="Selecionar todas"
+            className="bg-white/[0.03] border-white/10 text-zinc-300 hover:bg-white/10 hover:text-emerald-400 disabled:opacity-50"
           >
             <CheckSquare className="h-4 w-4" />
           </Button>
@@ -112,13 +113,14 @@ export function MultiListSelector({
             onClick={handleDeselectAll}
             disabled={selectedIds.length === 0}
             title="Desmarcar todas"
+            className="bg-white/[0.03] border-white/10 text-zinc-300 hover:bg-white/10 hover:text-emerald-400 disabled:opacity-50"
           >
             <Square className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <Card className="border">
+      <Card className="border-white/5 bg-black/20">
         <div className="overflow-y-auto pr-1" style={{ maxHeight }}>
           <div className="p-2 space-y-1">
             {filteredLists.length === 0 ? (
@@ -137,11 +139,11 @@ export function MultiListSelector({
                     key={list.id}
                     role="button"
                     tabIndex={0}
-                    className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted/50 transition-colors select-none ${
+                    className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-white/5 transition-colors select-none ${
                       isSelected 
                         ? isEmpty 
-                          ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700' 
-                          : 'bg-primary/5 border border-primary/20' 
+                          ? 'bg-amber-500/10 border border-amber-500/30' 
+                          : 'bg-emerald-500/10 border border-emerald-500/30' 
                         : isEmpty 
                           ? 'opacity-60 border border-transparent' 
                           : 'border border-transparent'
@@ -157,20 +159,20 @@ export function MultiListSelector({
                     <div 
                       className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${
                         isSelected 
-                          ? 'bg-primary border-primary text-primary-foreground' 
-                          : 'border-input bg-background'
+                          ? 'bg-emerald-500 border-emerald-500 text-white' 
+                          : 'border-white/20 bg-transparent'
                       }`}
                     >
                       {isSelected && <Check className="h-3 w-3" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`font-medium truncate block text-sm ${isEmpty ? 'text-muted-foreground' : ''}`}>
+                      <span className={`font-medium truncate block text-sm ${isEmpty ? 'text-zinc-500' : 'text-zinc-200'}`}>
                         {list.name}
                       </span>
                     </div>
                     <Badge 
                       variant={isEmpty ? "outline" : "secondary"} 
-                      className={`shrink-0 ${isEmpty ? 'text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-600' : ''}`}
+                      className={`shrink-0 ${isEmpty ? 'text-amber-400 border-amber-500/30 bg-transparent' : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border-transparent'}`}
                     >
                       <Users className="h-3 w-3 mr-1" />
                       {list.contactCount || 0}
@@ -185,17 +187,17 @@ export function MultiListSelector({
 
       {selectedIds.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm bg-primary/5 p-2 rounded-md border border-primary/20">
-            <span className="font-medium text-primary">
+          <div className="flex items-center justify-between text-sm bg-emerald-500/10 p-2 rounded-md border border-emerald-500/20">
+            <span className="font-medium text-emerald-400">
               {selectedIds.length} lista{selectedIds.length !== 1 ? 's' : ''} selecionada{selectedIds.length !== 1 ? 's' : ''}
             </span>
-            <Badge variant="default" className="bg-primary">
+            <Badge variant="default" className="bg-emerald-500 text-white hover:bg-emerald-600">
               <Users className="h-3 w-3 mr-1" />
               {totalContacts.toLocaleString('pt-BR')} contatos
             </Badge>
           </div>
           {emptySelectedCount > 0 && (
-            <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-md border border-amber-200 dark:border-amber-800">
+            <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 p-2 rounded-md border border-amber-500/20">
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
               <span>
                 {emptySelectedCount} lista{emptySelectedCount !== 1 ? 's' : ''} vazia{emptySelectedCount !== 1 ? 's' : ''} será{emptySelectedCount !== 1 ? 'ão' : ''} ignorada{emptySelectedCount !== 1 ? 's' : ''} automaticamente.

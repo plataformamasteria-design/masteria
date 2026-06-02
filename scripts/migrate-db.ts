@@ -1,5 +1,9 @@
 #!/usr/bin/env tsx
 
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+config({ path: '.env' });
+
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { db, conn } from '../src/lib/db';
 import path from 'path';

@@ -45,13 +45,11 @@ export const ContactsTableView = memo(({
     const isIndeterminate = selectedRows.length > 0 && selectedRows.length < contacts.length;
 
     return (
-        <div className="w-full border border-border/60 rounded-3xl relative bg-card shadow-[0_8px_32px_rgba(0,0,0,0.15)] overflow-hidden">
-            {/* Ambient base glow */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-50" />
-            <div className="w-full overflow-auto">
+        <div className="w-full border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] bg-white/[0.02] backdrop-blur-md rounded-[2rem] overflow-hidden relative">
+            <div className="w-full overflow-auto custom-scrollbar pb-2">
                 <Table>
-                    <TableHeader className="bg-muted/30">
-                        <TableRow className="hover:bg-muted/50 border-border/40 transition-colors">
+                    <TableHeader className="bg-black/20 border-b border-white/5">
+                        <TableRow className="hover:bg-white/[0.02] border-white/5 transition-colors">
                             <TableHead className="w-[50px] pl-6">
                                 <Checkbox
                                     checked={allSelected || (isIndeterminate ? 'indeterminate' : false)}
@@ -79,7 +77,7 @@ export const ContactsTableView = memo(({
                         {contacts.map((contact) => (
                             <TableRow
                                 key={contact.id}
-                                className={`group cursor-pointer hover:bg-muted/30 transition-colors ${selectedRows.includes(contact.id) ? 'bg-muted/40' : ''}`}
+                                className={`group cursor-pointer hover:bg-white/[0.04] border-white/5 transition-colors ${selectedRows.includes(contact.id) ? 'bg-white/[0.05]' : ''}`}
                             >
                                 <TableCell className="pl-6">
                                     <Checkbox

@@ -9,7 +9,7 @@ import { NavItemGroup, NavItemLink } from './sidebar-item';
 import { allNavItems } from './navigation';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -81,14 +81,14 @@ export function SidebarLayout() {
     const renderContent = (forMobile: boolean) => {
         const expanded = forMobile ? true : isExpanded;
         return (
-            <div className="flex h-full flex-col backdrop-blur-3xl bg-sidebar-bg/95">
+            <div className="flex h-full flex-col bg-transparent">
                 <SidebarHeader expanded={expanded} isMobile={isMobile} onMobileClose={handleMobileClose} />
 
-                <nav className="flex flex-col gap-1 px-3 py-4 items-center w-full flex-1 overflow-y-auto custom-scrollbar">
+                <nav className="flex flex-col gap-2 px-4 py-6 items-center w-full flex-1 overflow-y-auto custom-scrollbar relative z-10">
                     {loading ? (
                         [...Array(8)].map((_, i) => (
-                            <div key={i} className={cn('flex h-[42px] items-center justify-start rounded-xl', expanded ? 'w-full px-3' : 'w-[42px] justify-center')}>
-                                <Skeleton className={cn("h-full rounded-xl opacity-20", expanded ? "w-full" : "w-8")} />
+                            <div key={i} className={cn('flex h-[46px] items-center justify-start rounded-2xl', expanded ? 'w-full px-4' : 'w-[46px] justify-center')}>
+                                <Skeleton className={cn("h-full rounded-2xl opacity-10", expanded ? "w-full" : "w-10")} />
                             </div>
                         ))
                     ) : (
@@ -129,7 +129,7 @@ export function SidebarLayout() {
     return (
         <>
             {/* Spacer for Desktop Layout Reflow */}
-            <div className={cn("h-screen flex-shrink-0 relative hidden md:flex ease-out", isExpanded ? "w-64" : "w-16")} />
+            <div className={cn("h-screen flex-shrink-0 relative hidden md:flex ease-out", isExpanded ? "w-[280px]" : "w-[80px]")} />
 
             {/* Fixed Desktop Sidebar */}
             <motion.aside
@@ -137,11 +137,11 @@ export function SidebarLayout() {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 initial={false}
-                animate={{ width: isExpanded ? 256 : 64 }}
-                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                animate={{ width: isExpanded ? 280 : 80 }}
+                transition={{ type: "spring", stiffness: 300, damping: 28 }}
                 className={cn(
-                    "fixed left-0 top-0 z-[50] h-screen border-r border-sidebar-border hidden md:flex flex-col shadow-2xl overflow-hidden",
-                    isExpanded ? "w-64" : "w-16"
+                    "fixed left-0 top-0 z-[50] h-screen border-r border-emerald-500/10 hidden md:flex flex-col shadow-[4px_0_40px_rgba(0,0,0,0.1)] dark:shadow-[4px_0_40px_rgba(0,0,0,0.6),inset_-1px_0_20px_rgba(16,185,129,0.03)] overflow-hidden bg-white/70 dark:bg-zinc-950/40 backdrop-blur-[50px] before:absolute before:inset-0 before:bg-gradient-to-b before:from-black/[0.02] dark:before:from-white/[0.04] before:to-transparent before:pointer-events-none",
+                    isExpanded ? "w-[280px]" : "w-[80px]"
                 )}
             >
                 {renderContent(false)}
@@ -156,14 +156,14 @@ export function SidebarLayout() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setMobileOpen(false)}
-                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                            className="absolute inset-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl"
                         />
                         <motion.aside
                             initial={{ x: "-100%" }}
                             animate={{ x: 0 }}
                             exit={{ x: "-100%" }}
-                            transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                            className="absolute left-0 top-0 h-screen w-[280px] border-r border-sidebar-border shadow-2xl bg-sidebar-bg"
+                            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                            className="absolute left-0 top-0 h-screen w-[300px] border-r border-emerald-500/10 shadow-[4px_0_40px_rgba(0,0,0,0.2)] dark:shadow-[4px_0_40px_rgba(0,0,0,0.7)] bg-white/80 dark:bg-zinc-950/50 backdrop-blur-[50px] before:absolute before:inset-0 before:bg-gradient-to-b before:from-black/[0.02] dark:before:from-white/[0.04] before:to-transparent before:pointer-events-none"
                         >
                             {renderContent(true)}
                         </motion.aside>

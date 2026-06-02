@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { X, Loader2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { FaFacebook } from 'react-icons/fa';
 
 interface FacebookLinkBannerProps {

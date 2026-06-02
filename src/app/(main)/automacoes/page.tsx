@@ -20,16 +20,16 @@ export default function AutomationsPage() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="rules" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3 bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-xl p-1 h-12">
+          <TabsTrigger value="rules" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-black/10 dark:data-[state=active]:bg-white/10 data-[state=active]:text-foreground dark:data-[state=active]:text-white transition-all">
             <Settings className="h-4 w-4" />
             Regras
           </TabsTrigger>
-          <TabsTrigger value="executions" className="flex items-center gap-2">
+          <TabsTrigger value="executions" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-black/10 dark:data-[state=active]:bg-white/10 data-[state=active]:text-foreground dark:data-[state=active]:text-white transition-all">
             <History className="h-4 w-4" />
             Execuções
           </TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center gap-2">
+          <TabsTrigger value="logs" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-black/10 dark:data-[state=active]:bg-white/10 data-[state=active]:text-foreground dark:data-[state=active]:text-white transition-all">
             <Calendar className="h-4 w-4" />
             Logs (Legado)
           </TabsTrigger>

@@ -12,12 +12,13 @@ import { CreateSmsCampaignDialog } from '@/components/campaigns/create-sms-campa
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Send, MessageSquareText, MessageCircle, MessageSquare, FileText, PlusCircle } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 // Lazy load heavy components
 const TemplatesV2Content = dynamic(() => import('@/app/(main)/templates-v2/page'), { ssr: false });
 
 export default function CampanhasHubPage() {
-    const [activeTab, setActiveTab] = useState('baileys');
+    const [activeTab, setActiveTab] = useState('whatsapp');
 
     return (
         <div className="space-y-6">
@@ -28,43 +29,46 @@ export default function CampanhasHubPage() {
             />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full h-auto grid-cols-2 sm:grid-cols-4">
-                    <TabsTrigger value="baileys" className="flex items-center gap-2">
-                        <MessageSquareText className="h-4 w-4" />
-                        Campanhas Baileys
-                    </TabsTrigger>
-                    <TabsTrigger value="whatsapp-api" className="flex items-center gap-2">
+                <TabsList className="bg-black/5 dark:bg-white/[0.02] p-1 border border-black/5 dark:border-white/5 rounded-2xl w-fit h-auto shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] flex flex-wrap gap-1 max-w-full">
+                    <TabsTrigger value="whatsapp" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
                         <MessageCircle className="h-4 w-4" />
-                        WhatsApp API
+                        WhatsApp
                     </TabsTrigger>
-                    <TabsTrigger value="sms" className="flex items-center gap-2">
+                    <TabsTrigger value="sms" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
                         <MessageSquare className="h-4 w-4" />
                         SMS
                     </TabsTrigger>
-                    <TabsTrigger value="templates" className="flex items-center gap-2">
+                    <TabsTrigger value="templates" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
                         <FileText className="h-4 w-4" />
                         Templates
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="baileys" className="mt-6">
+                <TabsContent value="whatsapp" className="mt-6">
                     <div className="space-y-6">
                         <div className="flex justify-end gap-2">
-                            <CreateBaileysCampaignDialog>
-                                <Button>
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    Criar Campanha Baileys
-                                </Button>
-                            </CreateBaileysCampaignDialog>
-                        </div>
-                        <BaileysCampaignTable />
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="whatsapp-api" className="mt-6">
-                    <div className="space-y-6">
-                        <div className="flex justify-end gap-2">
-                            <CreateWhatsappCampaignWrapper />
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Criar Campanha
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56 border-white/10 bg-zinc-950 text-zinc-300 rounded-xl p-2">
+                                    <CreateWhatsappCampaignWrapper>
+                                        <DropdownMenuItem className="cursor-pointer hover:bg-white/[0.05] rounded-lg p-2.5 flex items-center" onSelect={(e) => e.preventDefault()}>
+                                            <MessageCircle className="mr-2 h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+                                            <span>WhatsApp Oficial (API)</span>
+                                        </DropdownMenuItem>
+                                    </CreateWhatsappCampaignWrapper>
+                                    <CreateBaileysCampaignDialog>
+                                        <DropdownMenuItem className="cursor-pointer hover:bg-white/[0.05] rounded-lg p-2.5 flex items-center" onSelect={(e) => e.preventDefault()}>
+                                            <MessageSquareText className="mr-2 h-4 w-4 text-blue-400" />
+                                            <span>WhatsApp Não Oficial (Baileys)</span>
+                                        </DropdownMenuItem>
+                                    </CreateBaileysCampaignDialog>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                         <CampaignTable channel="WHATSAPP" />
                         <CampaignsDashboard />

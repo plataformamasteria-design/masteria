@@ -6,7 +6,7 @@
  * Cards com SpotlightCard para consistência visual com as demais abas.
  */
 import useSWR from "swr";
-import { motion } from "framer-motion";
+import { m as motion } from 'framer-motion';
 import { cn } from "@/lib/utils";
 import {
   CopyCheck, BrainCircuit, Activity, Bot,
@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import { useState } from "react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from 'framer-motion';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 

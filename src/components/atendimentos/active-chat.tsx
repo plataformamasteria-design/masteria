@@ -111,7 +111,7 @@ export function ActiveChat({
   const [replyToMessage, setReplyToMessage] = React.useState<Message | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
   const [pendingConnectionId, setPendingConnectionId] = React.useState<string | null>(null);
-  const [messageFilter, setMessageFilter] = React.useState<'all' | 'connection'>('all');
+  const [messageFilter, setMessageFilter] = React.useState<string | null>(null);
   const [isInternalNote, setIsInternalNote] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const connectionDropdownRef = React.useRef<HTMLDivElement>(null);
@@ -127,6 +127,18 @@ export function ActiveChat({
   const [previewFile, setPreviewFile] = React.useState<File | null>(null);
   const [previewCaption, setPreviewCaption] = React.useState('');
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+
+  const activeConnectionIdsInChat = React.useMemo(() => {
+    const ids = new Set<string>();
+    messages.forEach((m: any) => {
+      if (m.connectionId) ids.add(m.connectionId);
+    });
+    return Array.from(ids);
+  }, [messages]);
+
+  const filterableConnections = React.useMemo(() => {
+    return availableConnections.filter(c => activeConnectionIdsInChat.includes(c.id));
+  }, [availableConnections, activeConnectionIdsInChat]);
 
   React.useEffect(() => {
     if (previewFile) {
@@ -292,7 +304,7 @@ export function ActiveChat({
   return (
     <div className="flex flex-col h-full min-h-0 bg-transparent">
       {/* Premium Chat Header */}
-      <div className="flex items-center gap-3 p-3 lg:p-4 shrink-0 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl border-b border-border/30 z-10">
+      <div className="flex items-center gap-3 p-3 lg:p-4 shrink-0 bg-transparent border-b border-white/5 z-10 relative">
         <div className="flex items-center gap-3 shrink-0">
           {(isMobile || forceShowBack) && onBack && (
             <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 hover:bg-white/[0.04]">
@@ -311,7 +323,7 @@ export function ActiveChat({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-[100px] px-2 sm:px-3 overflow-hidden">
           <p className="font-semibold text-[14px] truncate leading-tight tracking-tight">
             <Link href={`/contacts/${contact.id}`} target="_blank" className="hover:text-primary transition-colors duration-200">
               {contact.name}
@@ -327,10 +339,10 @@ export function ActiveChat({
               return (
                 <div className="flex items-center gap-1 shrink-0">
                   <span
-                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px] truncate max-w-[80px]"
-                    style={{ color: lastTag.color, backgroundColor: `${lastTag.color}15` }}
+                    className="flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px] truncate max-w-[80px] bg-black/5 dark:bg-white/5 text-zinc-700 dark:text-zinc-300"
                   >
-                    {lastTag.name}
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: lastTag.color || '#ccc' }} />
+                    <span className="truncate">{lastTag.name}</span>
                   </span>
                   {extraCount > 0 && (
                     <span className="text-[9px] font-semibold text-muted-foreground/60 bg-muted px-1 py-0.5 rounded-[3px]">
@@ -354,7 +366,7 @@ export function ActiveChat({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center justify-end gap-1.5 shrink min-w-0 overflow-hidden">
           {/* Assignment Dropdown */}
           <ChatAssignmentDropdown
             conversation={conversation}
@@ -365,112 +377,187 @@ export function ActiveChat({
           {availableConnections.length > 0 && onSwitchConnection && (
             <DropdownMenu open={showConnectionDropdown} onOpenChange={setShowConnectionDropdown}>
               <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 mr-1 outline-none",
-                    ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '')
-                      ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 focus:ring-2 focus:ring-blue-500/30'
-                      : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 focus:ring-2 focus:ring-emerald-500/30'
-                  )}
-                >
-                  <Wifi className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline max-w-[100px] truncate">
-                    {conversation.connectionName ? conversation.connectionName : (['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API')}
-                  </span>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 mr-1 outline-none shrink min-w-0",
+                      ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '')
+                        ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 focus:ring-2 focus:ring-blue-500/30'
+                        : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 focus:ring-2 focus:ring-emerald-500/30'
+                    )}
+                  >
+                    <Wifi className="h-3.5 w-3.5 shrink-0" />
+                    <span className="hidden lg:inline max-w-[90px] truncate">
+                      {conversation.connectionName ? conversation.connectionName : (['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API')}
+                    </span>
                   <ChevronDown className={cn(
                     "h-3 w-3 transition-transform duration-300",
                     showConnectionDropdown && 'rotate-180'
                   )} />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 p-1">
+              <DropdownMenuContent align="end" className="w-72 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 p-1">
                 <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 border-b border-white/[0.06] mb-1">
                   Trocar Conexão
                 </DropdownMenuLabel>
-                {availableConnections.map((conn) => {
-                  const isActive = conn.id === conversation?.connectionId;
-                  const isBaileys = ['baileys', 'evolution'].includes(conn.connectionType);
-                  return (
-                    <DropdownMenuItem
-                      key={conn.id}
-                      onClick={() => {
-                        if (!isActive) {
-                          // Guardar conexão pendente — pedir confirmação
-                          setPendingConnectionId(conn.id);
-                          setShowConnectionDropdown(false);
-                        }
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-all duration-200 cursor-pointer rounded-lg",
-                        isActive
-                          ? 'bg-primary/5 text-primary focus:bg-primary/10'
-                          : 'hover:bg-white/[0.04] focus:bg-white/[0.04]'
-                      )}
-                    >
-                      <div className={cn(
-                        "w-2 h-2 rounded-full shrink-0 transition-colors",
-                        isActive ? 'bg-primary shadow-[0_0_6px_hsl(161_79%_39%_/_0.4)]' : 'bg-muted-foreground/20'
-                      )} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate text-[13px]">{conn.config_name}</span>
-                          <span className={cn(
-                            "text-[9px] px-1.5 py-0.5 rounded-full font-bold",
-                            isBaileys
-                              ? 'bg-blue-500/10 text-blue-400'
-                              : 'bg-emerald-500/10 text-emerald-400'
-                          )}>
-                            {isBaileys ? 'Baileys' : 'API'}
-                          </span>
+                <div className="max-h-[350px] overflow-y-auto overflow-x-hidden">
+                  {(() => {
+                    if (availableConnections.length === 0) {
+                      return (
+                        <div className="px-3 py-6 flex flex-col items-center gap-2 text-center text-xs text-muted-foreground">
+                          <Wifi className="h-5 w-5 opacity-20" />
+                          <span>Nenhuma conexão disponível.</span>
                         </div>
-                        <span className="text-[11px] text-muted-foreground/50">
-                          {conn.phoneNumber || conn.phone || 'Sem número'}
-                          {isBaileys ? ' • Gratuito' : ' • Templates pagos'}
-                        </span>
-                      </div>
-                      {isActive && (
-                        <span className="text-[10px] text-primary font-bold">Ativo</span>
-                      )}
-                    </DropdownMenuItem>
-                  );
-                })}
+                      );
+                    }
+
+                    const sortedConnections = [...availableConnections].sort((a, b) => {
+                      const isCurrentA = a.id === conversation?.connectionId;
+                      const isCurrentB = b.id === conversation?.connectionId;
+                      if (isCurrentA) return -1;
+                      if (isCurrentB) return 1;
+
+                      const isConnectedA = !a.status || ['open', 'connected', 'online', 'active', 'conectado', 'tudo ok', 'tudo_ok', 'ok', 'approved'].includes(a.status.toLowerCase());
+                      const isConnectedB = !b.status || ['open', 'connected', 'online', 'active', 'conectado', 'tudo ok', 'tudo_ok', 'ok', 'approved'].includes(b.status.toLowerCase());
+
+                      if (isConnectedA && !isConnectedB) return -1;
+                      if (!isConnectedA && isConnectedB) return 1;
+
+                      return a.config_name.localeCompare(b.config_name);
+                    });
+
+                    return sortedConnections.map((conn) => {
+                      const isActive = conn.id === conversation?.connectionId;
+                      const isBaileys = ['baileys', 'evolution'].includes(conn.connectionType);
+                      const isConnected = !conn.status || ['open', 'connected', 'online', 'active', 'conectado', 'tudo ok', 'tudo_ok', 'ok', 'approved'].includes(conn.status.toLowerCase());
+
+                      return (
+                        <DropdownMenuItem
+                          key={conn.id}
+                          onClick={() => {
+                            if (!isActive) {
+                              setPendingConnectionId(conn.id);
+                              setShowConnectionDropdown(false);
+                            }
+                          }}
+                          className={cn(
+                            "w-full flex items-start gap-3 px-3 py-2.5 text-left transition-all duration-200 cursor-pointer rounded-lg mb-1",
+                            isActive
+                              ? 'bg-primary/10 border border-primary/20'
+                              : 'hover:bg-muted/50 border border-transparent'
+                          )}
+                        >
+                          <div className="flex flex-col items-center gap-1.5 mt-1 shrink-0">
+                            {isActive ? (
+                              <div className="relative flex items-center justify-center w-4 h-4">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-20 animate-ping" />
+                                <Check className="relative h-3 w-3 text-primary stroke-[3]" />
+                              </div>
+                            ) : (
+                              <div className={cn(
+                                "w-2 h-2 rounded-full mt-1 transition-colors",
+                                isConnected ? 'bg-emerald-500/50' : 'bg-rose-500/50'
+                              )} />
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className={cn(
+                                "font-semibold truncate text-[13px]",
+                                isActive ? "text-primary" : "text-foreground"
+                              )}>
+                                {conn.config_name}
+                              </span>
+                              <span className={cn(
+                                "text-[9px] px-1.5 py-0.5 rounded uppercase font-bold shrink-0 tracking-wider",
+                                isBaileys
+                                  ? 'bg-blue-500/10 text-blue-500'
+                                  : 'bg-emerald-500/10 text-emerald-500'
+                              )}>
+                                {isBaileys ? 'WhatsApp' : 'Oficial API'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground/70">
+                              <span className="truncate max-w-[120px]">{conn.phoneNumber || conn.phone || 'Sem número'}</span>
+                              <span className="shrink-0">{isBaileys ? 'Sessão Web' : 'Templates pagos'}</span>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      );
+                    });
+                  })()}
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
 
-          {/* Message Filter Toggle — mostra badge quando filtro ativo */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setMessageFilter(f => f === 'all' ? 'connection' : 'all')}
-                  className={cn(
-                    "shrink-0 h-9 w-9 rounded-lg transition-all duration-200 relative",
-                    messageFilter === 'connection'
-                      ? "bg-primary/10 text-primary hover:bg-primary/15"
-                      : "hover:bg-white/[0.04] text-muted-foreground"
-                  )}
-                >
-                  <Filter className="h-[18px] w-[18px]" />
-                  {messageFilter === 'connection' && (() => {
-                    const count = messages.filter((m: any) => !m.connectionId || m.connectionId === conversation?.connectionId).length;
-                    return (
-                      <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded-full flex items-center justify-center leading-none">
-                        {count}
-                      </span>
-                    );
-                  })()}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-card/95 backdrop-blur-md border-white/[0.08]">
-                <p>{messageFilter === 'connection' ? `Filtrando por conexão ativa (${messages.filter((m: any) => !m.connectionId || m.connectionId === conversation?.connectionId).length} msgs) — clique para ver todas` : 'Filtrar mensagens por esta conexão'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Message Filter Dropdown */}
+          <DropdownMenu>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "shrink-0 h-9 w-9 rounded-lg transition-all duration-200 relative",
+                        messageFilter !== null
+                          ? "bg-primary/10 text-primary hover:bg-primary/15"
+                          : "hover:bg-white/[0.04] text-muted-foreground"
+                      )}
+                    >
+                      <Filter className="h-[18px] w-[18px]" />
+                      {messageFilter !== null && (() => {
+                        const count = messages.filter((m: any) => m.connectionId === messageFilter).length;
+                        return (
+                          <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded-full flex items-center justify-center leading-none">
+                            {count}
+                          </span>
+                        );
+                      })()}
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent className="bg-card/95 backdrop-blur-md border-white/[0.08]">
+                  <p>{messageFilter !== null ? 'Filtrado por conexão. Clique para alterar.' : 'Filtrar mensagens por conexão'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 p-1">
+              <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 border-b border-white/[0.06] mb-1">
+                Filtrar Conversa
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => setMessageFilter(null)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-all duration-200 cursor-pointer rounded-lg",
+                  messageFilter === null ? 'bg-primary/5 text-primary' : 'hover:bg-white/[0.04]'
+                )}
+              >
+                Todas as conexões
+              </DropdownMenuItem>
+              {filterableConnections.map(conn => {
+                const count = messages.filter((m: any) => m.connectionId === conn.id).length;
+                return (
+                  <DropdownMenuItem
+                    key={conn.id}
+                    onClick={() => setMessageFilter(conn.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left text-sm transition-all duration-200 cursor-pointer rounded-lg",
+                      messageFilter === conn.id ? 'bg-primary/5 text-primary' : 'hover:bg-white/[0.04]'
+                    )}
+                  >
+                    <span className="truncate flex-1">{conn.config_name}</span>
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{count}</span>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* AI Toggle */}
           <TooltipProvider>
@@ -587,7 +674,7 @@ export function ActiveChat({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/30" />
               </div>
             ) : (
-              (messageFilter === 'all' ? messages : messages.filter((m: any) => !m.connectionId || m.connectionId === conversation?.connectionId)).map((msg, index, arr) => {
+              (messageFilter === null ? messages : messages.filter((m: any) => m.connectionId === messageFilter)).map((msg, index, arr) => {
                 const currentDate = new Date(msg.sentAt);
                 const prevMsg = index > 0 ? arr[index - 1] : null;
                 const prevDate = prevMsg ? new Date(prevMsg.sentAt) : null;
@@ -624,7 +711,7 @@ export function ActiveChat({
       </div>
 
       {/* Premium Input Area */}
-      <div className="shrink-0 border-t border-border/30 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl p-3 pt-2 overflow-x-hidden relative">
+      <div className="shrink-0 border-t border-white/5 bg-transparent p-3 pt-2 overflow-x-hidden relative">
         {!isArchived && is24hRestricted && (
           <div className="w-full flex justify-center mb-1.5 pointer-events-none">
             {canSendFreeform && timeLeft !== null && timeLeft > 0 ? (

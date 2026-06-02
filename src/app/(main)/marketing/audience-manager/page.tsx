@@ -5,7 +5,7 @@
  */
 import { useState, useMemo, useCallback, useEffect } from "react";
 import useSWR, { mutate } from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import {
   Film, Globe2, Camera, BookOpen, Megaphone, Search, RefreshCw,

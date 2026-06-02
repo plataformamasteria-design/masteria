@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { SearchableSelector } from "./SearchableSelector";
 import { useOrganization } from "@/contexts/OrganizationContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { CalendarRange, Clock, Type, AlignLeft, MapPin, Video, MessageCircle, X, Check, Loader2 } from "lucide-react";
 
 interface Calendar { id: string; name: string; is_general: boolean; color: string; }

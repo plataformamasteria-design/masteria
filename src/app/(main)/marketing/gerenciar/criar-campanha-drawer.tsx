@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import useSWR from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   Copy, Check, ChevronRight, ChevronLeft, X,
   Loader2, AlertCircle, CheckCircle2, Search,

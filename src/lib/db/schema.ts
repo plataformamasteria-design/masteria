@@ -13,6 +13,7 @@ import {
   numeric,
   integer,
   pgEnum,
+  index,
   date,
   time,
   customType,
@@ -193,6 +194,7 @@ export const usersToTeams = pgTable('users_to_teams', {
   companyId: text('company_id').references(() => companies.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => ({
+  usersToTeamsCompanyIdIdx: index('users_to_teams_company_id_idx').on(t.companyId),
   pk: primaryKey({ columns: [t.userId, t.teamId] }),
 }));
 
@@ -231,6 +233,7 @@ export const connections = pgTable('connections', {
   tokenRefreshError: text('token_refresh_error'),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({
+  connectionsCompanyIdIdx: index('connections_company_id_idx').on(table.companyId),
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS connections_company_status_idx ON ${table} (company_id, status)`,
   companyActiveIdx: sql`CREATE INDEX IF NOT EXISTS connections_company_active_idx ON ${table} (company_id, is_active) WHERE is_active = true`,
   companyTypeIdx: sql`CREATE INDEX IF NOT EXISTS connections_company_type_idx ON ${table} (company_id, connection_type)`,
@@ -256,6 +259,7 @@ export const baileysMessages = pgTable('baileys_messages', {
   text: text('text'),
   content: jsonb('content'),
 }, (table) => ({
+  baileysMessagesConnectionIdIdx: index('baileys_messages_connection_id_idx').on(table.connectionId),
   jidTimestampIdx: sql`CREATE INDEX IF NOT EXISTS idx_baileys_msgs_jid_timestamp ON ${table} (jid, timestamp DESC)`,
   convTimestampIdx: sql`CREATE INDEX IF NOT EXISTS idx_baileys_msgs_conv_timestamp ON ${table} (conversation_id, timestamp DESC)`,
 }));
@@ -292,6 +296,7 @@ export const tags = pgTable('tags', {
   color: text('color').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({
+  tagsCompanyIdIdx: index('tags_company_id_idx').on(table.companyId),
   nameCompanyUnique: unique('tags_name_company_id_unique').on(table.name, table.companyId),
 }));
 
@@ -303,6 +308,7 @@ export const contactLists = pgTable('contact_lists', {
   filters: jsonb('filters'),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({
+  contactListsCompanyIdIdx: index('contact_lists_company_id_idx').on(table.companyId),
   nameCompanyUnique: unique('contact_lists_name_company_id_unique').on(table.name, table.companyId),
 }));
 
@@ -337,6 +343,7 @@ export const contacts = pgTable('contacts', {
   communicationPace: text('communication_pace').default('MODERATE'), // FAST, MODERATE, SLOW
   lastPsychographicUpdate: timestamp('last_psychographic_update'),
 }, (table) => ({
+  contactsCompanyIdIdx: index('contacts_company_id_idx').on(table.companyId),
   phoneCompanyUnique: unique('contacts_phone_company_id_unique').on(table.phone, table.companyId),
   externalIdProviderUnique: unique('contacts_external_id_provider_unique').on(table.externalId, table.externalProvider),
   // Existing partial indexes
@@ -355,6 +362,8 @@ export const contactsToTags = pgTable('contacts_to_tags', {
   tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
   companyId: text('company_id').references(() => companies.id, { onDelete: 'cascade' }),
 }, (t) => ({
+  contactsToTagsCompanyIdIdx: index('contacts_to_tags_company_id_idx').on(t.companyId),
+  contactsToTagsContactIdIdx: index('contacts_to_tags_contact_id_idx').on(t.contactId),
   pk: primaryKey({ columns: [t.contactId, t.tagId] }),
 }));
 
@@ -363,6 +372,8 @@ export const contactsToContactLists = pgTable('contacts_to_contact_lists', {
   listId: text('list_id').notNull().references(() => contactLists.id, { onDelete: 'cascade' }),
   companyId: text('company_id').references(() => companies.id, { onDelete: 'cascade' }),
 }, (t) => ({
+  contactsToContactListsCompanyIdIdx: index('contacts_to_contact_lists_company_id_idx').on(t.companyId),
+  contactsToContactListsContactIdIdx: index('contacts_to_contact_lists_contact_id_idx').on(t.contactId),
   pk: primaryKey({ columns: [t.contactId, t.listId] }),
   listIdIdx: sql`CREATE INDEX IF NOT EXISTS contacts_to_contact_lists_list_id_idx ON ${t} (list_id)`,
 }));
@@ -384,6 +395,7 @@ export const automationRules = pgTable('automation_rules', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  automationRulesCompanyIdIdx: index('automation_rules_company_id_idx').on(table.companyId),
   companyActiveIdx: sql`CREATE INDEX IF NOT EXISTS automation_rules_company_active_idx ON ${table} (company_id, is_active) WHERE is_active = true`,
   companyTriggerIdx: sql`CREATE INDEX IF NOT EXISTS automation_rules_company_trigger_idx ON ${table} (company_id, trigger_event)`,
 }));
@@ -398,6 +410,7 @@ export const automationLogs = pgTable('automation_logs', {
   details: jsonb('details'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  automationLogsCompanyIdIdx: index('automation_logs_company_id_idx').on(table.companyId),
   companyCreatedAtIdx: sql`CREATE INDEX IF NOT EXISTS automation_logs_company_created_at_idx ON ${table} (company_id, created_at DESC)`,
   companyRuleIdx: sql`CREATE INDEX IF NOT EXISTS automation_logs_company_rule_idx ON ${table} (company_id, rule_id) WHERE rule_id IS NOT NULL`,
 }));
@@ -545,6 +558,7 @@ export const personaExternalSources = pgTable('persona_external_sources', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  personaExternalSourcesCompanyIdIdx: index('persona_external_sources_company_id_idx').on(table.companyId),
   personaIdx: sql`CREATE INDEX IF NOT EXISTS persona_external_sources_persona_idx ON ${table} (persona_id)`,
   companyIdx: sql`CREATE INDEX IF NOT EXISTS persona_external_sources_company_idx ON ${table} (company_id)`,
 }));
@@ -574,6 +588,9 @@ export const conversations = pgTable('conversations', {
   archivedAt: timestamp('archived_at'),
   archivedBy: text('archived_by').references(() => users.id, { onDelete: 'set null' }),
 }, (table) => ({
+  conversationsCompanyIdIdx: index('conversations_company_id_idx').on(table.companyId),
+  conversationsContactIdIdx: index('conversations_contact_id_idx').on(table.contactId),
+  conversationsConnectionIdIdx: index('conversations_connection_id_idx').on(table.connectionId),
   // Existing partial indexes
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_status_idx ON ${table} (company_id, status) WHERE archived_at IS NULL`,
   companyLastMessageAtIdx: sql`CREATE INDEX IF NOT EXISTS conversations_company_last_message_at_idx ON ${table} (company_id, last_message_at DESC) WHERE archived_at IS NULL`,
@@ -606,6 +623,8 @@ export const messages = pgTable('messages', {
   sentAt: timestamp('sent_at').defaultNow().notNull(),
   readAt: timestamp('read_at'),
 }, (table) => ({
+  messagesCompanyIdIdx: index('messages_company_id_idx').on(table.companyId),
+  messagesConnectionIdIdx: index('messages_connection_id_idx').on(table.connectionId),
   // Existing partial indexes
   companySentAtIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_sent_at_idx ON ${table} (company_id, sent_at DESC) WHERE company_id IS NOT NULL`,
   companyConversationIdx: sql`CREATE INDEX IF NOT EXISTS messages_company_conversation_idx ON ${table} (company_id, conversation_id) WHERE company_id IS NOT NULL`,
@@ -626,6 +645,7 @@ export const messageReactions = pgTable('message_reactions', {
   emoji: text('emoji').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  messageReactionsCompanyIdIdx: index('message_reactions_company_id_idx').on(table.companyId),
   uniqueReaction: unique().on(table.messageId, table.reactorPhone),
 }));
 
@@ -669,6 +689,8 @@ export const kanbanLeads = pgTable('kanban_leads', {
   externalProvider: text('external_provider'),
   status: text('status').default('ACTIVE').notNull(),
 }, (table) => ({
+  kanbanLeadsCompanyIdIdx: index('kanban_leads_company_id_idx').on(table.companyId),
+  kanbanLeadsContactIdIdx: index('kanban_leads_contact_id_idx').on(table.contactId),
   companyBoardIdx: sql`CREATE INDEX IF NOT EXISTS kanban_leads_company_board_idx ON ${table} (company_id, board_id)`,
   companyStageIdx: sql`CREATE INDEX IF NOT EXISTS kanban_leads_company_stage_idx ON ${table} (company_id, stage_id)`,
   companyContactIdx: sql`CREATE INDEX IF NOT EXISTS kanban_leads_company_contact_idx ON ${table} (company_id, contact_id)`,
@@ -705,6 +727,7 @@ export const mediaAssets = pgTable('media_assets', {
   metaHandles: jsonb('meta_handles').$type<MetaHandle[]>().default(sql`'[]'::jsonb`),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  mediaAssetsCompanyIdIdx: index('media_assets_company_id_idx').on(table.companyId),
   companyTypeIdx: sql`CREATE INDEX IF NOT EXISTS media_assets_company_type_idx ON ${table} (company_id, type)`,
   companyCreatedAtIdx: sql`CREATE INDEX IF NOT EXISTS media_assets_company_created_at_idx ON ${table} (company_id, created_at DESC)`,
 }));
@@ -723,6 +746,7 @@ export const templates = pgTable('templates', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  templatesCompanyIdIdx: index('templates_company_id_idx').on(table.companyId),
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS templates_company_status_idx ON ${table} (company_id, status)`,
   companyCategoryIdx: sql`CREATE INDEX IF NOT EXISTS templates_company_category_idx ON ${table} (company_id, category)`,
   companyWabaIdx: sql`CREATE INDEX IF NOT EXISTS templates_company_waba_idx ON ${table} (company_id, waba_id)`,
@@ -754,6 +778,8 @@ export const messageTemplates = pgTable('message_templates', {
   isActive: boolean('is_active').default(true),
   allowCategoryChange: boolean('allow_category_change').default(true),
 }, (table) => ({
+  messageTemplatesCompanyIdIdx: index('message_templates_company_id_idx').on(table.companyId),
+  messageTemplatesConnectionIdIdx: index('message_templates_connection_id_idx').on(table.connectionId),
   uniqueNameWaba: unique('message_templates_name_waba_unique').on(table.name, table.wabaId),
 }));
 
@@ -800,6 +826,8 @@ export const campaigns = pgTable('campaigns', {
   retryDelayMinutes: integer('retry_delay_minutes').default(30),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  campaignsCompanyIdIdx: index('campaigns_company_id_idx').on(table.companyId),
+  campaignsConnectionIdIdx: index('campaigns_connection_id_idx').on(table.connectionId),
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS campaigns_company_status_idx ON ${table} (company_id, status)`,
   companyCreatedAtIdx: sql`CREATE INDEX IF NOT EXISTS campaigns_company_created_at_idx ON ${table} (company_id, created_at DESC)`,
   companyChannelStatusIdx: sql`CREATE INDEX IF NOT EXISTS campaigns_company_channel_status_idx ON ${table} (company_id, channel, status)`,
@@ -889,6 +917,8 @@ export const voiceRetryQueue = pgTable('voice_retry_queue', {
   processedAt: timestamp('processed_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  voiceRetryQueueCompanyIdIdx: index('voice_retry_queue_company_id_idx').on(table.companyId),
+  voiceRetryQueueContactIdIdx: index('voice_retry_queue_contact_id_idx').on(table.contactId),
   campaignContactUnique: unique('voice_retry_queue_campaign_contact_attempt').on(table.campaignId, table.contactId, table.attemptNumber),
 }));
 
@@ -972,6 +1002,7 @@ export const aiUsageDaily = pgTable('ai_usage_daily', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  aiUsageDailyCompanyIdIdx: index('ai_usage_daily_company_id_idx').on(table.companyId),
   companyDateProviderModelUnique: unique('ai_usage_daily_company_date_provider_model_unique').on(
     table.companyId,
     table.date,
@@ -1010,6 +1041,7 @@ export const aiFollowupQueue = pgTable('ai_followup_queue', {
   cancelledAt: timestamp('cancelled_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  aiFollowupQueueCompanyIdIdx: index('ai_followup_queue_company_id_idx').on(table.companyId),
   pendingIdx: sql`CREATE INDEX IF NOT EXISTS idx_followup_queue_pending ON ${table} (status, scheduled_at) WHERE status = 'pending'`,
   conversationIdx: sql`CREATE INDEX IF NOT EXISTS idx_followup_queue_conversation ON ${table} (conversation_id, status)`,
 }));
@@ -1188,6 +1220,8 @@ export const notificationAgents = pgTable('notification_agents', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  notificationAgentsCompanyIdIdx: index('notification_agents_company_id_idx').on(table.companyId),
+  notificationAgentsConnectionIdIdx: index('notification_agents_connection_id_idx').on(table.connectionId),
   uniqueCompanyName: unique('notification_agents_company_name_unique').on(table.companyId, table.name),
   companyActiveIdx: sql`CREATE INDEX IF NOT EXISTS notification_agents_company_active_idx ON ${table} (company_id, is_active) WHERE is_active = true`,
 }));
@@ -1388,6 +1422,7 @@ export const userNotifications = pgTable('user_notifications', {
   readAt: timestamp('read_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  userNotificationsCompanyIdIdx: index('user_notifications_company_id_idx').on(table.companyId),
   userReadIdx: sql`CREATE INDEX IF NOT EXISTS user_notifications_user_read_idx ON ${table} (user_id, is_read, created_at DESC)`,
   companyIdx: sql`CREATE INDEX IF NOT EXISTS user_notifications_company_idx ON ${table} (company_id, created_at DESC)`,
 }));
@@ -1428,6 +1463,7 @@ export const systemErrors = pgTable('system_errors', {
   resolvedBy: text('resolved_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  systemErrorsCompanyIdIdx: index('system_errors_company_id_idx').on(table.companyId),
   sourceStatusIdx: sql`CREATE INDEX IF NOT EXISTS system_errors_source_status_idx ON ${table} (source, status, created_at DESC)`,
   severityIdx: sql`CREATE INDEX IF NOT EXISTS system_errors_severity_idx ON ${table} (severity, created_at DESC)`,
   companyIdx: sql`CREATE INDEX IF NOT EXISTS system_errors_company_idx ON ${table} (company_id, created_at DESC) WHERE company_id IS NOT NULL`,
@@ -1483,6 +1519,7 @@ export const cadenceDefinitions = pgTable('cadence_definitions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  cadenceDefinitionsCompanyIdIdx: index('cadence_definitions_company_id_idx').on(table.companyId),
   companyActiveIdx: sql`CREATE INDEX IF NOT EXISTS cadence_definitions_company_active_idx ON ${table} (company_id, is_active) WHERE is_active = true`,
 }));
 
@@ -1514,6 +1551,7 @@ export const cadenceEnrollments = pgTable('cadence_enrollments', {
   completedAt: timestamp('completed_at'),
   cancelledReason: text('cancelled_reason'),
 }, (table) => ({
+  cadenceEnrollmentsContactIdIdx: index('cadence_enrollments_contact_id_idx').on(table.contactId),
   schedulingIdx: sql`CREATE INDEX IF NOT EXISTS cadence_enrollments_scheduling_idx ON ${table} (status, next_run_at) WHERE status = 'active'`,
   leadActiveUnique: unique('cadence_enrollments_lead_active_unique').on(table.leadId, table.cadenceId),
 }));
@@ -1639,6 +1677,7 @@ export const alerts = pgTable('alerts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  alertsCompanyIdIdx: index('alerts_company_id_idx').on(table.companyId),
   fingerprintIdx: sql`CREATE INDEX IF NOT EXISTS alerts_fingerprint_idx ON ${table} (fingerprint)`,
   statusIdx: sql`CREATE INDEX IF NOT EXISTS alerts_status_idx ON ${table} (status)`,
   severityIdx: sql`CREATE INDEX IF NOT EXISTS alerts_severity_idx ON ${table} (severity)`,
@@ -1665,6 +1704,7 @@ export const alertRules = pgTable('alert_rules', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  alertRulesCompanyIdIdx: index('alert_rules_company_id_idx').on(table.companyId),
   nameCompanyUnique: unique('alert_rules_name_company_unique').on(table.name, table.companyId),
   enabledIdx: sql`CREATE INDEX IF NOT EXISTS alert_rules_enabled_idx ON ${table} (is_enabled) WHERE is_enabled = true`,
 }));
@@ -1833,6 +1873,7 @@ export const companyFeatureAccess = pgTable('company_feature_access', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
+  companyFeatureAccessCompanyIdIdx: index('company_feature_access_company_id_idx').on(table.companyId),
   companyFeatureUnique: unique('company_feature_access_unique').on(table.companyId, table.featureId),
 }));
 
@@ -2152,6 +2193,7 @@ export const marketingCredentials = pgTable('marketing_credentials', {
   connectedAt: timestamp('connected_at'),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  marketingCredentialsCompanyIdIdx: index('marketing_credentials_company_id_idx').on(table.companyId),
   companyPlatformUnique: unique('marketing_credentials_company_platform_unique').on(table.companyId, table.platform),
 }));
 
@@ -2179,6 +2221,7 @@ export const marketingCampaigns = pgTable('marketing_campaigns', {
   rawData: jsonb('raw_data').$type<Record<string, any>>(),
   syncedAt: timestamp('synced_at').defaultNow().notNull(),
 }, (table) => ({
+  marketingCampaignsCompanyIdIdx: index('marketing_campaigns_company_id_idx').on(table.companyId),
   companyCampaignUnique: unique('marketing_campaigns_company_campaign_unique').on(table.companyId, table.campaignId),
 }));
 
@@ -2206,6 +2249,7 @@ export const marketingAdsets = pgTable('marketing_adsets', {
   rawData: jsonb('raw_data').$type<Record<string, any>>(),
   syncedAt: timestamp('synced_at').defaultNow().notNull(),
 }, (table) => ({
+  marketingAdsetsCompanyIdIdx: index('marketing_adsets_company_id_idx').on(table.companyId),
   companyAdsetUnique: unique('marketing_adsets_company_adset_unique').on(table.companyId, table.adsetId),
 }));
 
@@ -2234,6 +2278,7 @@ export const marketingAds = pgTable('marketing_ads', {
   rawData: jsonb('raw_data').$type<Record<string, any>>(),
   syncedAt: timestamp('synced_at').defaultNow().notNull(),
 }, (table) => ({
+  marketingAdsCompanyIdIdx: index('marketing_ads_company_id_idx').on(table.companyId),
   companyAdUnique: unique('marketing_ads_company_ad_unique').on(table.companyId, table.adId),
 }));
 
@@ -2255,6 +2300,7 @@ export const marketingSocialProfiles = pgTable('marketing_social_profiles', {
   syncedAt: timestamp('synced_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  marketingSocialProfilesCompanyIdIdx: index('marketing_social_profiles_company_id_idx').on(table.companyId),
   companyPlatformProfileUnique: unique('marketing_profiles_company_platform_profile_unique').on(table.companyId, table.platform, table.profileId),
 }));
 
@@ -2297,6 +2343,7 @@ export const leadDiagnostics = pgTable('lead_diagnostics', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  leadDiagnosticsCompanyIdIdx: index('lead_diagnostics_company_id_idx').on(table.companyId),
   companyMonthUnique: unique('lead_diagnostics_company_month_unique').on(table.companyId, table.referenceMonth),
 }));
 
@@ -2309,6 +2356,7 @@ export const agentCommissions = pgTable('agent_commissions', {
   percentageValue: numeric('percentage_value').default('0').notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  agentCommissionsCompanyIdIdx: index('agent_commissions_company_id_idx').on(table.companyId),
   companyUserUnique: unique('agent_commissions_company_user_unique').on(table.companyId, table.userId),
 }));
 
@@ -2396,6 +2444,7 @@ export const agencyClients = pgTable('agency_clients', {
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
   deletedAt: timestamp('deleted_at'),
 }, (table) => ({
+  agencyClientsCompanyIdIdx: index('agency_clients_company_id_idx').on(table.companyId),
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS agency_clients_company_status_idx ON ${table} (company_id, status) WHERE deleted_at IS NULL`,
   companyCreatedAtIdx: sql`CREATE INDEX IF NOT EXISTS agency_clients_company_created_at_idx ON ${table} (company_id, created_at DESC) WHERE deleted_at IS NULL`,
 }));
@@ -2437,6 +2486,7 @@ export const agencyContents = pgTable('agency_contents', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  agencyContentsCompanyIdIdx: index('agency_contents_company_id_idx').on(table.companyId),
   clientStatusIdx: sql`CREATE INDEX IF NOT EXISTS agency_contents_client_status_idx ON ${table} (client_id, status)`,
   clientDeadlineIdx: sql`CREATE INDEX IF NOT EXISTS agency_contents_client_deadline_idx ON ${table} (client_id, deadline)`,
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS agency_contents_company_status_idx ON ${table} (company_id, status)`,
@@ -2467,6 +2517,7 @@ export const agencyCampaigns = pgTable('agency_campaigns', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  agencyCampaignsCompanyIdIdx: index('agency_campaigns_company_id_idx').on(table.companyId),
   clientStageIdx: sql`CREATE INDEX IF NOT EXISTS agency_campaigns_client_stage_idx ON ${table} (client_id, stage)`,
   companyMonthIdx: sql`CREATE INDEX IF NOT EXISTS agency_campaigns_company_month_idx ON ${table} (company_id, month)`,
 }));
@@ -2498,6 +2549,7 @@ export const agencyMaterials = pgTable('agency_materials', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  agencyMaterialsCompanyIdIdx: index('agency_materials_company_id_idx').on(table.companyId),
   clientCategoryIdx: sql`CREATE INDEX IF NOT EXISTS agency_materials_client_category_idx ON ${table} (client_id, category)`,
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS agency_materials_company_status_idx ON ${table} (company_id, status)`,
 }));
@@ -2522,6 +2574,7 @@ export const agencyTasks = pgTable('agency_tasks', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  agencyTasksCompanyIdIdx: index('agency_tasks_company_id_idx').on(table.companyId),
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS agency_tasks_company_status_idx ON ${table} (company_id, status)`,
   assignedToIdx: sql`CREATE INDEX IF NOT EXISTS agency_tasks_assigned_to_idx ON ${table} (assigned_to_id, status)`,
 }));
@@ -2546,6 +2599,7 @@ export const agencyApprovals = pgTable('agency_approvals', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  agencyApprovalsCompanyIdIdx: index('agency_approvals_company_id_idx').on(table.companyId),
   companyStatusIdx: sql`CREATE INDEX IF NOT EXISTS agency_approvals_company_status_idx ON ${table} (company_id, status)`,
   entityIdx: sql`CREATE INDEX IF NOT EXISTS agency_approvals_entity_idx ON ${table} (entity_type, entity_id)`,
 }));
@@ -2563,6 +2617,7 @@ export const agencyComments = pgTable('agency_comments', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 }, (table) => ({
+  agencyCommentsCompanyIdIdx: index('agency_comments_company_id_idx').on(table.companyId),
   entityIdx: sql`CREATE INDEX IF NOT EXISTS agency_comments_entity_idx ON ${table} (entity_type, entity_id)`,
   companyCreatedAtIdx: sql`CREATE INDEX IF NOT EXISTS agency_comments_company_created_at_idx ON ${table} (company_id, created_at DESC)`,
 }));
@@ -2611,6 +2666,8 @@ export const contactEvents = pgTable('contact_events', {
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({
+  contactEventsCompanyIdIdx: index('contact_events_company_id_idx').on(table.companyId),
+  contactEventsContactIdIdx: index('contact_events_contact_id_idx').on(table.contactId),
   contactIdx: sql`CREATE INDEX IF NOT EXISTS contact_events_contact_idx ON ${table} (contact_id, created_at DESC)`,
   companyIdx: sql`CREATE INDEX IF NOT EXISTS contact_events_company_idx ON ${table} (company_id, created_at DESC)`,
 }));

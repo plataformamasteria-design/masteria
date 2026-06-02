@@ -148,6 +148,13 @@
       "when": 1779397458252,
       "tag": "0020_square_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1779941624779,
+      "tag": "0021_orange_vision",
+      "breakpoints": true
     }
   ]
 }

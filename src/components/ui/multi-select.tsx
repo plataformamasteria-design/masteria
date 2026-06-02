@@ -52,8 +52,8 @@ export function MultiSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            'w-full justify-between min-h-10 h-auto font-normal',
-            selected.length > 0 ? 'p-2' : 'px-3 py-2 text-muted-foreground',
+            'w-full justify-between min-h-10 h-auto font-normal bg-white/[0.03] border-white/10 hover:bg-white/5 hover:text-white',
+            selected.length > 0 ? 'p-2' : 'px-3 py-2 text-zinc-500',
             className
           )}
         >
@@ -94,18 +94,18 @@ export function MultiSelect({
                   </Badge>
                 ))
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="text-zinc-500">{placeholder}</span>
             )}
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 text-zinc-400" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 min-w-[var(--radix-popover-trigger-width)]" align="start">
-        <Command>
-          <CommandInput placeholder="Pesquisar..." className="h-9" />
+      <PopoverContent className="w-full p-0 min-w-[var(--radix-popover-trigger-width)] bg-zinc-950 border-white/10 text-white" align="start">
+        <Command className="bg-transparent">
+          <CommandInput placeholder="Pesquisar..." className="h-9 text-white placeholder:text-zinc-500" />
           <CommandList>
-            <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
-            <CommandGroup className="max-h-[200px] overflow-auto">
+            <CommandEmpty className="py-6 text-center text-sm text-zinc-500">Nenhum resultado encontrado.</CommandEmpty>
+            <CommandGroup className="max-h-[200px] overflow-auto text-zinc-300">
               {options.map((option) => {
                 const isSelected = selected.includes(option.value);
                 return (
@@ -118,19 +118,20 @@ export function MultiSelect({
                         onChange([...selected, option.value]);
                       }
                     }}
+                    className="aria-selected:bg-white/10 aria-selected:text-white cursor-pointer"
                   >
                     <div
                       className={cn(
-                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
                         isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'opacity-50 [&_svg]:invisible'
+                          ? 'bg-emerald-500 border-emerald-500 text-white'
+                          : 'border-white/20 opacity-50 [&_svg]:invisible'
                       )}
                     >
-                      <Check className={cn('h-4 w-4')} />
+                      <Check className={cn('h-3 w-3')} />
                     </div>
                     {option.icon && (
-                      <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <option.icon className="mr-2 h-4 w-4 text-zinc-500" />
                     )}
                     {option.label}
                   </CommandItem>

@@ -1,14 +1,12 @@
 // src/app/api/auth/register/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { users, companies, emailVerificationTokens } from '@/lib/db/schema';
+import { users, companies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcryptjs';
 import { z } from 'zod';
-import { randomUUID, randomBytes } from 'crypto';
-import { sendEmailVerificationLink } from '@/lib/email';
+import { randomUUID } from 'crypto';
 import { getBaseUrl } from '@/utils/get-base-url';
-import { createHash } from 'crypto';
 import { checkAuthRateLimit, getClientIp } from '@/lib/rate-limiter';
 
 const createExpirationDate = (hours: number): Date => {
@@ -59,13 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         const passwordHash = await hash(password, 10);
-        
-        const verificationToken = randomBytes(20).toString('hex');
-        const tokenHash = createHash('sha256').update(verificationToken).digest('hex');
         const baseUrl = getBaseUrl();
-        const verificationLink = `${baseUrl}/verify-email?token=${verificationToken}`;
-        
-        console.log(`[REGISTER:${requestId}] Token gerado: ${verificationToken.slice(0, 8)}...`);
         console.log(`[REGISTER:${requestId}] Base URL: ${baseUrl}`);
         
         const result = await db.transaction(async (tx) => {
@@ -83,7 +75,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 firebaseUid: `native_${randomUUID()}`,
                 role: 'admin',
                 companyId: newCompany.id,
-                emailVerified: null,
+                emailVerified: new Date(),
             }).returning({ id: users.id, name: users.name, email: users.email });
 
             if (!createdUser) {
@@ -91,35 +83,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             }
             console.log(`[REGISTER:${requestId}] Usuário criado: ${createdUser.id}`);
             
-            const [tokenRecord] = await tx.insert(emailVerificationTokens).values({
-                userId: createdUser.id,
-                tokenHash,
-                expiresAt: createExpirationDate(24)
-            }).returning({ tokenHash: emailVerificationTokens.tokenHash });
-            
-            if (!tokenRecord || tokenRecord.tokenHash !== tokenHash) {
-                throw new Error("Inconsistência no token de verificação.");
-            }
-            
-            return { user: createdUser, token: tokenRecord };
+            return { user: createdUser };
         });
 
         console.log(`[REGISTER:${requestId}] Transação concluída com sucesso`);
         
-        let emailWarning = false;
-        try {
-            await sendEmailVerificationLink(result.user.email, result.user.name, verificationLink);
-            console.log(`[REGISTER:${requestId}] ✅ Email enviado com sucesso`);
-        } catch (emailError) {
-            console.error(`[REGISTER:${requestId}] ❌ ERRO CRÍTICO ao enviar email:`, emailError);
-            console.warn(`[REGISTER:${requestId}] ⚠️ Continuando com registro mesmo com erro de email`);
-            emailWarning = true;
-        }
-        
         return NextResponse.json({ 
             success: true, 
-            message: 'Conta criada! Verifique seu e-mail para ativar.',
-            warning: emailWarning ? 'email_delivery_failed' : undefined,
+            message: 'Conta criada com sucesso!',
             requestId
         }, { status: 201 });
 

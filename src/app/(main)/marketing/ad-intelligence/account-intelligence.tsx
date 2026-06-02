@@ -15,7 +15,7 @@
 
 import { useState, useCallback, useId } from "react";
 import useSWR, { mutate } from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {

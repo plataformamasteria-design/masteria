@@ -13,7 +13,7 @@ import {
   DollarSign, Users, TrendingUp, BarChart3, Target,
   Layers, ArrowRight, Loader2, Megaphone, MousePointerClick, Eye, RefreshCw
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { m as motion } from 'framer-motion';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 

@@ -87,18 +87,18 @@ export function AdvancedAudienceSelector({
     );
 
     return (
-        <Card className="border shadow-sm overflow-hidden bg-card/50">
-            <CardHeader className="pb-4 bg-muted/20 border-b">
-                <CardTitle className="text-xl text-primary font-bold">Público Alvo (Inclusões)</CardTitle>
-                <CardDescription className="text-sm">
-                    O contato receberá a mensagem se pertencer a <b>qualquer uma</b> das seleções abaixo.
+        <Card className="border-white/5 shadow-sm overflow-hidden bg-white/[0.02] backdrop-blur-md">
+            <CardHeader className="pb-4 bg-black/20 border-b border-white/5">
+                <CardTitle className="text-xl text-emerald-400 font-bold">Público Alvo (Inclusões)</CardTitle>
+                <CardDescription className="text-sm text-zinc-400">
+                    O contato receberá a mensagem se pertencer a <b className="text-zinc-200">qualquer uma</b> das seleções abaixo.
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-8">
                 
                 <div className="space-y-3">
-                    <Label className="text-base font-semibold">Listas de Contatos</Label>
-                    <div className="rounded-md border bg-background/50 overflow-hidden">
+                    <Label className="text-base font-semibold text-zinc-300">Listas de Contatos</Label>
+                    <div className="rounded-md border-white/10 bg-black/10 overflow-hidden border">
                         <MultiListSelector
                             lists={availableLists}
                             selectedIds={contactListIds}
@@ -109,8 +109,8 @@ export function AdvancedAudienceSelector({
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3 p-4 border rounded-xl bg-card">
-                        <Label className="font-semibold text-primary">Etiquetas (Tags)</Label>
+                    <div className="space-y-3 p-4 border border-white/10 rounded-xl bg-white/[0.02]">
+                        <Label className="font-semibold text-emerald-400">Etiquetas (Tags)</Label>
                         <MultiSelect
                             options={tagOptions}
                             selected={tagIds}
@@ -119,8 +119,8 @@ export function AdvancedAudienceSelector({
                         />
                     </div>
                     
-                    <div className="space-y-3 p-4 border rounded-xl bg-card">
-                        <Label className="font-semibold text-primary">Funis (Todos os Leads)</Label>
+                    <div className="space-y-3 p-4 border border-white/10 rounded-xl bg-white/[0.02]">
+                        <Label className="font-semibold text-emerald-400">Funis (Todos os Leads)</Label>
                         <MultiSelect
                             options={funnelOptions}
                             selected={funnelIds}
@@ -129,8 +129,8 @@ export function AdvancedAudienceSelector({
                         />
                     </div>
 
-                    <div className="space-y-3 md:col-span-2 p-4 border rounded-xl bg-card">
-                        <Label className="font-semibold text-primary">Etapas Específicas de Funil</Label>
+                    <div className="space-y-3 md:col-span-2 p-4 border border-white/10 rounded-xl bg-white/[0.02]">
+                        <Label className="font-semibold text-emerald-400">Etapas Específicas de Funil</Label>
                         <MultiSelect
                             options={stageOptions}
                             selected={funnelStageIds}
@@ -141,34 +141,38 @@ export function AdvancedAudienceSelector({
                 </div>
 
                 <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="exclusions" className="border rounded-xl bg-red-50/10 dark:bg-red-950/10 px-4">
-                        <AccordionTrigger className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 py-4 hover:no-underline">
+                    <AccordionItem value="exclusions" className="border border-red-500/20 rounded-xl bg-red-500/5 px-4">
+                        <AccordionTrigger className="text-red-400 hover:text-red-300 py-4 hover:no-underline">
                             <span className="font-bold text-base">Exclusões (Opcional)</span>
                         </AccordionTrigger>
                         <AccordionContent className="space-y-6 pt-2 pb-4">
-                            <p className="text-sm text-muted-foreground/80">
-                                Contatos nestas seleções <b>NÃO</b> receberão a mensagem, mesmo que estejam incluídos acima.
+                            <p className="text-sm text-zinc-400">
+                                Contatos nestas seleções <b className="text-red-400">NÃO</b> receberão a mensagem, mesmo que estejam incluídos acima.
                             </p>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
-                                    <Label className="font-semibold">Listas a Excluir</Label>
-                                    <MultiSelect
-                                        options={availableLists.map(l => ({ value: l.id, label: `${l.name} (${l.contactCount || 0})` }))}
-                                        selected={excludeListIds}
-                                        onChange={setExcludeListIds}
-                                        placeholder="Selecione listas de exclusão..."
-                                    />
+                                    <Label className="font-semibold text-zinc-300">Listas a Excluir</Label>
+                                    <div className="rounded-md border-white/10 bg-black/10 overflow-hidden border">
+                                        <MultiSelect
+                                            options={availableLists.map(l => ({ value: l.id, label: `${l.name} (${l.contactCount || 0})` }))}
+                                            selected={excludeListIds}
+                                            onChange={setExcludeListIds}
+                                            placeholder="Selecione listas de exclusão..."
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="space-y-3">
-                                    <Label className="font-semibold">Etiquetas a Excluir</Label>
-                                    <MultiSelect
-                                        options={tagOptions}
-                                        selected={excludeTagIds}
-                                        onChange={setExcludeTagIds}
-                                        placeholder="Selecione etiquetas de exclusão..."
-                                    />
+                                    <Label className="font-semibold text-zinc-300">Etiquetas a Excluir</Label>
+                                    <div className="rounded-md border-white/10 bg-black/10 overflow-hidden border">
+                                        <MultiSelect
+                                            options={tagOptions}
+                                            selected={excludeTagIds}
+                                            onChange={setExcludeTagIds}
+                                            placeholder="Selecione etiquetas de exclusão..."
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </AccordionContent>

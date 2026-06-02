@@ -111,8 +111,8 @@ export function TemplatePreview({
 
     if (headerComponent.format === 'TEXT') {
       return (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 p-4 rounded-t-2xl border-b border-green-200 dark:border-green-800">
-          <p className="font-bold text-lg text-green-900 dark:text-green-100">
+        <div className="bg-[#111b21]/50 p-4 rounded-t-lg border-b border-white/5">
+          <p className="font-bold text-lg text-[#e9edef]">
             {replaceVariables(headerComponent.text || '')}
           </p>
         </div>
@@ -131,9 +131,9 @@ export function TemplatePreview({
       const mediaHeightClass = compact ? 'h-32' : 'aspect-video';
       
       return (
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-t-2xl overflow-hidden">
+        <div className="bg-[#111b21] rounded-t-lg overflow-hidden border-b border-white/5">
           {hasMedia ? (
-            <div className={`relative ${mediaHeightClass} bg-gray-200 dark:bg-gray-700 flex items-center justify-center`}>
+            <div className={`relative ${mediaHeightClass} bg-[#111b21] flex items-center justify-center`}>
               {headerComponent.format === 'IMAGE' && displayUrl && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
@@ -143,26 +143,26 @@ export function TemplatePreview({
                 />
               )}
               {headerComponent.format === 'IMAGE' && !displayUrl && (
-                <div className="flex flex-col items-center gap-2 text-gray-600 dark:text-gray-300">
+                <div className="flex flex-col items-center gap-2 text-[#8696a0]">
                   <ImageIcon className={compact ? "h-8 w-8" : "h-12 w-12"} />
                   <span className="text-sm">Imagem do modelo</span>
                 </div>
               )}
               {headerComponent.format === 'VIDEO' && (
-                <div className="flex flex-col items-center gap-2 text-gray-600 dark:text-gray-300">
+                <div className="flex flex-col items-center gap-2 text-[#8696a0]">
                   <Video className={compact ? "h-8 w-8" : "h-12 w-12"} />
                   <span className="text-sm">Vídeo anexado</span>
                 </div>
               )}
               {headerComponent.format === 'DOCUMENT' && (
-                <div className="flex flex-col items-center gap-2 text-gray-600 dark:text-gray-300">
+                <div className="flex flex-col items-center gap-2 text-[#8696a0]">
                   <FileText className={compact ? "h-8 w-8" : "h-12 w-12"} />
                   <span className="text-sm">Documento anexado</span>
                 </div>
               )}
             </div>
           ) : (
-            <div className={`${mediaHeightClass} bg-gray-200 dark:bg-gray-700 flex flex-col items-center justify-center gap-2 text-gray-500`}>
+            <div className={`${mediaHeightClass} bg-[#111b21] flex flex-col items-center justify-center gap-2 text-[#8696a0]`}>
               {headerComponent.format === 'IMAGE' && <ImageIcon className={compact ? "h-8 w-8" : "h-12 w-12"} />}
               {headerComponent.format === 'VIDEO' && <Video className={compact ? "h-8 w-8" : "h-12 w-12"} />}
               {headerComponent.format === 'DOCUMENT' && <FileText className={compact ? "h-8 w-8" : "h-12 w-12"} />}
@@ -182,26 +182,23 @@ export function TemplatePreview({
     }
 
     return (
-      <div className="border-t border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="border-t border-white/5 divide-y divide-white/5">
         {buttonsComponent.buttons.map((button, index) => {
           let icon = null;
-          let colorClass = 'text-blue-600 dark:text-blue-400';
+          let colorClass = 'text-[#00a884]';
           
           if (button.type === 'PHONE_NUMBER') {
             icon = <Phone className="h-4 w-4" />;
-            colorClass = 'text-green-600 dark:text-green-400';
           } else if (button.type === 'URL') {
             icon = <ExternalLink className="h-4 w-4" />;
-            colorClass = 'text-blue-600 dark:text-blue-400';
           } else if (button.type === 'COPY_CODE') {
             icon = <Copy className="h-4 w-4" />;
-            colorClass = 'text-purple-600 dark:text-purple-400';
           }
 
           return (
             <button
               key={index}
-              className={`w-full py-3 px-4 flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${colorClass} font-medium`}
+              className={`w-full py-3 px-4 flex items-center justify-center gap-2 hover:bg-white/5 transition-colors ${colorClass} font-medium text-sm`}
               disabled
             >
               {icon}
@@ -217,65 +214,70 @@ export function TemplatePreview({
 
   if (!hasContent) {
     return (
-      <Card className={className}>
-        <CardContent className="p-6 text-center text-gray-500">
-          Selecione um template para visualizar o preview
-        </CardContent>
-      </Card>
+      <div className={`p-6 text-center text-zinc-500 bg-transparent border-0 shadow-none ${className}`}>
+        Selecione um template para visualizar o preview
+      </div>
     );
   }
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Preview da Mensagem</CardTitle>
-          <Badge variant="outline" className="gap-1">
-            <Globe className="h-3 w-3" />
-            WhatsApp
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="max-w-sm mx-auto">
+    <div className={`bg-transparent border-0 shadow-none text-white ${className}`}>
+      {/* Container Whatsapp Dark Pattern (similar ao wrapper do whatsapp-preview.tsx) */}
+      <div className="relative rounded-xl overflow-hidden bg-[#0b141a] p-4 min-h-[300px] shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] border border-white/5"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}
+      >
+        <div className="max-w-[340px] mx-auto">
           {/* WhatsApp message bubble */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-[#202c33] rounded-lg rounded-tl-none shadow-sm overflow-hidden mt-2">
             {renderHeader()}
             
-            <div className="p-4 space-y-3">
+            <div className="p-3 space-y-1">
               {bodyComponent?.text && (
-                <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed">
+                <div className="text-[14.2px] leading-snug text-[#e9edef] whitespace-pre-wrap break-words">
                   {replaceVariables(bodyComponent.text)}
-                </p>
+                </div>
               )}
               
               {footerComponent?.text && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                <p className="text-xs text-[#8696a0] mt-1">
                   {footerComponent.text}
                 </p>
               )}
+              <div className="flex items-center justify-end gap-1 mt-1">
+                <span className="text-[10px] text-[#8696a0]">
+                  00:13
+                </span>
+              </div>
             </div>
             
             {renderButtons()}
           </div>
           
-          {/* Legend */}
-          <div className="mt-4 space-y-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-green-600" />
-              <span className="text-gray-600 dark:text-gray-400">Valor fixo</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-blue-600" />
-              <span className="text-gray-600 dark:text-gray-400">Campo dinâmico (exemplo)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-yellow-600" />
-              <span className="text-gray-600 dark:text-gray-400">Variável não mapeada</span>
-            </div>
+          <div className="mt-3 text-center">
+            <p className="text-[11px] text-zinc-500 font-medium">
+              Sua marca aparecerá aqui
+            </p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+          
+      {/* Legend */}
+      <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-2 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+          <span className="text-zinc-400">Valor fixo</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+          <span className="text-zinc-400">Campo dinâmico (exemplo)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
+          <span className="text-zinc-400">Variável não mapeada</span>
+        </div>
+      </div>
+    </div>
   );
 }

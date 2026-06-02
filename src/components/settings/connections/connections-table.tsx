@@ -37,7 +37,7 @@ import type { Connection, ConnectionStatus, WebhookStatus, HealthStatus } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
 import { Power, QrCode, Unplug } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 
 // --- CONFIG HELPER MAPS ---
 const connectionStatusConfig: Record<ConnectionStatus, { icon: React.ElementType, color: string, text: string, pulse?: boolean, glow?: string }> = {
@@ -149,10 +149,11 @@ export function ConnectionsTable({
 
     return (
         <div className="space-y-4 relative">
-            <div className="rounded-md border">
+            <div className="border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] bg-white/[0.02] backdrop-blur-md rounded-[2rem] w-full overflow-hidden relative p-4 sm:p-6">
+                <div className="w-full overflow-auto custom-scrollbar">
                 <Table>
-                    <TableHeader>
-                        <TableRow>
+                    <TableHeader className="bg-black/20 border-b border-white/5">
+                        <TableRow className="hover:bg-white/[0.02] border-white/5 transition-colors">
                             <TableHead className="w-[40px]">
                                 <Checkbox
                                     checked={connections.length > 0 && selectedIds.size === connections.length}
@@ -187,7 +188,7 @@ export function ConnectionsTable({
                                 const idLabel = conn.connectionType?.includes('instagram') ? 'User ID' : 'Phone ID';
 
                                 return (
-                                    <TableRow key={conn.id} className="group hover:bg-muted/40 transition-colors cursor-default" data-state={selectedIds.has(conn.id) && "selected"}>
+                                    <TableRow key={conn.id} className="group hover:bg-white/[0.04] border-white/5 transition-colors cursor-default" data-state={selectedIds.has(conn.id) && "selected"}>
                                         <TableCell>
                                             <Checkbox checked={selectedIds.has(conn.id)} onCheckedChange={() => toggleSelectOne(conn.id)} />
                                         </TableCell>
@@ -337,6 +338,7 @@ export function ConnectionsTable({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </div>
 
             {/* CONFIRM BULK DELETE DIALOG */}

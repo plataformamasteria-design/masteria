@@ -4,7 +4,7 @@
 
 import { cn } from "@/lib/utils";
 import type { Message } from "@/lib/types";
-import { Check, CheckCheck, Clock, AlertTriangle, FileText, ImageIcon, Mic, Video, Smile, Calendar as CalendarIcon, StickyNote } from 'lucide-react';
+import { Check, CheckCheck, Clock, AlertTriangle, FileText, ImageIcon, Mic, Video, Smile, Calendar as CalendarIcon, StickyNote, Bot, UserPlus, Archive, Undo } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 // import Image from "next/image";
 import { AudioPlayer } from "./audio-player";
@@ -158,7 +158,7 @@ const ChatImage = ({ src, alt, className, width, height }: any) => {
 
 
 
-const RepliedMessagePreview = ({ message, contactName }: { message: MessageWithReactions | undefined, contactName?: string | null }) => {
+const RepliedMessagePreview = ({ message, contactName, isMe }: { message: MessageWithReactions | undefined, contactName?: string | null, isMe?: boolean }) => {
     if (!message) return null;
 
     const isUser = message.senderType === 'USER';
@@ -195,12 +195,12 @@ const RepliedMessagePreview = ({ message, contactName }: { message: MessageWithR
             href={`#message-${message.id}`}
             onClick={handleClick}
             className={cn(
-                "block p-2 rounded-md mb-2 text-xs cursor-pointer hover:bg-black/10 dark:hover:bg-white/10",
-                !isUser ? 'bg-primary/20' : 'bg-muted'
+                "block p-2 rounded-md mb-2 text-xs cursor-pointer transition-colors",
+                isMe ? "bg-white/10 hover:bg-white/20 text-white" : "bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground"
             )}
         >
-            <p className="font-semibold">{author}</p>
-            <div className="opacity-80">{content}</div>
+            <p className={cn("font-semibold", isMe ? "text-white" : "text-emerald-600 dark:text-emerald-400")}>{author}</p>
+            <div className={cn("opacity-80", isMe ? "text-white/80" : "text-muted-foreground")}>{content}</div>
         </a>
     )
 }
@@ -232,14 +232,14 @@ const ReactionsBadge = ({ reactions }: { reactions?: MessageReaction[] }) => {
     );
 };
 
-const FormatWhatsAppText = ({ text }: { text: string }) => {
+const FormatWhatsAppText = ({ text, isMe }: { text: string, isMe?: boolean }) => {
     if (!text) return null;
 
     // Split by code blocks first
     const parts = text.split(/(```[\s\S]*?```)/g);
 
     return (
-        <span className="text-sm whitespace-pre-wrap break-words [word-break:break-word]">
+        <span className={cn("text-sm whitespace-pre-wrap break-words [word-break:break-word]", isMe ? "text-white/95" : "text-foreground/90")}>
             {parts.map((part, index) => {
                 if (part.startsWith('```') && part.endsWith('```')) {
                     return (
@@ -281,7 +281,7 @@ const FormatWhatsAppText = ({ text }: { text: string }) => {
                                             href={uPart} 
                                             target="_blank" 
                                             rel="noopener noreferrer" 
-                                            className="text-blue-500 hover:text-blue-600 hover:underline cursor-pointer break-all"
+                                            className={cn("hover:underline cursor-pointer break-all", isMe ? "text-white font-bold" : "text-blue-500 hover:text-blue-600")}
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             {uPart}
@@ -298,22 +298,22 @@ const FormatWhatsAppText = ({ text }: { text: string }) => {
     );
 };
 
-const MeetingIndicator = ({ text }: { text: string }) => {
+const MeetingIndicator = ({ text, isMe }: { text: string, isMe?: boolean }) => {
     if (!text) return null;
     const meetLinkMatch = text.match(/https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}/i);
     const hasSchedulingKeyword = /reuni[aã]o\s+agendad[ao]/i.test(text) || /meeting\s+scheduled/i.test(text);
     if (!meetLinkMatch && !hasSchedulingKeyword) return null;
 
     return (
-        <div className="mt-2 flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/15 text-xs">
-            <CalendarIcon className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-            <span className="text-emerald-300 font-semibold">Reunião agendada</span>
+        <div className={cn("mt-2 flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs", isMe ? "bg-white/10 border-white/20" : "bg-emerald-500/10 border-emerald-500/15")}>
+            <CalendarIcon className={cn("h-3.5 w-3.5 shrink-0", isMe ? "text-white/80" : "text-emerald-500")} />
+            <span className={cn("font-semibold", isMe ? "text-white" : "text-emerald-700 dark:text-emerald-400")}>Reunião agendada</span>
             {meetLinkMatch && (
                 <a
                     href={meetLinkMatch[0]}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ml-auto text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+                    className={cn("ml-auto flex items-center gap-1 transition-colors", isMe ? "text-white font-bold hover:text-white/80" : "text-blue-500 hover:text-blue-600")}
                 >
                     <Video className="h-3 w-3" />
                     Meet
@@ -324,11 +324,34 @@ const MeetingIndicator = ({ text }: { text: string }) => {
 };
 
 export function MessageBubble({ message, allMessages, contactName, templates, connections }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null, templates?: any[], connections?: any[] }) {
-    if (message.senderType === 'SYSTEM') {
+    const isMe = message.senderType === 'AGENT' || message.senderType === 'AI' || (message.senderType === 'SYSTEM' && message.content?.startsWith('Template:'));
+    
+    if (message.senderType === 'SYSTEM' && !message.content?.startsWith('Template:')) {
+        let content = message.content || '';
+        let Icon = AlertTriangle;
+        let iconClass = "text-muted-foreground";
+
+        // Assign/Unassign
+        if (content.toLowerCase().includes('atribuída') || content.toLowerCase().includes('assumido')) {
+            Icon = UserPlus;
+            content = content.replace(/[🔏🔒🔓]/g, '').trim();
+            iconClass = "text-blue-500";
+        } else if (content.toLowerCase().includes('arquivad')) {
+            Icon = Archive;
+            iconClass = "text-amber-500";
+        } else if (content.toLowerCase().includes('reabert')) {
+            Icon = Undo;
+            iconClass = "text-emerald-500";
+        } else if (content.toLowerCase().includes('automação')) {
+            Icon = Bot;
+            iconClass = "text-violet-500";
+        }
+
         return (
             <div id={`message-${message.id}`} className="flex w-full justify-center my-3">
-                <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-muted-foreground text-[11px] px-4 py-1.5 rounded-full flex items-center gap-1.5 max-w-[85%] text-center italic">
-                    <span>{message.content}</span>
+                <div className="bg-card/50 backdrop-blur-sm border border-border/50 text-muted-foreground text-[11px] px-3.5 py-1.5 rounded-full flex items-center gap-2 max-w-[85%] text-center shadow-sm">
+                    <Icon className={cn("h-3.5 w-3.5 shrink-0", iconClass)} />
+                    <span className="font-medium">{content}</span>
                 </div>
             </div>
         );
@@ -365,7 +388,6 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
         );
     }
 
-    const isMe = message.senderType === 'AGENT' || message.senderType === 'AI';
     const repliedMessage = message.repliedToMessageId ? allMessages.find(m => m.id === message.repliedToMessageId) : undefined;
     const _isAudio = message.contentType === 'AUDIO';
 
@@ -427,7 +449,7 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
 
                 if (isLegacyUnsupported) {
                     return (
-                        <div className="flex items-center gap-2 p-2 rounded-md bg-muted/40 text-xs text-muted-foreground italic">
+                        <div className={cn("flex items-center gap-2 p-2 rounded-md text-xs italic", isMe ? "bg-white/10 text-white/80" : "bg-muted/40 text-muted-foreground")}>
                             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                             <span>Mensagem não suportada pela API do WhatsApp</span>
                         </div>
@@ -435,7 +457,7 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                 }
                 if (isDecodedUnsupported) {
                     return (
-                        <div className="flex items-center gap-1.5 p-1.5 text-sm text-muted-foreground/80 italic">
+                        <div className={cn("flex items-center gap-1.5 p-1.5 text-sm italic", isMe ? "text-white/90" : "text-muted-foreground/80")}>
                             <span>{message.content}</span>
                         </div>
                     );
@@ -454,6 +476,19 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
 
                         return (
                             <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
+                                {/* Tag do Template */}
+                                <div className={cn(
+                                    "flex items-center gap-1.5 mb-1 pb-1 border-b",
+                                    isMe ? "border-white/20" : "border-black/5 dark:border-white/10"
+                                )}>
+                                    <FileText className={cn("h-3 w-3", isMe ? "text-white/70" : "text-emerald-600")} />
+                                    <span className={cn(
+                                        "text-[9px] uppercase font-bold tracking-wider",
+                                        isMe ? "text-white/70" : "text-emerald-600"
+                                    )}>
+                                        Template Enviado
+                                    </span>
+                                </div>
                                 {header && header.format === 'IMAGE' && (
                                     <div className="w-full h-32 bg-black/10 dark:bg-white/10 rounded-lg flex items-center justify-center mb-1 border border-white/10">
                                         <ImageIcon className="h-8 w-8 opacity-40" />
@@ -470,18 +505,21 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                                     </div>
                                 )}
                                 {header && header.format === 'TEXT' && (
-                                    <div className="font-bold text-[14px] leading-tight pb-1"><FormatWhatsAppText text={header.text} /></div>
+                                    <div className="font-bold text-[14px] leading-tight pb-1"><FormatWhatsAppText text={header.text} isMe={isMe} /></div>
                                 )}
                                 {body && (
-                                    <div className="text-[13px] leading-relaxed whitespace-pre-wrap"><FormatWhatsAppText text={body.text} /></div>
+                                    <div className="text-[13px] leading-relaxed whitespace-pre-wrap"><FormatWhatsAppText text={body.text} isMe={isMe} /></div>
                                 )}
                                 {footer && (
-                                    <div className="text-[11px] opacity-60 mt-1">{footer.text}</div>
+                                    <div className={cn("text-[11px] mt-1", isMe ? "text-white/70" : "opacity-60")}>{footer.text}</div>
                                 )}
                                 {buttons && buttons.buttons?.length > 0 && (
                                     <div className="flex flex-col gap-0 mt-2 border-t border-white/10">
                                         {buttons.buttons.map((btn: any, i: number) => (
-                                            <div key={i} className="text-center text-[#00a884] dark:text-[#33c2a6] font-semibold text-[13px] py-2 border-b border-white/10 last:border-0 hover:bg-white/5 transition-colors cursor-pointer rounded-sm">
+                                            <div key={i} className={cn(
+                                                "text-center font-semibold text-[13px] py-2 border-b border-white/10 last:border-0 hover:bg-white/5 transition-colors cursor-pointer rounded-sm",
+                                                isMe ? "text-white" : "text-[#00a884] dark:text-[#33c2a6]"
+                                            )}>
                                                 {btn.text}
                                             </div>
                                         ))}
@@ -505,8 +543,8 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
 
                 return (
                     <>
-                        <FormatWhatsAppText text={message.content || ''} />
-                        {isMe && <MeetingIndicator text={message.content || ''} />}
+                        <FormatWhatsAppText text={message.content || ''} isMe={isMe} />
+                        {isMe && <MeetingIndicator text={message.content || ''} isMe={isMe} />}
                     </>
                 );
             }
@@ -518,20 +556,28 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
             <div className={cn(
                 "relative px-3.5 py-2.5 text-sm group max-w-[min(85%,78ch)]",
                 isMe
-                    ? 'bg-gradient-to-br from-emerald-600 to-teal-600 text-white bubble-sent shadow-md shadow-emerald-900/20'
-                    : 'bg-card text-foreground bubble-received border border-white/[0.06] shadow-sm shadow-black/5'
+                    ? (message.senderType === 'SYSTEM' 
+                        ? 'bg-gradient-to-br from-emerald-600/90 to-emerald-800/90 text-white bubble-sent shadow-sm border border-emerald-500/20'
+                        : 'bg-gradient-to-br from-emerald-500 to-emerald-700 text-white bubble-sent shadow-[0_8px_20px_rgba(16,185,129,0.2)] border border-emerald-400/20')
+                    : 'bg-white dark:bg-zinc-800/80 backdrop-blur-md text-zinc-900 dark:text-zinc-100 bubble-received border border-black/5 dark:border-white/10 shadow-sm dark:shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
             )}>
-                {/* AI indicator */}
+                {/* AI / System indicator */}
                 {message.senderType === 'AI' && (
                     <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
                         <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
                         IA
                     </div>
                 )}
+                {message.senderType === 'SYSTEM' && (
+                    <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
+                        <Bot className="h-3 w-3" />
+                        Automação / Campanha
+                    </div>
+                )}
 
                 {repliedMessage && (
-                    <div className="mb-2 opacity-80 text-xs border-l-2 border-white/20 pl-2 py-1">
-                        <RepliedMessagePreview message={repliedMessage} contactName={contactName} />
+                    <div className={cn("mb-2 opacity-80 text-xs border-l-2 pl-2 py-1", isMe ? "border-white/40" : "border-emerald-500")}>
+                        <RepliedMessagePreview message={repliedMessage} contactName={contactName} isMe={isMe} />
                     </div>
                 )}
 

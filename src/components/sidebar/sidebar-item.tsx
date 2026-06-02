@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import type { NavItemSingle, NavItemGroupData } from './navigation';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
@@ -33,21 +33,21 @@ export function NavItemLink({ item, isExpanded }: { item: NavItemSingle; isExpan
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             className={cn(
-                                'group relative flex h-[42px] items-center rounded-xl text-muted-foreground transition-colors duration-200',
-                                isExpanded ? 'w-full px-3' : 'w-[42px] justify-center mx-auto',
-                                active ? 'text-primary font-medium bg-primary/10 border border-primary/20' : 'hover:bg-white/[0.04]',
+                                'group relative flex h-[46px] items-center rounded-2xl text-muted-foreground transition-all duration-300 mx-2',
+                                isExpanded ? 'px-4' : 'w-[46px] justify-center mx-auto',
+                                active ? 'text-foreground dark:text-white font-bold bg-black/5 dark:bg-black/40 backdrop-blur-md border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.15),inset_0_0_15px_rgba(16,185,129,0.1)]' : 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white border border-transparent hover:shadow-[0_0_15px_rgba(0,0,0,0.02)] dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.02)] hover:border-black/[0.05] dark:hover:border-white/[0.05]',
                                 'min-w-0'
                             )}
                         >
                             {active && (
-                                <motion.span
-                                    layoutId="active-indicator"
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full shadow-[0_0_8px_hsl(var(--primary)_/_40%)]"
+                                <motion.div
+                                    layoutId="active-bg-glow"
+                                    className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl -z-10"
                                 />
                             )}
                             <item.icon className={cn(
-                                "h-[18px] w-[18px] flex-shrink-0 transition-all duration-300",
-                                active ? "text-primary saturate-150 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "group-hover:text-foreground"
+                                "h-[20px] w-[20px] flex-shrink-0 transition-all duration-300",
+                                active ? "text-emerald-500 dark:text-emerald-400 saturate-200 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)] dark:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] scale-110" : "group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(0,0,0,0.2)] dark:group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                             )} strokeWidth={1.8} />
 
                             <AnimatePresence mode="popLayout">
@@ -58,8 +58,8 @@ export function NavItemLink({ item, isExpanded }: { item: NavItemSingle; isExpan
                                         exit={{ opacity: 0, filter: 'blur(4px)' }}
                                         transition={{ duration: 0.3 }}
                                         className={cn(
-                                            "ml-3 truncate flex-1 min-w-0 text-left text-[14px]",
-                                            active ? "font-semibold tracking-tight text-foreground" : "font-medium"
+                                            "ml-3 truncate flex-1 min-w-0 text-left text-[14px] transition-transform duration-300 group-hover:translate-x-1",
+                                            active ? "font-bold tracking-tight text-foreground dark:text-white" : "font-medium"
                                         )}
                                     >
                                         {item.label}
@@ -70,7 +70,7 @@ export function NavItemLink({ item, isExpanded }: { item: NavItemSingle; isExpan
                     </Link>
                 </TooltipTrigger>
                 {!isExpanded && (
-                    <TooltipContent side="right" className="bg-card/95 backdrop-blur-md border-white/5 shadow-2xl text-sm font-medium">
+                    <TooltipContent side="right" className="bg-card/95 backdrop-blur-md border-border/50 shadow-2xl text-sm font-medium">
                         {item.label}
                     </TooltipContent>
                 )}
@@ -107,18 +107,18 @@ export function NavItemGroup({
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 className={cn(
-                                    'group flex h-[42px] cursor-pointer items-center justify-between rounded-xl text-muted-foreground transition-all duration-200',
-                                    isExpanded ? 'w-full px-3' : 'w-[42px] justify-center mx-auto',
-                                    isChildActive && 'text-foreground font-semibold',
-                                    isOpen && isExpanded && 'bg-white/[0.03]',
-                                    !isOpen && 'hover:bg-white/[0.04]',
+                                    'group flex h-[46px] cursor-pointer items-center justify-between rounded-2xl text-muted-foreground transition-all duration-300 mx-2',
+                                    isExpanded ? 'px-4' : 'w-[46px] justify-center mx-auto',
+                                    isChildActive ? 'text-foreground dark:text-white font-bold bg-black/5 dark:bg-black/20 border border-emerald-500/20 shadow-[inset_0_0_10px_rgba(16,185,129,0.05)]' : 'hover:text-foreground dark:hover:text-white',
+                                    !isChildActive && isOpen && isExpanded ? 'bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5' : 'border border-transparent',
+                                    !isOpen && !isChildActive && 'hover:bg-black/[0.04] dark:hover:bg-white/[0.05] hover:border-black/[0.05] dark:hover:border-white/[0.05]',
                                     'min-w-0'
                                 )}
                             >
                                 <div className={cn("flex items-center min-w-0 w-full", isExpanded ? "flex-1" : "justify-center")}>
                                     <item.icon className={cn(
-                                        "h-[18px] w-[18px] flex-shrink-0 transition-colors duration-200",
-                                        isChildActive ? "text-primary saturate-150" : "group-hover:text-foreground"
+                                        "h-[20px] w-[20px] flex-shrink-0 transition-all duration-300",
+                                        isChildActive ? "text-emerald-500 dark:text-emerald-400 saturate-200 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)] dark:drop-shadow-[0_0_12px_rgba(16,185,129,0.8)] scale-110" : "group-hover:text-zinc-800 dark:group-hover:text-zinc-100 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(0,0,0,0.2)] dark:group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
                                     )} strokeWidth={1.8} />
 
                                     <AnimatePresence>
@@ -127,7 +127,7 @@ export function NavItemGroup({
                                                 initial={{ opacity: 0, filter: 'blur(4px)' }}
                                                 animate={{ opacity: 1, filter: 'blur(0px)' }}
                                                 exit={{ opacity: 0, filter: 'blur(4px)' }}
-                                                className={cn("ml-3 truncate flex-1 text-left text-[14px]", isChildActive ? "font-semibold tracking-tight" : "font-medium")}
+                                                className={cn("ml-3 truncate flex-1 text-left text-[14px] transition-transform duration-300 group-hover:translate-x-1", isChildActive ? "font-bold tracking-tight text-foreground dark:text-white" : "font-medium")}
                                             >
                                                 {item.label}
                                             </motion.span>
@@ -143,7 +143,7 @@ export function NavItemGroup({
                         </CollapsibleTrigger>
                     </TooltipTrigger>
                     {!isExpanded && (
-                        <TooltipContent side="right" className="bg-card/95 backdrop-blur-md border-white/5 shadow-2xl text-sm font-medium">
+                        <TooltipContent side="right" className="bg-card/95 backdrop-blur-md border-border/50 shadow-2xl text-sm font-medium">
                             {item.label}
                         </TooltipContent>
                     )}
@@ -157,7 +157,7 @@ export function NavItemGroup({
                     exit={{ opacity: 0, height: 0 }}
                     className={cn(
                         "flex flex-col gap-1 py-1 mt-1",
-                        isExpanded ? "pl-[22px] ml-[10px] border-l border-white/[0.05]" : "items-center"
+                        isExpanded ? "pl-[22px] ml-[10px] border-l border-black/[0.05] dark:border-white/[0.05]" : "items-center"
                     )}
                 >
                     {item.subItems.map((subItem) => (

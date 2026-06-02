@@ -136,54 +136,54 @@ export function AutomationLogs() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
+    <Card className="border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] bg-white/[0.02] backdrop-blur-md rounded-[2rem] overflow-hidden transition-all">
+      <CardHeader className="border-b border-white/5 bg-transparent pb-4">
+        <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-emerald-400" />
           Logs de Automação
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 pt-6">
         {/* Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Buscar</label>
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Buscar</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
               <Input
                 placeholder="Buscar mensagem..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10 rounded-xl bg-white/[0.02] border-white/10 text-zinc-300 placeholder:text-zinc-600 focus:border-white/20"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Nível</label>
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Nível</label>
             <Select value={filters.level} onValueChange={(value) => handleFilterChange('level', value)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl bg-white/[0.02] border-white/10 text-zinc-300">
                 <SelectValue placeholder="Todos os níveis" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os níveis</SelectItem>
-                <SelectItem value="INFO">Info</SelectItem>
-                <SelectItem value="WARN">Aviso</SelectItem>
-                <SelectItem value="ERROR">Erro</SelectItem>
+              <SelectContent className="rounded-xl border-white/10 bg-zinc-950 text-zinc-300">
+                <SelectItem value="all" className="hover:bg-white/5">Todos os níveis</SelectItem>
+                <SelectItem value="INFO" className="hover:bg-white/5">Info</SelectItem>
+                <SelectItem value="WARN" className="hover:bg-white/5">Aviso</SelectItem>
+                <SelectItem value="ERROR" className="hover:bg-white/5">Erro</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Regra</label>
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Regra</label>
             <Select value={filters.ruleId} onValueChange={(value) => handleFilterChange('ruleId', value)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl bg-white/[0.02] border-white/10 text-zinc-300">
                 <SelectValue placeholder="Todas as regras" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as regras</SelectItem>
+              <SelectContent className="rounded-xl border-white/10 bg-zinc-950 text-zinc-300">
+                <SelectItem value="all" className="hover:bg-white/5">Todas as regras</SelectItem>
                 {rules.map((rule) => (
-                  <SelectItem key={rule.id} value={rule.id}>
+                  <SelectItem key={rule.id} value={rule.id} className="hover:bg-white/5">
                     {rule.name}
                   </SelectItem>
                 ))}
@@ -192,100 +192,102 @@ export function AutomationLogs() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Data Início</label>
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Data Início</label>
             <Input
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
+              className="h-10 rounded-xl bg-white/[0.02] border-white/10 text-zinc-300 focus:border-white/20 [color-scheme:dark]"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Data Fim</label>
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Data Fim</label>
             <Input
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
+              className="h-10 rounded-xl bg-white/[0.02] border-white/10 text-zinc-300 focus:border-white/20 [color-scheme:dark]"
             />
           </div>
         </div>
 
         {/* Ações */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center px-1">
           <div className="flex gap-2">
-            <Button variant="outline" onClick={clearFilters}>
+            <Button variant="outline" onClick={clearFilters} className="rounded-xl border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]">
               <Filter className="h-4 w-4 mr-2" />
               Limpar Filtros
             </Button>
-            <Button variant="outline" onClick={fetchLogs}>
+            <Button variant="outline" onClick={fetchLogs} className="rounded-xl border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]">
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar
             </Button>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm font-medium text-zinc-500">
             {pagination.total} logs encontrados
           </div>
         </div>
 
         {/* Tabela de Logs */}
-        <div className="border rounded-lg">
+        <div className="border border-white/5 rounded-[1.5rem] overflow-hidden bg-transparent">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Nível</TableHead>
-                <TableHead>Regra</TableHead>
-                <TableHead>Mensagem</TableHead>
-                <TableHead>Conversa</TableHead>
+            <TableHeader className="bg-white/[0.02]">
+              <TableRow className="hover:bg-transparent border-white/5">
+                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 pl-6">Data/Hora</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Nível</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Regra</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Mensagem</TableHead>
+                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 pr-6">Conversa</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8 text-zinc-500">
                     Carregando logs...
                   </TableCell>
                 </TableRow>
               ) : logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-8 text-zinc-500">
                     Nenhum log encontrado
                   </TableCell>
                 </TableRow>
               ) : (
                 logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-mono text-sm">
+                  <TableRow key={log.id} className="hover:bg-white/[0.04] transition-colors border-white/5">
+                    <TableCell className="font-mono text-xs font-medium text-zinc-400 pl-6">
                       {format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
                     </TableCell>
                     <TableCell>
-                      <Badge className={levelColors[log.level]}>
+                      <Badge className={`${levelColors[log.level]} px-2 py-0.5 rounded-lg border flex items-center justify-center gap-1 w-fit shadow-none font-bold text-[10px]`}>
                         {levelLabels[log.level]}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm font-medium text-zinc-300">
                       {log.ruleName || 'N/A'}
                     </TableCell>
                     <TableCell className="max-w-md">
-                      <div className="truncate" title={log.message}>
+                      <div className="truncate text-sm text-white" title={log.message}>
                         {log.message}
                       </div>
                       {formatDetails(log.details) && (
                         <details className="mt-1">
-                          <summary className="text-xs text-gray-500 cursor-pointer">Detalhes</summary>
-                          <pre className="text-xs bg-gray-100 p-2 rounded mt-1 overflow-auto max-h-32">
+                          <summary className="text-xs text-zinc-500 cursor-pointer hover:text-zinc-400">Detalhes</summary>
+                          <pre className="text-[10px] bg-black/20 border border-white/5 p-3 rounded-xl mt-2 overflow-auto max-h-32 text-zinc-400 font-mono">
                             {formatDetails(log.details)}
                           </pre>
                         </details>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
+                    <TableCell className="font-mono text-xs pr-6">
                       {log.conversationId ? (
-                        <span className="text-blue-600" title={log.conversationId}>
+                        <span className="text-blue-400" title={log.conversationId}>
                           {log.conversationId.slice(0, 8)}...
                         </span>
                       ) : (
-                        'N/A'
+                        <span className="text-zinc-600">N/A</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -297,8 +299,8 @@ export function AutomationLogs() {
 
         {/* Paginação */}
         {pagination.totalPages > 1 && (
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
+          <div className="flex justify-between items-center p-2">
+            <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
               Página {pagination.page} de {pagination.totalPages}
             </div>
             <div className="flex gap-2">
@@ -307,6 +309,7 @@ export function AutomationLogs() {
                 size="sm"
                 disabled={pagination.page <= 1}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                className="h-8 rounded-lg text-[11px] font-bold border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]"
               >
                 Anterior
               </Button>
@@ -315,6 +318,7 @@ export function AutomationLogs() {
                 size="sm"
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                className="h-8 rounded-lg text-[11px] font-bold border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]"
               >
                 Próxima
               </Button>

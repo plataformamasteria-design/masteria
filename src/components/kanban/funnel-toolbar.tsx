@@ -9,6 +9,7 @@ import {
   Wifi, User, Users, Tag, Layers, DollarSign, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import type { KanbanFunnel, KanbanStage } from '@/lib/types';
@@ -29,6 +30,11 @@ interface FunnelToolbarProps {
   companyTeams?: any[];
   connections?: any[];
   availableTags?: any[];
+  availableUtms?: string[];
+  availableCustomFields?: Record<string, string[]>;
+  customFieldSourceTypes?: Record<string, 'automation' | 'webhook' | 'unknown'>;
+  onSaveFilters?: () => void;
+  onClearSavedFilters?: () => void;
 }
 
 // ─── FilterSection — colapsável fechado por padrão ──────────────────────────
@@ -150,13 +156,16 @@ function SectionSearch({
 // ─── Main Component ──────────────────────────────────────────────────────────
 export function FunnelToolbar({
   funnel, totalLeadsCount, onAddCard, onSearch, filters, onFiltersChange, activeFilterCount,
-  companyUsers, companyTeams, connections, availableTags,
+  companyUsers, companyTeams, connections, availableTags, availableUtms, availableCustomFields, customFieldSourceTypes, onSaveFilters, onClearSavedFilters
 }: FunnelToolbarProps): JSX.Element {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [connSearch, setConnSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [teamSearch, setTeamSearch] = useState('');
   const [tagSearch, setTagSearch] = useState('');
+  const [utmSearch, setUtmSearch] = useState('');
+  const [customFieldSearch, setCustomFieldSearch] = useState('');
+  const [selectedCustomFieldSource, setSelectedCustomFieldSource] = useState('Todas as Origens');
   const [stageSearch, setStageSearch] = useState('');
 
   const toggle = (key: keyof KanbanFilters, value: string) => {
@@ -171,7 +180,7 @@ export function FunnelToolbar({
     onFiltersChange({
       stages: [], priority: [], valueMin: null, valueMax: null,
       dateRange: 'all', dateFrom: null, dateTo: null,
-      assignedUsers: [], teams: [], connections: [], tags: [],
+      assignedUsers: [], teams: [], connections: [], tags: [], utms: [],
     });
   };
 
@@ -194,6 +203,19 @@ export function FunnelToolbar({
     (availableTags || []).filter(t =>
       (t.name || '').toLowerCase().includes(tagSearch.toLowerCase())
     ), [availableTags, tagSearch]);
+
+  const filteredUtms = useMemo(() =>
+    (availableUtms || []).filter(utm =>
+      utm.toLowerCase().includes(utmSearch.toLowerCase())
+    ), [availableUtms, utmSearch]);
+
+  const customFieldSources = useMemo(() => Object.keys(availableCustomFields || {}), [availableCustomFields]);
+  const currentCustomFields = useMemo(() => (availableCustomFields || {})[selectedCustomFieldSource] || [], [availableCustomFields, selectedCustomFieldSource]);
+
+  const filteredCustomFields = useMemo(() =>
+    currentCustomFields.filter(cf =>
+      cf.toLowerCase().includes(customFieldSearch.toLowerCase())
+    ), [currentCustomFields, customFieldSearch]);
 
   const filteredStages = useMemo(() =>
     (funnel?.stages || []).filter(s =>
@@ -378,6 +400,86 @@ export function FunnelToolbar({
                   </FilterSection>
                 )}
 
+                {/* UTM Campanha */}
+                {(availableUtms || []).length > 0 && (
+                  <FilterSection
+                    icon={<Layers className="h-3.5 w-3.5" />}
+                    title="UTM Campanha"
+                    count={filters?.utms?.length || 0}
+                  >
+                    {(availableUtms || []).length > 4 && (
+                      <SectionSearch value={utmSearch} onChange={setUtmSearch} placeholder="Buscar UTM..." />
+                    )}
+                    {filteredUtms.map(utm => (
+                      <FilterCheckItem
+                        key={utm}
+                        id={`filter-utm-${utm}`}
+                        label={utm}
+                        checked={filters?.utms?.includes(utm) ?? false}
+                        onToggle={() => toggle('utms', utm)}
+                      />
+                    ))}
+                    {filteredUtms.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-2 py-1">Nenhuma UTM encontrada.</p>
+                    )}
+                  </FilterSection>
+                )}
+
+                {/* Campos Personalizados */}
+                {customFieldSources.length > 0 && (
+                  <FilterSection
+                    icon={<Layers className="h-3.5 w-3.5" />}
+                    title="Campos Personalizados"
+                    count={filters?.customFields?.length || 0}
+                  >
+                    <div className="px-2 pb-2">
+                      <Select
+                        value={selectedCustomFieldSource}
+                        onValueChange={setSelectedCustomFieldSource}
+                      >
+                        <SelectTrigger className="h-8 text-xs bg-background/50 border-border/50">
+                          <SelectValue placeholder="Selecione a origem" />
+                        </SelectTrigger>
+                        <SelectContent className="max-w-[280px]">
+                          {customFieldSources.map(source => {
+                            const count = (availableCustomFields || {})[source]?.length || 0;
+                            const srcType = customFieldSourceTypes?.[source];
+                            const icon = source === 'Todas as Origens' ? '🔍'
+                              : srcType === 'automation' ? '⚡'
+                              : srcType === 'webhook' ? '🔗'
+                              : '📋';
+                            return (
+                              <SelectItem key={source} value={source} className="text-xs">
+                                <span className="flex items-center gap-1.5 truncate max-w-[210px]">
+                                  <span>{icon}</span>
+                                  <span className="truncate">{source}</span>
+                                  <span className="ml-auto text-muted-foreground flex-shrink-0">({count})</span>
+                                </span>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {currentCustomFields.length > 4 && (
+                      <SectionSearch value={customFieldSearch} onChange={setCustomFieldSearch} placeholder="Buscar campo..." />
+                    )}
+                    {filteredCustomFields.map(cf => (
+                      <FilterCheckItem
+                        key={cf}
+                        id={`filter-cf-${cf}`}
+                        label={cf}
+                        checked={filters?.customFields?.includes(cf) ?? false}
+                        onToggle={() => toggle('customFields', cf)}
+                      />
+                    ))}
+                    {filteredCustomFields.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-2 py-1">Nenhum campo encontrado.</p>
+                    )}
+                  </FilterSection>
+                )}
+
                 <Separator className="my-1" />
 
                 {/* Etapas */}
@@ -492,6 +594,25 @@ export function FunnelToolbar({
                 </FilterSection>
 
               </div>
+              
+              {/* Rodapé: Persistência de Filtros */}
+              <div className="border-t border-border p-3 flex flex-col gap-2 bg-muted/20">
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={onSaveFilters} 
+                  className="w-full text-xs h-7"
+                >
+                  <span className="mr-1">📌</span> Salvar Filtros Atuais
+                </Button>
+                <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                  <span>Isso fixará a visualização para o seu perfil.</span>
+                  <button onClick={onClearSavedFilters} className="underline hover:text-foreground">
+                    Remover padrão
+                  </button>
+                </div>
+              </div>
+
             </PopoverContent>
           </Popover>
 

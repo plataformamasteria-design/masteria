@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   X, Loader2, Monitor, Smartphone, Camera,
   Image as ImageIcon, Video, Layers, ExternalLink, Copy,

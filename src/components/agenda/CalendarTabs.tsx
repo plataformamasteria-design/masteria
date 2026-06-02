@@ -82,17 +82,16 @@ export function CalendarTabs({ calendars, selectedCalendarId, onSelectCalendar, 
 
   return (
     <>
-      <div className="flex flex-col gap-1 px-4 py-2">
+      <div className="flex flex-row flex-wrap gap-2 items-center">
         {calendars.map((calendar) => (
-          <div key={calendar.id} className="relative flex items-center group w-full">
+          <div key={calendar.id} className="relative flex items-center group">
             <button
               onClick={() => onSelectCalendar(calendar.id)}
               className={cn(
-                "flex-1 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all text-left",
-                "hover:bg-muted/80 focus:outline-none",
+                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all text-left border shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]",
                 selectedCalendarId === calendar.id
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground"
+                  ? "bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border-zinc-200 dark:border-white/20 shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                  : "bg-zinc-50 dark:bg-white/[0.02] text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/[0.05] hover:text-zinc-900 dark:hover:text-white hover:border-zinc-300 dark:hover:border-white/10"
               )}
             >
               <div
@@ -103,11 +102,11 @@ export function CalendarTabs({ calendars, selectedCalendarId, onSelectCalendar, 
             </button>
             
             {!calendar.isGeneral && (
-              <div className="absolute right-2 opacity-0 group-hover:opacity-100 flex gap-1 bg-white rounded-md p-1 shadow-sm border">
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => handleEditCalendar(calendar, e)}>
+              <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 flex gap-1 bg-zinc-900 rounded-lg p-1 shadow-lg border border-white/10 backdrop-blur-md">
+                <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-white/10 text-zinc-300" onClick={(e) => handleEditCalendar(calendar, e)}>
                   <Pencil className="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteCalendar(calendar); }}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/20" onClick={(e) => { e.stopPropagation(); setDeleteCalendar(calendar); }}>
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
@@ -119,7 +118,7 @@ export function CalendarTabs({ calendars, selectedCalendarId, onSelectCalendar, 
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start mt-2 text-muted-foreground"
+            className="justify-start text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-50 dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/[0.05] rounded-xl h-9 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
             onClick={() => {
               setEditingCalendar(undefined);
               setDialogOpen(true);

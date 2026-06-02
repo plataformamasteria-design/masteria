@@ -178,23 +178,26 @@ export function TaskList({ refreshTrigger, onEditTask, onOpenLead }: TaskListPro
         {/* Filtros */}
         <div className="flex gap-2">
           <Button
-            variant={filter === "all" ? "default" : "outline"}
+            variant="ghost"
             size="sm"
             onClick={() => setFilter("all")}
+            className={filter === "all" ? "bg-zinc-200 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/20 hover:bg-zinc-300 dark:hover:bg-white/15 rounded-xl shadow-sm dark:shadow-[0_0_15px_rgba(255,255,255,0.05)]" : "bg-zinc-100 dark:bg-white/[0.02] text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/[0.05] hover:text-zinc-900 dark:hover:text-white rounded-xl"}
           >
             Todas ({tasks.length})
           </Button>
           <Button
-            variant={filter === "pending" ? "default" : "outline"}
+            variant="ghost"
             size="sm"
             onClick={() => setFilter("pending")}
+            className={filter === "pending" ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20 rounded-xl shadow-[0_0_15px_rgba(99,102,241,0.15)]" : "bg-zinc-100 dark:bg-white/[0.02] text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/[0.05] hover:text-zinc-900 dark:hover:text-white rounded-xl"}
           >
             Pendentes ({tasks.filter(t => !t.completed).length})
           </Button>
           <Button
-            variant={filter === "completed" ? "default" : "outline"}
+            variant="ghost"
             size="sm"
             onClick={() => setFilter("completed")}
+            className={filter === "completed" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.15)]" : "bg-zinc-100 dark:bg-white/[0.02] text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/[0.05] hover:text-zinc-900 dark:hover:text-white rounded-xl"}
           >
             Concluídas ({tasks.filter(t => t.completed).length})
           </Button>
@@ -203,17 +206,19 @@ export function TaskList({ refreshTrigger, onEditTask, onOpenLead }: TaskListPro
         {/* Toggle de visualização */}
         <div className="flex gap-2">
           <Button
-            variant={viewMode === "list" ? "default" : "outline"}
+            variant="ghost"
             size="sm"
             onClick={() => setViewMode("list")}
+            className={viewMode === "list" ? "bg-zinc-200 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/20 hover:bg-zinc-300 dark:hover:bg-white/15 rounded-xl shadow-sm dark:shadow-[0_0_15px_rgba(255,255,255,0.05)]" : "bg-zinc-100 dark:bg-white/[0.02] text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/[0.05] hover:text-zinc-900 dark:hover:text-white rounded-xl"}
           >
             <List className="h-4 w-4 mr-2" />
             Lista
           </Button>
           <Button
-            variant={viewMode === "byUser" ? "default" : "outline"}
+            variant="ghost"
             size="sm"
             onClick={() => setViewMode("byUser")}
+            className={viewMode === "byUser" ? "bg-zinc-200 dark:bg-white/10 text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/20 hover:bg-zinc-300 dark:hover:bg-white/15 rounded-xl shadow-sm dark:shadow-[0_0_15px_rgba(255,255,255,0.05)]" : "bg-zinc-100 dark:bg-white/[0.02] text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/[0.05] hover:text-zinc-900 dark:hover:text-white rounded-xl"}
           >
             <LayoutGrid className="h-4 w-4 mr-2" />
             Por Usuário
@@ -254,8 +259,8 @@ export function TaskList({ refreshTrigger, onEditTask, onOpenLead }: TaskListPro
           return (
             <div
               key={task.id}
-              className={`p-4 rounded-lg border ${
-                overdue ? 'border-destructive bg-destructive/5' : 'border-border'
+              className={`p-4 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.03)] hover:bg-white/[0.04] ${
+                overdue ? 'border-red-500/30 bg-red-500/5 shadow-[inset_0_1px_1px_rgba(239,68,68,0.05)]' : 'border-white/5 bg-white/[0.02] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
               }`}
             >
               <div className="space-y-3">
@@ -269,8 +274,8 @@ export function TaskList({ refreshTrigger, onEditTask, onOpenLead }: TaskListPro
                   <div className="flex-1 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <h4
-                        className={`font-medium ${
-                          task.completed ? 'line-through text-muted-foreground' : ''
+                        className={`font-semibold tracking-tight ${
+                          task.completed ? 'line-through text-zinc-600' : 'text-zinc-200'
                         }`}
                       >
                         {task.title}
@@ -284,7 +289,7 @@ export function TaskList({ refreshTrigger, onEditTask, onOpenLead }: TaskListPro
                     </div>
 
                     {task.description && (
-                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                      <p className="text-sm text-zinc-400">{task.description}</p>
                     )}
 
                     {task.due_date && (

@@ -126,16 +126,8 @@ export function AutomationManager() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Automações</h2>
-                    <p className="text-muted-foreground">
-                        Crie e gerencie fluxos inteligentes para automatizar seu atendimento.
-                    </p>
-                </div>
+            <div className="flex items-center justify-end">
                 <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <MetaIntegrationPopup />
-                    
                     <input 
                         type="file" 
                         accept=".json" 
@@ -147,14 +139,14 @@ export function AutomationManager() {
                     <Button 
                         variant="outline" 
                         onClick={handleImportClick} 
-                        className="gap-2"
+                        className="gap-2 rounded-xl border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.05]"
                         disabled={isImporting}
                     >
                         {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                         Importar
                     </Button>
 
-                    <Button onClick={() => setEditingFlowId('new')} className="gap-2">
+                    <Button onClick={() => setEditingFlowId('new')} className="gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-[0_0_15px_rgba(16,185,129,0.15)] transition-all">
                         <Plus className="h-4 w-4" />
                         Nova Automação
                     </Button>

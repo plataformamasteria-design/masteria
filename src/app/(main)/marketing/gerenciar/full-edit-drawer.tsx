@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   X, Loader2, Save, Play, Pause, Hash, Monitor,
   Smartphone, Camera, RefreshCw, CheckCircle2, AlertTriangle,

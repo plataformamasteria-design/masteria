@@ -27,6 +27,14 @@ const changeEmailSchema = z.object({
   currentPassword: z.string().min(1, 'Confirme sua senha atual.'),
 });
 
+const updateProfileSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  avatarUrl: z.string().url().nullable().optional(),
+  phone: z.string().max(20).optional().nullable(),
+  bio: z.string().max(500).optional().nullable(),
+  timezone: z.string().max(100).optional().nullable(),
+});
+
 export async function PATCH(request: NextRequest) {
   try {
     // 1. Autenticar via cookie de sessão
@@ -101,6 +109,23 @@ export async function PATCH(request: NextRequest) {
       await db.update(users).set({ email: newEmail.toLowerCase() }).where(eq(users.id, userId));
 
       return NextResponse.json({ success: true, message: 'E-mail alterado com sucesso. Faça login novamente com o novo e-mail.' });
+    }
+
+    // ── Atualizar PERFIL (nome, avatar, phone, bio, timezone) ─────────────────
+    if (body.action === 'update_profile') {
+      const parsed = updateProfileSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Dados inválidos.', details: parsed.error.flatten() }, { status: 400 });
+      }
+      const updates: Record<string, unknown> = {};
+      if (parsed.data.name !== undefined) updates.name = parsed.data.name;
+      if (parsed.data.avatarUrl !== undefined) updates.avatarUrl = parsed.data.avatarUrl;
+      // Store extra fields in a metadata approach via jsonb permissions field or just name+avatar for now
+      // name and avatarUrl are the only DB columns available
+      if (Object.keys(updates).length > 0) {
+        await db.update(users).set(updates).where(eq(users.id, userId));
+      }
+      return NextResponse.json({ success: true, message: 'Perfil atualizado com sucesso.' });
     }
 
     return NextResponse.json({ error: 'Ação inválida.' }, { status: 400 });

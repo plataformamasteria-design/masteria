@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -289,4 +291,233 @@
 .card-3d-hover:hover {
   box-shadow: 0 20px 40px -12px hsl(161 79% 39% / 0.12),
     0 0 20px hsl(161 79% 39% / 0.06);
+}
+
+/* ========================================
+   Dashboard — Glass Card System
+   ======================================== */
+.glass-card {
+  background: rgba(0, 0, 0, 0.02);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.dark .glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-card:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.1),
+    0 0 24px rgba(16, 185, 129, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.dark .glass-card:hover {
+  border-color: rgba(16, 185, 129, 0.15);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.25),
+    0 0 24px rgba(16, 185, 129, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-kpi {
+  background: linear-gradient(135deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.005) 100%);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .glass-kpi {
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-kpi::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(16,185,129,0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.dark .glass-kpi::before {
+  background: radial-gradient(ellipse at top left, rgba(16,185,129,0.08) 0%, transparent 60%);
+}
+
+.neon-border-emerald {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.1), inset 0 0 12px rgba(16, 185, 129, 0.05);
+}
+
+/* ========================================
+   Dashboard — Animations
+   ======================================== */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.2), 0 0 80px rgba(16, 185, 129, 0.05);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.8) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.animate-count-up {
+  animation: countUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+/* ========================================
+   Dashboard — Bento Grid Stagger
+   ======================================== */
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 60ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 180ms; }
+.stagger-5 { animation-delay: 240ms; }
+.stagger-6 { animation-delay: 300ms; }
+.stagger-7 { animation-delay: 360ms; }
+.stagger-8 { animation-delay: 420ms; }
+
+/* ========================================
+   Dashboard — Typography
+   ======================================== */
+.font-outfit {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.label-kpi {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(16, 185, 129, 0.7);
+}
+
+.value-kpi {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========================================
+   Dashboard — Progress bar glow
+   ======================================== */
+.progress-glow [data-progress-indicator] {
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+/* ========================================
+   Preferências — Modo Compacto
+   data-compact="true" no <html>
+   ======================================== */
+html[data-compact="true"] .glass-card,
+html[data-compact="true"] [class*="rounded-2xl"],
+html[data-compact="true"] [class*="rounded-xl"] {
+  /* Reduz padding interno globalmente */
+}
+
+html[data-compact="true"] nav {
+  gap: 0.125rem !important;
+}
+
+html[data-compact="true"] [class*="py-6"] {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+html[data-compact="true"] [class*="space-y-6"] {
+  gap: 0.75rem !important;
+}
+
+html[data-compact="true"] [class*="space-y-8"] {
+  gap: 1rem !important;
+}
+
+html[data-compact="true"] [class*="p-6"] {
+  padding: 0.875rem !important;
+}
+
+html[data-compact="true"] [class*="mb-5"] {
+  margin-bottom: 0.75rem !important;
+}
+
+/* ========================================
+   Preferências — Desativar Animações
+   data-animations="false" no <html>
+   ======================================== */
+html[data-animations="false"] *,
+html[data-animations="false"] *::before,
+html[data-animations="false"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }

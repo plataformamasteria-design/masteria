@@ -6,7 +6,7 @@ import { useAdAccount } from "@/contexts/ad-account-context";
 import { TrafegoSubnav } from "@/components/trafego/TrafegoSubnav";
 import { TrafegoBreadcrumb } from "@/components/trafego/TrafegoBreadcrumb";
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, ChevronDown, Building2, CheckCircle2,
   Loader2, RefreshCw, AlertCircle, Megaphone,

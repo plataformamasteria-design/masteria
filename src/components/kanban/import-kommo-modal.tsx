@@ -8,13 +8,21 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function ImportKommoModal() {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [targetFunnelId, setTargetFunnelId] = useState<string>('auto');
   const { toast } = useToast();
   const router = useRouter();
+
+  const { data: boardsData, isLoading: isLoadingBoards } = useSWR('/api/v1/kanbans', fetcher);
+  const kanbans = boardsData?.kanbans || [];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -29,6 +37,13 @@ export function ImportKommoModal() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      
+      if (targetFunnelId !== 'auto') {
+        const selectedKanban = kanbans.find((k: any) => k.id === targetFunnelId);
+        if (selectedKanban) {
+          formData.append('targetFunnelName', selectedKanban.name);
+        }
+      }
 
       const response = await fetch('/api/v1/kanban/import-kommo', {
         method: 'POST',
@@ -81,7 +96,31 @@ export function ImportKommoModal() {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
+          <div className="grid gap-2">
+            <Label htmlFor="targetFunnel">Funil de Destino</Label>
+            <Select 
+              value={targetFunnelId} 
+              onValueChange={setTargetFunnelId}
+              disabled={isLoadingBoards || loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um funil (Opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Mapeamento Automático (via UTM / Coluna)</SelectItem>
+                {kanbans.map((kanban: any) => (
+                  <SelectItem key={kanban.id} value={kanban.id}>
+                    Forçar para: {kanban.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              No automático, o sistema tentará identificar o funil lendo a UTM da campanha ou a coluna "Funil de vendas".
+            </p>
+          </div>
+          
+          <div className="grid w-full items-center gap-1.5 mt-2">
             <Label htmlFor="file">Planilha de Leads</Label>
             <Input 
               id="file" 

@@ -159,6 +159,7 @@ export class EvolutionApiService {
             headers: {
                 'apikey': config.apiKey,
             },
+            cache: 'no-store'
         });
 
         if (response.status === 404) {
@@ -173,6 +174,24 @@ export class EvolutionApiService {
         return response.json();
     }
 
+    async fetchAllInstances() {
+        const config = this.getConfig();
+        const response = await fetch(`${config.url}/instance/fetchInstances`, {
+            method: 'GET',
+            headers: {
+                'apikey': config.apiKey,
+            },
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to get all instances: ${errorText}`);
+        }
+
+        return response.json();
+    }
+
     async getConnectionData(instanceName: string) {
         const config = this.getConfig();
         const response = await fetch(`${config.url}/instance/connect/${instanceName}`, {
@@ -180,6 +199,7 @@ export class EvolutionApiService {
             headers: {
                 'apikey': config.apiKey,
             },
+            cache: 'no-store'
         });
 
         if (!response.ok) {
@@ -334,6 +354,7 @@ export class EvolutionApiService {
             headers: {
                 'apikey': config.apiKey,
             },
+            cache: 'no-store'
         });
 
         if (!response.ok) {

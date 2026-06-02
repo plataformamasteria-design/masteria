@@ -27,8 +27,8 @@ export function EmptyState({
         className
       )}
     >
-      <div className="rounded-full bg-muted p-6 mb-4 animate-in zoom-in-95 duration-300 delay-75">
-        <Icon className="h-10 w-10 text-muted-foreground" />
+      <div className="rounded-full bg-emerald-500/10 p-6 mb-4 animate-in zoom-in-95 duration-300 delay-75 ring-1 ring-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
+        <Icon className="h-10 w-10 text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
       </div>
       <h3 className="text-lg font-semibold mb-2 animate-in fade-in-50 duration-300 delay-100">
         {title}
@@ -39,7 +39,7 @@ export function EmptyState({
       {actionLabel && onAction && (
         <Button
           onClick={onAction}
-          className="animate-in fade-in-50 duration-300 delay-200"
+          className="animate-in fade-in-50 duration-300 delay-200 bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all font-bold tracking-wide"
         >
           {actionLabel}
         </Button>

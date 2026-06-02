@@ -108,9 +108,9 @@ export function InboxView({
 
   return (
     <>
-      <div className="h-full flex flex-row overflow-hidden bg-background relative shadow-none">
+      <div className="h-full flex flex-row overflow-hidden bg-transparent relative shadow-none p-4 gap-4">
         {showConversationList && (
-          <div className="w-full md:min-w-[320px] md:max-w-[400px] lg:max-w-[420px] md:w-[30%] flex-shrink-0 h-full border-r border-border/40 min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/50">
+          <div className="w-full md:min-w-[320px] md:max-w-[400px] lg:max-w-[420px] md:w-[30%] flex-shrink-0 h-full border border-black/5 dark:border-white/5 rounded-3xl overflow-hidden bg-white/80 dark:bg-zinc-950/40 backdrop-blur-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
             <ConversationList
               conversations={controller.conversations}
               currentConversationId={controller.selectedConversation?.id || null}
@@ -125,13 +125,14 @@ export function InboxView({
               onFilterChange={controller.handleFilterChange}
               advancedFilters={controller.advancedFilters}
               onAdvancedFiltersChange={controller.handleAdvancedFiltersChange}
+              availableConnections={controller.availableConnections}
             />
           </div>
         )}
 
         {showActiveChat ? (
           controller.selectedConversation ? (
-            <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-zinc-100/50 dark:bg-zinc-900/30">
+            <div className="flex-1 flex flex-col h-full min-h-0 min-w-0 overflow-hidden bg-white/80 dark:bg-zinc-950/40 backdrop-blur-3xl border border-black/5 dark:border-white/5 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
               <ActiveChat
                 key={controller.selectedConversation.id}
                 conversation={controller.selectedConversation}
@@ -162,7 +163,7 @@ export function InboxView({
 
         {/* Right Column: Contact Details (Desktop) */}
         {showActiveChat && controller.selectedConversation && showContactDetailsPanel && (
-          <div className="hidden lg:flex w-full max-w-[350px] flex-shrink-0 h-full border-l border-border/40 min-h-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/50 shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.1)]">
+          <div className="hidden lg:flex w-full max-w-[350px] flex-shrink-0 h-full border border-black/5 dark:border-white/5 rounded-3xl overflow-hidden bg-white/80 dark:bg-zinc-950/40 backdrop-blur-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.15)]">
              <ContactDetailsPanel 
               contactId={controller.selectedConversation.contactId}
               isArchived={controller.selectedConversation.status === 'ARCHIVED' || controller.selectedConversation.status === 'archived'}

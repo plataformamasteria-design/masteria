@@ -361,6 +361,8 @@ export async function unarchiveConversationAction(conversationId: string) {
 export async function fetchAvailableConnections() {
     try {
         const companyId = await getCompanyIdFromSession();
+        // Dynamic import to avoid circular dependencies if any
+        const { evolutionApiService } = await import('@/services/evolution-api.service');
 
         const activeConnections = await db.query.connections.findMany({
             where: and(
@@ -376,6 +378,37 @@ export async function fetchAvailableConnections() {
                 status: true,
             }
         });
+
+        // Enriquecer com status real e número para Baileys/Evolution
+        try {
+            const hasBaileys = activeConnections.some(c => ['baileys', 'evolution'].includes(c.connectionType || ''));
+            if (hasBaileys) {
+                const allInstances = await evolutionApiService.fetchAllInstances();
+                
+                for (const conn of activeConnections) {
+                    if (['baileys', 'evolution'].includes(conn.connectionType || '')) {
+                        const instanceData = allInstances.find((i: any) => i.name === conn.id || i.instance?.instanceName === conn.id);
+                        if (instanceData) {
+                            // Update status
+                            if (instanceData.connectionStatus) {
+                                conn.status = instanceData.connectionStatus;
+                            } else if (instanceData.instance?.state) {
+                                conn.status = instanceData.instance.state;
+                            }
+                            
+                            // Extrair número do ownerJid (ex: 551199999999@s.whatsapp.net)
+                            if (instanceData.ownerJid) {
+                                conn.phoneNumber = instanceData.ownerJid.split('@')[0];
+                            } else if (instanceData.owner) {
+                                conn.phoneNumber = instanceData.owner.split('@')[0];
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("[fetchAvailableConnections] Erro ao enriquecer dados Baileys:", e);
+        }
 
         return JSON.parse(JSON.stringify(activeConnections));
     } catch (error) {

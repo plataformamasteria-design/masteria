@@ -11,7 +11,7 @@ import { usePeriodoTrafego } from "@/contexts/periodo-trafego-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useTrafegoData } from "@/hooks/use-trafego-data";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import Link from "next/link";
 import useSWR, { mutate } from "swr";
 import { useConfigFunilCampanha, FunilCampanhaPopover, FunilBadge } from "@/components/trafego/FunilCampanhaConfig";

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import useSWR from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Image as ImageIcon, Film, LayoutGrid, Upload, Cloud, Loader2,
   Link, Tag, AlignLeft, Type, FileText, Layers, Radio, Eye, ImagePlay, Sparkles, ExternalLink,

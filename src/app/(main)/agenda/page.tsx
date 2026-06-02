@@ -125,148 +125,143 @@ export default function AgendaPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* SIDEBAR DA AGENDA */}
-      <div className="w-72 border-r border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 flex flex-col h-full overflow-y-auto hidden md:flex">
-        <div className="p-6 pb-4 flex flex-col gap-1">
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Minhas Agendas</h2>
-          <p className="text-xs text-slate-500 font-medium">Controle de atendimentos</p>
-        </div>
-        
-        <div className="px-3 mb-4">
-          <CalendarTabs 
-            calendars={calendars}
-            selectedCalendarId={selectedCalendarId}
-            onSelectCalendar={setSelectedCalendarId}
-            onChange={handleCalendarsChange}
-          />
-        </div>
+    <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-transparent relative z-[1]">
 
-        <div className="p-4 mt-auto border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-black/20 space-y-3">
-          {/* Integração Google em Destaque */}
-          <div className="mb-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 px-1">Integrações</h3>
-            <div 
-              onClick={() => setBookingConfigOpen(true)}
-              className={`cursor-pointer rounded-xl p-3 border shadow-sm transition-all flex items-center justify-between ${googleConnected ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/20' : 'bg-white border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:border-white/10'}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${googleConnected ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'}`}>
-                  <CalendarIcon className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className={`text-sm font-semibold ${googleConnected ? 'text-emerald-900 dark:text-emerald-100' : 'text-slate-700 dark:text-slate-300'}`}>Google Calendar</p>
-                  <p className={`text-[10px] font-medium uppercase tracking-wider ${googleConnected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
-                    {googleConnected ? 'Sincronizado' : 'Não conectado'}
-                  </p>
-                </div>
-              </div>
-              {googleConnected && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
-            </div>
-            {googleConnected && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="w-full mt-2 justify-center text-slate-600 font-medium hover:bg-slate-100 dark:hover:bg-white/5" 
-                onClick={() => setRefreshTrigger(prev => prev + 1)}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Sincronizar Manualmente
-              </Button>
-            )}
-          </div>
 
-          <Button variant="ghost" className="w-full justify-start text-slate-600 font-medium hover:bg-slate-100 dark:hover:bg-white/5" onClick={() => setBookingConfigOpen(true)}>
-            <Settings className="mr-3 h-4 w-4" />
-            Configurações
-          </Button>
-          {selectedCalendarId && (
-            <Button variant="ghost" className="w-full justify-start text-slate-600 font-medium hover:bg-slate-100 dark:hover:bg-white/5" onClick={() => setBookingShareOpen(true)}>
-              <Share2 className="mr-3 h-4 w-4" />
-              Compartilhar Página
-            </Button>
-          )}
-          {selectedCalendarId && (
-            <Button variant="ghost" className="w-full justify-start text-slate-600 font-medium hover:bg-slate-100 dark:hover:bg-white/5" onClick={handleShareCalendar}>
-              <Link2 className="mr-3 h-4 w-4" />
-              Copiar Link Direto
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* AREA PRINCIPAL */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="px-8 py-5 border-b border-slate-200 dark:border-white/5 bg-white/50 backdrop-blur-md dark:bg-slate-900/50 flex justify-between items-center sticky top-0 z-10">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+        {/* HEADER PRINCIPAL */}
+        <div className="px-8 py-5 border-b border-black/5 dark:border-white/5 bg-black/5 dark:bg-black/20 backdrop-blur-xl flex justify-between items-center sticky top-0 z-10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-black tracking-tight text-foreground drop-shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
               {selectedCalendar ? selectedCalendar.name : 'Visão Geral da Agenda'}
             </h1>
-            <p className="text-sm font-medium text-slate-500 mt-1">Gerencie seus compromissos e tarefas</p>
+            <p className="text-sm font-medium text-muted-foreground mt-1">Gerencie seus compromissos e tarefas</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="h-11 rounded-xl font-semibold border-slate-200 shadow-sm hover:bg-slate-50 text-slate-700" onClick={() => { setEditingTask(undefined); setTaskDialogOpen(true); }}>
+            <Button variant="ghost" className="h-11 rounded-2xl font-semibold border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.05] dark:hover:bg-white/[0.05] hover:border-black/20 dark:hover:border-white/20 text-zinc-600 dark:text-zinc-300 hover:text-foreground dark:hover:text-white transition-all shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]" onClick={() => { setEditingTask(undefined); setTaskDialogOpen(true); }}>
               <ListTodo className="mr-2 h-4 w-4" /> Nova Tarefa
             </Button>
-            <Button className="h-11 rounded-xl px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold tracking-wide shadow-lg shadow-blue-500/20 transition-all active:scale-95" onClick={() => { setEditingEvent(undefined); setEventDialogOpen(true); }}>
-              <Plus className="mr-2 h-5 w-5" /> Agendar Horário
+            <Button className="h-11 rounded-2xl px-6 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold tracking-wide transition-all active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_25px_rgba(16,185,129,0.2)]" onClick={() => { setEditingEvent(undefined); setEventDialogOpen(true); }}>
+              <Plus className="mr-2 h-5 w-5 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" /> Agendar Horário
             </Button>
           </div>
         </div>
-        
-        <div className="flex-1 overflow-auto p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-[1600px] mx-auto">
-            {/* Main Calendar View */}
-            <div className="lg:col-span-2 space-y-8">
-              <Card className="border-0 shadow-sm bg-white dark:bg-slate-900 rounded-3xl overflow-hidden ring-1 ring-slate-100 dark:ring-white/5">
-                <CardHeader className="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-white/5 pb-4 px-6 pt-6">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-blue-500" /> Grade de Horários
-                  </CardTitle>
-                  <CardDescription className="font-medium text-slate-500">
-                    Navegue pelas datas para visualizar seus agendamentos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <CalendarView 
-                    selectedDate={selectedDate}
-                    onSelectDate={setSelectedDate}
-                    refreshTrigger={refreshTrigger}
-                    calendarId={selectedCalendarId}
-                    isGeneralCalendar={isGeneralCalendar}
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 relative z-0">
+          <div className="max-w-[1600px] mx-auto space-y-8">
+            
+            {/* ROW 1: MINHAS AGENDAS */}
+            <Card className="glass-card rounded-[2rem] overflow-hidden">
+              <div className="p-6 flex flex-col gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <h2 className="text-xl font-bold tracking-tight text-foreground dark:text-white">Minhas Agendas</h2>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div 
+                      onClick={() => setBookingConfigOpen(true)}
+                      className={`cursor-pointer rounded-xl px-3 py-2 border shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] transition-all flex items-center gap-2 ${googleConnected ? 'bg-emerald-500/10 border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400' : 'bg-black/[0.02] dark:bg-white/[0.02] border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-zinc-600 dark:text-zinc-400 hover:text-foreground dark:hover:text-white'}`}
+                      title={googleConnected ? 'Google Calendar Sincronizado' : 'Conectar Google Calendar'}
+                    >
+                      <CalendarIcon className="w-4 h-4" />
+                      <span className="text-xs font-bold uppercase tracking-wider">{googleConnected ? 'Sincronizado' : 'Google Calendar'}</span>
+                      {googleConnected && <CheckCircle2 className="w-4 h-4 shrink-0" />}
+                    </div>
+
+                    {googleConnected && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-9 px-3 font-medium text-zinc-600 dark:text-zinc-400 border border-black/5 dark:border-white/5 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white rounded-xl" 
+                        onClick={() => setRefreshTrigger(prev => prev + 1)}
+                        title="Sincronizar Manualmente"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    )}
+
+                    <Button variant="ghost" size="sm" className="h-9 px-3 text-zinc-600 dark:text-zinc-400 font-medium border border-black/5 dark:border-white/5 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white rounded-xl" onClick={() => setBookingConfigOpen(true)}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configurações
+                    </Button>
+                    {selectedCalendarId && (
+                      <Button variant="ghost" size="sm" className="h-9 px-3 text-zinc-600 dark:text-zinc-400 font-medium border border-black/5 dark:border-white/5 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white rounded-xl" onClick={() => setBookingShareOpen(true)}>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Compartilhar
+                      </Button>
+                    )}
+                    {selectedCalendarId && (
+                      <Button variant="ghost" size="sm" className="h-9 px-3 text-zinc-600 dark:text-zinc-400 font-medium border border-black/5 dark:border-white/5 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] hover:text-foreground dark:hover:text-white rounded-xl" onClick={handleShareCalendar}>
+                        <Link2 className="mr-2 h-4 w-4" />
+                        Copiar Link
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full overflow-x-auto custom-scrollbar pb-2">
+                  <CalendarTabs 
+                    calendars={calendars}
+                    selectedCalendarId={selectedCalendarId}
+                    onSelectCalendar={setSelectedCalendarId}
+                    onChange={handleCalendarsChange}
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
+            </Card>
+
+            {/* ROW 2: CALENDAR AND MEETINGS */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <Card className="glass-card rounded-[2rem] overflow-hidden">
+                  <CardHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5 pb-4 px-6 pt-6">
+                    <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
+                      <CalendarIcon className="w-5 h-5 text-emerald-400 saturate-200 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" /> Grade de Horários
+                    </CardTitle>
+                    <CardDescription className="font-medium text-zinc-400">
+                      Navegue pelas datas para visualizar seus agendamentos
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <CalendarView 
+                      selectedDate={selectedDate}
+                      onSelectDate={setSelectedDate}
+                      refreshTrigger={refreshTrigger}
+                      calendarId={selectedCalendarId}
+                      isGeneralCalendar={isGeneralCalendar}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-1">
+                <Card className="glass-card rounded-[2rem] overflow-hidden h-full flex flex-col">
+                  <CardHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5 pb-4 px-6 pt-6 shrink-0">
+                    <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
+                      <ListTodo className="w-5 h-5 text-emerald-400 saturate-200 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" /> Reuniões de Hoje
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 flex-1 overflow-hidden min-h-[400px]">
+                    <EventList 
+                      selectedDate={selectedDate}
+                      refreshTrigger={refreshTrigger}
+                      calendarId={selectedCalendarId}
+                      isGeneralCalendar={isGeneralCalendar}
+                      onEditEvent={handleEditEvent as any}
+                      onEditTask={handleEditTask as any}
+                      onOpenLead={handleOpenLead}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
-            {/* Side Panels (Events & Tasks) */}
-            <div className="space-y-8">
-              <Card className="border-0 shadow-sm bg-white dark:bg-slate-900 rounded-3xl overflow-hidden ring-1 ring-slate-100 dark:ring-white/5">
-                <CardHeader className="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-white/5 pb-4 px-6 pt-6">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <ListTodo className="w-5 h-5 text-emerald-500" /> Reuniões de Hoje
+            {/* ROW 3: MINHAS TAREFAS */}
+            <div className="w-full">
+              <Card className="glass-card rounded-[2rem] overflow-hidden">
+                <CardHeader className="bg-black/5 dark:bg-black/20 border-b border-black/5 dark:border-white/5 pb-4 px-6 pt-6">
+                  <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-400 saturate-200 drop-shadow-[0_0_10px_rgba(129,140,248,0.6)]" /> Minhas Tarefas
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <EventList 
-                    selectedDate={selectedDate}
-                    refreshTrigger={refreshTrigger}
-                    calendarId={selectedCalendarId}
-                    isGeneralCalendar={isGeneralCalendar}
-                    onEditEvent={handleEditEvent as any}
-                    onEditTask={handleEditTask as any}
-                    onOpenLead={handleOpenLead}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-sm bg-white dark:bg-slate-900 rounded-3xl overflow-hidden ring-1 ring-slate-100 dark:ring-white/5">
-                <CardHeader className="bg-slate-50/50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-white/5 pb-4 px-6 pt-6">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-purple-500" /> Minhas Tarefas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="p-0 p-6">
                   <TaskList 
                     refreshTrigger={refreshTrigger}
                     onEditTask={handleEditTask as any}
@@ -275,6 +270,7 @@ export default function AgendaPage() {
                 </CardContent>
               </Card>
             </div>
+
           </div>
         </div>
       </div>

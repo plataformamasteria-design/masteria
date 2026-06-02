@@ -3,14 +3,14 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
 import type { Conversation, Message } from '@/lib/types';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Search, Check, CheckCheck, Clock, MessageSquare, Smartphone, FileText,
     Loader2, X, Instagram, SlidersHorizontal, BellDot, MessageCircle, Bot,
-    Users, User, ChevronDown, Hash, Columns3
+    Users, User, ChevronDown, Hash, Columns3, Server
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession } from '@/contexts/session-context';
@@ -62,14 +62,13 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
     };
 
     return (
-        <motion.button
-            whileTap={{ scale: 0.98 }}
+        <button
             onClick={() => onSelect(conversation.id)}
             className={cn(
                 "w-full flex items-center gap-3.5 px-4 py-3.5 transition-all duration-200 text-left group relative outline-none border-b border-border/40 box-border overflow-hidden",
                 isSelected
-                    ? "bg-zinc-100 dark:bg-white/[0.04] border-l-[3px] border-l-primary"
-                    : "bg-transparent hover:bg-zinc-50 dark:hover:bg-white/[0.02] border-l-[3px] border-l-transparent"
+                    ? "bg-black/[0.04] dark:bg-white/[0.06] border-l-[3px] border-l-emerald-500 dark:border-l-emerald-400"
+                    : "bg-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.04] border-l-[3px] border-l-transparent"
             )}
             style={{ maxWidth: '100%' }}
         >
@@ -153,8 +152,9 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
                 {conversation.tags && conversation.tags.length > 0 && (
                      <div className="flex items-center gap-1 mt-1 w-full min-w-0 overflow-hidden flex-nowrap">
                         {conversation.tags.slice(0, 3).map(t => (
-                             <span key={t.id} className="text-[9px] font-medium px-1.5 py-0.5 rounded-[4px] truncate max-w-[70px] shrink-0" style={{ color: t.color, backgroundColor: `${t.color}15` }}>
-                                 {t.name}
+                             <span key={t.id} className="flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-[4px] truncate max-w-[70px] shrink-0 bg-black/5 dark:bg-white/5 text-zinc-700 dark:text-zinc-300">
+                                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: t.color || '#ccc' }} />
+                                 <span className="truncate">{t.name}</span>
                              </span>
                         ))}
                         {conversation.tags.length > 3 && (
@@ -163,7 +163,7 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
                      </div>
                 )}
             </div>
-        </motion.button>
+        </button>
     );
 }, (prev, next) => {
     return prev.isSelected === next.isSelected && 
@@ -182,9 +182,10 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
 interface AdvancedFiltersPanelProps {
     filters: AdvancedFilters;
     onFiltersChange: (filters: AdvancedFilters) => void;
+    availableConnections: any[];
 }
 
-function AdvancedFiltersPanel({ filters, onFiltersChange }: AdvancedFiltersPanelProps) {
+function AdvancedFiltersPanel({ filters, onFiltersChange, availableConnections }: AdvancedFiltersPanelProps) {
     const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
     const [agents, setAgents] = useState<{ id: string; name: string | null }[]>([]);
     const [tagsList, setTagsList] = useState<{ id: string; name: string; color: string }[]>([]);
@@ -215,7 +216,7 @@ function AdvancedFiltersPanel({ filters, onFiltersChange }: AdvancedFiltersPanel
     ].filter(Boolean).length;
 
     return (
-        <div className="space-y-2.5 px-1 bg-background pt-1">
+        <div className="space-y-2.5 px-1 bg-transparent pt-1">
             {/* Toggle Filters */}
             <div className="space-y-1.5">
                 <FilterToggle
@@ -243,14 +244,31 @@ function AdvancedFiltersPanel({ filters, onFiltersChange }: AdvancedFiltersPanel
 
             {/* Dropdown filters */}
             <div className="space-y-1.5 pt-2">
+                {/* Connections Filter */}
+                <Select
+                    value={filters.filterConnectionId || '__all__'}
+                    onValueChange={(v) => onFiltersChange({ ...filters, filterConnectionId: v === '__all__' ? null : v })}
+                >
+                    <SelectTrigger className="h-9 text-[12px] font-medium bg-zinc-50 dark:bg-white/[0.02] border-transparent shadow-none hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors rounded-xl text-zinc-600">
+                        <div className="flex items-center gap-1.5 focus:outline-none focus:ring-0">
+                            <Server className="h-3.5 w-3.5 text-orange-500" />
+                            <SelectValue placeholder="Filtrar por conexão" />
+                        </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="__all__">Todas as conexões</SelectItem>
+                        {availableConnections.map(c => <SelectItem key={c.id} value={c.id}>{c.config_name || c.connectionName || 'Desconhecida'}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+
                 {teams.length > 0 && (
                     <Select
                         value={filters.filterTeamId || '__all__'}
                         onValueChange={(v) => onFiltersChange({ ...filters, filterTeamId: v === '__all__' ? null : v })}
                     >
-                        <SelectTrigger className="h-8 text-xs font-medium border-border/50">
+                        <SelectTrigger className="h-9 text-[12px] font-medium bg-zinc-50 dark:bg-white/[0.02] border-transparent shadow-none hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors rounded-xl text-zinc-600">
                             <div className="flex items-center gap-1.5 focus:outline-none focus:ring-0">
-                                <Users className="h-3 w-3 text-cyan-600" />
+                                <Users className="h-3.5 w-3.5 text-cyan-500" />
                                 <SelectValue placeholder="Filtrar por equipe" />
                             </div>
                         </SelectTrigger>
@@ -266,9 +284,9 @@ function AdvancedFiltersPanel({ filters, onFiltersChange }: AdvancedFiltersPanel
                         value={filters.filterAgentId || '__all__'}
                         onValueChange={(v) => onFiltersChange({ ...filters, filterAgentId: v === '__all__' ? null : v })}
                     >
-                        <SelectTrigger className="h-8 text-xs font-medium border-border/50">
+                        <SelectTrigger className="h-9 text-[12px] font-medium bg-zinc-50 dark:bg-white/[0.02] border-transparent shadow-none hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors rounded-xl text-zinc-600">
                             <div className="flex items-center gap-1.5 focus:outline-none focus:ring-0">
-                                <User className="h-3 w-3 text-indigo-600" />
+                                <User className="h-3.5 w-3.5 text-indigo-500" />
                                 <SelectValue placeholder="Filtrar por agente" />
                             </div>
                         </SelectTrigger>
@@ -284,9 +302,9 @@ function AdvancedFiltersPanel({ filters, onFiltersChange }: AdvancedFiltersPanel
                         value={filters.filterTagId || '__all__'}
                         onValueChange={(v) => onFiltersChange({ ...filters, filterTagId: v === '__all__' ? null : v })}
                     >
-                        <SelectTrigger className="h-8 text-xs font-medium border-border/50">
+                        <SelectTrigger className="h-9 text-[12px] font-medium bg-zinc-50 dark:bg-white/[0.02] border-transparent shadow-none hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors rounded-xl text-zinc-600">
                             <div className="flex items-center gap-1.5 focus:outline-none focus:ring-0">
-                                <Hash className="h-3 w-3 text-emerald-600" />
+                                <Hash className="h-3.5 w-3.5 text-emerald-500" />
                                 <SelectValue placeholder="Filtrar por etiqueta" />
                             </div>
                         </SelectTrigger>
@@ -309,9 +327,9 @@ function AdvancedFiltersPanel({ filters, onFiltersChange }: AdvancedFiltersPanel
                         value={filters.filterKanbanId || '__all__'}
                         onValueChange={(v) => onFiltersChange({ ...filters, filterKanbanId: v === '__all__' ? null : v })}
                     >
-                        <SelectTrigger className="h-8 text-xs font-medium border-border/50">
+                        <SelectTrigger className="h-9 text-[12px] font-medium bg-zinc-50 dark:bg-white/[0.02] border-transparent shadow-none hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors rounded-xl text-zinc-600">
                             <div className="flex items-center gap-1.5 focus:outline-none focus:ring-0">
-                                <Columns3 className="h-3 w-3 text-rose-500" />
+                                <Columns3 className="h-3.5 w-3.5 text-rose-500" />
                                 <SelectValue placeholder="Filtrar por funil (CRM)" />
                             </div>
                         </SelectTrigger>
@@ -347,18 +365,18 @@ function FilterToggle({ icon: Icon, label, active, onToggle, color }: {
             className={cn(
                 "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-300",
                 active
-                    ? "bg-muted text-foreground shadow-sm font-medium"
-                    : "text-muted-foreground border border-transparent hover:bg-muted/50 hover:text-foreground"
+                    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 font-semibold"
+                    : "text-zinc-500 bg-transparent hover:bg-zinc-50 dark:hover:bg-white/[0.02] hover:text-emerald-600"
             )}
         >
             <Icon className={cn("h-3.5 w-3.5", active ? "text-primary" : color)} />
             <span className="flex-1 text-left font-medium">{label}</span>
             <div className={cn(
-                "w-7 h-4 rounded-full relative transition-all duration-200",
-                active ? "bg-primary" : "bg-muted-foreground/20"
+                "w-7 h-4 rounded-full relative transition-all duration-200 shadow-inner",
+                active ? "bg-primary" : "bg-black/10 dark:bg-white/10"
             )}>
                 <div className={cn(
-                    "w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all duration-200",
+                    "w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all duration-200 shadow-sm",
                     active ? "left-3.5" : "left-0.5"
                 )} />
             </div>
@@ -383,6 +401,7 @@ interface ConversationListProps {
     onFilterChange?: (filter: 'all' | 'mine' | 'team' | 'resolved') => void;
     advancedFilters?: AdvancedFilters;
     onAdvancedFiltersChange?: (filters: AdvancedFilters) => void;
+    availableConnections?: any[];
 }
 
 export function ConversationList({
@@ -399,9 +418,9 @@ export function ConversationList({
     onFilterChange,
     advancedFilters,
     onAdvancedFiltersChange,
+    availableConnections = [],
 }: ConversationListProps) {
     const [localSearch, setLocalSearch] = useState(searchTerm);
-    const [sourceFilter, setSourceFilter] = useState<'all' | 'meta_api' | 'baileys' | 'instagram'>('all');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     
     const { session } = useSession();
@@ -444,19 +463,10 @@ export function ConversationList({
         };
     }, []);
 
+    // The filtering is now handled by the backend!
     const filteredConversations = useMemo(() => {
-        let filtered = conversations;
-
-        if (sourceFilter !== 'all') {
-            if (sourceFilter === 'baileys') {
-                filtered = filtered.filter(c => ['baileys', 'evolution'].includes(c.connectionType || ''));
-            } else {
-                filtered = filtered.filter(c => c.connectionType === sourceFilter);
-            }
-        }
-
-        return filtered;
-    }, [conversations, sourceFilter]);
+        return conversations;
+    }, [conversations]);
 
     const handleScroll = useCallback(() => {
         if (!scrollContainerRef.current || !onLoadMore || !hasMore || isLoadingMore) return;
@@ -493,18 +503,69 @@ export function ConversationList({
 
     return (
         <div className="h-full flex flex-col min-h-0 overflow-hidden bg-transparent">
-            <div className="shrink-0 bg-transparent border-b border-border/40 backdrop-blur-md">
+            <div className="shrink-0 bg-transparent border-b border-border/40 backdrop-blur-md flex flex-col gap-3 pt-3">
+                
+                {/* Active Filter (Assignment) */}
+                {onFilterChange && activeFilter && (
+                    <div className="px-3">
+                        <div className="flex items-center p-1 bg-white dark:bg-white/[0.04] shadow-sm rounded-[16px] overflow-x-auto hide-scrollbar">
+                            {[
+                                { value: 'all', label: 'Todas' },
+                                { value: 'mine', label: 'Minhas' },
+                                { value: 'team', label: 'Equipe', hidden: isLimitedView },
+                                { value: 'resolved', label: 'Arquivadas' },
+                            ].filter(opt => !opt.hidden).map(opt => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => onFilterChange(opt.value as any)}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all duration-300 whitespace-nowrap",
+                                        activeFilter === opt.value
+                                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                                            : "text-zinc-400 hover:text-emerald-600 bg-transparent"
+                                    )}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Source Filter (Channels) */}
+                <div className="px-3">
+                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1 pt-1">
+                        {filterOptions.map((opt) => {
+                            const isSelected = (advancedFilters?.filterSource || 'all') === opt.value;
+                            return (
+                            <button
+                                key={opt.value}
+                                onClick={() => onAdvancedFiltersChange?.({ ...advancedFilters, filterSource: opt.value } as AdvancedFilters)}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-bold transition-all duration-300 whitespace-nowrap shadow-sm",
+                                    isSelected
+                                        ? "bg-emerald-500 text-white dark:bg-emerald-500/20 dark:text-emerald-400 shadow-emerald-500/20"
+                                        : "bg-white dark:bg-white/[0.04] text-zinc-400 hover:text-emerald-600"
+                                )}
+                            >
+                                {opt.icon && <opt.icon className="h-3.5 w-3.5" />}
+                                {opt.label}
+                            </button>
+                        )})}
+                    </div>
+                </div>
+
                 {/* Search & Toggle Row */}
-                <div className="flex items-center gap-2 px-3 py-2.5">
+                <div className="flex items-center gap-2 px-3 pb-3">
                     <div className="relative group flex-1">
                         {isSearching ? (
-                            <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 animate-spin" />
+                            <Loader2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500 animate-spin" />
                         ) : (
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 transition-colors" />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-emerald-500 transition-colors" />
                         )}
                         <Input
                             placeholder="Buscar conversa..."
-                            className="pl-10 pr-9 h-9 rounded-lg bg-white dark:bg-[#111b21] border-none text-[13px] placeholder:text-muted-foreground/50 focus-visible:ring-1 focus-visible:ring-border/50 transition-all duration-300 shadow-none"
+                            className="pl-10 pr-9 h-10 rounded-xl bg-white dark:bg-white/[0.04] border-transparent text-[13px] placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-emerald-500/50 transition-all duration-300 shadow-sm text-zinc-700 dark:text-zinc-100"
                             value={localSearch}
                             onChange={(e) => handleSearchInputChange(e.target.value)}
                         />
@@ -512,10 +573,10 @@ export function ConversationList({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground/50 hover:text-foreground bg-transparent"
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-zinc-400 hover:text-emerald-500 bg-transparent"
                                 onClick={handleClearSearch}
                             >
-                                <X className="h-3.5 w-3.5" />
+                                <X className="h-4 w-4" />
                             </Button>
                         )}
                     </div>
@@ -526,16 +587,16 @@ export function ConversationList({
                             type="button"
                             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                             className={cn(
-                                "flex items-center justify-center w-[36px] h-[36px] shrink-0 rounded-lg text-muted-foreground hover:text-foreground transition-colors relative",
+                                "flex items-center justify-center w-[40px] h-[40px] shrink-0 rounded-xl transition-all shadow-sm duration-300",
                                 showAdvancedFilters || advFilterCount > 0
-                                    ? "bg-zinc-200/50 dark:bg-white/10 text-foreground"
-                                    : "hover:bg-zinc-200/50 dark:hover:bg-white/5"
+                                    ? "bg-emerald-500 text-white shadow-emerald-500/20"
+                                    : "bg-white dark:bg-white/[0.04] text-zinc-400 hover:text-emerald-500"
                             )}
                             title="Filtros avançados"
                         >
                             <SlidersHorizontal className="h-4 w-4" />
                             {advFilterCount > 0 && (
-                                <span className="absolute 1 top-1 right-1 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-zinc-50 dark:ring-[#202c33]"></span>
+                                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#202c33]"></span>
                             )}
                         </button>
                     )}
@@ -544,48 +605,9 @@ export function ConversationList({
                 {/* Expanded Filters */}
                 {showAdvancedFilters && (
                     <div className="px-3 pb-3 space-y-3 animate-in slide-in-from-top-2 fade-in duration-200">
-                        <div className="flex gap-2 w-full">
-                            {onFilterChange && activeFilter && (
-                                <div className="flex-1">
-                                    <Select value={activeFilter} onValueChange={(v) => onFilterChange(v as any)}>
-                                        <SelectTrigger className="w-full h-[32px] bg-white dark:bg-[#111b21] rounded-md text-[11px] font-medium border-border/40 shadow-none">
-                                            <SelectValue placeholder="Estado" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="mine" className="text-[11px]">Minhas</SelectItem>
-                                            {!isLimitedView && (
-                                                <>
-                                                    <SelectItem value="team" className="text-[11px]">Equipe</SelectItem>
-                                                    <SelectItem value="all" className="text-[11px]">Todas</SelectItem>
-                                                </>
-                                            )}
-                                            <SelectItem value="resolved" className="text-[11px]">📦 Arquivadas</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
-                            <div className="flex-1">
-                                <Select value={sourceFilter} onValueChange={(v: any) => setSourceFilter(v)}>
-                                    <SelectTrigger className="w-full h-[32px] bg-white dark:bg-[#111b21] rounded-md text-[11px] font-medium border-border/40 shadow-none">
-                                        <SelectValue placeholder="Canal" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {filterOptions.map((opt) => (
-                                            <SelectItem key={opt.value} value={opt.value} className="text-[11px]">
-                                                <div className="flex items-center gap-1.5">
-                                                    {opt.icon && <opt.icon className="h-3 w-3" />}
-                                                    {opt.label}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
                         {advancedFilters && onAdvancedFiltersChange && (
-                            <div className="p-2 rounded-lg bg-white/50 dark:bg-[#111b21]/50 border border-border/30">
-                                <AdvancedFiltersPanel filters={advancedFilters} onFiltersChange={onAdvancedFiltersChange} />
+                            <div className="p-2 rounded-2xl bg-white dark:bg-[#111b21] shadow-xl shadow-black/5 dark:shadow-none">
+                                <AdvancedFiltersPanel filters={advancedFilters} onFiltersChange={onAdvancedFiltersChange} availableConnections={availableConnections} />
                             </div>
                         )}
                     </div>

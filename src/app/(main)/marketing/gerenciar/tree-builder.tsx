@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import useSWR from "swr";
 import {
   Plus, Trash2, FolderTree, Crosshair, Target,

@@ -136,7 +136,7 @@ export function ChatAssignmentDropdown({ conversation, onAssignUpdate }: ChatAss
                     ) : (
                         <UserPlus className="h-3.5 w-3.5" />
                     )}
-                    <span className="hidden sm:inline truncate max-w-[120px]">
+                    <span className="hidden lg:inline truncate max-w-[100px]">
                         {isAssigned
                             ? conversation.assignedUserName || conversation.teamName || 'Atribuído'
                             : 'Atribuir'}

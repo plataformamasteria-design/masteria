@@ -20,12 +20,9 @@ export async function GET(req: NextRequest) {
     // Determine the target account ID
     const targetAccountId = accountParam ? (accountParam.startsWith("act_") ? accountParam : `act_${accountParam}`) : (auth.accountId.startsWith("act_") ? auth.accountId : `act_${auth.accountId}`);
 
-    // 1. Get ads from Drizzle for this company and account
+    // 1. Get ads from Drizzle for this company
     const allAds = await db.select().from(marketingAds).where(
-      and(
-        eq(marketingAds.companyId, auth.companyId),
-        eq(marketingAds.accountId, targetAccountId)
-      )
+      eq(marketingAds.companyId, auth.companyId)
     );
     
     if (!allAds.length) {
@@ -35,10 +32,7 @@ export async function GET(req: NextRequest) {
     // Fetch campaigns to map names
     const campaignMap = new Map();
     const allCampaigns = await db.select().from(marketingCampaigns).where(
-      and(
-        eq(marketingCampaigns.companyId, auth.companyId),
-        eq(marketingCampaigns.accountId, targetAccountId)
-      )
+      eq(marketingCampaigns.companyId, auth.companyId)
     );
     allCampaigns.forEach(c => campaignMap.set(c.campaignId, c.campaignName));
 

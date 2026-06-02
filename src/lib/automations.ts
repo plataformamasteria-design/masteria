@@ -151,13 +151,13 @@ export async function saveFlow(id: string, name: string, companyId: string, visu
 }
 
 export async function listFlows(companyId: string) {
+    if (!companyId || companyId === 'current-company') {
+        throw new Error('Company ID inválido ou não fornecido para listFlows.');
+    }
     try {
-        const flows = await db.select().from(automationFlows).where(
-            or(
-                eq(automationFlows.companyId, companyId),
-                eq(automationFlows.companyId, 'current-company')
-            )
-        ).orderBy(sql`${automationFlows.updatedAt} DESC`);
+        const flows = await db.select().from(automationFlows)
+            .where(eq(automationFlows.companyId, companyId))
+            .orderBy(sql`${automationFlows.updatedAt} DESC`);
         return flows;
     } catch (error) {
         console.error('[listFlows Error]:', error);
@@ -167,17 +167,10 @@ export async function listFlows(companyId: string) {
 
 export async function getFlow(id: string, companyId?: string) {
     try {
-        const flow = await db.query.automationFlows.findFirst({
-            where: companyId 
-                ? and(
-                    eq(automationFlows.id, id),
-                    or(
-                        eq(automationFlows.companyId, companyId),
-                        eq(automationFlows.companyId, 'current-company')
-                    )
-                )
-                : eq(automationFlows.id, id)
-        });
+        const whereClause = (companyId && companyId !== 'current-company')
+            ? and(eq(automationFlows.id, id), eq(automationFlows.companyId, companyId))
+            : eq(automationFlows.id, id);
+        const flow = await db.query.automationFlows.findFirst({ where: whereClause });
         return flow;
     } catch (error) {
         console.error('[getFlow Error]:', error);
@@ -187,16 +180,13 @@ export async function getFlow(id: string, companyId?: string) {
 
 export async function deleteFlow(id: string, companyId: string) {
     console.log(`[deleteFlow] Attempting delete: ID=${id}, Company=${companyId}`);
-    if (!companyId) throw new Error('Company ID é obrigatório.');
+    if (!companyId || companyId === 'current-company') throw new Error('Company ID é obrigatório.');
 
     try {
         const result = await db.delete(automationFlows)
             .where(and(
                 eq(automationFlows.id, id),
-                or(
-                    eq(automationFlows.companyId, companyId),
-                    eq(automationFlows.companyId, 'current-company')
-                )
+                eq(automationFlows.companyId, companyId)
             )).returning();
 
         console.log(`[deleteFlow] Deleted rows:`, result.length);
@@ -216,17 +206,14 @@ export async function deleteFlow(id: string, companyId: string) {
 
 export async function renameFlow(id: string, newName: string, companyId: string) {
     console.log(`[renameFlow] Attempting rename: ID=${id}, Name=${newName}, Company=${companyId}`);
-    if (!companyId) throw new Error('Company ID é obrigatório.');
+    if (!companyId || companyId === 'current-company') throw new Error('Company ID é obrigatório.');
 
     try {
         const [updated] = await db.update(automationFlows)
             .set({ name: newName, updatedAt: new Date() })
             .where(and(
                 eq(automationFlows.id, id),
-                or(
-                    eq(automationFlows.companyId, companyId),
-                    eq(automationFlows.companyId, 'current-company')
-                )
+                eq(automationFlows.companyId, companyId)
             ))
             .returning();
 
@@ -248,17 +235,14 @@ export async function renameFlow(id: string, newName: string, companyId: string)
 
 export async function toggleFlowStatus(id: string, isActive: boolean, companyId: string) {
     console.log(`[toggleFlowStatus] id=${id}, isActive=${isActive}, companyId=${companyId}`);
-    if (!companyId) throw new Error('Company ID é obrigatório.');
+    if (!companyId || companyId === 'current-company') throw new Error('Company ID é obrigatório.');
 
     try {
         const [updated] = await db.update(automationFlows)
             .set({ isActive, updatedAt: new Date() })
             .where(and(
                 eq(automationFlows.id, id),
-                or(
-                    eq(automationFlows.companyId, companyId),
-                    eq(automationFlows.companyId, 'current-company')
-                )
+                eq(automationFlows.companyId, companyId)
             ))
             .returning();
 
@@ -275,17 +259,14 @@ export async function toggleFlowStatus(id: string, isActive: boolean, companyId:
 
 export async function cloneFlow(id: string, companyId: string) {
     console.log(`[cloneFlow] id=${id}, companyId=${companyId}`);
-    if (!companyId) throw new Error('Company ID é obrigatório.');
+    if (!companyId || companyId === 'current-company') throw new Error('Company ID é obrigatório.');
 
     try {
         // 1. Buscar o fluxo original
         const original = await db.query.automationFlows.findFirst({
             where: and(
                 eq(automationFlows.id, id),
-                or(
-                    eq(automationFlows.companyId, companyId),
-                    eq(automationFlows.companyId, 'current-company')
-                )
+                eq(automationFlows.companyId, companyId)
             )
         });
 

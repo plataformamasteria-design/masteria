@@ -175,30 +175,30 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Pesquisar automações..."
-            className="pl-10 h-11 rounded-[14px] bg-white/[0.02] border border-white/[0.04] text-[13px] placeholder:text-muted-foreground/40 focus:bg-white/[0.04] focus:border-white/10 transition-all duration-300"
+            className="pl-10 h-11 rounded-[14px] bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 text-[13px] text-zinc-900 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:bg-zinc-50 dark:focus:bg-white/[0.04] focus:border-zinc-300 dark:focus:border-white/20 transition-all duration-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-          <SelectTrigger className="h-11 w-full md:w-[200px] rounded-[14px] bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-all duration-300">
-            <div className="flex items-center gap-2 text-muted-foreground">
+          <SelectTrigger className="h-11 w-full md:w-[200px] rounded-[14px] bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 text-zinc-900 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/[0.04] transition-all duration-300">
+            <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
               <Filter className="h-4 w-4" />
               <SelectValue placeholder="Filtrar por status" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-xl border-slate-200">
-            <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="active">Apenas Ativas</SelectItem>
-            <SelectItem value="paused">Apenas Pausadas</SelectItem>
+          <SelectContent className="rounded-xl border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-300">
+            <SelectItem value="all" className="hover:bg-zinc-100 dark:hover:bg-white/5">Todos os Status</SelectItem>
+            <SelectItem value="active" className="hover:bg-zinc-100 dark:hover:bg-white/5">Apenas Ativas</SelectItem>
+            <SelectItem value="paused" className="hover:bg-zinc-100 dark:hover:bg-white/5">Apenas Pausadas</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         {filteredFlows.map((flow) => (
-          <Card key={flow.id} className="group relative transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.3)] hover:-translate-y-1 overflow-hidden border border-white/[0.05] rounded-3xl bg-card/60 backdrop-blur-3xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+          <Card key={flow.id} className="group relative transition-all duration-500 hover:shadow-sm dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] hover:-translate-y-1 overflow-hidden border border-zinc-200 dark:border-white/10 rounded-[2rem] bg-white dark:bg-white/[0.02] backdrop-blur-md">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
             <CardHeader className="flex flex-row items-start justify-between space-y-0 p-6 pb-4">
               <div className="space-y-1.5 flex-1 pr-2">
                 {renamingId === flow.id ? (
@@ -234,7 +234,7 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
                   </div>
                 ) : (
                   <CardTitle
-                    className="text-lg font-bold text-foreground cursor-pointer hover:text-primary transition-colors line-clamp-1"
+                    className="text-lg font-bold text-zinc-900 dark:text-white cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors line-clamp-1"
                     onClick={() => {
                       setRenamingId(flow.id);
                       setNewName(flow.name);
@@ -244,11 +244,11 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
                   </CardTitle>
                 )}
                 <div className="flex items-center gap-2">
-                  <CardDescription className="text-[12px] font-medium text-muted-foreground">
+                  <CardDescription className="text-[12px] font-medium text-zinc-500">
                     Criado em {new Date(flow.createdAt).toLocaleDateString()}
                   </CardDescription>
-                  <span className="text-muted-foreground/40">•</span>
-                  <span className="text-[11px] text-muted-foreground/70 font-medium">
+                  <span className="text-zinc-400 dark:text-zinc-700">•</span>
+                  <span className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium bg-zinc-100 dark:bg-white/[0.03] px-2 py-0.5 rounded-full border border-zinc-200 dark:border-white/5">
                     v2.0
                   </span>
                 </div>
@@ -262,12 +262,12 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
                 />
               </div>
             </CardHeader>
-            <CardContent className="p-6 pt-5 flex justify-between items-center bg-white/[0.02] border-t border-white/[0.05]">
+            <CardContent className="p-6 pt-5 flex justify-between items-center bg-transparent border-t border-zinc-200 dark:border-white/5">
               <div className="flex gap-2">
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-[12px] transition-all"
+                  className="h-10 w-10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/[0.05] rounded-xl transition-all"
                   onClick={() => onEdit(flow.id)}
                   title="Editar Fluxo"
                 >
@@ -277,7 +277,7 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                  className="h-10 w-10 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-all"
                   onClick={() => handleClone(flow.id)}
                   title="Clonar Automação"
                 >
@@ -287,7 +287,7 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                  className="h-10 w-10 text-zinc-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all"
                   onClick={() => handleExport(flow)}
                   title="Exportar Automação"
                 >
@@ -299,25 +299,25 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-9 w-9 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                      className="h-10 w-10 text-zinc-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-xl transition-all"
                       title="Excluir"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-3xl border-slate-200">
+                  <AlertDialogContent className="rounded-3xl border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-950">
                     <AlertDialogHeader>
-                      <AlertDialogTitle className="text-xl font-bold text-slate-900">Excluir Automação?</AlertDialogTitle>
-                      <AlertDialogDescription className="text-slate-500">
+                      <AlertDialogTitle className="text-xl font-bold text-zinc-900 dark:text-white">Excluir Automação?</AlertDialogTitle>
+                      <AlertDialogDescription className="text-zinc-500 dark:text-zinc-400">
                         Esta ação não pode ser desfeita. Isso excluirá permanentemente o fluxo
-                        <span className="font-bold text-slate-900"> "{flow.name}"</span> e todos os logs associados.
+                        <span className="font-bold text-zinc-900 dark:text-white"> "{flow.name}"</span> e todos os logs associados.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="gap-2">
-                      <AlertDialogCancel className="rounded-2xl border-slate-200 hover:bg-slate-50">Cancelar</AlertDialogCancel>
+                      <AlertDialogCancel className="rounded-2xl border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-white/[0.02] text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-white/[0.05]">Cancelar</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(flow.id)}
-                        className="rounded-2xl bg-red-600 hover:bg-red-700 text-white border-none"
+                        className="rounded-2xl bg-rose-600 hover:bg-rose-700 text-white border-none"
                       >
                         Excluir Agora
                       </AlertDialogAction>
@@ -326,10 +326,10 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
                 </AlertDialog>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-[0.1em]">
+                <span className="text-[10px] text-zinc-500 font-semibold uppercase tracking-[0.1em]">
                   Última Alteração
                 </span>
-                <span className="text-[12px] text-foreground font-bold">
+                <span className="text-[12px] text-zinc-300 font-bold">
                   {new Date(flow.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
@@ -338,11 +338,11 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
         ))}
 
         {(filteredFlows.length === 0 && flows.length > 0) && (
-          <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[32px] bg-slate-50/50 border-slate-200">
+          <div className="col-span-full py-20 text-center border border-zinc-200 dark:border-white/5 border-dashed rounded-[2rem] bg-white dark:bg-white/[0.01]">
             <div className="flex flex-col items-center gap-3">
-              <Search className="h-8 w-8 text-slate-200" />
-              <p className="text-slate-900 font-extrabold text-lg">Nenhum resultado encontrado</p>
-              <p className="text-slate-500 text-sm">
+              <Search className="h-8 w-8 text-zinc-400 dark:text-zinc-600" />
+              <p className="text-zinc-900 dark:text-zinc-300 font-extrabold text-lg">Nenhum resultado encontrado</p>
+              <p className="text-zinc-500 text-sm">
                 Tente ajustar seus filtros ou termos de pesquisa.
               </p>
             </div>
@@ -350,14 +350,14 @@ export function AutomationList({ onEdit, refreshTrigger }: AutomationListProps) 
         )}
 
         {flows.length === 0 && (
-          <div className="col-span-full py-20 text-center border-2 border-dashed rounded-[32px] bg-white border-slate-100 shadow-sm">
+          <div className="col-span-full py-20 text-center border border-zinc-200 dark:border-white/5 border-dashed rounded-[2rem] bg-white dark:bg-white/[0.01]">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 rounded-[32px] bg-primary/5 flex items-center justify-center mb-2">
-                <Bot className="h-10 w-10 text-primary/40" />
+              <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-2">
+                <Bot className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="space-y-1">
-                <p className="text-slate-900 font-extrabold text-xl">Inicie sua Automação</p>
-                <p className="text-slate-500 text-sm max-w-[320px] mx-auto leading-relaxed">
+                <p className="text-zinc-900 dark:text-white font-extrabold text-xl">Inicie sua Automação</p>
+                <p className="text-zinc-500 text-sm max-w-[320px] mx-auto leading-relaxed">
                   Clique no botão "Nova Automação" para criar fluxos inteligentes e escalar o atendimento.
                 </p>
               </div>

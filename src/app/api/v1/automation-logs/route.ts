@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserSession } from '@/app/actions';
 import { db } from '@/lib/db';
 import { automationLogs, automationRules } from '@/lib/db/schema';
-import { eq, and, gte, lte, desc, ilike } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, ilike, count } from 'drizzle-orm';
 
 // Pagination limit constants
 const MAX_LIMIT = 50; // Maximum records per request to prevent performance issues
@@ -93,11 +93,11 @@ export async function GET(request: NextRequest) {
 
     // Contar total de registros para paginação
     const totalResult = await db
-      .select({ count: automationLogs.id })
+      .select({ value: count() })
       .from(automationLogs)
       .where(and(...conditions));
     
-    const total = totalResult.length;
+    const total = totalResult[0]?.value || 0;
     const totalPages = Math.ceil(total / (filters.limit || 50));
 
     return NextResponse.json({

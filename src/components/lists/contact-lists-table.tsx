@@ -150,26 +150,27 @@ export function ContactListsTable() {
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                 <div className="relative w-full sm:w-auto sm:flex-1 sm:max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                     <Input
                         placeholder="Buscar por nome ou descrição..."
-                        className="pl-9 w-full"
+                        className="pl-9 w-full bg-black/5 dark:bg-white/[0.02] border-black/10 dark:border-white/10 text-foreground dark:text-white placeholder:text-zinc-500 rounded-xl focus-visible:ring-emerald-500/30"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
                 <div className="w-full sm:w-auto sm:ml-auto">
-                    <Button onClick={() => handleOpenModal(null)} className="w-full sm:w-auto">
-                        <PlusCircle className="mr-2 h-4 w-4" />
+                    <Button onClick={() => handleOpenModal(null)} className="w-full sm:w-auto rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] transition-all">
+                        <PlusCircle className="mr-2 h-4 w-4 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                         Criar Lista
                     </Button>
                 </div>
             </div>
             
-            <div className="border rounded-lg w-full overflow-x-auto">
+            <div className="glass-card rounded-[2rem] w-full overflow-hidden relative p-4 sm:p-6 mt-4">
+                <div className="w-full overflow-auto custom-scrollbar">
                 <Table className="min-w-[420px]">
-                    <TableHeader>
-                        <TableRow>
+                    <TableHeader className="bg-muted/50 dark:bg-black/20 border-b border-black/5 dark:border-white/5">
+                        <TableRow className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] border-black/5 dark:border-white/5 transition-colors">
                             <TableHead className="min-w-[140px]">Nome da Lista</TableHead>
                             <TableHead className="w-[70px] text-center">Qtd</TableHead>
                             <TableHead className="w-[90px]">Data</TableHead>
@@ -191,7 +192,7 @@ export function ContactListsTable() {
                             </TableRow>
                         ) : (
                             lists.map((list) => (
-                                <TableRow key={list.id}>
+                                <TableRow key={list.id} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.04] border-black/5 dark:border-white/5 transition-colors">
                                     <TableCell>
                                         <div className="font-medium">{list.name}</div>
                                         {list.description && (
@@ -236,6 +237,7 @@ export function ContactListsTable() {
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </div>
             
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-2">

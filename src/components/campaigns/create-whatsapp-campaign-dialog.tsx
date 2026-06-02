@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
   DialogContent,
@@ -394,21 +395,21 @@ export function CreateWhatsappCampaignDialog({
                 return (
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="campaign-name">Nome da Campanha</Label>
-                            <Input id="campaign-name" value={name} onChange={(e) => setName(e.target.value)} required />
+                            <Label htmlFor="campaign-name" className="text-zinc-300">Nome da Campanha</Label>
+                            <Input id="campaign-name" className="bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50" value={name} onChange={(e) => setName(e.target.value)} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="connection-select">Enviar de</Label>
+                            <Label htmlFor="connection-select" className="text-zinc-300">Enviar de</Label>
                             <Select value={selectedConnectionId} onValueChange={setSelectedConnectionId}>
-                                <SelectTrigger><SelectValue placeholder="Selecione uma conexão"/></SelectTrigger>
-                                <SelectContent>{connections.map(c => <SelectItem key={c.id} value={c.id}>{c.config_name}</SelectItem>)}</SelectContent>
+                                <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30"><SelectValue placeholder="Selecione uma conexão"/></SelectTrigger>
+                                <SelectContent className="bg-zinc-950 border-white/10 text-white">{connections.map(c => <SelectItem key={c.id} value={c.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{c.config_name}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="template-select">Usando o Modelo</Label>
+                            <Label htmlFor="template-select" className="text-zinc-300">Usando o Modelo</Label>
                             <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                                <SelectTrigger disabled={!wabaId}><SelectValue placeholder="Selecione um modelo"/></SelectTrigger>
-                                <SelectContent>{availableTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+                                <SelectTrigger disabled={!wabaId} className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30 disabled:opacity-50"><SelectValue placeholder="Selecione um modelo"/></SelectTrigger>
+                                <SelectContent className="bg-zinc-950 border-white/10 text-white">{availableTemplates.map(t => <SelectItem key={t.id} value={t.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{t.name}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
                     </div>
@@ -417,46 +418,46 @@ export function CreateWhatsappCampaignDialog({
                 return (
                      <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Mapeamento de Variáveis</Label>
-                            <Card className="p-4 space-y-3">
-                                <div className="flex items-start gap-2 text-xs text-muted-foreground bg-blue-500/10 p-2 rounded-md">
-                                    <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                            <Label className="text-zinc-300">Mapeamento de Variáveis</Label>
+                            <Card className="p-4 space-y-3 bg-white/[0.02] border-white/5 backdrop-blur-md">
+                                <div className="flex items-start gap-2 text-xs text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg shadow-[inset_0_0_15px_rgba(16,185,129,0.05)]">
+                                    <Info className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
                                     <p>Associe cada variável a um campo do contato ou insira um valor fixo para todos.</p>
                                 </div>
                                 {variableNames.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">Este modelo não possui variáveis.</p>
+                                    <p className="text-sm text-zinc-400">Este modelo não possui variáveis.</p>
                                 ) : (
                                     variableNames.map((varName, index) => (
                                         <React.Fragment key={varName}>
                                         {index > 0 && <Separator />}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                                             <div className="space-y-2">
-                                                <Label className="font-semibold text-base">{`{{${varName}}}`}</Label>
+                                                <Label className="font-semibold text-base text-white">{`{{${varName}}}`}</Label>
                                                 <RadioGroup 
                                                     value={variableMappings[varName]?.type || 'fixed'} 
                                                     onValueChange={(type: 'dynamic' | 'fixed') => handleVariableMappingTypeChange(varName, type)}
                                                     className="pt-2"
                                                 >
                                                     <div className="flex items-center space-x-2">
-                                                        <RadioGroupItem value="fixed" id={`fixed-${varName}`} />
-                                                        <Label htmlFor={`fixed-${varName}`}>Valor Fixo</Label>
+                                                        <RadioGroupItem value="fixed" id={`fixed-${varName}`} className="border-white/20 text-emerald-500" />
+                                                        <Label htmlFor={`fixed-${varName}`} className="text-zinc-300">Valor Fixo</Label>
                                                     </div>
                                                      <div className="flex items-center space-x-2">
-                                                        <RadioGroupItem value="dynamic" id={`dynamic-${varName}`} />
-                                                        <Label htmlFor={`dynamic-${varName}`}>Campo do Contato</Label>
+                                                        <RadioGroupItem value="dynamic" id={`dynamic-${varName}`} className="border-white/20 text-emerald-500" />
+                                                        <Label htmlFor={`dynamic-${varName}`} className="text-zinc-300">Campo do Contato</Label>
                                                     </div>
                                                 </RadioGroup>
                                             </div>
                                             <div className="mt-1">
                                                 {variableMappings[varName]?.type === 'dynamic' ? (
                                                      <Select value={variableMappings[varName]?.value || ''} onValueChange={(value) => handleVariableMappingValueChange(varName, value)}>
-                                                        <SelectTrigger><SelectValue placeholder="Selecione um campo"/></SelectTrigger>
-                                                        <SelectContent>
-                                                            {contactFields.map(field => <SelectItem key={field.value} value={field.value}>{field.label}</SelectItem>)}
+                                                        <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30"><SelectValue placeholder="Selecione um campo"/></SelectTrigger>
+                                                        <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                                                            {contactFields.map(field => <SelectItem key={field.value} value={field.value} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{field.label}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : (
-                                                    <Input placeholder="Digite o valor fixo" value={variableMappings[varName]?.value || ''} onChange={e => handleVariableMappingValueChange(varName, e.target.value)} />
+                                                    <Input className="bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50" placeholder="Digite o valor fixo" value={variableMappings[varName]?.value || ''} onChange={e => handleVariableMappingValueChange(varName, e.target.value)} />
                                                 )}
                                             </div>
                                         </div>
@@ -504,10 +505,10 @@ export function CreateWhatsappCampaignDialog({
                                 setFunnelStageIds={setFunnelStageIds}
                             />
                         </div>
-                        <div className="space-y-4 pt-2 border-t mt-4">
-                            <Label className="text-base font-semibold">Agendamento</Label>
+                        <div className="space-y-4 pt-2 border-t border-white/10 mt-4">
+                            <Label className="text-base font-semibold text-white">Agendamento</Label>
                             
-                            <Card className="p-4 border-dashed bg-muted/30">
+                            <Card className="p-4 border-dashed border-white/10 bg-white/[0.01]">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
@@ -583,23 +584,6 @@ export function CreateWhatsappCampaignDialog({
                                 />
                             </div>
                         </div>
-                        <DialogFooter className="pt-4 border-t mt-auto shrink-0">
-                            <Button type="button" variant="secondary" onClick={() => setCurrentStep(steps.length - 2)} disabled={isProcessing}>Voltar</Button>
-                            <Button type="submit" disabled={isProcessing || (contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0)} onClick={handleSubmit}>
-                                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {sendNow ? (
-                                    <>
-                                        <Send className="mr-2 h-4 w-4" />
-                                        Confirmar e Enviar Agora
-                                    </>
-                                ) : (
-                                    <>
-                                        <Clock className="mr-2 h-4 w-4" />
-                                        Confirmar e Agendar
-                                    </>
-                                )}
-                            </Button>
-                        </DialogFooter>
                     </div>
                 );
             default:
@@ -609,59 +593,116 @@ export function CreateWhatsappCampaignDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChangeWithReset}>
-            <DialogContent className="sm:max-w-4xl lg:max-w-5xl h-[90vh] flex flex-col p-6">
-                <DialogHeader className="px-2">
-                    <div className="flex items-center gap-2">
-                         <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8">
-                            <ArrowLeft />
-                        </Button>
-                        <div>
-                             <DialogTitle className="text-2xl font-bold tracking-tight">Criar Campanha WhatsApp</DialogTitle>
-                             <DialogDescription className="text-base">{currentStepConfig?.title}</DialogDescription>
+            <DialogContent className="sm:max-w-[1200px] w-[95vw] h-[90vh] flex flex-col p-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-3xl border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden">
+                <div className="flex flex-1 min-h-0 h-full">
+                    {/* Left Sidebar: Steps */}
+                    <div className="w-full max-w-[280px] border-r border-zinc-200 dark:border-white/10 bg-zinc-100/50 dark:bg-black/20 flex-col hidden md:flex">
+                        <div className="p-6 border-b border-zinc-200 dark:border-white/10 flex items-center gap-3">
+                            <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-zinc-500 dark:text-zinc-400 shrink-0">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div>
+                                <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white leading-tight">Nova Campanha</h2>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400">WhatsApp Oficial</p>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                            {steps.map((step, idx) => {
+                                const isActive = idx === currentStep;
+                                const isPast = idx < currentStep;
+                                return (
+                                    <div key={step.id} className={cn("relative flex items-start p-3 rounded-lg transition-all duration-300", isActive ? "bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]" : (isPast ? "opacity-70" : "opacity-40"))}>
+                                        {isActive && <motion.div layoutId="active-step-whatsapp" className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-l-lg shadow-[0_0_10px_rgba(16,185,129,0.5)]" />}
+                                        <div className="flex flex-col ml-1">
+                                            <span className={cn("text-sm font-semibold", isActive ? "text-emerald-500 dark:text-emerald-400" : "text-zinc-600 dark:text-white")}>{step.title}</span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
-                </DialogHeader>
-                {isLoading ? (
-                    <div className="h-full flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin"/></div>
-                ) : currentStepConfig?.id === 'review' ? (
-                     renderStepContent()
-                ) : (
-                <div className="flex-1 min-h-0 flex flex-col px-2">
-                    <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-8 py-4 flex-1 min-h-0 overflow-y-auto pr-2", isMediaStep && "md:grid-cols-1")}>
-                        <div className={cn("space-y-6", isMediaStep && "md:col-span-2")}>
-                           {renderStepContent()}
-                        </div>
-                        {!isMediaStep && selectedTemplate?.components && (() => {
-                            const contactFieldsMapping = contactFields.reduce((acc, field) => {
-                                acc[field.value] = field.label;
-                                return acc;
-                            }, {} as Record<string, string>);
-                            
-                            return (
-                                <div className="space-y-2 hidden md:flex md:flex-col overflow-auto bg-muted/30 p-4 rounded-xl border border-border/50">
+
+                    {/* Center Area: Form Content */}
+                    <div className="flex-1 flex flex-col min-w-0 relative bg-white dark:bg-zinc-950/50">
+                        {isLoading ? (
+                            <div className="h-full flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-emerald-500"/></div>
+                        ) : (
+                            <>
+                                <div className="p-4 md:p-6 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between bg-zinc-50 dark:bg-black/10">
+                                    <div className="flex items-center gap-3 md:hidden">
+                                        <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-zinc-500 dark:text-zinc-400 shrink-0">
+                                            <ArrowLeft className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <h3 className="text-xl font-medium text-zinc-900 dark:text-white">{currentStepConfig?.title}</h3>
+                                    <span className="text-sm text-zinc-500 hidden sm:block">Passo {currentStep + 1} de {steps.length}</span>
+                                </div>
+                                
+                                <div className="flex-1 overflow-y-auto p-4 md:p-6 relative min-h-0 custom-scrollbar">
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={currentStep}
+                                            initial={{ opacity: 0, x: 15 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -15 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="h-full"
+                                        >
+                                            {renderStepContent()}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </div>
+
+                                <div className="p-4 border-t border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/20 flex justify-between items-center shrink-0">
+                                    <Button type="button" variant="ghost" className="hover:bg-zinc-200 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-zinc-500 dark:text-zinc-400" onClick={() => handleOpenChangeWithReset(false)} disabled={isProcessing}>Cancelar</Button>
+                                    <div className="flex gap-2">
+                                        {currentStep > 0 && (
+                                            <Button type="button" variant="outline" onClick={handlePrevStep} className="bg-transparent border-white/10 text-white hover:bg-white/5 hidden sm:flex">Voltar</Button>
+                                        )}
+                                        {currentStep === steps.length - 1 ? (
+                                            <Button type="button" className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-300" onClick={handleSubmit} disabled={isProcessing || (contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0)}>
+                                                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                {sendNow ? <><Send className="mr-2 h-4 w-4" /> Confirmar e Enviar</> : <><Clock className="mr-2 h-4 w-4" /> Confirmar Agendamento</>}
+                                            </Button>
+                                        ) : (
+                                            <Button type="button" className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-300" onClick={handleNextStep} disabled={isProcessing || (!selectedTemplateId && currentStep === 0)}>
+                                                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Avançar
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Right Area: Sticky Preview */}
+                    {!isLoading && currentStepConfig?.id !== 'review' && (
+                        <div className="w-full max-w-[350px] border-l border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-[#0b141a] flex-col relative hidden lg:flex shadow-none dark:shadow-[inset_10px_0_20px_rgba(0,0,0,0.5)]">
+                            <div className="p-4 border-b border-zinc-200 dark:border-white/5 bg-white dark:bg-black/20">
+                                <h3 className="text-sm font-medium text-emerald-400 flex items-center gap-2">
+                                    <VideoIcon className="h-4 w-4" />
+                                    Visualização Dinâmica
+                                </h3>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                {selectedTemplate?.components ? (
                                     <TemplatePreview
                                         components={selectedTemplate.components as any}
                                         variableMappings={variableMappings}
-                                        contactFieldsMap={contactFieldsMapping}
+                                        contactFieldsMap={contactFields.reduce((acc, field) => { acc[field.value] = field.label; return acc; }, {} as Record<string, string>)}
                                         mediaUrl={null}
                                     />
-                                </div>
-                            );
-                        })()}
-                    </div>
-                    <DialogFooter className="pt-4 border-t">
-                        <div className="flex justify-end w-full">
-                            <div className="flex gap-2">
-                                <Button type="button" variant="secondary" onClick={() => handleOpenChangeWithReset(false)} disabled={isProcessing}>Cancelar</Button>
-                                <Button type="button" onClick={handleNextStep} disabled={isProcessing || !selectedTemplateId}>
-                                    {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Avançar
-                                </Button>
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-40 text-sm p-4">
+                                        <FileText className="h-10 w-10 mb-3 mx-auto text-zinc-500" />
+                                        <p>Selecione um modelo para visualizar como a mensagem será recebida pelos contatos.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    </DialogFooter>
+                    )}
                 </div>
-                )}
             </DialogContent>
         </Dialog>
     );

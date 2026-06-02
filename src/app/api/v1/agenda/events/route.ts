@@ -42,13 +42,12 @@ export async function GET(req: Request) {
       conditions.push(eq(calendarEvents.calendarId, calendarId));
     }
 
-    // Call sync to pull new events from Google Calendar
+    // Call sync to pull new events from Google Calendar in background (non-blocking)
     if (start && end) {
-      try {
-        await googleCalendarService.syncEventsFromGoogle(session.companyId, new Date(start), new Date(end));
-      } catch (syncErr) {
-        console.warn('[GET /api/v1/agenda/events] Failed to sync events from Google:', syncErr);
-      }
+      googleCalendarService.syncEventsFromGoogle(session.companyId, new Date(start), new Date(end))
+        .catch(syncErr => {
+          console.warn('[GET /api/v1/agenda/events] Failed to background sync events from Google:', syncErr);
+        });
     }
 
     const data = await db.query.calendarEvents.findMany({

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowRight, Loader2 } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
+import useSWR from 'swr';
 import type { Conversation } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { createToastNotifier } from '@/lib/toast-helper';
@@ -14,29 +15,23 @@ import { RelativeTime } from '../ui/relative-time';
 
 
 export function PendingConversations() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const notify = useMemo(() => createToastNotifier(toast), [toast]);
 
-   useEffect(() => {
-        const fetchConversations = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch('/api/v1/conversations');
-                if (!response.ok) throw new Error('Falha ao buscar conversas.');
-                const responseData = await response.json();
-                const data: Conversation[] = responseData.data || responseData;
-                const pendingConversations = data.filter(c => c.status === 'NEW').slice(0, 4);
-                setConversations(pendingConversations);
-            } catch (error) {
-                 notify.error('Erro', (error as Error).message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchConversations();
-    }, [notify]);
+  const fetcher = async (url: string) => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Falha ao buscar conversas.');
+    const responseData = await response.json();
+    return responseData.data || responseData;
+  };
+
+  const { data, error, isLoading: loading } = useSWR<Conversation[]>('/api/v1/conversations', fetcher, {
+    dedupingInterval: 30000,
+    revalidateOnFocus: false,
+    onError: (err) => notify.error('Erro', err.message)
+  });
+
+  const conversations = data ? data.filter(c => c.status === 'NEW').slice(0, 4) : [];
 
 
   return (

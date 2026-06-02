@@ -55,6 +55,12 @@ export function ConnectionsManager() {
     // Force Rebuild: Ensure hook updates are picked up
     // console.log('ConnectionsManager rendered', { connectBaileys, disconnectBaileys });
 
+    React.useEffect(() => {
+        const handleOpen = () => setIsEditModalOpen(true);
+        window.addEventListener('open-official-modal', handleOpen);
+        return () => window.removeEventListener('open-official-modal', handleOpen);
+    }, [setIsEditModalOpen]);
+
     return (
         <div className="space-y-6">
             <TokenAlerts connections={connections} />
@@ -62,8 +68,8 @@ export function ConnectionsManager() {
             {/* HEADER ACTIONS - Consolidated row */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-lg font-medium">Conexões Ativas</h2>
-                    <p className="text-sm text-muted-foreground">Gerencie suas contas do WhatsApp Business e Instagram.</p>
+                    <h2 className="text-xl font-bold tracking-tight text-white">Conexões Ativas</h2>
+                    <p className="text-sm text-zinc-400">Gerencie suas contas do WhatsApp Business e Instagram.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <Button
@@ -71,6 +77,7 @@ export function ConnectionsManager() {
                         size="sm"
                         onClick={() => fetchConnections(true)}
                         disabled={loading}
+                        className="rounded-xl border border-white/5 text-zinc-300 hover:text-white hover:bg-white/[0.05]"
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                         Atualizar
@@ -80,7 +87,7 @@ export function ConnectionsManager() {
                         variant="outline"
                         onClick={handleAutoImport}
                         disabled={isImporting}
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto rounded-xl border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]"
                     >
                         {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Image src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" width={16} height={16} alt="FB" className="mr-2" />}
                         Importar do Facebook
@@ -88,7 +95,7 @@ export function ConnectionsManager() {
 
                     <Button
                         variant="outline"
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto rounded-xl border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]"
                         onClick={async () => {
                             const { dismiss } = toast({
                                 title: "Aguarde",
@@ -121,10 +128,6 @@ export function ConnectionsManager() {
                         Conectar Instagram
                     </Button>
 
-                    <Button className="w-full sm:w-auto" onClick={() => setIsEditModalOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Manual
-                    </Button>
                 </div>
             </div>
 
@@ -133,9 +136,9 @@ export function ConnectionsManager() {
 
             <div className="space-y-6">
                 {loading ? (
-                    <Card className="flex items-center justify-center p-8 sm:p-16">
-                        <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-muted-foreground" />
-                    </Card>
+                    <div className="flex items-center justify-center p-8 sm:p-16 border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] bg-white/[0.02] backdrop-blur-md rounded-[2rem]">
+                        <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-zinc-500" />
+                    </div>
                 ) : (
                     /* MAIN TABLE VIEW */
                     <ConnectionsTable

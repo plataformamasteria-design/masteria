@@ -1,6 +1,6 @@
 {
   "name": "nextn",
-  "version": "2.4.2",
+  "version": "3.0.0",
   "private": true,
   "engines": {
     "node": ">=20"
@@ -31,7 +31,7 @@
     "health": "bash scripts/health-check.sh",
     "db:generate": "drizzle-kit generate",
     "db:generate:vector": "drizzle-kit generate --config=drizzle.vector.config.ts",
-    "db:migrate": "tsx scripts/migrate-db.ts",
+    "db:migrate": "node --env-file=.env.local --env-file=.env node_modules/tsx/dist/cli.mjs scripts/migrate-db.ts",
     "db:migrate:vector": "tsx scripts/migrate-vector-db.ts",
     "db:push": "yes '' | drizzle-kit push --config=drizzle.config.ts",
     "db:rollback": "tsx scripts/rollback-db.ts",

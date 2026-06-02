@@ -62,33 +62,33 @@ export function AutomationExecutions() {
     }, [page, statusFilter]);
 
     return (
-        <Card className="border-slate-200/60 shadow-sm rounded-[24px] overflow-hidden bg-white">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/30">
+        <Card className="border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] bg-white/[0.02] backdrop-blur-md rounded-[2rem] overflow-hidden transition-all">
+            <CardHeader className="border-b border-white/5 bg-transparent pb-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-blue-600" />
+                    <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-emerald-400" />
                         Histórico de Execuções
                     </CardTitle>
                     <div className="flex items-center gap-2">
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[160px] h-9 rounded-xl border-slate-200 bg-white">
+                            <SelectTrigger className="w-[160px] h-9 rounded-xl border-white/10 bg-white/[0.02] text-zinc-300 focus:ring-emerald-500/50 hover:bg-white/[0.05]">
                                 <SelectValue placeholder="Status" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-xl border-slate-200">
-                                <SelectItem value="all">Todos os Status</SelectItem>
-                                <SelectItem value="running">Executando</SelectItem>
-                                <SelectItem value="completed">Concluídos</SelectItem>
-                                <SelectItem value="failed">Falhas</SelectItem>
+                            <SelectContent className="rounded-xl border-white/10 bg-zinc-950 text-zinc-300">
+                                <SelectItem value="all" className="hover:bg-white/5">Todos os Status</SelectItem>
+                                <SelectItem value="running" className="hover:bg-white/5">Executando</SelectItem>
+                                <SelectItem value="completed" className="hover:bg-white/5">Concluídos</SelectItem>
+                                <SelectItem value="failed" className="hover:bg-white/5">Falhas</SelectItem>
                             </SelectContent>
                         </Select>
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-9 w-9 rounded-xl border-slate-200"
+                            className="h-9 w-9 rounded-xl border-white/10 bg-white/[0.02] hover:bg-white/[0.05] text-zinc-300 hover:text-white"
                             onClick={fetchExecutions}
                             disabled={loading}
                         >
-                            <RefreshCw className={`h-4 w-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                         </Button>
                     </div>
                 </div>
@@ -96,13 +96,13 @@ export function AutomationExecutions() {
             <CardContent className="p-0">
                 <div className="overflow-x-auto">
                     <Table>
-                        <TableHeader className="bg-slate-50/50">
-                            <TableRow className="hover:bg-transparent border-slate-100">
-                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-slate-400 pl-6">Início</TableHead>
-                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fluxo</TableHead>
-                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Contato</TableHead>
-                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Status</TableHead>
-                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-slate-400 pr-6">Duração / Erro</TableHead>
+                        <TableHeader className="bg-white/[0.02]">
+                            <TableRow className="hover:bg-transparent border-white/5">
+                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 pl-6">Início</TableHead>
+                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Fluxo</TableHead>
+                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Contato</TableHead>
+                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Status</TableHead>
+                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 pr-6">Duração / Erro</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -124,28 +124,28 @@ export function AutomationExecutions() {
                                     const StatusIcon = config.icon;
 
                                     return (
-                                        <TableRow 
+                                            <TableRow 
                                             key={exec.id} 
-                                            className="hover:bg-slate-50/50 transition-colors border-slate-100 cursor-pointer"
+                                            className="hover:bg-white/[0.04] transition-colors border-white/5 cursor-pointer"
                                             onClick={() => setSelectedExecution(exec)}
                                         >
                                             <TableCell className="pl-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-slate-700">
+                                                    <span className="text-sm font-bold text-zinc-300">
                                                         {format(new Date(exec.startedAt), 'HH:mm:ss')}
                                                     </span>
-                                                    <span className="text-[10px] text-slate-400 font-medium">
+                                                    <span className="text-[10px] text-zinc-500 font-medium">
                                                         {format(new Date(exec.startedAt), 'dd MMM yyyy', { locale: ptBR })}
                                                     </span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <span className="text-sm font-semibold text-slate-900">{exec.flowName || 'Excluído'}</span>
+                                                <span className="text-sm font-semibold text-white">{exec.flowName || 'Excluído'}</span>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-medium text-slate-700">{exec.contactName || 'Desconhecido'}</span>
-                                                    <span className="text-[11px] text-slate-400 font-mono">{exec.contactPhone}</span>
+                                                    <span className="text-sm font-medium text-zinc-300">{exec.contactName || 'Desconhecido'}</span>
+                                                    <span className="text-[11px] text-zinc-500 font-mono">{exec.contactPhone}</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -156,15 +156,15 @@ export function AutomationExecutions() {
                                             </TableCell>
                                             <TableCell className="pr-6">
                                                 {exec.status === 'failed' ? (
-                                                    <span className="text-[11px] text-red-500 font-medium line-clamp-1" title={exec.error}>
+                                                    <span className="text-[11px] text-rose-500 font-medium line-clamp-1" title={exec.error}>
                                                         {exec.error}
                                                     </span>
                                                 ) : exec.finishedAt ? (
-                                                    <span className="text-[11px] text-slate-400 font-medium">
+                                                    <span className="text-[11px] text-zinc-500 font-medium">
                                                         Encerrado às {format(new Date(exec.finishedAt), 'HH:mm')}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-[11px] text-blue-400 animate-pulse font-medium">Em progresso...</span>
+                                                    <span className="text-[11px] text-emerald-400 animate-pulse font-medium">Em progresso...</span>
                                                 )}
                                             </TableCell>
                                         </TableRow>
@@ -176,13 +176,13 @@ export function AutomationExecutions() {
                 </div>
 
                 {totalPages > 1 && (
-                    <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
-                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Página {page} de {totalPages}</span>
+                    <div className="p-4 border-t border-white/5 flex items-center justify-between bg-transparent">
+                        <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Página {page} de {totalPages}</span>
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 rounded-lg text-[11px] font-bold"
+                                className="h-8 rounded-lg text-[11px] font-bold border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]"
                                 disabled={page === 1}
                                 onClick={() => setPage(page - 1)}
                             >
@@ -191,7 +191,7 @@ export function AutomationExecutions() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 rounded-lg text-[11px] font-bold"
+                                className="h-8 rounded-lg text-[11px] font-bold border-white/10 bg-white/[0.02] text-zinc-300 hover:text-white hover:bg-white/[0.05]"
                                 disabled={page === totalPages}
                                 onClick={() => setPage(page + 1)}
                             >
@@ -203,22 +203,22 @@ export function AutomationExecutions() {
             </CardContent>
             
             <Dialog open={!!selectedExecution} onOpenChange={(open) => !open && setSelectedExecution(null)}>
-                <DialogContent className="max-w-2xl bg-white border-slate-200">
+                <DialogContent className="max-w-2xl bg-zinc-950 border-white/10">
                     <DialogHeader>
-                        <DialogTitle className="text-slate-900 font-bold">Detalhes da Execução</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Fluxo: {selectedExecution?.flowName}</DialogDescription>
+                        <DialogTitle className="text-white font-bold">Detalhes da Execução</DialogTitle>
+                        <DialogDescription className="text-zinc-400 font-medium">Fluxo: {selectedExecution?.flowName}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 pt-2">
                         {selectedExecution?.error && (
-                            <div className="bg-red-50 p-4 rounded-xl border border-red-100 text-red-700 text-sm font-mono whitespace-pre-wrap overflow-auto max-h-[300px]">
+                            <div className="bg-rose-500/10 p-4 rounded-xl border border-rose-500/20 text-rose-400 text-sm font-mono whitespace-pre-wrap overflow-auto max-h-[300px]">
                                 {selectedExecution.error}
                             </div>
                         )}
-                        <div className="text-sm bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-slate-700">
-                            <p><strong className="text-slate-900">Contato:</strong> {selectedExecution?.contactName} ({selectedExecution?.contactPhone})</p>
-                            <p><strong className="text-slate-900">Status:</strong> {selectedExecution?.status}</p>
-                            <p><strong className="text-slate-900">Início:</strong> {selectedExecution?.startedAt && format(new Date(selectedExecution.startedAt), 'dd/MM/yyyy HH:mm:ss')}</p>
-                            <p><strong className="text-slate-900">Fim:</strong> {selectedExecution?.finishedAt ? format(new Date(selectedExecution.finishedAt), 'dd/MM/yyyy HH:mm:ss') : '-'}</p>
+                        <div className="text-sm bg-white/[0.02] p-4 rounded-xl border border-white/5 space-y-2 text-zinc-300">
+                            <p><strong className="text-white">Contato:</strong> {selectedExecution?.contactName} ({selectedExecution?.contactPhone})</p>
+                            <p><strong className="text-white">Status:</strong> {selectedExecution?.status}</p>
+                            <p><strong className="text-white">Início:</strong> {selectedExecution?.startedAt && format(new Date(selectedExecution.startedAt), 'dd/MM/yyyy HH:mm:ss')}</p>
+                            <p><strong className="text-white">Fim:</strong> {selectedExecution?.finishedAt ? format(new Date(selectedExecution.finishedAt), 'dd/MM/yyyy HH:mm:ss') : '-'}</p>
                         </div>
                     </div>
                 </DialogContent>

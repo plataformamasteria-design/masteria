@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import useSWR from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   X, Loader2, RefreshCw, CheckCircle2, AlertCircle,
   ImageIcon, CheckSquare, Square, Zap, Film,

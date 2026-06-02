@@ -132,10 +132,6 @@ export const authConfig: NextAuthOptions = {
           throw new Error('Credenciais inválidas');
         }
 
-        if (!user.emailVerified) {
-          throw new Error('Email não verificado. Por favor, verifique seu email.');
-        }
-
         return {
           id: user.id,
           email: user.email,

@@ -44,14 +44,24 @@ export class SessionService {
         const evolutionSessions = await sessionRepository.findByCompany(companyId, 'evolution');
         const sessions = [...allSessions, ...evolutionSessions];
 
-        const results = await Promise.all(sessions.map(async (s) => {
+        let allInstances: any[] = [];
+        try {
+            allInstances = await evolutionApiService.fetchAllInstances();
+        } catch (e) {
+            console.error("[SessionService] Erro ao buscar instances globais", e);
+        }
+
+        const results = sessions.map((s) => {
           let runtimeStatus: string | null = null;
           let hasAuth = false;
           let effectiveStatus = s.status || 'disconnected';
+          let phone = s.phone;
 
-          try {
-            const stateData = await evolutionApiService.getConnectionState(s.id);
-            const state = stateData?.instance?.state;
+          const instanceData = allInstances.find((i: any) => i.name === s.id || i.instance?.instanceName === s.id);
+
+          if (instanceData) {
+            // Update status
+            const state = instanceData.connectionStatus || instanceData.instance?.state;
             
             if (state === 'open') {
               runtimeStatus = 'connected';
@@ -67,19 +77,26 @@ export class SessionService {
                runtimeStatus = 'qr';
                effectiveStatus = 'disconnected';
             }
-          } catch (e) {
-             console.warn(`[SessionService] Failed to get state for ${s.id}`, e);
+
+            // Extract phone number from ownerJid
+            if (instanceData.ownerJid) {
+                phone = instanceData.ownerJid.split('@')[0];
+            } else if (instanceData.owner) {
+                phone = instanceData.owner.split('@')[0];
+            }
+          } else {
              runtimeStatus = 'none';
              effectiveStatus = 'disconnected';
           }
 
           return {
             ...s,
+            phone,
             runtimeStatus: (runtimeStatus || 'none') as SessionWithRuntime['runtimeStatus'],
             hasAuth,
             effectiveStatus,
           };
-        }));
+        });
 
         return results;
       }
@@ -152,7 +169,7 @@ export class SessionService {
         await evolutionApiService.createInstance(newSession.id);
 
         // Configurar webhook
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+        const appUrl = 'https://masteria.app';
         const webhookUrl = `${appUrl}/api/v1/webhooks/evolution`;
         await evolutionApiService.setWebhook(newSession.id, webhookUrl);
 

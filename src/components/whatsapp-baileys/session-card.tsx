@@ -29,20 +29,18 @@ export function SessionCard({
   onDelete: _onDelete,
 }: SessionCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <div className="border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] bg-white/[0.02] backdrop-blur-md rounded-[2rem] overflow-hidden p-6 relative group transition-all hover:bg-white/[0.04]">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">{session.name}</CardTitle>
+            <Smartphone className="h-5 w-5 text-zinc-500" />
+            <h3 className="text-lg font-bold tracking-tight text-white">{session.name}</h3>
           </div>
           <SessionStatusBadge status={session.status} />
         </div>
-        <CardDescription className="text-xs">
+        <p className="text-xs text-zinc-500 mb-6">
           ID: {session.id.slice(0, 8)}...
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        </p>
+      <div className="space-y-4">
         {session.phone && (
           <div className="text-sm">
             <span className="font-medium">Telefone:</span> {session.phone}
@@ -61,6 +59,7 @@ export function SessionCard({
             <Button
               variant="outline"
               size="sm"
+              className="rounded-xl border border-white/5 text-zinc-300 hover:text-white hover:bg-white/[0.05]"
               onClick={() => onReconnect(session.id, session.name)}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -68,8 +67,8 @@ export function SessionCard({
             </Button>
           ) : (
             <Button
-              variant="default"
               size="sm"
+              className="rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all"
               onClick={() => onConnect(session.id, session.name)}
             >
               <QrCode className="h-4 w-4 mr-2" />
@@ -78,9 +77,9 @@ export function SessionCard({
           )}
           {session.status !== 'connected' && session.hasAuth && (
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
-              className="bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-100 dark:hover:bg-amber-900/50"
+              className="rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold"
               onClick={() => onResume(session.id)}
             >
               <ArchiveRestore className="h-4 w-4 mr-2" />
@@ -88,7 +87,7 @@ export function SessionCard({
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

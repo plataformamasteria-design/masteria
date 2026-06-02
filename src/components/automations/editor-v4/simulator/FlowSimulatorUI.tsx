@@ -11,7 +11,7 @@ import {
     Rocket, MessageCircle, CheckCircle2, XCircle, AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { m as motion } from 'framer-motion';
 import { useFlowSimulator, SimMessage, FlowCorrection, FlowSimulatorUIProps, MEDIA_ICONS } from "./useFlowSimulator";
 import { RobotDataDashboard } from "./RobotDataDashboard";
 

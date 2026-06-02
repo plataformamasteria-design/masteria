@@ -157,14 +157,14 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
+    return <div className="text-center py-8 text-zinc-500">Carregando...</div>;
   }
 
   const hasItems = events.length > 0 || tasks.length > 0;
 
   if (!hasItems) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8 text-zinc-500">
         Nenhum compromisso ou tarefa neste dia
       </div>
     );
@@ -206,8 +206,8 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
               <div
                 key={event.id}
                 onClick={() => handleOpenDetail(event, 'event')}
-                className="group relative border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer bg-card hover:bg-accent/5"
-                style={{ borderLeftWidth: '3px', borderLeftColor: displayColor }}
+                className="group relative rounded-2xl p-4 transition-all duration-300 cursor-pointer backdrop-blur-sm bg-white/[0.02] border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-white/[0.04] hover:shadow-[0_0_20px_rgba(255,255,255,0.03)]"
+                style={{ borderLeftWidth: '4px', borderLeftColor: displayColor }}
               >
                 <div className="space-y-2">
                   {/* Header */}
@@ -217,13 +217,13 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
                       Compromisso
                     </span>
                     {event.all_day && (
-                      <Badge variant="secondary" className="text-[10px] h-4 px-1.5">Dia inteiro</Badge>
+                      <Badge variant="outline" className="text-[10px] h-4 px-1.5 bg-zinc-100 dark:bg-white/5 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">Dia inteiro</Badge>
                     )}
                     {/* Show calendar name in general view */}
                     {isGeneralCalendar && event.calendar && (
                       <Badge
                         variant="outline"
-                        className="text-[10px] h-4 px-1.5 border"
+                        className="text-[10px] h-4 px-1.5 border bg-white/5"
                         style={{ borderColor: displayColor, color: displayColor }}
                       >
                         {event.calendar.name}
@@ -232,11 +232,11 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
                   </div>
 
                   {/* Title */}
-                  <h4 className="font-semibold text-sm leading-tight">{event.title}</h4>
+                  <h4 className="font-semibold text-sm leading-tight text-zinc-900 dark:text-white">{event.title}</h4>
 
                   {/* Time */}
                   {!event.all_day && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                       <Clock className="h-3 w-3" />
                       <span>
                         {format(parseISO(event.start_time), 'HH:mm')} - {format(parseISO(event.end_time), 'HH:mm')}
@@ -246,7 +246,7 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
 
                   {/* Description */}
                   {event.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">
+                    <p className="text-xs text-zinc-500 line-clamp-1">
                       {truncateText(event.description, 25)}
                     </p>
                   )}
@@ -254,13 +254,13 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
                   {/* Assignments */}
                   <div className="flex flex-wrap gap-2 text-xs">
                     {event.profiles && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
+                      <div className="flex items-center gap-1 text-zinc-400">
                         <User className="h-3 w-3" />
                         <span>{truncateText(event.profiles.full_name, 15)}</span>
                       </div>
                     )}
                     {event.chats && (
-                      <div className="flex items-center gap-1 text-primary">
+                      <div className="flex items-center gap-1 text-emerald-400">
                         <MessageSquare className="h-3 w-3" />
                         <span>{truncateText(event.chats.wa_name || event.chats.phone, 15)}</span>
                       </div>
@@ -275,16 +275,16 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
             <div
               key={task.id}
               onClick={() => handleOpenDetail(task, 'task')}
-              className="group relative border rounded-lg p-3 hover:shadow-md transition-all cursor-pointer bg-orange-50/30 hover:bg-orange-50/50 border-l-orange-500"
-              style={{ borderLeftWidth: '3px' }}
+              className="group relative rounded-2xl p-4 transition-all duration-300 cursor-pointer backdrop-blur-sm bg-indigo-500/[0.02] border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] hover:bg-indigo-500/[0.05] hover:shadow-[0_0_20px_rgba(99,102,241,0.05)] border-l-indigo-500"
+              style={{ borderLeftWidth: '4px' }}
             >
               <div className="space-y-2">
                 {/* Header */}
                 <div className="flex items-center gap-2">
-                  <CheckSquare className="h-3.5 w-3.5 text-orange-500" />
-                  <span className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Tarefa</span>
+                  <CheckSquare className="h-3.5 w-3.5 text-indigo-500" />
+                  <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wide">Tarefa</span>
                   {task.completed && (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                   )}
                   {task.priority && (
                     <Badge
@@ -301,13 +301,13 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
                 </div>
 
                 {/* Title */}
-                <h4 className={`font-semibold text-sm leading-tight ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                <h4 className={`font-semibold text-sm leading-tight ${task.completed ? 'line-through text-zinc-500 dark:text-zinc-600' : 'text-zinc-900 dark:text-white'}`}>
                   {task.title}
                 </h4>
 
                 {/* Due time */}
                 {task.due_time && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                     <Clock className="h-3 w-3" />
                     <span>{task.due_time}</span>
                   </div>
@@ -315,7 +315,7 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
 
                 {/* Description */}
                 {task.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-1">
+                  <p className="text-xs text-zinc-500 line-clamp-1">
                     {truncateText(task.description, 25)}
                   </p>
                 )}
@@ -323,13 +323,13 @@ export function EventList({ selectedDate, refreshTrigger, onEditEvent, onEditTas
                 {/* Assignments */}
                 <div className="flex flex-wrap gap-2 text-xs">
                   {task.profiles && (
-                    <div className="flex items-center gap-1 text-muted-foreground">
+                    <div className="flex items-center gap-1 text-zinc-400">
                       <User className="h-3 w-3" />
                       <span>{truncateText(task.profiles.full_name, 15)}</span>
                     </div>
                   )}
                   {task.chats && (
-                    <div className="flex items-center gap-1 text-primary">
+                    <div className="flex items-center gap-1 text-indigo-400">
                       <MessageSquare className="h-3 w-3" />
                       <span>{truncateText(task.chats.wa_name || task.chats.phone, 15)}</span>
                     </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import useSWR, { mutate } from "swr";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, ChevronDown, ChevronRight, Pencil,
   RefreshCw, BarChart3, DollarSign, Users, Zap, ExternalLink,

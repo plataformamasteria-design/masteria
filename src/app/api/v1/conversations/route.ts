@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
         const filterAgentId = searchParams.get('filterAgentId') || null;
         const filterTagId = searchParams.get('filterTagId') || null;
         const filterKanbanId = searchParams.get('filterKanbanId') || null;
+        const filterConnectionId = searchParams.get('filterConnectionId') || null;
+        const filterSource = searchParams.get('filterSource') || null;
 
         const SAFETY_CAP = 10000;
         let limit: number;
@@ -52,24 +54,24 @@ export async function GET(request: NextRequest) {
         }
 
         const offset = parseInt(searchParams.get('offset') || '0', 10);
-        const advKey = `${onlyUnread}:${awaitingResponse}:${robotService}:${filterTeamId}:${filterAgentId}:${filterTagId}:${filterKanbanId}`;
+        const advKey = `${onlyUnread}:${awaitingResponse}:${robotService}:${filterTeamId}:${filterAgentId}:${filterTagId}:${filterKanbanId}:${filterConnectionId}:${filterSource}`;
 
         const tParam = searchParams.get('t');
 
         if (search) {
-            const data = await fetchConversationsWithSearch(companyId, userId, search, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId });
+            const data = await fetchConversationsWithSearch(companyId, userId, search, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource });
             return NextResponse.json(data);
         }
 
         if (tParam) {
             // Bypass cache explicitly for polling and real-time updates
-            const data = await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId });
+            const data = await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource });
             return NextResponse.json(data);
         }
 
         const cacheKey = `conversations:${companyId}:${userId}:${filterParam}:${advKey}:${limit}:${offset}`;
         const data = await getCachedOrFetch(cacheKey, async () => {
-            return await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId });
+            return await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource });
         }, CacheTTL.SHORT);
 
         return NextResponse.json(data);
@@ -88,9 +90,11 @@ interface AdvFilters {
     filterAgentId: string | null;
     filterTagId: string | null;
     filterKanbanId: string | null;
+    filterConnectionId: string | null;
+    filterSource: string | null;
 }
 
-const defaultAdv: AdvFilters = { onlyUnread: false, awaitingResponse: false, robotService: false, filterTeamId: null, filterAgentId: null, filterTagId: null, filterKanbanId: null };
+const defaultAdv: AdvFilters = { onlyUnread: false, awaitingResponse: false, robotService: false, filterTeamId: null, filterAgentId: null, filterTagId: null, filterKanbanId: null, filterConnectionId: null, filterSource: null };
 
 // Helper local para resolver a baseCondition do switch Case
 async function getBaseConditions(companyId: string, userId: string, filterParam: string, adv: AdvFilters = defaultAdv) {
@@ -171,6 +175,16 @@ async function getBaseConditions(companyId: string, userId: string, filterParam:
             AND m.status IS DISTINCT FROM 'read'
             AND m.sent_at = (SELECT MAX(sent_at) FROM messages WHERE conversation_id = conversations.id)
         )`);
+    }
+    if (adv.filterConnectionId) {
+        base.push(eq(conversations.connectionId, adv.filterConnectionId));
+    }
+    if (adv.filterSource && adv.filterSource !== 'all') {
+        if (adv.filterSource === 'baileys') {
+            base.push(sql`EXISTS (SELECT 1 FROM connections WHERE connections.id = conversations.connection_id AND connections.connection_type IN ('baileys', 'evolution'))`);
+        } else {
+            base.push(sql`EXISTS (SELECT 1 FROM connections WHERE connections.id = conversations.connection_id AND connections.connection_type = ${adv.filterSource})`);
+        }
     }
 
     return base;
