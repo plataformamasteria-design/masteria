@@ -78,10 +78,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             }, { status: 403 });
         }
 
-        if (connection.connectionType !== 'baileys') {
+        if (connection.connectionType !== 'baileys' && connection.connectionType !== 'evolution') {
             return NextResponse.json({ 
                 error: 'Tipo de conexão inválido', 
-                description: 'Apenas conexões Baileys são permitidas para este tipo de campanha.' 
+                description: 'Apenas conexões Baileys ou Evolution são permitidas para este tipo de campanha.' 
             }, { status: 400 });
         }
 
@@ -125,8 +125,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             success: true, 
             message: message, 
             campaignId: newCampaign.id,
-            listsUsed: finalContactListIds.length,
-            listsIgnored: ignoredListsCount
+            listsUsed: finalContactListIds.length
         }, { status: 201 });
 
     } catch (error) {

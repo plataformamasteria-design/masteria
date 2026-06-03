@@ -108,7 +108,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
     }, [toast]);
 
     const baileysConnections = useMemo(() => {
-        return connections.filter(c => c.connectionType === 'baileys' && c.isActive);
+        return connections.filter(c => (c.connectionType === 'baileys' || c.connectionType === 'evolution') && c.isActive);
     }, [connections]);
 
     const extractVariables = useCallback((text: string): string[] => {
