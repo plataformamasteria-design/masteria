@@ -376,6 +376,7 @@ export async function fetchAvailableConnections() {
                 phoneNumber: true,
                 phone: true,
                 status: true,
+                ownerId: true,
             }
         });
 

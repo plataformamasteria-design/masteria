@@ -465,13 +465,13 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
         });
       } else if (filters.dateRange === 'custom') {
         if (filters.dateFrom) {
-          const from = new Date(filters.dateFrom);
-          from.setHours(0, 0, 0, 0);
+          const [year, month, day] = filters.dateFrom.split('-').map(Number);
+          const from = new Date(year, month - 1, day, 0, 0, 0, 0);
           result = result.filter(card => !card.createdAt || new Date(card.createdAt) >= from);
         }
         if (filters.dateTo) {
-          const to = new Date(filters.dateTo);
-          to.setHours(23, 59, 59, 999);
+          const [year, month, day] = filters.dateTo.split('-').map(Number);
+          const to = new Date(year, month - 1, day, 23, 59, 59, 999);
           result = result.filter(card => !card.createdAt || new Date(card.createdAt) <= to);
         }
       } else {

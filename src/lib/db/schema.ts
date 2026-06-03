@@ -39,6 +39,17 @@ export type MetaHandle = {
   createdAt: string;
 };
 
+// Regras de roteamento de leads por UTM Campaign (salvas por empresa)
+export type UtmRoutingRule = {
+  id: string;
+  pattern: string;       // string literal ou regex sem barras
+  isRegex: boolean;      // se true, interpreta pattern como RegExp
+  targetBoardId: string;
+  targetBoardName: string;
+  isActive: boolean;
+  label?: string;        // nome legível da regra
+};
+
 export const userRoleEnum = pgEnum('user_role', ['admin', 'atendente', 'superadmin']);
 
 export const notificationTypeEnum = pgEnum('notification_type', [
@@ -100,6 +111,7 @@ export const companies = pgTable('companies', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
+  utmRoutingRules: jsonb('utm_routing_rules').$type<UtmRoutingRule[]>().default(sql`'[]'::jsonb`),
 });
 
 export const companyQuotas = pgTable('company_quotas', {
@@ -223,6 +235,7 @@ export const connections = pgTable('connections', {
 
   isActive: boolean('is_active').default(false).notNull(),
   assignedPersonaId: text('assigned_persona_id').references(() => aiPersonas.id, { onDelete: 'set null' }),
+  ownerId: text('owner_id').references(() => users.id, { onDelete: 'set null' }),
   environment: text('environment').default('production'),
 
   // Token Management Fields

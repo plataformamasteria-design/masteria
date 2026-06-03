@@ -38,7 +38,7 @@ interface OrganizationTeam {
 
 interface ChatAssignmentDropdownProps {
     conversation: Conversation;
-    onAssignUpdate: () => void; // Trigger a reload or UI update in InboxController
+    onAssignUpdate: (userId?: string) => void; // Trigger a reload or UI update in InboxController
 }
 
 export function ChatAssignmentDropdown({ conversation, onAssignUpdate }: ChatAssignmentDropdownProps) {
@@ -67,7 +67,7 @@ export function ChatAssignmentDropdown({ conversation, onAssignUpdate }: ChatAss
             const res = await assignChatToUser(conversation.id, userId);
             if (res.success) {
                 toast({ title: 'Sucesso', description: 'Atribuído ao usuário.' });
-                onAssignUpdate();
+                onAssignUpdate(userId);
             } else {
                 toast({ title: 'Erro', description: res.error, variant: 'destructive' });
             }

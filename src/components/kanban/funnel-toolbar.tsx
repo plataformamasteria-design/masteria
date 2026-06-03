@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
   Search, Plus, SlidersHorizontal, Settings, X, Calendar,
-  Wifi, User, Users, Tag, Layers, DollarSign, ChevronDown, ChevronRight,
+  Wifi, User, Users, Tag, Layers, DollarSign, ChevronDown, ChevronRight, Radar,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -16,6 +16,7 @@ import type { KanbanFunnel, KanbanStage } from '@/lib/types';
 import type { KanbanFilters } from '@/app/(main)/kanban/[funnelId]/page';
 import Link from 'next/link';
 import { ImportKommoModal } from './import-kommo-modal';
+import { UtmAuditModal } from './utm-audit-modal';
 import { cn } from '@/lib/utils';
 
 interface FunnelToolbarProps {
@@ -211,6 +212,7 @@ export function FunnelToolbar({
   companyUsers, companyTeams, connections, availableTags, availableUtms, availableCustomFields, availableCustomFieldValues, customFieldSourceTypes, onSaveFilters, onClearSavedFilters
 }: FunnelToolbarProps): JSX.Element {
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [utmAuditOpen, setUtmAuditOpen] = useState(false);
   const [connSearch, setConnSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [teamSearch, setTeamSearch] = useState('');
@@ -687,6 +689,19 @@ export function FunnelToolbar({
             </PopoverContent>
           </Popover>
 
+          {/* Diagnóstico UTM */}
+          <Button
+            variant="outline"
+            size="sm"
+            id="kanban-utm-audit-btn"
+            className="h-8 px-2 sm:px-3 gap-1.5 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30"
+            onClick={() => setUtmAuditOpen(true)}
+            title="Diagnóstico de leads com UTM Campaign fora do funil correto"
+          >
+            <Radar className="h-4 w-4" />
+            <span className="hidden lg:inline">Diagnóstico UTM</span>
+          </Button>
+
           <Link href={`/kanban/${funnel.id}/edit`}>
             <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3">
               <Settings className="h-4 w-4" />
@@ -700,6 +715,13 @@ export function FunnelToolbar({
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline ml-1.5">Novo Lead</span>
           </Button>
+
+          {/* Modal de Diagnóstico UTM */}
+          <UtmAuditModal
+            open={utmAuditOpen}
+            onOpenChange={setUtmAuditOpen}
+            boardId={funnel.id}
+          />
         </div>
       </div>
 

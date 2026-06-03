@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Phone, Mail, DollarSign, Calendar as CalendarIcon, Clock, MessageCircle, X, Edit, Save, Loader2, Pause, Play, Tag as TagIcon, MapPin, User, Trash2 } from 'lucide-react';
+import { Phone, Mail, DollarSign, Calendar as CalendarIcon, Clock, MessageCircle, X, Edit, Save, Loader2, Pause, Play, Tag as TagIcon, MapPin, User, Trash2, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -229,96 +229,132 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
       >
         {/* HEADER EXPANSO */}
         {!isChatMode && (
-          <div className="px-6 py-5 border-b border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-white/[0.01]">
-          <SheetHeader className="text-left space-y-0">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-14 w-14 border shadow-sm">
-                  <AvatarImage src={card.contact?.avatarUrl || ''} />
-                  <AvatarFallback>{(card.contact?.name || 'L').substring(0, 2)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <SheetTitle className="text-xl flex items-center gap-2">
-                    {card.contact?.name || 'Lead sem nome'}
-                    {leadStatus === 'PAUSED' && (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                        Pausado
-                      </Badge>
+          <div className="px-6 py-6 border-b border-zinc-200 dark:border-white/5 bg-white dark:bg-zinc-950 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3" />
+            <SheetHeader className="text-left space-y-0 relative z-10">
+              <div className="flex items-start justify-between pb-6">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-14 w-14 border-2 border-white dark:border-zinc-900 shadow-md">
+                    <AvatarImage src={card.contact?.avatarUrl || ''} />
+                    <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">{(card.contact?.name || 'L').substring(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <SheetTitle className="text-xl flex items-center gap-2 font-bold tracking-tight text-zinc-900 dark:text-white">
+                      {card.contact?.name || 'Lead sem nome'}
+                      {leadStatus === 'PAUSED' && (
+                        <Badge variant="secondary" className="bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/50">
+                          Pausado
+                        </Badge>
+                      )}
+                    </SheetTitle>
+                    <SheetDescription className="text-sm mt-1 flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                      <Phone className="h-3.5 w-3.5" />
+                      {card.contact?.phone}
+                      <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                      {leadTitle || 'Sem título'}
+                    </SheetDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant={leadStatus === 'ACTIVE' ? "outline" : "default"} size="sm" onClick={togglePauseStatus} className="rounded-full shadow-sm bg-white dark:bg-zinc-900">
+                    {leadStatus === 'ACTIVE' ? (
+                      <><Pause className="h-4 w-4 mr-1 text-zinc-500" /> Pausar</>
+                    ) : (
+                      <><Play className="h-4 w-4 mr-1" /> Retomar</>
                     )}
-                  </SheetTitle>
-                  <SheetDescription className="text-sm mt-1 flex items-center gap-2">
-                    {card.contact?.phone}
-                    <span className="text-muted-foreground/30">•</span>
-                    {leadTitle || 'Sem título'}
-                  </SheetDescription>
+                  </Button>
+                  {card.contact?.id && (
+                    <Button size="sm" onClick={(e) => { e.stopPropagation(); setIsChatMode(true); }} className="rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] transition-all border border-transparent">
+                      <MessageCircle className="h-4 w-4 mr-1.5" /> Chat
+                    </Button>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant={leadStatus === 'ACTIVE' ? "secondary" : "default"} size="sm" onClick={togglePauseStatus}>
-                  {leadStatus === 'ACTIVE' ? (
-                    <><Pause className="h-4 w-4 mr-1" /> Pausar</>
-                  ) : (
-                    <><Play className="h-4 w-4 mr-1" /> Retomar</>
-                  )}
-                </Button>
-                {card.contact?.id && (
-                  <Button size="sm" onClick={(e) => { e.stopPropagation(); setIsChatMode(true); }} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all border border-emerald-400/50">
-                    <MessageCircle className="h-4 w-4 mr-1" /> Chat
-                  </Button>
-                )}
-              </div>
-            </div>
 
-            {/* Quick Metrics Header */}
-            <div className="flex items-center gap-6 mt-4 pt-4 border-t text-sm">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="font-semibold text-primary">R$ {Number(leadValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={leadStageId}
-                  onValueChange={async (val) => {
-                    const targetStage = stages.find(s => s.id === val);
-                    if (targetStage?.type === 'LOSS') {
-                      setPendingStageId(val);
-                      setLossReasonOpen(true);
-                      return;
-                    }
+              {/* Quick Metrics Header - Premium Redesign */}
+              <div className="pt-6 mt-2 border-t border-zinc-200/40 dark:border-white/5 flex flex-col xl:flex-row items-stretch xl:items-center gap-3">
+                <div className="flex-1 bg-zinc-50/50 dark:bg-white/[0.02] border border-zinc-200/60 dark:border-white/10 rounded-2xl p-1.5 flex flex-col md:flex-row items-stretch md:items-center shadow-sm backdrop-blur-sm">
+                  
+                  {/* Stage Selector - Prominent */}
+                  <div className="flex-1 relative group min-w-0">
+                    <Select
+                      value={leadStageId}
+                      onValueChange={async (val) => {
+                        const targetStage = stages.find(s => s.id === val);
+                        if (targetStage?.type === 'LOSS') {
+                          setPendingStageId(val);
+                          setLossReasonOpen(true);
+                          return;
+                        }
 
-                    setLeadStageId(val);
-                    setIsSaving(true);
-                    try {
-                      await onUpdate(card.id, { stageId: val });
-                      notify.success('Etapa atualizada!');
-                    } catch (e: any) {
-                      setLeadStageId(card.stageId);
-                      notify.error('Erro ao alterar etapa', e.message);
-                    } finally {
-                      setIsSaving(false);
-                    }
-                  }}
-                  disabled={isSaving}
-                >
-                  <SelectTrigger className="h-7 text-xs border-dashed bg-muted/30 max-w-[200px]">
-                    <SelectValue placeholder="Selecione a Etapa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stages.map(s => (
-                      <SelectItem key={s.id} value={s.id} className="text-xs">
-                        {s.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        setLeadStageId(val);
+                        setIsSaving(true);
+                        try {
+                          await onUpdate(card.id, { stageId: val });
+                          notify.success('Etapa atualizada!');
+                        } catch (e: any) {
+                          setLeadStageId(card.stageId);
+                          notify.error('Erro ao alterar etapa', e.message);
+                        } finally {
+                          setIsSaving(false);
+                        }
+                      }}
+                      disabled={isSaving}
+                    >
+                      <SelectTrigger className="w-full h-12 border-none bg-white dark:bg-white/5 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.2)] ring-1 ring-zinc-200/50 dark:ring-white/5 focus:ring-emerald-500/50 hover:bg-zinc-50 dark:hover:bg-white/10 transition-colors flex justify-between px-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                            <Layers className="h-4 w-4" />
+                          </div>
+                          <div className="flex flex-col items-start gap-0 min-w-0">
+                            <span className="text-[9px] font-bold tracking-widest uppercase text-emerald-600/70 dark:text-emerald-400/70">Etapa do Funil</span>
+                            <span className="font-semibold text-sm text-zinc-900 dark:text-white truncate max-w-full"><SelectValue placeholder="Selecione a Etapa" /></span>
+                          </div>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-zinc-200 dark:border-white/10 shadow-xl">
+                        {stages.map(s => (
+                          <SelectItem key={s.id} value={s.id} className="text-sm font-medium py-2.5 focus:bg-zinc-100 dark:focus:bg-white/10 cursor-pointer">
+                            {s.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="w-full md:w-px h-px md:h-8 bg-zinc-200 dark:bg-white/10 my-2 md:my-0 md:mx-3 flex-shrink-0" />
+                  
+                  {/* Values Row */}
+                  <div className="flex items-center flex-1 md:flex-none justify-between md:justify-start gap-4 px-2 md:px-0">
+                    {/* Value */}
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-white dark:bg-white/5 text-zinc-400 dark:text-zinc-500 shadow-sm border border-zinc-100 dark:border-white/5">
+                        <DollarSign className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="text-[9px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Valor Oportunidade</span>
+                        <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">R$ {Number(leadValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+
+                    <div className="w-px h-8 bg-zinc-200 dark:bg-white/10 mx-2 hidden sm:block" />
+
+                    {/* Date */}
+                    <div className="flex items-center gap-3 pr-2">
+                      <div className="p-2 rounded-full bg-white dark:bg-white/5 text-zinc-400 dark:text-zinc-500 shadow-sm border border-zinc-100 dark:border-white/5">
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="text-[9px] font-bold tracking-widest uppercase text-zinc-400 dark:text-zinc-500">Criado em</span>
+                        <span className="font-medium text-sm text-zinc-700 dark:text-zinc-300">{format(new Date(card.createdAt), 'dd/MM/yyyy')}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CalendarIcon className="h-4 w-4" />
-                Criado em {format(new Date(card.createdAt), 'dd/MM/yyyy')}
-              </div>
-            </div>
-          </SheetHeader>
-        </div>
+            </SheetHeader>
+          </div>
         )}
 
         {/* TABS OR CHAT */}
@@ -389,7 +425,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="flex-1 min-h-0 overflow-hidden relative">
               <ScrollArea className="h-full p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+                <div className="flex flex-col gap-6 pb-12">
                 
                 {/* Loss Reason Alert */}
                 {currentStage?.type === 'LOSS' && leadNotes && (
@@ -400,7 +436,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 )}
 
                 {/* Lead Edit Quick Form */}
-                <Card className="border border-zinc-200 dark:border-white/10 !bg-white dark:!bg-white/[0.02] shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md rounded-2xl md:col-span-2">
+                <Card className="border border-zinc-200 dark:border-white/10 !bg-white dark:!bg-white/[0.02] shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md rounded-2xl">
                   <CardHeader className="pb-3 flex flex-row items-center justify-between">
                     <CardTitle className="text-sm">Informações do Lead no Funil</CardTitle>
                     <Button size="sm" onClick={handleSaveLead} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all">
@@ -517,13 +553,13 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-0 divide-y divide-border/40 border rounded-md">
+                      <div className="space-y-0 divide-y divide-border/40 border rounded-md overflow-hidden">
                         {contactDetails?.customFields && Object.entries(contactDetails.customFields).map(([key, value]) => {
                           if (!value) return null;
                           return (
-                            <div key={key} className="flex justify-between p-2.5 text-sm">
-                              <span className="font-medium text-muted-foreground">{key}</span>
-                              <span>{String(value)}</span>
+                            <div key={key} className="flex justify-between p-3 text-sm gap-4 items-center bg-zinc-50/50 dark:bg-zinc-900/30">
+                              <span className="font-semibold text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[40%] flex-shrink-0" title={key}>{key}</span>
+                              <span className="text-right text-xs text-zinc-900 dark:text-zinc-100 break-all w-full leading-relaxed" style={{ wordBreak: 'break-all' }}>{String(value)}</span>
                             </div>
                           )
                         })}
@@ -533,19 +569,13 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                   </CardContent>
                 </Card>
 
-                {/* Neurolinguistic Card */}
-                {contactDetails && (
-                  <NeurolinguisticCard 
-                    vakProfile={contactDetails.vakProfile} 
-                    dominantSocialNeed={contactDetails.dominantSocialNeed} 
-                    communicationPace={contactDetails.communicationPace} 
-                    variant="compact" 
-                  />
-                )}
+
 
               {/* HISTORY */}
                 {card.contact?.id && (
-                  <ContactHistoryTimeline contactId={card.contact.id} hideAvatar />
+                  <div className="mt-4">
+                    <ContactHistoryTimeline contactId={card.contact.id} hideAvatar />
+                  </div>
                 )}
                 </div>
               </ScrollArea>

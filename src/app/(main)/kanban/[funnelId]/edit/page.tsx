@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Zap, ArrowLeft, Loader2, GripVertical, Plus, Trash2, AlertCircle, Link2, Target, Cpu, Eye, Layers, Save } from 'lucide-react';
+import { Zap, ArrowLeft, Loader2, GripVertical, Plus, Trash2, AlertCircle, Link2, Target, Cpu, Eye, Layers, Save, Globe, Archive, ChevronDown, Check, Webhook } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
@@ -74,6 +74,8 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
   const [customFieldsBySource, setCustomFieldsBySource] = useState<Record<string, string[]>>({});
   const [customFieldSourceTypes, setCustomFieldSourceTypes] = useState<Record<string, 'automation' | 'webhook' | 'unknown'>>({});
   const [selectedSource, setSelectedSource] = useState<string>('Todas as Origens');
+  const [isSourceOpen, setIsSourceOpen] = useState(false);
+  const sourceDropdownRef = useRef<HTMLDivElement>(null);
 
   const [settings, setSettings] = useState({
     autoAssignTeamId: '',
@@ -297,6 +299,17 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
       return { ...prev, visibleCustomFields: next };
     });
   };
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (sourceDropdownRef.current && !sourceDropdownRef.current.contains(e.target as Node)) {
+        setIsSourceOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const addStage = () => {
     setStages([...stages, { id: uuidv4(), title: '', type: 'NEUTRAL' }]);
@@ -556,8 +569,8 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 min-w-0">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <Button type="button" variant="ghost" size="sm" className="text-xs h-7 px-2 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-700 dark:text-white/70" onClick={() => setSettings(s => ({ ...s, visibleCustomFields: [...(customFieldsBySource['Todas as Origens'] || [])] }))}>
                           Todos
                         </Button>
@@ -565,31 +578,83 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
                           Nenhum
                         </Button>
                       </div>
-                      <div className="w-full md:w-64">
-                         <Select value={selectedSource} onValueChange={setSelectedSource}>
-                            <SelectTrigger className="bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 h-8 text-xs">
-                               <SelectValue placeholder="Filtrar por formulário/origem..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Object.keys(customFieldsBySource).map(source => {
-                                  const srcType = customFieldSourceTypes[source];
-                                  const icon = source === 'Todas as Origens' ? '🔍'
-                                    : srcType === 'automation' ? '⚡'
-                                    : srcType === 'webhook' ? '🔗'
-                                    : '📋';
-                                  return (
-                                    <SelectItem key={source} value={source} className="text-xs">
-                                      <span className="flex items-center gap-1.5">
-                                        <span>{icon}</span>
-                                        <span className="truncate max-w-[160px]">{source}</span>
-                                        <span className="text-muted-foreground flex-shrink-0">({customFieldsBySource[source].length})</span>
-                                      </span>
-                                    </SelectItem>
-                                  );
-                                })}
-                             </SelectContent>
-                         </Select>
+                      {/* Premium Source Filter Dropdown */}
+                      <div ref={sourceDropdownRef} className="relative w-full md:w-auto md:max-w-[220px] flex-shrink-0 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setIsSourceOpen(v => !v)}
+                          className="group flex items-center gap-2 w-full h-8 px-3 rounded-lg border border-zinc-200 dark:border-white/8 bg-white/50 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.06] hover:border-zinc-300 dark:hover:border-white/15 text-xs text-zinc-700 dark:text-white/70 transition-all duration-200 shadow-none hover:shadow-[0_0_0_1px_rgba(255,255,255,0.05)] max-w-full overflow-hidden"
+                        >
+                          {/* Source icon */}
+                          {selectedSource === 'Todas as Origens' ? (
+                            <Globe className="h-3.5 w-3.5 flex-shrink-0 text-zinc-400 dark:text-white/30" />
+                          ) : customFieldSourceTypes[selectedSource] === 'automation' ? (
+                            <Zap className="h-3.5 w-3.5 flex-shrink-0 text-zinc-400 dark:text-white/30" />
+                          ) : customFieldSourceTypes[selectedSource] === 'webhook' ? (
+                            <Webhook className="h-3.5 w-3.5 flex-shrink-0 text-zinc-400 dark:text-white/30" />
+                          ) : (
+                            <Archive className="h-3.5 w-3.5 flex-shrink-0 text-zinc-400 dark:text-white/30" />
+                          )}
+                          <span className="truncate flex-1 text-left">{selectedSource}</span>
+                          <span className="flex-shrink-0 text-[10px] text-zinc-400 dark:text-white/25 tabular-nums">
+                            ({(customFieldsBySource[selectedSource] || []).length})
+                          </span>
+                          <ChevronDown className={`h-3 w-3 flex-shrink-0 text-zinc-400 dark:text-white/25 transition-transform duration-200 ${isSourceOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {/* Dropdown panel */}
+                        <div
+                          className="absolute right-0 top-[calc(100%+4px)] z-50 w-64 origin-top"
+                          style={{
+                            opacity: isSourceOpen ? 1 : 0,
+                            transform: isSourceOpen ? 'scaleY(1) translateY(0)' : 'scaleY(0.95) translateY(-4px)',
+                            pointerEvents: isSourceOpen ? 'auto' : 'none',
+                            transition: 'opacity 150ms ease, transform 150ms ease',
+                          }}
+                        >
+                          <div className="rounded-xl border border-zinc-200/80 dark:border-white/8 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl shadow-xl dark:shadow-[0_16px_48px_rgba(0,0,0,0.6)] overflow-hidden">
+                            {/* Header */}
+                            <div className="px-3 py-2 border-b border-zinc-100 dark:border-white/5">
+                              <p className="text-[10px] font-medium text-zinc-400 dark:text-white/25 uppercase tracking-widest">Filtrar por origem</p>
+                            </div>
+                            {/* Items */}
+                            <div className="py-1 max-h-[240px] overflow-y-auto">
+                              {Object.keys(customFieldsBySource).map(source => {
+                                const srcType = customFieldSourceTypes[source];
+                                const isSelected = selectedSource === source;
+                                const Icon = source === 'Todas as Origens' ? Globe
+                                  : srcType === 'automation' ? Zap
+                                  : srcType === 'webhook' ? Webhook
+                                  : Archive;
+                                return (
+                                  <button
+                                    key={source}
+                                    type="button"
+                                    onClick={() => { setSelectedSource(source); setIsSourceOpen(false); }}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors duration-100 ${
+                                      isSelected
+                                        ? 'bg-zinc-50 dark:bg-white/[0.06] text-zinc-900 dark:text-white'
+                                        : 'text-zinc-600 dark:text-white/50 hover:bg-zinc-50 dark:hover:bg-white/[0.04] hover:text-zinc-900 dark:hover:text-white/80'
+                                    }`}
+                                  >
+                                    <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${
+                                      isSelected ? 'text-emerald-500 dark:text-emerald-400' : 'text-zinc-400 dark:text-white/25'
+                                    }`} />
+                                    <span className="flex-1 text-left truncate">{source}</span>
+                                    <span className="flex-shrink-0 text-[10px] tabular-nums text-zinc-400 dark:text-white/25">
+                                      {customFieldsBySource[source].length}
+                                    </span>
+                                    {isSelected && (
+                                      <Check className="h-3 w-3 flex-shrink-0 text-emerald-500 dark:text-emerald-400" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
                       </div>
+
                     </div>
                     
                     <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto p-2 bg-zinc-50 dark:bg-black/20 rounded-xl border border-zinc-200 dark:border-white/5">

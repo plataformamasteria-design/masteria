@@ -24,6 +24,8 @@ import {
   FileText,
   Filter,
   Check,
+  Link as LinkIcon,
+  Unlink,
 } from 'lucide-react';
 import { format, isToday, isYesterday, differenceInDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -73,8 +75,8 @@ interface ActiveChatProps {
   showContactDetails?: boolean;
   onToggleContactDetails?: () => void;
   forceShowBack?: boolean;
-  availableConnections?: Array<{ id: string; config_name: string; connectionType: string; phoneNumber?: string; phone?: string; status?: string }>;
-  onSwitchConnection?: (connectionId: string) => Promise<void>;
+  availableConnections?: Array<{ id: string; config_name: string; connectionType: string; phoneNumber?: string; phone?: string; status?: string; ownerId?: string | null }>;
+  onSwitchConnection?: (connectionId: string) => Promise<any>;
   onRefreshConversations?: () => void;
   onSyncHistory?: () => Promise<void>;
 }
@@ -113,6 +115,7 @@ export function ActiveChat({
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
   const [pendingConnectionId, setPendingConnectionId] = React.useState<string | null>(null);
   const [messageFilter, setMessageFilter] = React.useState<string | null>(null);
+  const [isAutoSyncEnabled, setIsAutoSyncEnabled] = React.useState(false);
   const [isInternalNote, setIsInternalNote] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const connectionDropdownRef = React.useRef<HTMLDivElement>(null);
@@ -140,6 +143,19 @@ export function ActiveChat({
   const filterableConnections = React.useMemo(() => {
     return availableConnections.filter(c => activeConnectionIdsInChat.includes(c.id));
   }, [availableConnections, activeConnectionIdsInChat]);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('masteria_chat_auto_sync');
+    if (saved) setIsAutoSyncEnabled(saved === 'true');
+  }, []);
+
+  const toggleAutoSync = () => {
+    setIsAutoSyncEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('masteria_chat_auto_sync', String(next));
+      return next;
+    });
+  };
 
   React.useEffect(() => {
     if (previewFile) {
@@ -371,7 +387,15 @@ export function ActiveChat({
           {/* Assignment Dropdown */}
           <ChatAssignmentDropdown
             conversation={conversation}
-            onAssignUpdate={onRefreshConversations || (() => { })}
+            onAssignUpdate={(newUserId) => {
+               onRefreshConversations?.();
+               if (isAutoSyncEnabled && newUserId) {
+                 const userConn = availableConnections.find(c => c.ownerId === newUserId);
+                 if (userConn && userConn.id !== conversation.connectionId && onSwitchConnection) {
+                    onSwitchConnection(userConn.id);
+                 }
+               }
+            }}
           />
 
           {/* Connection Toggle */}
@@ -437,7 +461,19 @@ export function ActiveChat({
                           key={conn.id}
                           onClick={() => {
                             if (!isActive) {
-                              setPendingConnectionId(conn.id);
+                              if (isAutoSyncEnabled && conn.ownerId) {
+                                // Mudar Conexão E Atribuir
+                                if (onSwitchConnection) {
+                                  onSwitchConnection(conn.id).then(() => {
+                                    assignChatToUser(conversation.id, conn.ownerId!).then(() => {
+                                       setOptimisticAssignment({ assignedTo: conn.ownerId!, teamId: null });
+                                       onRefreshConversations?.();
+                                    });
+                                  });
+                                }
+                              } else {
+                                setPendingConnectionId(conn.id);
+                              }
                               setShowConnectionDropdown(false);
                             }
                           }}
@@ -492,6 +528,31 @@ export function ActiveChat({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {/* Sincronizar Repasse Toggle */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleAutoSync}
+                  className={cn(
+                    "shrink-0 h-9 w-9 rounded-lg transition-all duration-200 relative",
+                    isAutoSyncEnabled
+                      ? "bg-primary/10 text-primary hover:bg-primary/15"
+                      : "hover:bg-white/[0.04] text-muted-foreground"
+                  )}
+                >
+                  {isAutoSyncEnabled ? <LinkIcon className="h-[18px] w-[18px]" /> : <Unlink className="h-[18px] w-[18px]" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-card/95 backdrop-blur-md border-white/[0.08]">
+                <p>{isAutoSyncEnabled ? 'Sincronizar Atribuição: LIGADO' : 'Sincronizar Atribuição: DESLIGADO'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           {/* Message Filter Dropdown */}
           <DropdownMenu>
