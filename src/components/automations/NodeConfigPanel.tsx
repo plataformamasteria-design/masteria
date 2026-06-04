@@ -240,7 +240,7 @@ function TextFieldWithVars({ value, onChange, placeholder, multiline, monoFont }
 
                 {/* Autocomplete Dropdown */}
                 {showAuto && (
-                    <div className="absolute top-full left-0 z-50 mt-1 w-full max-w-[280px] bg-white rounded-xl border border-border shadow-xl overflow-hidden">
+                    <div className="absolute top-full left-0 z-50 mt-1 w-full max-w-[280px] bg-white dark:bg-zinc-950 rounded-xl border border-border shadow-xl overflow-hidden">
                         <div className="px-3 py-2 bg-muted/30 border-b border-border">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Variáveis Dinâmicas</span>
                         </div>
@@ -325,10 +325,10 @@ function NumberField({ value, onChange, min, max, placeholder }: {
 
 function InfoBanner({ text, color = 'blue' }: { text: string; color?: string }) {
     const colors: Record<string, string> = {
-        blue: 'bg-blue-50 border-blue-200 text-blue-700',
-        amber: 'bg-amber-50 border-amber-200 text-amber-700',
-        red: 'bg-red-50 border-red-200 text-red-600',
-        green: 'bg-green-500/10 border-green-500/20 text-green-800',
+        blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300',
+        amber: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300',
+        red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-300',
+        green: 'bg-green-500/10 dark:bg-green-900/20 border-green-500/20 dark:border-green-800/30 text-green-800 dark:text-green-300',
     };
     return (
         <div className={`px-4 py-2.5 rounded-xl border text-[11px] font-medium ${colors[color] || colors.blue}`}>
@@ -1775,7 +1775,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 return (
                     <div className="space-y-5">
                         {/* Tab Selector */}
-                        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                        <div className="flex gap-1 bg-gray-100 dark:bg-zinc-900/50 p-1 rounded-xl">
                             {[
                                 { id: 'params', label: 'Parâmetros' },
                                 { id: 'input', label: 'Input' },
@@ -1786,8 +1786,8 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     key={tab.id}
                                     onClick={() => update('_config_tab', tab.id)}
                                     className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all ${aiTab === tab.id
-                                        ? 'bg-white text-indigo-700 shadow-sm'
-                                        : 'text-gray-500 hover:text-foreground'
+                                        ? 'bg-white dark:bg-zinc-800 text-indigo-700 dark:text-indigo-400 shadow-sm'
+                                        : 'text-gray-500 dark:text-zinc-400 hover:text-foreground'
                                         }`}
                                 >
                                     {tab.label}
@@ -1826,7 +1826,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                                 learning_notes: e.target.value,
                                                 config: { ...(d.config || {}), learning_notes: e.target.value }
                                             })}
-                                            className="text-xs min-h-[80px] rounded-xl bg-violet-50/50 border-violet-100 placeholder:text-violet-300 focus:border-violet-300 focus:ring-violet-200 nodrag nowheel pb-9"
+                                            className="text-xs min-h-[80px] rounded-xl bg-violet-50/50 dark:bg-violet-950/20 border-violet-100 dark:border-violet-900/30 text-zinc-900 dark:text-zinc-200 placeholder:text-violet-300 dark:placeholder:text-violet-700/50 focus:border-violet-300 dark:focus:border-violet-700 focus:ring-violet-200 nodrag nowheel pb-9"
                                             placeholder="Ex: Nunca dê o preço antes de perguntar o nome..."
                                         />
                                     </div>
@@ -1838,7 +1838,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                             reflection_prompt: e.target.value,
                                             config: { ...(d.config || {}), reflection_prompt: e.target.value }
                                         })}
-                                        className="text-[11px] font-mono min-h-[100px] rounded-xl bg-zinc-50 border-zinc-200 text-zinc-600 nodrag nowheel"
+                                        className="text-[11px] font-mono min-h-[100px] rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 nodrag nowheel"
                                     />
                                 </ConfigSection>
                                 <ConfigSection label="Temperatura (Criatividade)">

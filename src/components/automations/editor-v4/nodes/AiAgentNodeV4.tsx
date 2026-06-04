@@ -24,9 +24,9 @@ export const AiAgentNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
     }, [id, hasTimeout, updateNodeInternals]);
 
     const headerExtra = (
-        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 border border-violet-100">
+        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-800/50">
             <Sparkles className="w-2.5 h-2.5 text-violet-500" />
-            <span className="text-[9px] font-bold text-violet-600">{PROVIDER_LABELS[provider] || provider}</span>
+            <span className="text-[9px] font-bold text-violet-600 dark:text-violet-400">{PROVIDER_LABELS[provider] || provider}</span>
         </span>
     );
 
@@ -89,15 +89,15 @@ export const AiAgentNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
             footer={footer}
         >
             <NodeHandle type="target" position={Position.Top} accentColor="violet" />
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5 space-y-1.5">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5 space-y-1.5">
                 <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-violet-600 font-semibold">{PROVIDER_LABELS[provider] || provider}</span>
-                    <span className="text-[10px] font-mono bg-violet-50 border border-violet-100 px-1.5 py-0.5 rounded text-violet-500">
+                    <span className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold">{PROVIDER_LABELS[provider] || provider}</span>
+                    <span className="text-[10px] font-mono bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-800/50 px-1.5 py-0.5 rounded text-violet-500 dark:text-violet-300">
                         {model}
                     </span>
                 </div>
                 {data.system_message && (
-                    <p className="text-[11px] text-zinc-500 italic line-clamp-1">{data.system_message}</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic line-clamp-1">{data.system_message}</p>
                 )}
                 {data.dialogue_mode && (
                     <div className="flex items-center gap-1">

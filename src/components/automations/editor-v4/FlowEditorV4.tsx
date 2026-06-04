@@ -506,7 +506,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                 <NodeLibraryPanel onAddNode={handleAddNode} />
 
                 {/* Canvas */}
-                <div className="flex-1 relative">
+                <div className="flex-1 relative [&_.react-flow__controls-button]:!bg-white dark:[&_.react-flow__controls-button]:!bg-zinc-900 [&_.react-flow__controls-button]:!border-zinc-200 dark:[&_.react-flow__controls-button]:!border-zinc-800 [&_.react-flow__controls-button]:!text-zinc-600 dark:[&_.react-flow__controls-button]:!text-zinc-400 [&_.react-flow__controls-button:hover]:!bg-zinc-50 dark:[&_.react-flow__controls-button:hover]:!bg-zinc-800 dark:[--minimap-mask:rgba(9,9,11,0.7)] dark:[--minimap-node:#27272a] [--minimap-mask:rgba(244,244,245,0.7)] [--minimap-node:#e4e4e7] dark:[--bg-dots:#27272a] [--bg-dots:#d4d4d8]">
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -527,23 +527,23 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                         minZoom={0.2}
                         maxZoom={2}
                         proOptions={{ hideAttribution: true }}
-                        className="bg-zinc-50"
+                        className="bg-zinc-50 dark:bg-black"
                     >
                         <Background
                             variant={BackgroundVariant.Dots}
                             gap={24}
                             size={1.2}
-                            color="#d4d4d8"
+                            color="var(--bg-dots)"
                         />
                         <MiniMap
                             nodeStrokeWidth={2}
-                            nodeColor="#e4e4e7"
-                            maskColor="rgba(244,244,245,0.7)"
-                            className="!border !border-zinc-200 !rounded-xl !shadow-sm"
+                            nodeColor="var(--minimap-node)"
+                            maskColor="var(--minimap-mask)"
+                            className="!border !border-zinc-200 dark:!border-zinc-800 !rounded-xl !shadow-sm !bg-white dark:!bg-zinc-950"
                         />
                         <Controls
                             showInteractive={false}
-                            className="!border !border-zinc-200 !rounded-xl !shadow-sm !bg-white"
+                            className="!border !border-zinc-200 dark:!border-zinc-800 !rounded-xl !shadow-sm !bg-white dark:!bg-zinc-900 overflow-hidden"
                         />
                     </ReactFlow>
                 </div>
@@ -628,7 +628,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
             {historyOpen && (
                 <div className="fixed inset-0 z-40 flex">
                     <div className="flex-1 bg-black/20" onClick={() => setHistoryOpen(false)} />
-                    <div className="w-80 h-full bg-white shadow-xl">
+                    <div className="w-80 h-full bg-white dark:bg-zinc-950 shadow-xl">
                         <ExecutionHistoryPanel
                             automationId={flowId === 'new' ? '' : flowId}
                             nodes={nodes}
@@ -640,15 +640,15 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
 
             {/* Painel de Correções Sugeridas pela IA */}
             {pendingCorrections.length > 0 && (
-                <div className="absolute top-20 right-6 z-40 w-96 bg-white rounded-xl shadow-2xl border border-violet-200 flex flex-col max-h-[80vh]">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-violet-100 bg-violet-50/50 rounded-t-xl shrink-0">
+                <div className="absolute top-20 right-6 z-40 w-96 bg-white dark:bg-zinc-950 rounded-xl shadow-2xl border border-violet-200 dark:border-violet-900 flex flex-col max-h-[80vh]">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-violet-100 dark:border-violet-900 bg-violet-50/50 dark:bg-violet-900/20 rounded-t-xl shrink-0">
                         <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md bg-violet-100 flex items-center justify-center">
-                                <span className="text-violet-600 text-xs font-bold">IA</span>
+                            <div className="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-900 flex items-center justify-center">
+                                <span className="text-violet-600 dark:text-violet-300 text-xs font-bold">IA</span>
                             </div>
                             <div>
-                                <h3 className="text-sm font-bold text-violet-900">Sugestões de Correção</h3>
-                                <p className="text-[10px] text-violet-600 font-medium">{pendingCorrections.length} itens encontrados</p>
+                                <h3 className="text-sm font-bold text-violet-900 dark:text-violet-100">Sugestões de Correção</h3>
+                                <p className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">{pendingCorrections.length} itens encontrados</p>
                             </div>
                         </div>
                         <button onClick={() => setPendingCorrections([])} className="text-violet-400 hover:text-violet-700 hover:bg-violet-100 p-1.5 rounded-lg transition-colors">
@@ -657,20 +657,20 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
                         {pendingCorrections.map((corr, idx) => (
-                            <div key={idx} className="bg-zinc-50 border border-zinc-200 p-3 rounded-lg flex gap-3">
+                            <div key={idx} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg flex gap-3">
                                 <div className="shrink-0 mt-0.5">
                                     {corr.action === 'add_node' && <span className="text-green-500 font-bold text-xs bg-green-50 px-1.5 py-0.5 rounded border border-green-200">NOVO</span>}
                                     {corr.action === 'update_node' && <span className="text-blue-500 font-bold text-xs bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">EDITAR</span>}
                                     {corr.action === 'delete_node' && <span className="text-red-500 font-bold text-xs bg-red-50 px-1.5 py-0.5 rounded border border-red-200">REMOVER</span>}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-zinc-900 mb-1">{corr.node_id ? `Nó: ${corr.node_id}` : 'Novo Nó'}</p>
-                                    <p className="text-[11px] text-zinc-600 leading-relaxed">{corr.reason || corr.description || JSON.stringify(corr)}</p>
+                                    <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-1">{corr.node_id ? `Nó: ${corr.node_id}` : 'Novo Nó'}</p>
+                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">{corr.reason || corr.description || JSON.stringify(corr)}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <div className="p-3 border-t border-zinc-100 bg-zinc-50 rounded-b-xl shrink-0">
+                    <div className="p-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 rounded-b-xl shrink-0">
                         <button onClick={() => setPendingCorrections([])} className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-violet-200">
                             Entendi, Fechar
                         </button>

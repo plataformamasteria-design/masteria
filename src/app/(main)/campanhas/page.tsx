@@ -54,15 +54,15 @@ export default function CampanhasHubPage() {
                                         Criar Campanha
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56 border-white/10 bg-zinc-950 text-zinc-300 rounded-xl p-2">
+                                <DropdownMenuContent align="end" className="w-56 border-zinc-200 dark:border-white/10 bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-300 rounded-xl p-2 shadow-lg">
                                     <CreateWhatsappCampaignWrapper>
-                                        <DropdownMenuItem className="cursor-pointer hover:bg-white/[0.05] rounded-lg p-2.5 flex items-center" onSelect={(e) => e.preventDefault()}>
+                                        <DropdownMenuItem className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-white/[0.05] rounded-lg p-2.5 flex items-center" onSelect={(e) => e.preventDefault()}>
                                             <MessageCircle className="mr-2 h-4 w-4 text-emerald-500 dark:text-emerald-400" />
                                             <span>WhatsApp Oficial (API)</span>
                                         </DropdownMenuItem>
                                     </CreateWhatsappCampaignWrapper>
                                     <CreateBaileysCampaignDialog>
-                                        <DropdownMenuItem className="cursor-pointer hover:bg-white/[0.05] rounded-lg p-2.5 flex items-center" onSelect={(e) => e.preventDefault()}>
+                                        <DropdownMenuItem className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-white/[0.05] rounded-lg p-2.5 flex items-center" onSelect={(e) => e.preventDefault()}>
                                             <MessageSquareText className="mr-2 h-4 w-4 text-blue-400" />
                                             <span>WhatsApp Não Oficial (Baileys)</span>
                                         </DropdownMenuItem>

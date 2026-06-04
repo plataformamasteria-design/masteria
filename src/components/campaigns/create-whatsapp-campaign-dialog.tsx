@@ -395,21 +395,21 @@ export function CreateWhatsappCampaignDialog({
                 return (
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="campaign-name" className="text-zinc-300">Nome da Campanha</Label>
-                            <Input id="campaign-name" className="bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50" value={name} onChange={(e) => setName(e.target.value)} required />
+                            <Label htmlFor="campaign-name" className="text-zinc-700 dark:text-zinc-300">Nome da Campanha</Label>
+                            <Input id="campaign-name" className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50" value={name} onChange={(e) => setName(e.target.value)} required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="connection-select" className="text-zinc-300">Enviar de</Label>
+                            <Label htmlFor="connection-select" className="text-zinc-700 dark:text-zinc-300">Enviar de</Label>
                             <Select value={selectedConnectionId} onValueChange={setSelectedConnectionId}>
-                                <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30"><SelectValue placeholder="Selecione uma conexão"/></SelectTrigger>
-                                <SelectContent className="bg-zinc-950 border-white/10 text-white">{connections.map(c => <SelectItem key={c.id} value={c.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{c.config_name}</SelectItem>)}</SelectContent>
+                                <SelectTrigger className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30"><SelectValue placeholder="Selecione uma conexão"/></SelectTrigger>
+                                <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">{connections.map(c => <SelectItem key={c.id} value={c.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{c.config_name}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="template-select" className="text-zinc-300">Usando o Modelo</Label>
+                            <Label htmlFor="template-select" className="text-zinc-700 dark:text-zinc-300">Usando o Modelo</Label>
                             <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                                <SelectTrigger disabled={!wabaId} className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30 disabled:opacity-50"><SelectValue placeholder="Selecione um modelo"/></SelectTrigger>
-                                <SelectContent className="bg-zinc-950 border-white/10 text-white">{availableTemplates.map(t => <SelectItem key={t.id} value={t.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{t.name}</SelectItem>)}</SelectContent>
+                                <SelectTrigger disabled={!wabaId} className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30 disabled:opacity-50"><SelectValue placeholder="Selecione um modelo"/></SelectTrigger>
+                                <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">{availableTemplates.map(t => <SelectItem key={t.id} value={t.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{t.name}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
                     </div>
@@ -418,7 +418,7 @@ export function CreateWhatsappCampaignDialog({
                 return (
                      <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-zinc-300">Mapeamento de Variáveis</Label>
+                            <Label className="text-zinc-700 dark:text-zinc-300">Mapeamento de Variáveis</Label>
                             <Card className="p-4 space-y-3 bg-white/[0.02] border-white/5 backdrop-blur-md">
                                 <div className="flex items-start gap-2 text-xs text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg shadow-[inset_0_0_15px_rgba(16,185,129,0.05)]">
                                     <Info className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
@@ -440,24 +440,24 @@ export function CreateWhatsappCampaignDialog({
                                                 >
                                                     <div className="flex items-center space-x-2">
                                                         <RadioGroupItem value="fixed" id={`fixed-${varName}`} className="border-white/20 text-emerald-500" />
-                                                        <Label htmlFor={`fixed-${varName}`} className="text-zinc-300">Valor Fixo</Label>
+                                                        <Label htmlFor={`fixed-${varName}`} className="text-zinc-700 dark:text-zinc-300">Valor Fixo</Label>
                                                     </div>
                                                      <div className="flex items-center space-x-2">
                                                         <RadioGroupItem value="dynamic" id={`dynamic-${varName}`} className="border-white/20 text-emerald-500" />
-                                                        <Label htmlFor={`dynamic-${varName}`} className="text-zinc-300">Campo do Contato</Label>
+                                                        <Label htmlFor={`dynamic-${varName}`} className="text-zinc-700 dark:text-zinc-300">Campo do Contato</Label>
                                                     </div>
                                                 </RadioGroup>
                                             </div>
                                             <div className="mt-1">
                                                 {variableMappings[varName]?.type === 'dynamic' ? (
                                                      <Select value={variableMappings[varName]?.value || ''} onValueChange={(value) => handleVariableMappingValueChange(varName, value)}>
-                                                        <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30"><SelectValue placeholder="Selecione um campo"/></SelectTrigger>
-                                                        <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                                                        <SelectTrigger className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30"><SelectValue placeholder="Selecione um campo"/></SelectTrigger>
+                                                        <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">
                                                             {contactFields.map(field => <SelectItem key={field.value} value={field.value} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{field.label}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : (
-                                                    <Input className="bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50" placeholder="Digite o valor fixo" value={variableMappings[varName]?.value || ''} onChange={e => handleVariableMappingValueChange(varName, e.target.value)} />
+                                                    <Input className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50" placeholder="Digite o valor fixo" value={variableMappings[varName]?.value || ''} onChange={e => handleVariableMappingValueChange(varName, e.target.value)} />
                                                 )}
                                             </div>
                                         </div>

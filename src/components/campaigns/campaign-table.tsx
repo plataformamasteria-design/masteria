@@ -261,25 +261,25 @@ const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify,
             </div>
           </div>
         </div>
-        <div className={cn("grid gap-2 border-t border-white/10 pt-4 bg-black/20 -mx-6 -mb-6 px-6 pb-6 mt-2 rounded-b-2xl", isSms ? "grid-cols-2" : "grid-cols-3")}>
-          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+        <div className={cn("grid gap-2 border-t border-zinc-200 dark:border-white/10 pt-4 bg-zinc-50 dark:bg-black/20 -mx-6 -mb-6 px-6 pb-6 mt-2 rounded-b-2xl", isSms ? "grid-cols-2" : "grid-cols-3")}>
+          <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 shadow-inner">
             <p className="text-xl font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">{campaign.sent}</p>
             <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Enviadas</p>
           </div>
           {!isSms && (
             <>
-              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 shadow-inner">
                 <p className="text-xl font-black">{campaign.delivered}</p>
                 <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Entregues</p>
               </div>
-              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+              <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 shadow-inner">
                 <p className="text-xl font-black">{campaign.read}</p>
                 <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Lidas</p>
               </div>
             </>
           )}
           {isSms && (
-            <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white/[0.02] border border-white/5 shadow-inner">
+            <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white dark:bg-white/[0.02] border border-zinc-200 dark:border-white/5 shadow-inner">
               <p className="text-xl font-black text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">{campaign.failed}</p>
               <p className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground mt-1 text-center">Falhas</p>
             </div>

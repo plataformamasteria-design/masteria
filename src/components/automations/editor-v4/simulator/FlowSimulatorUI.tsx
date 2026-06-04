@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { m as motion } from 'framer-motion';
 import { useFlowSimulator, SimMessage, FlowCorrection, FlowSimulatorUIProps, MEDIA_ICONS } from "./useFlowSimulator";
 import { RobotDataDashboard } from "./RobotDataDashboard";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, onMemoryUpdated, standalone, disableLearning }: FlowSimulatorUIProps) {
     const props = { nodes, edges, automationId, onClose, onHighlightNode, onCorrectionsGenerated, onMemoryUpdated, standalone, disableLearning };
@@ -69,7 +70,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
         <>
             {/* iPhone Frame */}
             <div className={cn(
-                "flex flex-col bg-zinc-50 relative overflow-hidden w-full h-full",
+                "flex flex-col bg-zinc-50 dark:bg-[#09090b] relative overflow-hidden w-full h-full",
                 standalone 
                     ? "sm:max-w-[400px] sm:h-[85vh] sm:border-[4px] sm:border-zinc-800 sm:rounded-[2.5rem] sm:shadow-2xl sm:ring-1 sm:ring-zinc-950" 
                     : "shadow-2xl ring-1 ring-zinc-950 border-[4px] border-zinc-800 rounded-[2.5rem]"
@@ -118,7 +119,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                 </div>
 
                 {/* Messages Area */}
-                <ScrollArea className="flex-1 bg-zinc-50">
+                <ScrollArea className="flex-1 bg-zinc-50 dark:bg-[#09090b]">
                     <div className="p-4 space-y-2.5 min-h-full pb-8">
                         {/* Empty state config */}
                         {showLeadSelector && !isRunning && !simFinished && (
@@ -126,7 +127,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                                 <div className="bg-primary/10 text-primary text-[11px] px-4 py-2 rounded-xl text-center shadow-sm w-full font-medium border border-primary/20">
                                     Simulador Master I.A
                                 </div>
-                                <div className="w-full bg-white p-4 rounded-2xl shadow-sm border border-neutral-100 space-y-4">
+                                <div className="w-full bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-sm border border-neutral-100 dark:border-zinc-800 space-y-4">
                                     <p className="text-xs text-neutral-600 text-center">
                                         Para iniciar a validação da automação, clique abaixo:
                                     </p>
@@ -176,7 +177,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                                         <button
                                             key={i}
                                             onClick={() => handleRouteSelect(opt.targetNodeId)}
-                                            className="w-full text-left px-4 py-3 rounded-2xl bg-white shadow-sm border border-neutral-200 text-neutral-700 text-xs hover:border-primary hover:shadow-md transition-all flex items-center gap-3"
+                                            className="w-full text-left px-4 py-3 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm border border-neutral-200 dark:border-zinc-800 text-neutral-700 dark:text-zinc-300 text-xs hover:border-primary dark:hover:border-primary hover:shadow-md transition-all flex items-center gap-3"
                                         >
                                             <div className="h-6 w-6 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
                                                 <ChevronRight className="h-3 w-3 text-neutral-500" />
@@ -194,7 +195,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                                 <div className="bg-primary/10 border border-primary/20 text-primary text-[10px] px-3 py-1.5 rounded-lg shadow-sm text-center font-medium">
                                     Simulação de Automação Concluída
                                 </div>
-                                <div className="w-full bg-white rounded-2xl p-4 shadow-sm border border-neutral-100 space-y-3 mt-2">
+                                <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 shadow-sm border border-neutral-100 dark:border-zinc-800 space-y-3 mt-2">
                                     <div className="flex flex-col items-center text-center">
                                         <div className="h-10 w-10 rounded-full flex items-center justify-center border border-neutral-200 mb-2">
                                             <Brain className="h-5 w-5 text-primary" />
@@ -231,14 +232,14 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                                 <div className="bg-primary/10 border border-primary/20 text-primary text-[10px] px-3 py-1.5 rounded-lg shadow-sm text-center font-medium">
                                     Simulação de Automação Concluída
                                 </div>
-                                <div className="w-full bg-white rounded-2xl p-3 shadow-sm border border-neutral-100 space-y-2 mt-2">
+                                <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl p-3 shadow-sm border border-neutral-100 dark:border-zinc-800 space-y-2 mt-2">
                                     <p className="text-[11px] text-neutral-500 text-center font-medium mb-1">Ações Pós-Simulação</p>
 
                                     {!standalone && (
                                         <>
                                             <button
                                                 onClick={runServiceAnalysis}
-                                                className="w-full flex items-center gap-3 bg-white border border-neutral-200 text-neutral-700 px-3 py-2.5 rounded-xl hover:bg-primary/10 transition-colors"
+                                                className="w-full flex items-center gap-3 bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 text-neutral-700 dark:text-zinc-300 px-3 py-2.5 rounded-xl hover:bg-primary/10 transition-colors"
                                             >
                                                 <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                                     <BarChart3 className="h-3.5 w-3.5" />
@@ -252,7 +253,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
                                             <button
                                                 onClick={runAutomationAnalysis}
-                                                className="w-full flex items-center gap-3 bg-white border border-neutral-200 text-neutral-700 px-3 py-2.5 rounded-xl hover:bg-amber-100 transition-colors"
+                                                className="w-full flex items-center gap-3 bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 text-neutral-700 dark:text-zinc-300 px-3 py-2.5 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors"
                                             >
                                                 <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-neutral-500">
                                                     <Target className="h-3.5 w-3.5" />
@@ -268,7 +269,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
                                     <button
                                         onClick={downloadLog}
-                                        className="w-full flex items-center gap-3 bg-white border border-neutral-200 text-neutral-700 px-3 py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
+                                        className="w-full flex items-center gap-3 bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 text-neutral-700 dark:text-zinc-300 px-3 py-2.5 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors"
                                     >
                                         <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-neutral-500">
                                             <FileText className="h-3.5 w-3.5" />
@@ -280,7 +281,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
                                     <button
                                         onClick={fullReset}
-                                        className="w-full flex items-center gap-3 bg-neutral-100 text-neutral-700 px-3 py-2.5 rounded-xl hover:bg-neutral-200 transition-colors"
+                                        className="w-full flex items-center gap-3 bg-neutral-100 dark:bg-zinc-800 text-neutral-700 dark:text-zinc-300 px-3 py-2.5 rounded-xl hover:bg-neutral-200 dark:hover:bg-zinc-700 transition-colors"
                                     >
                                         <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-neutral-500">
                                             <RotateCcw className="h-3.5 w-3.5" />
@@ -295,7 +296,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
                         {analysisRunning && (
                             <div className="flex justify-center my-3">
-                                <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 px-4 py-2 flex items-center gap-3">
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-zinc-800 px-4 py-2 flex items-center gap-3">
                                     <div className="flex gap-1.5">
                                         <div className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
                                         <div className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
@@ -314,7 +315,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
                 {/* Footer Input */}
                 <div className={cn(
-                    "shrink-0 bg-white relative z-10 border-t border-neutral-200",
+                    "shrink-0 bg-white dark:bg-zinc-950 relative z-10 border-t border-neutral-200 dark:border-zinc-800",
                     standalone ? "px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:pb-2" : "p-2"
                 )}>
                     {/* Floating Timeout Indicator */}
@@ -336,7 +337,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                     {waitingInput ? (
                         <form onSubmit={(e) => { e.preventDefault(); handleSendInput(); }} className="flex items-center gap-2">
                             {/* Paperclip alternative for media */}
-                            <div className="flex bg-neutral-50 rounded-full h-10 items-center justify-center px-2 shrink-0 border border-neutral-200">
+                            <div className="flex bg-neutral-50 dark:bg-zinc-900 rounded-full h-10 items-center justify-center px-2 shrink-0 border border-neutral-200 dark:border-zinc-800">
                                 <button type="button" onClick={() => handleMediaAttach("image")} className="h-8 w-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-primary transition-colors">
                                     <Image className="h-4 w-4" />
                                 </button>
@@ -352,7 +353,7 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                                 value={userInput}
                                 onChange={(e) => setUserInput(e.target.value)}
                                 placeholder="Mensagem"
-                                className="flex-1 h-10 text-[13px] bg-neutral-50 border-neutral-200 text-neutral-800 placeholder:text-neutral-400 rounded-full px-4 shadow-sm focus-visible:ring-0 focus-visible:border-primary"
+                                className="flex-1 h-10 text-[13px] bg-neutral-50 dark:bg-zinc-900 border-neutral-200 dark:border-zinc-800 text-neutral-800 dark:text-zinc-200 placeholder:text-neutral-400 dark:placeholder:text-zinc-500 rounded-full px-4 shadow-sm focus-visible:ring-0 focus-visible:border-primary"
                                 autoFocus
                             />
 
@@ -372,13 +373,13 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
                                     Processando fluxo...
                                 </div>
                             ) : (
-                                <div className="flex-1 flex items-center justify-center px-4 h-full bg-neutral-100 rounded-full border border-neutral-200 text-neutral-400 font-medium text-[11px] shadow-inner">
+                                <div className="flex-1 flex items-center justify-center px-4 h-full bg-neutral-100 dark:bg-zinc-900 rounded-full border border-neutral-200 dark:border-zinc-800 text-neutral-400 dark:text-zinc-500 font-medium text-[11px] shadow-inner">
                                     {simFinished ? "Automação finalizada" : "Aguardando início"}
                                 </div>
                             )}
 
                             {!isRunning && !simFinished && !showLeadSelector && (
-                                <Button size="icon" variant="outline" className="h-10 w-10 rounded-full shrink-0 border-neutral-200 text-neutral-500 hover:text-black bg-white" onClick={fullReset} title="Resetar Tudo">
+                                <Button size="icon" variant="outline" className="h-10 w-10 rounded-full shrink-0 border-neutral-200 dark:border-zinc-800 text-neutral-500 hover:text-black dark:hover:text-white bg-white dark:bg-zinc-900" onClick={fullReset} title="Resetar Tudo">
                                     <RotateCcw className="h-4 w-4" />
                                 </Button>
                             )}
@@ -409,7 +410,10 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
     if (standalone) {
         return (
-            <div className="flex w-full h-[100dvh] sm:items-center sm:justify-center bg-zinc-950 sm:p-4 overflow-hidden">
+            <div className="flex w-full h-[100dvh] sm:items-center sm:justify-center bg-zinc-100 dark:bg-zinc-950 sm:p-4 overflow-hidden relative">
+                <div className="absolute top-4 right-4 z-50">
+                    <ThemeToggle />
+                </div>
                 {containerContent}
             </div>
         );
@@ -447,11 +451,11 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
     if (message.type === "typing") {
         return (
             <div className="flex justify-start my-1 px-2">
-                <div className="bg-white rounded-[1.25rem] rounded-tl-sm px-4 py-2.5 shadow-sm border border-neutral-100 w-fit">
+                <div className="bg-white dark:bg-zinc-900 rounded-[1.25rem] rounded-tl-sm px-4 py-2.5 shadow-sm border border-neutral-100 dark:border-zinc-800 w-fit">
                     <div className="flex gap-1.5">
-                        <div className="h-2 w-2 rounded-full bg-neutral-300 animate-bounce [animation-delay:0ms]" />
-                        <div className="h-2 w-2 rounded-full bg-neutral-300 animate-bounce [animation-delay:150ms]" />
-                        <div className="h-2 w-2 rounded-full bg-neutral-300 animate-bounce [animation-delay:300ms]" />
+                        <div className="h-2 w-2 rounded-full bg-neutral-300 dark:bg-zinc-600 animate-bounce [animation-delay:0ms]" />
+                        <div className="h-2 w-2 rounded-full bg-neutral-300 dark:bg-zinc-600 animate-bounce [animation-delay:150ms]" />
+                        <div className="h-2 w-2 rounded-full bg-neutral-300 dark:bg-zinc-600 animate-bounce [animation-delay:300ms]" />
                     </div>
                 </div>
             </div>
@@ -472,7 +476,7 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
 
         return (
             <div className="flex justify-center my-3">
-                <div className="bg-primary/5 rounded-xl px-3 py-1.5 max-w-[85%] shadow-[0_1px_1px_rgba(0,0,0,0.05)] border border-primary/10 flex items-center gap-1.5">
+                <div className="bg-primary/5 dark:bg-primary/10 rounded-xl px-3 py-1.5 max-w-[85%] shadow-[0_1px_1px_rgba(0,0,0,0.05)] border border-primary/10 dark:border-primary/20 flex items-center gap-1.5">
                     {Icon && <Icon className="h-3 w-3 text-primary shrink-0" />}
                     <p className="text-[10px] text-primary text-center font-medium tracking-wide">
                         {content}
@@ -486,12 +490,12 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
     if (message.type === "internal") {
         return (
             <div className="flex justify-start my-1 px-2">
-                <div className="bg-amber-50 rounded-[1.25rem] rounded-tl-[4px] px-4 py-2.5 max-w-[85%] shadow-sm relative pb-6 border border-amber-200">
-                    <div className="flex items-center gap-1.5 mb-1 text-amber-600">
+                <div className="bg-amber-50 dark:bg-amber-950/30 rounded-[1.25rem] rounded-tl-[4px] px-4 py-2.5 max-w-[85%] shadow-sm relative pb-6 border border-amber-200 dark:border-amber-900/50">
+                    <div className="flex items-center gap-1.5 mb-1 text-amber-600 dark:text-amber-500">
                         <StickyNote className="h-3 w-3" />
                         <span className="text-[9px] font-bold uppercase tracking-wider">Nota Interna</span>
                     </div>
-                    <p className="text-[13px] text-amber-900 whitespace-pre-wrap leading-[1.3] font-medium w-full overflow-hidden">
+                    <p className="text-[13px] text-amber-900 dark:text-amber-200 whitespace-pre-wrap leading-[1.3] font-medium w-full overflow-hidden">
                         {message.content}
                     </p>
                     <div className="absolute bottom-1 right-2 flex items-center justify-end">
@@ -524,7 +528,7 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
                                     className="max-h-48 w-full object-cover"
                                 />
                             ) : (
-                                <div className="p-3 bg-white/10 flex items-center justify-center gap-2">
+                                <div className="p-3 bg-white/10 dark:bg-black/20 flex items-center justify-center gap-2">
                                     <FileText className="h-5 w-5 text-white" />
                                     <span className="text-xs text-white truncate max-w-[150px]">{message.media.name}</span>
                                 </div>
@@ -552,11 +556,11 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
 
     return (
         <div className="flex justify-start my-1 px-2">
-            <div className="bg-white rounded-[1.25rem] rounded-tl-[4px] px-4 py-2.5 max-w-[85%] shadow-sm relative pb-6 border border-neutral-100">
+            <div className="bg-white dark:bg-zinc-900 rounded-[1.25rem] rounded-tl-[4px] px-4 py-2.5 max-w-[85%] shadow-sm relative pb-6 border border-neutral-100 dark:border-zinc-800">
                 {message.media && (
-                    <div className="rounded-xl overflow-hidden mb-1.5 border border-neutral-100 bg-neutral-100">
+                    <div className="rounded-xl overflow-hidden mb-1.5 border border-neutral-100 dark:border-zinc-800 bg-neutral-100 dark:bg-zinc-800">
                         {message.media.type === "audio" && message.media.url && !message.media.url.startsWith("data:") ? (
-                            <div className="p-2 bg-neutral-50 flex items-center justify-center">
+                            <div className="p-2 bg-neutral-50 dark:bg-zinc-900 flex items-center justify-center">
                                 <audio controls className="w-[240px] max-w-full" src={message.media.url} />
                             </div>
                         ) : message.media.type === "video" && message.media.url && !message.media.url.startsWith("data:") ? (
@@ -573,15 +577,15 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
                             />
                         ) : null}
                         <div className={cn(
-                            "bg-neutral-100 flex items-center justify-center",
+                            "bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center",
                             message.media.url && !message.media.url.startsWith("data:") ? "hidden" : "h-32"
                         )}>
-                            {MediaIcon ? <MediaIcon className="h-10 w-10 text-neutral-300" /> : <FileText className="h-10 w-10 text-neutral-300" />}
+                            {MediaIcon ? <MediaIcon className="h-10 w-10 text-neutral-300 dark:text-zinc-600" /> : <FileText className="h-10 w-10 text-neutral-300 dark:text-zinc-600" />}
                         </div>
                     </div>
                 )}
                 {!!message.content && (
-                    <p className="text-[13px] text-zinc-800 whitespace-pre-wrap leading-[1.3] font-normal w-full overflow-hidden">
+                    <p className="text-[13px] text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap leading-[1.3] font-normal w-full overflow-hidden">
                         {message.content}
                     </p>
                 )}
@@ -591,7 +595,7 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
                             <button 
                                 key={btn.id}
                                 onClick={() => onButtonClick?.(btn.text)}
-                                className="w-full bg-primary/5 hover:bg-primary/10 text-primary text-[13px] font-medium py-2 px-3 rounded-lg border border-primary/20 transition-colors shadow-sm"
+                                className="w-full bg-primary/5 hover:bg-primary/10 dark:bg-primary/10 dark:hover:bg-primary/20 text-primary dark:text-primary-foreground text-[13px] font-medium py-2 px-3 rounded-lg border border-primary/20 dark:border-primary/30 transition-colors shadow-sm"
                             >
                                 {btn.text}
                             </button>
@@ -599,7 +603,7 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
                     </div>
                 )}
                 <div className="absolute bottom-1 right-2 flex items-center justify-end">
-                    <span className="text-[10px] text-neutral-400 font-medium tracking-tight">
+                    <span className="text-[10px] text-neutral-400 dark:text-zinc-500 font-medium tracking-tight">
                         {message.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                 </div>

@@ -83,8 +83,8 @@ export const BaseNode = memo(({
     return (
         <div
             className={[
-                'relative flex flex-col bg-white rounded-2xl border transition-all duration-200',
-                selected ? 'border-zinc-200/60' : 'border-zinc-200/80',
+                'relative flex flex-col bg-white dark:bg-zinc-900 rounded-2xl border transition-all duration-200',
+                selected ? 'border-zinc-200/60 dark:border-zinc-700' : 'border-zinc-200/80 dark:border-zinc-800',
                 'group/node',
             ].join(' ')}
             style={{
@@ -124,7 +124,7 @@ export const BaseNode = memo(({
                                     if (e.key === 'Enter') saveLabel();
                                     if (e.key === 'Escape') setEditing(false);
                                 }}
-                                className="flex-1 text-[13px] font-semibold text-zinc-900 bg-transparent border-b border-zinc-300 outline-none py-0.5 nodrag nowheel"
+                                className="flex-1 text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 bg-transparent border-b border-zinc-300 dark:border-zinc-700 outline-none py-0.5 nodrag nowheel"
                             />
                             <button
                                 onClick={e => { e.stopPropagation(); saveLabel(); }}
@@ -135,7 +135,7 @@ export const BaseNode = memo(({
                         </div>
                     ) : (
                         <span
-                            className="block text-[13px] font-semibold text-zinc-900 truncate leading-tight cursor-default"
+                            className="block text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 truncate leading-tight cursor-default"
                             onDoubleClick={() => onLabelChange && setEditing(true)}
                             title={onLabelChange ? 'Duplo clique para renomear' : undefined}
                         >
@@ -159,7 +159,7 @@ export const BaseNode = memo(({
 
             {/* ─── Footer (handles de saída) ────────────────────────────────── */}
             {footer && (
-                <div className={`border-t ${colors.border} border-opacity-50 bg-zinc-50/60 rounded-b-2xl overflow-visible`}>
+                <div className={`border-t ${colors.border} dark:border-zinc-800 border-opacity-50 bg-zinc-50/60 dark:bg-zinc-900/60 rounded-b-2xl overflow-visible`}>
                     {footer}
                 </div>
             )}
@@ -173,7 +173,7 @@ export const BaseNode = memo(({
                 {onLabelChange && !editing && (
                     <button
                         onClick={e => { e.stopPropagation(); setEditing(true); }}
-                        className="w-6 h-6 bg-white border border-zinc-200 rounded-full shadow-sm flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:border-zinc-300 transition-all"
+                        className="w-6 h-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-full shadow-sm flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all"
                         title="Renomear"
                     >
                         <Pencil className="w-2.5 h-2.5" />
@@ -182,7 +182,7 @@ export const BaseNode = memo(({
                 {onDuplicate && (
                     <button
                         onClick={e => { e.stopPropagation(); onDuplicate(); }}
-                        className="w-6 h-6 bg-white border border-zinc-200 rounded-full shadow-sm flex items-center justify-center text-zinc-400 hover:text-zinc-700 hover:border-zinc-300 transition-all"
+                        className="w-6 h-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-full shadow-sm flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all"
                         title="Duplicar"
                     >
                         <Copy className="w-2.5 h-2.5" />
@@ -191,7 +191,7 @@ export const BaseNode = memo(({
                 {onDelete && (
                     <button
                         onClick={e => { e.stopPropagation(); onDelete(); }}
-                        className="w-6 h-6 bg-white border border-zinc-200 rounded-full shadow-sm flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:border-rose-200 transition-all"
+                        className="w-6 h-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-full shadow-sm flex items-center justify-center text-zinc-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-900 transition-all"
                         title="Excluir"
                     >
                         <Trash2 className="w-2.5 h-2.5" />

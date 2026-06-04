@@ -104,24 +104,24 @@ export function NodeConfigDrawer({
             <div
                 ref={drawerRef}
                 className={[
-                    'fixed top-0 right-0 h-full w-[380px] bg-zinc-50 border-l border-zinc-200',
+                    'fixed top-0 right-0 h-full w-[380px] bg-zinc-50 dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800',
                     'shadow-[-4px_0_20px_rgba(0,0,0,0.08)] z-30 flex flex-col',
                     'transition-transform duration-300 ease-out',
                     isOpen ? 'translate-x-0' : 'translate-x-full',
                 ].join(' ')}
             >
                 {/* Header */}
-                <div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-200 bg-white shrink-0">
-                    <div className="w-7 h-7 flex items-center justify-center bg-zinc-100 rounded-lg">
-                        <Settings2 className="w-3.5 h-3.5 text-zinc-600" />
+                <div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0">
+                    <div className="w-7 h-7 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+                        <Settings2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">{nodeType}</p>
-                        <p className="text-[13px] font-semibold text-zinc-900 truncate">{nodeLabel}</p>
+                        <p className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 truncate">{nodeLabel}</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                         title="Fechar (ESC)"
                     >
                         <X className="w-4 h-4" />
@@ -150,10 +150,10 @@ export function NodeConfigDrawer({
 
                 {/* Painel de Teste / Output em Tempo Real */}
                 {node && !showTestPanel && (
-                    <div className="p-4 border-t border-zinc-200 bg-zinc-50 shrink-0">
+                    <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 shrink-0">
                         <button
                             onClick={() => setShowTestPanel(true)}
-                            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-zinc-200 text-zinc-700 text-xs font-semibold rounded-lg hover:bg-zinc-50 transition-colors shadow-sm"
+                            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
                         >
                             <Settings2 className="w-3.5 h-3.5" />
                             Abrir Painel de Teste
@@ -162,11 +162,11 @@ export function NodeConfigDrawer({
                 )}
 
                 {node && showTestPanel && (
-                    <div className="h-[280px] shrink-0 border-t border-zinc-200 bg-white flex flex-col relative shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                    <div className="h-[280px] shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col relative shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                             <button
                                 onClick={() => setShowTestPanel(false)}
-                                className="bg-zinc-100 hover:bg-zinc-200 text-zinc-500 border border-zinc-200 rounded-full p-1 transition-colors shadow-sm"
+                                className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 rounded-full p-1 transition-colors shadow-sm"
                                 title="Fechar Painel de Teste"
                             >
                                 <X className="w-3.5 h-3.5" />

@@ -105,15 +105,15 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
 
     if (collapsed) {
         return (
-            <div className="flex flex-col items-center w-10 bg-white border-r border-zinc-200 shadow-sm py-3 gap-2 z-20">
+            <div className="flex flex-col items-center w-10 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 shadow-sm py-3 gap-2 z-20">
                 <button
                     onClick={() => setCollapsed(false)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 text-zinc-500 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 dark:text-zinc-400 transition-colors"
                     title="Expandir painel"
                 >
                     <ChevronRight className="w-4 h-4" />
                 </button>
-                <div className="w-px h-4 bg-zinc-200 mx-auto" />
+                <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-auto" />
                 {NODE_CATALOG.map(cat => {
                     const firstNode = cat.nodes[0];
                     if (!firstNode) return null;
@@ -123,7 +123,7 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
                         <button
                             key={cat.key}
                             onClick={() => { setCollapsed(false); setOpenCategory(cat.key); }}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 text-zinc-400 transition-colors"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 transition-colors"
                             title={cat.label}
                         >
                             <CatIcon className="w-3.5 h-3.5" />
@@ -135,13 +135,13 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
     }
 
     return (
-        <div className="flex flex-col w-[220px] bg-white border-r border-zinc-200 shadow-sm overflow-hidden z-20 shrink-0">
+        <div className="flex flex-col w-[220px] bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden z-20 shrink-0">
             {/* Header */}
-            <div className="flex items-center justify-between px-3 py-3 border-b border-zinc-100">
+            <div className="flex items-center justify-between px-3 py-3 border-b border-zinc-100 dark:border-zinc-800/50">
                 <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Blocos</span>
                 <button
                     onClick={() => setCollapsed(true)}
-                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-zinc-100 text-zinc-400 transition-colors"
+                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 transition-colors"
                     title="Recolher"
                 >
                     <ChevronLeft className="w-3.5 h-3.5" />
@@ -155,9 +155,9 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
                         {/* Toggle de categoria */}
                         <button
                             onClick={() => setOpenCategory(openCategory === cat.key ? null : cat.key)}
-                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 transition-colors group"
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group"
                         >
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest group-hover:text-zinc-600 transition-colors">
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
                                 {cat.label}
                             </span>
                             <ChevronRight className={`w-3 h-3 text-zinc-300 transition-transform ${openCategory === cat.key ? 'rotate-90' : ''}`} />
@@ -172,11 +172,11 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
                                         <button
                                             key={node.type}
                                             onClick={() => onAddNode(node.type, node.defaultData)}
-                                            className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-zinc-50 transition-colors group/node-btn"
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group/node-btn"
                                             title={`Adicionar ${node.label}`}
                                         >
                                             <NodeIcon className={`w-3.5 h-3.5 shrink-0 ${node.color} opacity-80 group-hover/node-btn:opacity-100`} />
-                                            <span className="text-[12px] text-zinc-600 font-medium group-hover/node-btn:text-zinc-900 transition-colors">
+                                            <span className="text-[12px] text-zinc-600 dark:text-zinc-400 font-medium group-hover/node-btn:text-zinc-900 dark:group-hover/node-btn:text-zinc-200 transition-colors">
                                                 {node.label}
                                             </span>
                                         </button>

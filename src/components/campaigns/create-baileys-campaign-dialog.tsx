@@ -432,7 +432,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                             </AlertDescription>
                         </Alert>
                         <div className="space-y-2">
-                            <Label htmlFor="campaign-name" className="text-zinc-300">Nome da Campanha *</Label>
+                            <Label htmlFor="campaign-name" className="text-zinc-700 dark:text-zinc-300">Nome da Campanha *</Label>
                             <Input 
                                 id="campaign-name" 
                                 value={name} 
@@ -444,12 +444,12 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                 placeholder="Ex: Campanha Black Friday 2024"
                                 required 
                                 aria-invalid={!!nameError}
-                                className="bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
+                                className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
                             />
                             {nameError && <p className="text-xs text-red-400">{nameError}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="connection-select" className="text-zinc-300">Conexão WhatsApp Business *</Label>
+                            <Label htmlFor="connection-select" className="text-zinc-700 dark:text-zinc-300">Conexão WhatsApp Business *</Label>
                             {baileysConnections.length === 0 ? (
                                 <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-400">
                                     <AlertDescription>
@@ -458,10 +458,10 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                 </Alert>
                             ) : (
                                 <Select value={selectedConnectionId} onValueChange={setSelectedConnectionId}>
-                                    <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30">
+                                    <SelectTrigger className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30">
                                         <SelectValue placeholder="Selecione uma conexão"/>
                                     </SelectTrigger>
-                                    <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                                    <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">
                                         {baileysConnections.map(c => (
                                             <SelectItem key={c.id} value={c.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">
                                                 {c.config_name}
@@ -472,15 +472,15 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                             )}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="delay-select" className="flex items-center gap-2 text-zinc-300">
+                            <Label htmlFor="delay-select" className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
                                 <Clock className="h-4 w-4" />
                                 Intervalo entre Mensagens
                             </Label>
                             <Select value={delayOption} onValueChange={setDelayOption}>
-                                <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30">
+                                <SelectTrigger className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30">
                                     <SelectValue placeholder="Selecione o intervalo"/>
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                                <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">
                                     {delayOptions.map(opt => (
                                         <SelectItem key={opt.value} value={opt.value} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">
                                             <div className="flex flex-col">
@@ -501,7 +501,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                 return (
                      <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="message-textarea" className="text-zinc-300">Mensagem *</Label>
+                            <Label htmlFor="message-textarea" className="text-zinc-700 dark:text-zinc-300">Mensagem *</Label>
                             <Textarea 
                                 id="message-textarea"
                                 value={messageText} 
@@ -511,7 +511,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                 }}
                                 onBlur={() => validateMessage(messageText)}
                                 placeholder="Digite sua mensagem aqui. Use {{1}}, {{2}} para variáveis."
-                                className="min-h-[150px] bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
+                                className="min-h-[150px] bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
                                 maxLength={4096}
                                 aria-invalid={!!messageError}
                             />
@@ -522,7 +522,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                         </div>
                         
                         <div className="space-y-2">
-                            <Label className="text-zinc-300">Inserir Variáveis</Label>
+                            <Label className="text-zinc-700 dark:text-zinc-300">Inserir Variáveis</Label>
                             <div className="flex flex-wrap gap-2">
                                 {[1, 2, 3, 4, 5].map(n => (
                                     <Button 
@@ -545,7 +545,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                     <Info className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
                                     <p>Configure o valor de cada variável no próximo passo.</p>
                                 </div>
-                                <p className="text-sm font-medium text-zinc-300">Variáveis detectadas: <span className="text-emerald-400 font-mono">{variableNames.map(v => `{{${v}}}`).join(', ')}</span></p>
+                                <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Variáveis detectadas: <span className="text-emerald-400 font-mono">{variableNames.map(v => `{{${v}}}`).join(', ')}</span></p>
                             </Card>
                         )}
                     </div>
@@ -556,7 +556,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                     <div className="space-y-6">
                         {variableNames.length > 0 && (
                             <div className="space-y-2">
-                                <Label className="text-base font-semibold text-zinc-300">Mapeamento de Variáveis</Label>
+                                <Label className="text-base font-semibold text-zinc-700 dark:text-zinc-300">Mapeamento de Variáveis</Label>
                                 <Card className="p-4 space-y-3 bg-white/[0.02] border-white/5 backdrop-blur-md">
                                     {variableNames.map((varNum, index) => (
                                         <React.Fragment key={varNum}>
@@ -571,21 +571,21 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                                 >
                                                     <div className="flex items-center space-x-2">
                                                         <RadioGroupItem value="fixed" id={`fixed-${varNum}`} className="border-white/20 text-emerald-500 focus-visible:ring-emerald-500" />
-                                                        <Label htmlFor={`fixed-${varNum}`} className="text-zinc-300 cursor-pointer">Valor Fixo</Label>
+                                                        <Label htmlFor={`fixed-${varNum}`} className="text-zinc-700 dark:text-zinc-300 cursor-pointer">Valor Fixo</Label>
                                                     </div>
                                                      <div className="flex items-center space-x-2">
                                                         <RadioGroupItem value="dynamic" id={`dynamic-${varNum}`} className="border-white/20 text-emerald-500 focus-visible:ring-emerald-500" />
-                                                        <Label htmlFor={`dynamic-${varNum}`} className="text-zinc-300 cursor-pointer">Campo do Contato</Label>
+                                                        <Label htmlFor={`dynamic-${varNum}`} className="text-zinc-700 dark:text-zinc-300 cursor-pointer">Campo do Contato</Label>
                                                     </div>
                                                 </RadioGroup>
                                             </div>
                                             <div className="mt-1">
                                                 {variableMappings[varNum]?.type === 'dynamic' ? (
                                                      <Select value={variableMappings[varNum]?.value || ''} onValueChange={(value) => handleVariableMappingValueChange(varNum, value)}>
-                                                        <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30">
+                                                        <SelectTrigger className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30">
                                                             <SelectValue placeholder="Selecione um campo"/>
                                                         </SelectTrigger>
-                                                        <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                                                        <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">
                                                             {contactFields.map(field => <SelectItem key={field.value} value={field.value} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{field.label}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
@@ -594,7 +594,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                                         placeholder="Digite o valor fixo" 
                                                         value={variableMappings[varNum]?.value || ''} 
                                                         onChange={e => handleVariableMappingValueChange(varNum, e.target.value)} 
-                                                        className="bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
+                                                        className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
                                                     />
                                                 )}
                                             </div>
@@ -624,10 +624,10 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-base font-semibold text-zinc-300">Agendamento</Label>
+                            <Label className="text-base font-semibold text-zinc-700 dark:text-zinc-300">Agendamento</Label>
                             <div className="flex items-center space-x-2">
                                 <Checkbox id="send-now-checkbox-baileys" checked={sendNow} onCheckedChange={(checked) => setSendNow(!!checked)} className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
-                                <Label htmlFor="send-now-checkbox-baileys" className="text-zinc-300 cursor-pointer">Enviar Imediatamente</Label>
+                                <Label htmlFor="send-now-checkbox-baileys" className="text-zinc-700 dark:text-zinc-300 cursor-pointer">Enviar Imediatamente</Label>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Popover>
@@ -637,7 +637,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                             {scheduleDate ? format(scheduleDate, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
                                         </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0 bg-zinc-950 border-white/10 text-white" align="start">
+                                    <PopoverContent className="w-auto p-0 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white" align="start">
                                         <Calendar mode="single" selected={scheduleDate} onSelect={setScheduleDate} disabled={sendNow} initialFocus className="bg-zinc-950 text-white" />
                                     </PopoverContent>
                                 </Popover>
@@ -646,7 +646,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                     type="time" 
                                     value={scheduleTime} 
                                     onChange={(e) => setScheduleTime(e.target.value)} 
-                                    className="w-full sm:w-auto bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50 [color-scheme:dark]" 
+                                    className="w-full sm:w-auto bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50 [color-scheme:dark]" 
                                     disabled={sendNow}
                                     pattern="[0-9]{2}:[0-9]{2}"
                                 />
@@ -661,7 +661,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                 return (
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="campaign-name-review" className="text-base font-semibold text-zinc-300">Nome da Campanha *</Label>
+                            <Label htmlFor="campaign-name-review" className="text-base font-semibold text-zinc-700 dark:text-zinc-300">Nome da Campanha *</Label>
                             <Input 
                                 id="campaign-name-review" 
                                 value={name} 
@@ -670,7 +670,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                 placeholder="Ex: Campanha Black Friday 2024"
                                 required 
                                 aria-invalid={!!nameError}
-                                className="bg-white/[0.03] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
+                                className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500/50"
                             />
                             {nameError && (
                                 <p className="text-xs text-red-400">{nameError}</p>
@@ -678,7 +678,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-base font-semibold text-zinc-300">Resumo da Campanha</Label>
+                            <Label className="text-base font-semibold text-zinc-700 dark:text-zinc-300">Resumo da Campanha</Label>
                             <Card className="p-4 space-y-3 bg-white/[0.02] border-white/5 backdrop-blur-md">
                                 <div className="grid grid-cols-[120px_1fr] gap-3 text-sm">
                                     <span className="font-medium text-zinc-400">Nome:</span>
@@ -700,15 +700,15 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="delay-select-review" className="text-base font-semibold flex items-center gap-2 text-zinc-300">
+                            <Label htmlFor="delay-select-review" className="text-base font-semibold flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
                                 <Clock className="h-4 w-4" />
                                 Intervalo entre Mensagens
                             </Label>
                             <Select value={delayOption} onValueChange={setDelayOption}>
-                                <SelectTrigger className="bg-white/[0.03] border-white/10 text-white focus:ring-emerald-500/30">
+                                <SelectTrigger className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30">
                                     <SelectValue placeholder="Selecione o intervalo"/>
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                                <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">
                                     {delayOptions.map(opt => (
                                         <SelectItem key={opt.value} value={opt.value} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">
                                             <div className="flex flex-col">
@@ -724,11 +724,11 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-base font-semibold text-zinc-300">Automação</Label>
+                            <Label className="text-base font-semibold text-zinc-700 dark:text-zinc-300">Automação</Label>
                             <Card className="p-4 bg-white/[0.02] border-white/5 backdrop-blur-md">
                                 <div className="flex items-center space-x-2">
                                     <Checkbox id="disable-bot-checkbox" checked={disableBotOnSend} onCheckedChange={(checked) => setDisableBotOnSend(!!checked)} className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
-                                    <Label htmlFor="disable-bot-checkbox" className="font-normal cursor-pointer text-sm text-zinc-300">
+                                    <Label htmlFor="disable-bot-checkbox" className="font-normal cursor-pointer text-sm text-zinc-700 dark:text-zinc-300">
                                         Desativar o robô (AI) instantaneamente para os contatos que receberem este disparo
                                     </Label>
                                 </div>
@@ -737,9 +737,9 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
 
                         {variableNames.length > 0 && (
                             <div className="space-y-2">
-                                <Label className="text-base font-semibold text-zinc-300">Variáveis Configuradas</Label>
+                                <Label className="text-base font-semibold text-zinc-700 dark:text-zinc-300">Variáveis Configuradas</Label>
                                 <Card className="p-4 bg-white/[0.02] border-white/5 backdrop-blur-md">
-                                    <div className="grid gap-2 text-sm text-zinc-300">
+                                    <div className="grid gap-2 text-sm text-zinc-700 dark:text-zinc-300">
                                         {variableNames.map(v => {
                                             const mapping = variableMappings[v];
                                             const display = mapping?.type === 'dynamic' 
@@ -775,17 +775,17 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                 },
             })}
             <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-                <DialogContent className="sm:max-w-[1200px] w-[95vw] h-[90vh] flex flex-col p-0 bg-zinc-950/90 backdrop-blur-3xl border border-white/10 text-zinc-100 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden" onPointerDownOutside={(e) => { e.preventDefault(); }} onInteractOutside={(e) => { e.preventDefault(); }}>
+                <DialogContent className="sm:max-w-[1200px] w-[95vw] h-[90vh] flex flex-col p-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-3xl border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-zinc-100 shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden" onPointerDownOutside={(e) => { e.preventDefault(); }} onInteractOutside={(e) => { e.preventDefault(); }}>
                     <div className="flex flex-1 min-h-0 h-full">
                         {/* Left Sidebar: Steps */}
-                        <div className="w-full max-w-[280px] border-r border-white/10 bg-black/20 flex-col hidden md:flex">
-                            <div className="p-6 border-b border-white/10 flex items-center gap-3">
-                                <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8 hover:bg-white/5 hover:text-white text-zinc-400 shrink-0">
+                        <div className="w-full max-w-[280px] border-r border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/20 flex-col hidden md:flex">
+                            <div className="p-6 border-b border-zinc-200 dark:border-white/10 flex items-center gap-3">
+                                <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-zinc-500 dark:text-zinc-400 shrink-0">
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
                                 <div>
-                                    <h2 className="text-lg font-bold tracking-tight text-white leading-tight">Nova Campanha</h2>
-                                    <p className="text-xs text-zinc-400">WhatsApp (Baileys)</p>
+                                    <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white leading-tight">Nova Campanha</h2>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400">WhatsApp (Baileys)</p>
                                 </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -796,7 +796,7 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                         <div key={step.id} className={cn("relative flex items-start p-3 rounded-lg transition-all duration-300", isActive ? "bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]" : (isPast ? "opacity-70" : "opacity-40"))}>
                                             {isActive && <motion.div layoutId="active-step-baileys" className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-l-lg shadow-[0_0_10px_rgba(16,185,129,0.5)]" />}
                                             <div className="flex flex-col ml-1">
-                                                <span className={cn("text-sm font-semibold", isActive ? "text-emerald-400" : "text-white")}>{step.title}</span>
+                                                <span className={cn("text-sm font-semibold", isActive ? "text-emerald-500 dark:text-emerald-400" : "text-zinc-600 dark:text-white")}>{step.title}</span>
                                             </div>
                                         </div>
                                     )
@@ -805,14 +805,14 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                         </div>
 
                         {/* Center Area: Form Content */}
-                        <div className="flex-1 flex flex-col min-w-0 relative bg-zinc-950/50">
-                            <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between bg-black/10">
+                        <div className="flex-1 flex flex-col min-w-0 relative bg-white dark:bg-zinc-950/50">
+                            <div className="p-4 md:p-6 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between bg-zinc-50 dark:bg-black/10">
                                 <div className="flex items-center gap-3 md:hidden">
-                                    <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8 hover:bg-white/5 hover:text-white text-zinc-400 shrink-0">
+                                    <Button type="button" variant="ghost" size="icon" onClick={handlePrevStep} className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-zinc-500 dark:text-zinc-400 shrink-0">
                                         <ArrowLeft className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <h3 className="text-xl font-medium text-white">{currentStepConfig?.title}</h3>
+                                <h3 className="text-xl font-medium text-zinc-900 dark:text-white">{currentStepConfig?.title}</h3>
                                 <span className="text-sm text-zinc-500 hidden sm:block">Passo {currentStep + 1} de {steps.length}</span>
                             </div>
                             
@@ -831,11 +831,11 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                 </AnimatePresence>
                             </div>
 
-                            <div className="p-4 border-t border-white/10 bg-black/20 flex justify-between items-center shrink-0">
-                                <Button type="button" variant="ghost" className="hover:bg-white/5 hover:text-white text-zinc-400" onClick={() => handleOpenChange(false)} disabled={isProcessing}>Cancelar</Button>
+                            <div className="p-4 border-t border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-black/20 flex justify-between items-center shrink-0">
+                                <Button type="button" variant="ghost" className="hover:bg-zinc-200 dark:hover:bg-white/5 hover:text-zinc-900 dark:hover:text-white text-zinc-500 dark:text-zinc-400" onClick={() => handleOpenChange(false)} disabled={isProcessing}>Cancelar</Button>
                                 <div className="flex gap-2">
                                     {currentStep > 0 && currentStep !== steps.length - 1 && (
-                                        <Button type="button" variant="outline" onClick={handlePrevStep} className="bg-transparent border-white/10 text-white hover:bg-white/5 hidden sm:flex">Voltar</Button>
+                                        <Button type="button" variant="outline" onClick={handlePrevStep} className="bg-transparent border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-white/5 hidden sm:flex">Voltar</Button>
                                     )}
                                     {currentStep === steps.length - 1 ? (
                                         <Button type="button" className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all duration-300" onClick={handleSubmit} disabled={isProcessing || (contactListIds.length === 0 && tagIds.length === 0 && funnelIds.length === 0 && funnelStageIds.length === 0)}>
@@ -853,8 +853,8 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
 
                         {/* Right Area: Sticky Preview */}
                         {currentStepConfig?.id !== 'review' && (
-                            <div className="w-full max-w-[350px] border-l border-white/10 bg-[#0b141a] flex-col relative hidden lg:flex shadow-[inset_10px_0_20px_rgba(0,0,0,0.5)]">
-                                <div className="p-4 border-b border-white/5 bg-black/20">
+                            <div className="w-full max-w-[350px] border-l border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-[#0b141a] flex-col relative hidden lg:flex shadow-[inset_10px_0_20px_rgba(0,0,0,0.05)] dark:shadow-[inset_10px_0_20px_rgba(0,0,0,0.5)]">
+                                <div className="p-4 border-b border-zinc-200 dark:border-white/5 bg-white dark:bg-black/20">
                                     <h3 className="text-sm font-medium text-emerald-400 flex items-center gap-2">
                                         Visualização Dinâmica
                                     </h3>
@@ -862,8 +862,8 @@ export function CreateBaileysCampaignDialog({ children }: CreateBaileysCampaignD
                                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                                     {messageText ? (
                                         <div className="space-y-2">
-                                            <Label className="text-zinc-400 text-xs uppercase tracking-wider">Preview da Mensagem</Label>
-                                            <Card className="p-4 bg-white/[0.02] border-white/5 backdrop-blur-md text-zinc-200">
+                                            <Label className="text-zinc-500 dark:text-zinc-400 text-xs uppercase tracking-wider">Preview da Mensagem</Label>
+                                            <Card className="p-4 bg-white dark:bg-white/[0.02] border-zinc-200 dark:border-white/5 backdrop-blur-md text-zinc-800 dark:text-zinc-200">
                                                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{highlightMessage()}</p>
                                             </Card>
                                         </div>

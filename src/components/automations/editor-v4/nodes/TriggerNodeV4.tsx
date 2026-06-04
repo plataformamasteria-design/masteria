@@ -58,7 +58,7 @@ export const TriggerNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     }
 
     const headerExtra = (
-        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wide bg-zinc-100 text-zinc-500`}>
+        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wide bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400`}>
             {cfg.badge}
         </span>
     );
@@ -87,9 +87,9 @@ export const TriggerNodeV4 = memo(({ data, selected }: NodePropsV4) => {
             headerExtra={headerExtra}
             footer={footer}
         >
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5 flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${triggerType ? 'bg-green-400' : 'bg-zinc-300'} shrink-0`} />
-                <span className="text-[12px] text-zinc-600 font-medium truncate">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5 flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${triggerType ? 'bg-green-400' : 'bg-zinc-300 dark:bg-zinc-700'} shrink-0`} />
+                <span className="text-[12px] text-zinc-600 dark:text-zinc-300 font-medium truncate">
                     {triggerType ? cfg.label : 'Nenhum gatilho selecionado'}
                 </span>
             </div>
