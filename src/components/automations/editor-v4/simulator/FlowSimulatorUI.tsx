@@ -527,10 +527,19 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
                                     alt={message.media.name || "media"}
                                     className="max-h-48 w-full object-cover"
                                 />
+                            ) : message.media.url ? (
+                                <div 
+                                    className="p-3 bg-white/10 dark:bg-black/20 flex items-center justify-center gap-2 cursor-pointer hover:bg-white/20 transition-colors"
+                                    onClick={() => window.open(message.media!.url, '_blank')}
+                                    title="Abrir arquivo"
+                                >
+                                    <FileText className="h-5 w-5 text-white" />
+                                    <span className="text-xs text-white truncate max-w-[150px]">{message.media.name || "Arquivo anexo"}</span>
+                                </div>
                             ) : (
                                 <div className="p-3 bg-white/10 dark:bg-black/20 flex items-center justify-center gap-2">
                                     <FileText className="h-5 w-5 text-white" />
-                                    <span className="text-xs text-white truncate max-w-[150px]">{message.media.name}</span>
+                                    <span className="text-xs text-white truncate max-w-[150px]">{message.media.name || "Arquivo anexo"}</span>
                                 </div>
                             )}
                         </div>
@@ -588,6 +597,17 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
                                         </span>
                                     </div>
                                 )}
+                            </div>
+                        ) : message.media.type === "document" && message.media.url ? (
+                            <div 
+                                className="p-4 bg-neutral-100 dark:bg-zinc-800 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-neutral-200 dark:hover:bg-zinc-700 transition-colors"
+                                onClick={() => window.open(message.media!.url, '_blank')}
+                                title="Abrir documento"
+                            >
+                                <FileText className="h-8 w-8 text-neutral-400 dark:text-zinc-500" />
+                                <span className="text-xs text-neutral-600 dark:text-zinc-400 font-medium truncate w-[200px] text-center px-2">
+                                    {message.media.name || "Visualizar Documento"}
+                                </span>
                             </div>
                         ) : message.media.url ? (
                             <img
