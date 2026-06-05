@@ -21,7 +21,7 @@ export interface SimMessage {
     nodeId?: string;
     nodeType?: string;
     timestamp: Date;
-    media?: { type: string; url?: string; name?: string };
+    media?: { type: string; url?: string; name?: string; caption?: string };
 }
 
 export interface RouteChoice {
@@ -237,6 +237,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
     const virtualHistoryRef = useRef<{ role: string; content: string }[]>([]);
     const simulationContextRef = useRef<Record<string, unknown>>({});
     const speedRef = useRef(1);
+    const lastUserImageRef = useRef<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const abortRef = useRef(false);
@@ -351,16 +352,40 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
             
             const icon = mediaType === "image" ? "🖼️" : mediaType === "audio" ? "🎵" : "📎";
             const label = `${icon} ${file.name}`;
-            const url = URL.createObjectURL(file);
-            
-            // Render user's media immediately
-            addMessage({
-                type: "user",
-                content: "", // Empty so no text displays below the media
-                media: { type: mediaType, url, name: file.name },
-            });
+            // Convert to base64 so the simulation engine can send it to fal.ai
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64Url = reader.result as string;
 
-            const sysTypingId = addMessage({ type: "typing", content: "Extraindo dados da mídia..." });
+                if (mediaType === "image") {
+                    // ── IMAGE: skip transcription entirely ──────────────────
+                    // Store the base64 URL directly for the simulation engine.
+                    // The fal.ai model receives the raw image — no text extraction needed.
+                    lastUserImageRef.current = base64Url;
+
+                    addMessage({
+                        type: "user",
+                        content: "",
+                        media: { type: "image", url: base64Url, name: file.name },
+                    });
+
+                    const historyContent = `[Enviou foto: ${file.name}]`;
+                    virtualHistoryRef.current.push({ role: "user", content: historyContent });
+                    setWaitingInput(false);
+                    setTimeoutCountdown(null);
+                    resolveInputRef.current?.(historyContent);
+                    resolveInputRef.current = null;
+                    return;
+                }
+
+                // ── NON-IMAGE MEDIA: transcribe as before ────────────────────
+                addMessage({
+                    type: "user",
+                    content: "",
+                    media: { type: mediaType, url: base64Url, name: file.name },
+                });
+
+                const sysTypingId = addMessage({ type: "typing", content: "Extraindo dados da mídia..." });
 
             let historyContent = `[Enviou ${mediaType}: ${file.name}]`;
 
@@ -372,7 +397,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                     method: "POST",
                     body: formData,
                 });
-                
+
                 let data;
                 try {
                     data = await res.json();
@@ -393,12 +418,13 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 addMessage({ type: "system", content: `❌ Falha ao processar arquivo: ${err.message}` });
             }
 
-            virtualHistoryRef.current.push({ role: "user", content: historyContent });
-            
-            setWaitingInput(false);
-            setTimeoutCountdown(null);
-            resolveInputRef.current(historyContent);
-            resolveInputRef.current = null;
+                virtualHistoryRef.current.push({ role: "user", content: historyContent });
+                setWaitingInput(false);
+                setTimeoutCountdown(null);
+                resolveInputRef.current?.(historyContent);
+                resolveInputRef.current = null;
+            };
+            reader.readAsDataURL(file);
         };
         input.click();
     }, [addMessage, removeMessage]);
@@ -470,14 +496,14 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
     // Builds the full system message from node config (system_message + prompt + head prompt info)
     const buildSystemPrompt = useCallback((config: Record<string, unknown>): string => {
         const parts: string[] = [];
-        if (config.system_message) parts.push(config.system_message);
+        if (config.system_message) parts.push(config.system_message as string);
         
         if (config.learning_notes) {
             parts.push("\n\n#REGRAS ABSOLUTAS ACIMA DO PROMPT E DE TUDO, ESSAS INFORMAÇÕES ESTÃO CORRETAS E VALIDADAS E DEVEM SER SEGUIDAS A TODO CUSTO:\n" + config.learning_notes);
         }
         // In dialogue mode, prompt is part of the system instructions
-        if (config.dialogue_mode && config.prompt) parts.push(config.prompt);
-        if (config.followup_prompt) parts.push(config.followup_prompt);
+        if (config.dialogue_mode && config.prompt) parts.push(config.prompt as string);
+        if (config.followup_prompt) parts.push(config.followup_prompt as string);
         if (parts.length === 0) parts.push("Responda como assistente.");
         // Inject dialogue objective if in dialogue mode
         const objective = config.completion_condition || config.dialogue_objective;
@@ -492,11 +518,341 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
             parts.push("Você possui capacidade de agendamento automático. Como este é um ambiente de testes, finja que você acessou a agenda e agendou o horário com sucesso. Na sua mensagem de confirmação do horário, GERE um link de Google Meet fictício (ex: https://meet.google.com/abc-defg-hij) e entregue ao lead.");
         }
 
+        // === BIBLIOTECA DE ARQUIVOS ===
+        const libraryFiles = config.media_library_enabled && Array.isArray(config.media_library_files) && (config.media_library_files as any[]).length > 0
+            ? (config.media_library_files as any[])
+            : null;
+        if (libraryFiles) {
+            parts.push("\n\n📂 CAPACIDADE DE ENVIO DE ARQUIVOS — LEIA COM ATENÇÃO:");
+            parts.push("VOCÊ TEM TOTAL CAPACIDADE de enviar imagens e documentos para o cliente. NÃO diga que não pode enviar arquivos. Este sistema suporta envio de mídia.");
+            parts.push("COMO FUNCIONA: Quando quiser enviar um arquivo, escreva sua mensagem normalmente e adicione ao FINAL exatamente esta tag: [ARQUIVO:nome-exato-do-arquivo.extensão]");
+            parts.push("O sistema irá automaticamente converter essa tag no arquivo real enviado ao cliente.");
+            parts.push("");
+            parts.push("EXEMPLO CORRETO — se o cliente pede uma foto de mármore branco e você tem o arquivo 'marmore-branco.jpg':");
+            parts.push('  Resposta: "Aqui está uma foto do mármore branco que temos disponível! Como pode ver, é um material muito elegante. [ARQUIVO:marmore-branco.jpg]"');
+            parts.push("");
+            parts.push("REGRAS OBRIGATÓRIAS:");
+            parts.push("  1. SEMPRE escreva o texto ANTES da tag. NUNCA envie apenas a tag sem mensagem.");
+            parts.push("  2. Use EXATAMENTE o nome do arquivo listado abaixo (incluindo extensão).");
+            parts.push("  3. NUNCA diga ao cliente que não pode enviar arquivos. Se tiver um arquivo relevante, ENVIE.");
+            parts.push("  4. Envie o arquivo quando o cliente pedir OU quando fizer sentido para a conversa.");
+            parts.push("");
+            parts.push("ARQUIVOS DISPONÍVEIS PARA ENVIO:");
+            libraryFiles.forEach((f: any) => {
+                const name = f.file_name || f.fileName;
+                const desc = f.description ? ` (usar quando: ${f.description})` : ' (enviar quando o cliente pedir ou for relevante)';
+                if (name) parts.push(`  → [ARQUIVO:${name}]${desc}`);
+            });
+
+            if (config.media_library_simulation_enabled) {
+                // Build an explicit, numbered list of files for the AI to reason from
+                const fileListForSim = libraryFiles
+                    .map((f: any, i: number) => {
+                        const name = f.file_name || f.fileName || '';
+                        const desc = f.description || '';
+                        return `  ${i + 1}. ARQUIVO: "${name}" — Descrição: ${desc || '(sem descrição)'}`;
+                    })
+                    .join('\n');
+
+                parts.push('\n\n🎨 SIMULAÇÃO REALISTA — PROTOCOLO OBRIGATÓRIO:');
+                parts.push('Se o cliente enviou uma FOTO do ambiente (cozinha, banheiro, etc.) e quer ver um produto simulado, você PODE gerar uma simulação usando fal.ai FLUX.');
+                parts.push('');
+                parts.push('LISTA COMPLETA DE PRODUTOS DISPONÍVEIS PARA SIMULAÇÃO:');
+                parts.push(fileListForSim);
+                parts.push('');
+                parts.push('COMO ESCOLHER O PRODUTO CORRETO (SIGA EXATAMENTE ESTE RACIOCÍNIO):');
+                parts.push('  PASSO 1 → Identifique o que o cliente pediu. Ex: "mármore preto" → cor = preto, material = mármore.');
+                parts.push('  PASSO 2 → Leia TODOS os arquivos da lista acima e identifique qual contém as palavras-chave do pedido.');
+                parts.push('  PASSO 3 → Se o cliente pediu COR ESPECÍFICA (preto, branco, bege, cinza, etc.), o arquivo escolhido DEVE conter essa cor no nome ou descrição. NUNCA escolha o arquivo oposto.');
+                parts.push('  PASSO 4 → Use EXATAMENTE o nome do arquivo escolhido na tag, sem alterar nada.');
+                parts.push('');
+                parts.push('FORMATO OBRIGATÓRIO:');
+                parts.push('  [SIMULAR:nome-exato-do-arquivo-da-lista-acima | o-que-vai-ser-trocado-na-foto]');
+                parts.push('');
+                parts.push('EXEMPLOS (use como referência de raciocínio):');
+                parts.push('  Cliente pede "mármore PRETO" → escolha o arquivo que tem "preto" no nome → NÃO escolha arquivo com "branco"');
+                parts.push('  Cliente pede "mármore BRANCO" → escolha o arquivo que tem "branco" no nome → NÃO escolha arquivo com "preto"');
+                parts.push('');
+                parts.push('REGRAS ABSOLUTAS:');
+                parts.push('  1. SÓ use [SIMULAR:...] se o cliente EFETIVAMENTE tiver enviado uma FOTO do ambiente dele na conversa.');
+                parts.push('  2. O nome do arquivo na tag DEVE ser copiado EXATAMENTE da lista acima. Não invente nomes.');
+                parts.push('  3. O alvo (o que vai ser trocado) é OBRIGATÓRIO: ex: "bancada da pia", "chão", "parede".');
+                parts.push('  4. Antes de escrever a tag, CONFIRME mentalmente: "Este arquivo tem a cor/material que o cliente pediu?"');
+                parts.push('  5. REGRA DO PRODUTO ÚNICO: Se o cliente pediu apenas o tipo de material (ex: "granito", "mármore") SEM especificar cor, e houver apenas UM produto desse material na lista acima, selecione-o AUTOMATICAMENTE. Não pergunte a cor — faça a simulação e informe ao cliente qual produto foi usado.');
+                parts.push('  6. NUNCA deixe de fazer a simulação por falta de produto exato — sempre use o produto mais próximo disponível na lista.');
+            }
+        }
+
+
         if (config.format_for_send) {
             parts.push("\nSepare cada parte da resposta com ⌁⌁⌁");
         }
         return parts.join("\n\n");
     }, []);
+
+    // Helper: extract [ARQUIVO:name] and [SIMULAR:name | target] tags from AI response
+    // Supports exact match, partial match, extensionless match, and fuzzy type-based match.
+    // lastUserMessage: the last message typed by the lead — used to cross-validate the AI's file choice.
+    const extractFileTag = useCallback((text: string, libraryFiles: any[], lastUserMessage?: string): { cleanText: string; file?: { name: string; url: string; type: string }, simulateFile?: { name: string; url: string; type: string }, simulateTarget?: string } => {
+        let cleanText = text;
+        
+        // 1. Check for SIMULAR tag with optional target
+        const simMatch = cleanText.match(/\[SIMULAR:([^|\]]+)(?:\|([^\]]+))?\]/i);
+        let simulateFileName = null;
+        let simulateTarget = undefined;
+        if (simMatch) {
+            simulateFileName = simMatch[1].trim().toLowerCase();
+            if (simMatch[2]) {
+                simulateTarget = simMatch[2].trim();
+            }
+            cleanText = cleanText.replace(/\[SIMULAR:[^\]]+\]/gi, '').trim();
+        }
+
+        // 2. Check for ARQUIVO tag
+        const fileMatch = cleanText.match(/\[ARQUIVO:([^\]]+)\]/i);
+        let sendFileName = null;
+        if (fileMatch) {
+            sendFileName = fileMatch[1].trim().toLowerCase();
+            cleanText = cleanText.replace(/\[ARQUIVO:[^\]]+\]/gi, '').trim();
+        }
+
+        if (!sendFileName && !simulateFileName) return { cleanText };
+
+        // ── Semantic scoring: score a library file against a query string ──────────
+        const scoreFileAgainstQuery = (file: any, query: string): number => {
+            const name = ((file.file_name || file.fileName) ?? '').toLowerCase().replace(/[_\-\.]/g, ' ');
+            const desc = ((file.description) ?? '').toLowerCase();
+            const combined = `${name} ${desc}`;
+            // NOTE: Do NOT add material/color keywords here (marmore, azul, preto, etc.)
+            // Those are the CORE matching terms. Only filter true noise words.
+            const stopWords = new Set(['pia', 'comum', 'lado', 'png', 'jpg', 'jpeg', 'webp', 'de', 'da', 'do', 'em', 'para', 'com', 'uma', 'um', 'kp', '1000x1000', '180', '2']);
+            const keywords = query
+                .toLowerCase()
+                .replace(/[_\-\.]/g, ' ')
+                .split(/\s+/)
+                .map(k => k.trim())
+                .filter(k => k.length > 2 && !stopWords.has(k));
+            return keywords.reduce((score, kw) => score + (combined.includes(kw) ? 1 : 0), 0);
+        };
+
+        // ── findFile: locate best matching library file by name tag ───────────────
+        const findFile = (fileName: string) => {
+            // 1. Exact match (case-insensitive)
+            let found = libraryFiles.find((f: any) =>
+                (f.file_name || f.fileName)?.toLowerCase() === fileName
+            );
+            // 2. Partial match (filename contains the tag text or vice-versa)
+            if (!found) {
+                found = libraryFiles.find((f: any) => {
+                    const name = (f.file_name || f.fileName)?.toLowerCase() || '';
+                    return name.includes(fileName) || fileName.includes(name.replace(/\.[^.]+$/, ''));
+                });
+            }
+            // 3. Semantic keyword matching against tag text — same rule: material words must NOT be stopWords
+            if (!found) {
+                const stopWords = new Set(['pia', 'comum', 'lado', 'png', 'jpg', 'jpeg', 'webp', '1000x1000', '180', 'kp', '2']);
+
+                const keywords = fileName
+                    .replace(/[_\-\.]/g, ' ')
+                    .split(' ')
+                    .map(k => k.toLowerCase().trim())
+                    .filter(k => k.length > 2 && !stopWords.has(k));
+
+                if (keywords.length > 0) {
+                    let bestScore = 0;
+                    let bestFile: any = null;
+                    libraryFiles.forEach((f: any) => {
+                        const name = (f.file_name || f.fileName)?.toLowerCase().replace(/[_\-\.]/g, ' ') || '';
+                        const score = keywords.reduce((s, kw) => s + (name.includes(kw) ? 1 : 0), 0);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestFile = f;
+                        }
+                    });
+                    if (bestFile && bestScore > 0) found = bestFile;
+                }
+            }
+            // 4. Type-based fallback
+            if (!found) {
+                const typeKeywords: Record<string, string> = {
+                    'foto': 'image', 'imagem': 'image', 'image': 'image', 'img': 'image',
+                    'doc': 'document', 'documento': 'document', 'pdf': 'document',
+                    'audio': 'audio', 'video': 'video',
+                };
+                const targetType = typeKeywords[fileName] || Object.entries(typeKeywords).find(([k]) => fileName.includes(k))?.[1];
+                if (targetType) {
+                    found = libraryFiles.find((f: any) => (f.file_type || f.fileType) === targetType);
+                }
+            }
+            // 5. Last resort: return first file (only if no other match found)
+            if (!found && libraryFiles.length > 0) {
+                found = libraryFiles[0];
+            }
+            return found;
+        };
+
+        // ── Cross-validation: does the AI's chosen file match the lead's intent? ──
+        // Uses positive scoring (keyword match) + negative scoring (antonym penalty)
+        // so that "preto" correctly beats "branco" even when both share other keywords.
+        const crossValidateWithUserIntent = (chosenFile: any): any => {
+            if (!lastUserMessage || libraryFiles.length <= 1) return chosenFile;
+
+            // Antonym pairs — if user said word A, penalize files containing word B
+            const antonymPairs: [string, string][] = [
+                ['preto', 'branco'], ['branco', 'preto'],
+                ['escuro', 'claro'], ['claro', 'escuro'],
+                ['negro', 'branco'], ['branco', 'negro'],
+                ['dark', 'light'], ['light', 'dark'],
+                ['black', 'white'], ['white', 'black'],
+                ['cinza', 'bege'], ['bege', 'cinza'],
+                ['azul', 'vermelho'], ['vermelho', 'azul'],
+                ['verde', 'amarelo'], ['amarelo', 'verde'],
+            ];
+
+            const userLower = lastUserMessage.toLowerCase();
+
+            const scoreFile = (file: any): number => {
+                // Positive score from keyword matching
+                let score = scoreFileAgainstQuery(file, lastUserMessage);
+
+                const nameAndDesc = [
+                    ((file.file_name || file.fileName) ?? '').toLowerCase().replace(/[_\-\.]/g, ' '),
+                    ((file.description) ?? '').toLowerCase(),
+                ].join(' ');
+
+                // Penalty: user said word X, but file contains antonym Y → subtract 3
+                for (const [userWord, fileAnti] of antonymPairs) {
+                    if (userLower.includes(userWord) && nameAndDesc.includes(fileAnti)) {
+                        score -= 3;
+                    }
+                }
+
+                // Bonus: file name/desc directly contains exact color word from user
+                const colorWords = ['preto', 'branco', 'cinza', 'bege', 'verde', 'azul', 'vermelho', 'amarelo',
+                    'escuro', 'claro', 'black', 'white', 'gray', 'beige', 'dark', 'light'];
+                for (const cw of colorWords) {
+                    if (userLower.includes(cw) && nameAndDesc.includes(cw)) {
+                        score += 2; // Extra bonus for exact color match
+                    }
+                }
+
+                return score;
+            };
+
+            let bestScore = scoreFile(chosenFile);
+            let bestFile = chosenFile;
+
+            libraryFiles.forEach((f: any) => {
+                const score = scoreFile(f);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestFile = f;
+                }
+            });
+
+            if (bestFile !== chosenFile) {
+                const chosenName = (chosenFile.file_name || chosenFile.fileName) ?? '';
+                const overrideName = (bestFile.file_name || bestFile.fileName) ?? '';
+                console.warn(
+                    `[extractFileTag] ⚠️ Cross-validation override: AI chose "${chosenName}" (score ${scoreFile(chosenFile)}) but user intent better matches "${overrideName}" (score ${bestScore}). Correcting.`
+                );
+                return bestFile;
+            }
+            return chosenFile;
+        };
+
+        const result: any = { cleanText };
+        
+        if (sendFileName) {
+            const found = findFile(sendFileName);
+            if (found) result.file = { name: found.file_name || found.fileName, url: found.file_url || found.fileUrl, type: found.file_type || found.fileType };
+        }
+        
+        if (simulateFileName) {
+            const rawFound = findFile(simulateFileName);
+            if (rawFound) {
+                // Apply cross-validation against user's actual request before committing
+                const validated = crossValidateWithUserIntent(rawFound);
+                result.simulateFile = {
+                    name: validated.file_name || validated.fileName,
+                    url: validated.file_url || validated.fileUrl,
+                    type: validated.file_type || validated.fileType,
+                    // Include description so the API can build a visually accurate material prompt
+                    description: validated.description || '',
+                };
+            }
+            if (simulateTarget) result.simulateTarget = simulateTarget;
+        }
+
+        return result;
+
+        // 1. Exact match (case-insensitive)
+    }, []);
+
+    const triggerSimulation = useCallback(async (simulateFile: any, simulateTarget: string | undefined, nodeId: string, nodeType: string) => {
+        const leadImageUrl = lastUserImageRef.current;
+        if (!leadImageUrl) {
+            addMessage({ type: "system", content: "⚠️ A I.A tentou gerar uma simulação, mas o cliente não enviou nenhuma foto na conversa.", nodeId, nodeType });
+            return;
+        }
+
+        // Show a clean, simple status — no filename, no model details
+        addMessage({ type: "system", content: `🎨 Gerando simulação realista...`, nodeId, nodeType });
+        const simTypingId = addMessage({ type: "typing", content: "Criando imagem fotorealista...", nodeId, nodeType });
+
+        const node = nodes.find(n => n.id === nodeId);
+        const promptOverride = node?.data?.media_library_simulation_prompt;
+        const strengthOverride = node?.data?.media_library_simulation_strength;
+        const modelOverride = node?.data?.media_library_simulation_model;
+
+        try {
+            const res = await fetch('/api/v1/agent-library/transform-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    libraryImageUrl: simulateFile.url,
+                    libraryImageName: simulateFile.name,
+                    libraryImageDescription: simulateFile.description || '',  // For visual material description in prompt
+                    leadImageUrl,
+                    promptOverride,
+                    strengthOverride,
+                    modelOverride,
+                    simulateTarget,
+                }),
+            });
+            const data = await res.json();
+            removeMessage(simTypingId);
+
+            if (!res.ok) throw new Error(data.error || 'Erro ao gerar imagem');
+
+            // Extract a short readable model name for the watermark overlay
+            // e.g. 'fal-ai/flux-pro/kontext/max' → 'FLUX Kontext Max'
+            const rawModel: string = data.model || modelOverride?.split('|')[0] || 'FLUX';
+            const watermarkLabel = rawModel
+                .replace('fal-ai/', '')
+                .replace('flux-pro/kontext/max', 'FLUX Kontext Max')
+                .replace('flux-pro/kontext', 'FLUX Kontext Pro')
+                .replace('flux/dev/image-to-image', 'FLUX Dev')
+                .replace('flux-pro/v1.1', 'FLUX Pro');
+
+            addMessage({
+                type: "bot",
+                content: "",   // No caption below the image
+                nodeId,
+                nodeType,
+                media: {
+                    type: "image",
+                    url: data.resultUrl,
+                    name: "simulacao.png",
+                    caption: `Simulação • ${watermarkLabel}`,   // Used by UI as watermark overlay
+                }
+            });
+            virtualHistoryRef.current.push({ role: "assistant", content: `[Enviou Simulação Realista do produto ${simulateFile.name}]` });
+        } catch (err: any) {
+            removeMessage(simTypingId);
+            addMessage({ type: "system", content: `❌ Falha na simulação: ${err.message}`, nodeId, nodeType });
+        }
+    }, [addMessage, removeMessage, nodes]);
 
     const callAI = useCallback(async (config: Record<string, unknown>): Promise<{ response: string; tokens: number; error?: string } | null> => {
         try {
@@ -903,14 +1259,40 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 const maxTurns = parseInt(config.max_turns || config.max_dialogue_turns || "10");
                 const modelName = config.model || "gpt-4o-mini";
 
+                // ✅ Fetch library files from API when enabled — do NOT rely on node.data.media_library_files
+                // (node.data may be stale if the user just added files without refreshing the flow)
+                let libraryFiles: any[] = [];
+                if (config.media_library_enabled) {
+                    // Use cached node.data if available and non-empty
+                    const cached = Array.isArray(config.media_library_files) ? (config.media_library_files as any[]) : [];
+                    if (cached.length > 0) {
+                        libraryFiles = cached;
+                    } else {
+                        // Fetch directly from API using the nodeId
+                        try {
+                            const libRes = await fetch(`/api/v1/agent-library?nodeId=${encodeURIComponent(nodeId)}`);
+                            if (libRes.ok) {
+                                const libData = await libRes.json();
+                                libraryFiles = libData.files || [];
+                            }
+                        } catch {
+                            // Non-blocking — continue without library if API unreachable
+                        }
+                    }
+                }
+
+                // ✅ Create enriched config with resolved library files so buildSystemPrompt picks them up
+                const configWithLibrary = libraryFiles.length > 0
+                    ? { ...config, media_library_files: libraryFiles, media_library_enabled: true }
+                    : config;
 
                 // Interpolate the PROMPT USER MESSAGE with simulation context
                 const rawPrompt = config.prompt || "";
-                const interpolatedPrompt = interpolateWithContext(rawPrompt);
+                const interpolatedPrompt = interpolateWithContext(rawPrompt as string);
                 const hasPreFilledPrompt = interpolatedPrompt.trim().length > 0;
 
                 // Show config info
-                addMessage({ type: "system", content: `🤖 ${nodeLabel} | Modelo: ${modelName}${dialogueMode ? " | Modo Diálogo" : ""}`, nodeId, nodeType });
+                addMessage({ type: "system", content: `🤖 ${nodeLabel} | Modelo: ${modelName}${dialogueMode ? " | Modo Diálogo" : ""}${libraryFiles.length > 0 ? ` | 📂 ${libraryFiles.length} arquivo(s)` : ""}`, nodeId, nodeType });
 
                 // If prompt has content (fixed text or interpolated), inject as user message in single-shot mode
                 if (!dialogueMode && hasPreFilledPrompt && virtualHistoryRef.current.filter(m => m.role === "user").length === 0) {
@@ -941,7 +1323,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
                         // AI responds
                         const aiTypingId = addMessage({ type: "typing", content: "", nodeId, nodeType });
-                        const aiResult = await callAI(config);
+                        const aiResult = await callAI(configWithLibrary);
                         removeMessage(aiTypingId);
 
                         if (aiResult && !aiResult.error) {
@@ -950,19 +1332,41 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                             const objectiveRegex = /\[OBJETIVO_CONCLU[IÍ]DO\]/gi;
                             const hasObjective = objectiveRegex.test(aiResult.response);
 
-                            // Parse AI parts using delimiter
-                            const cleanResponse = aiResult.response.replace(objectiveRegex, "").trim();
-                            const parts = cleanResponse.includes("⌁⌁⌁")
-                                ? cleanResponse.split("⌁⌁⌁").map(p => p.trim()).filter(Boolean)
-                                : cleanResponse.split(/\n+/).map(p => p.trim()).filter(Boolean);
-                            const finalParts = parts.length > 0 ? parts : [cleanResponse];
+                            // Extract file tag before splitting
+                            // Pass the last user message so cross-validation can catch AI's wrong file picks
+                            const lastUserMsg = [...virtualHistoryRef.current].reverse().find(m => m.role === 'user')?.content ?? '';
+                            const { cleanText: responseNoFile, file: fileToSend, simulateFile, simulateTarget } = extractFileTag(
+                                aiResult.response.replace(objectiveRegex, "").trim(),
+                                libraryFiles,
+                                lastUserMsg
+                            );
 
-                            if (cleanResponse) {
+                            // Parse AI parts using delimiter
+                            const parts = responseNoFile.includes("⌁⌁⌁")
+                                ? responseNoFile.split("⌁⌁⌁").map(p => p.trim()).filter(Boolean)
+                                : responseNoFile.split(/\n+/).map(p => p.trim()).filter(Boolean);
+                            const finalParts = parts.length > 0 ? parts : [responseNoFile];
+
+                            if (responseNoFile) {
                                 for (const p of finalParts) {
                                     addMessage({ type: "bot", content: p, nodeId, nodeType });
                                     addBotToHistory(p);
-                                    await simDelay(400); // Simulate realistic typing gap between split bubbles
+                                    await simDelay(400);
                                 }
+                            }
+
+                            // Render file alongside text if library returned one
+                            if (fileToSend) {
+                                addMessage({
+                                    type: "bot", content: "", nodeId, nodeType,
+                                    media: { type: fileToSend.type, url: fileToSend.url, name: fileToSend.name }
+                                });
+                                addBotToHistory(`[Arquivo enviado: ${fileToSend.name}]`);
+                                await simDelay(400);
+                            }
+
+                            if (simulateFile) {
+                                await triggerSimulation(simulateFile, simulateTarget, nodeId, nodeType);
                             }
                             
                             addMessage({ type: "system", content: `🪙 Tokens gastos neste turno: ${aiResult.tokens}`, nodeId, nodeType });
@@ -1044,23 +1448,40 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                     }
 
                     const aiTypingId = addMessage({ type: "typing", content: "", nodeId, nodeType });
-                    const aiResult = await callAI(config);
+                    const aiResult = await callAI(configWithLibrary);
                     removeMessage(aiTypingId);
 
                     if (aiResult) {
                         setTokensUsed((prev) => prev + aiResult.tokens);
 
+                        // Extract file tag — pass last user message for cross-validation of product choice
+                        const lastUserMsg2 = [...virtualHistoryRef.current].reverse().find(m => m.role === 'user')?.content ?? '';
+                        const { cleanText: responseNoFile, file: fileToSend, simulateFile, simulateTarget } = extractFileTag(aiResult.response.trim(), libraryFiles, lastUserMsg2);
+
                         // Parse AI parts using delimiter
-                        const cleanResponse = aiResult.response.trim();
-                        const parts = cleanResponse.includes("⌁⌁⌁")
-                            ? cleanResponse.split("⌁⌁⌁").map(p => p.trim()).filter(Boolean)
-                            : cleanResponse.split(/\n+/).map(p => p.trim()).filter(Boolean);
-                        const finalParts = parts.length > 0 ? parts : [cleanResponse];
+                        const parts = responseNoFile.includes("⌁⌁⌁")
+                            ? responseNoFile.split("⌁⌁⌁").map(p => p.trim()).filter(Boolean)
+                            : responseNoFile.split(/\n+/).map(p => p.trim()).filter(Boolean);
+                        const finalParts = parts.length > 0 ? parts : [responseNoFile];
 
                         for (const p of finalParts) {
                             addMessage({ type: "bot", content: p, nodeId, nodeType });
                             addBotToHistory(p);
                             await simDelay(400);
+                        }
+
+                        // Render file alongside text if library returned one
+                        if (fileToSend) {
+                            addMessage({
+                                type: "bot", content: "", nodeId, nodeType,
+                                media: { type: fileToSend.type, url: fileToSend.url, name: fileToSend.name }
+                            });
+                            addBotToHistory(`[Arquivo enviado: ${fileToSend.name}]`);
+                            await simDelay(400);
+                        }
+
+                        if (simulateFile) {
+                            await triggerSimulation(simulateFile, simulateTarget, nodeId, nodeType);
                         }
 
                         addMessage({ type: "system", content: `📊 Tokens: ${aiResult.tokens}`, nodeId, nodeType });

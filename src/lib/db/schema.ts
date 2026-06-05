@@ -2792,3 +2792,22 @@ export const bookings = pgTable('bookings', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 });
+
+// ==============================
+// AGENT MEDIA LIBRARY
+// ==============================
+
+export const agentMediaLibrary = pgTable('agent_media_library', {
+  id: text('id').$defaultFn(() => crypto.randomUUID()).primaryKey(),
+  organizationId: text('organization_id').notNull(),
+  nodeId: text('node_id').notNull(),
+  ruleId: text('rule_id'),
+  fileName: text('file_name').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileType: text('file_type').notNull(), // 'image' | 'document' | 'audio' | 'video'
+  fileSize: integer('file_size'),
+  description: text('description'),
+  storagePath: text('storage_path'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+

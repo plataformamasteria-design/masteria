@@ -154,30 +154,30 @@ export default function RegisterPage() {
     <div className="w-full min-h-screen flex items-center justify-center relative py-12" suppressHydrationWarning>
       {/* Main Content Container with Glassmorphism */}
       <div className="w-full max-w-xl relative z-10 px-6">
-        <div className="bg-zinc-900/40 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl p-8 sm:p-10 space-y-8">
+        <div className="bg-black/[0.03] dark:bg-zinc-900/40 backdrop-blur-2xl border border-black/5 dark:border-white/10 shadow-2xl rounded-3xl p-8 sm:p-10 space-y-8">
           
           <div className="text-center">
              <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-               <BotMessageSquare className="h-8 w-8 text-emerald-400" />
+               <BotMessageSquare className="h-8 w-8 text-emerald-500 dark:text-emerald-400" />
              </div>
-            <h2 className="text-3xl font-bold tracking-tight text-white">Crie sua conta grátis</h2>
-            <p className="mt-2 text-sm text-zinc-400">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Crie sua conta grátis</h2>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
                 Comece em segundos e explore todo o potencial da IA.
             </p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2 text-left">
-              <Label htmlFor="fullname" className="text-zinc-300">Nome completo</Label>
-              <Input id="fullname" name="fullname" type="text" placeholder="Seu nome completo" required className="bg-zinc-950/50 border-white/10 text-white placeholder:text-zinc-500 focus:border-emerald-500/50" />
+              <Label htmlFor="fullname">Nome completo</Label>
+              <Input id="fullname" name="fullname" type="text" placeholder="Seu nome completo" required />
             </div>
             <div className="space-y-2 text-left">
-              <Label htmlFor="email" className="text-zinc-300">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="nome@exemplo.com" required className="bg-zinc-950/50 border-white/10 text-white placeholder:text-zinc-500 focus:border-emerald-500/50" />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" placeholder="nome@exemplo.com" required />
             </div>
             
             <div className="space-y-2 text-left">
-              <Label htmlFor="password" className="text-zinc-300">Criar senha</Label>
+              <Label htmlFor="password">Criar senha</Label>
               <div className="relative">
                 <Input 
                   id="password" 
@@ -187,17 +187,16 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setIsPasswordFocused(true)}
                   onBlur={() => setIsPasswordFocused(false)}
-                  className="bg-zinc-950/50 border-white/10 text-white focus:border-emerald-500/50"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500 hover:text-zinc-300">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {isPasswordFocused && <PasswordStrengthIndicator checks={passwordChecks} className="bg-zinc-950/50 border-white/10" />}
+              {isPasswordFocused && <PasswordStrengthIndicator checks={passwordChecks} className="bg-white/50 dark:bg-zinc-950/50 border-black/10 dark:border-white/10" />}
             </div>
 
              <div className="space-y-2 text-left">
-              <Label htmlFor="confirm-password" className="text-zinc-300">Confirmar senha</Label>
+              <Label htmlFor="confirm-password">Confirmar senha</Label>
               <div className="relative">
                 <Input 
                   id="confirm-password" 
@@ -205,34 +204,33 @@ export default function RegisterPage() {
                   required 
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="bg-zinc-950/50 border-white/10 text-white focus:border-emerald-500/50"
                 />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500 hover:text-zinc-300">
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground">
                   {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
             
-            {error && <p className="text-sm text-red-400 font-medium bg-red-400/10 p-3 rounded-lg border border-red-400/20">{error}</p>}
+            {error && <p className="text-sm text-red-600 dark:text-red-400 font-medium bg-red-100 dark:bg-red-400/10 p-3 rounded-lg border border-red-200 dark:border-red-400/20">{error}</p>}
 
             <div className="flex items-center space-x-2 pt-2">
-                <Checkbox id="terms" required className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
+                <Checkbox id="terms" required className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500" />
                 <label
                     htmlFor="terms"
-                    className="text-sm font-medium leading-none text-zinc-400 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="text-sm font-medium leading-none text-zinc-600 dark:text-zinc-400 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                    Eu li e aceito os <Link href="/termos" className="text-emerald-400 hover:underline">Termos de Serviço</Link> e a <Link href="/politicas" className="text-emerald-400 hover:underline">Política de Privacidade</Link>.
+                    Eu li e aceito os <Link href="/termos" className="text-emerald-500 dark:text-emerald-400 hover:underline">Termos de Serviço</Link> e a <Link href="/politicas" className="text-emerald-500 dark:text-emerald-400 hover:underline">Política de Privacidade</Link>.
                 </label>
             </div>
 
-            <Button className="w-full h-12 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl mt-4 transition-colors" type="submit" disabled={isLoading}>
+            <Button className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white dark:text-zinc-950 font-bold rounded-xl mt-4 transition-colors" type="submit" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Criar Conta Agora"}
             </Button>
           </form>
 
-          <p className="text-sm text-center text-zinc-400 pt-4 border-t border-white/5">
+          <p className="text-sm text-center text-zinc-600 dark:text-zinc-400 pt-4 border-t border-black/10 dark:border-white/5">
               Já tem uma conta?{' '}
-              <Link href="/login" className="font-semibold text-emerald-400 hover:underline">
+              <Link href="/login" className="font-semibold text-emerald-500 dark:text-emerald-400 hover:underline">
                 Faça login aqui
               </Link>
           </p>

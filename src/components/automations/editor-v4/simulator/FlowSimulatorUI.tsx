@@ -559,26 +559,56 @@ function MessageBubble({ message, nodes, onButtonClick }: { message: SimMessage;
             <div className="bg-white dark:bg-zinc-900 rounded-[1.25rem] rounded-tl-[4px] px-4 py-2.5 max-w-[85%] shadow-sm relative pb-6 border border-neutral-100 dark:border-zinc-800">
                 {message.media && (
                     <div className="rounded-xl overflow-hidden mb-1.5 border border-neutral-100 dark:border-zinc-800 bg-neutral-100 dark:bg-zinc-800">
-                        {message.media.type === "audio" && message.media.url && !message.media.url.startsWith("data:") ? (
+                        {message.media.type === "audio" && message.media.url ? (
                             <div className="p-2 bg-neutral-50 dark:bg-zinc-900 flex items-center justify-center">
                                 <audio controls className="w-[240px] max-w-full" src={message.media.url} />
                             </div>
-                        ) : message.media.type === "video" && message.media.url && !message.media.url.startsWith("data:") ? (
+                        ) : message.media.type === "video" && message.media.url ? (
                             <video controls className="max-h-48 w-full object-cover" src={message.media.url} />
-                        ) : message.media.url && !message.media.url.startsWith("data:") ? (
+                    ) : message.media.type === "image" && message.media.url ? (
+                            // Simulation image with discreet watermark overlay
+                            <div className="relative">
+                                <img
+                                    src={message.media.url}
+                                    alt={message.media.name || "Simulação"}
+                                    className="max-h-64 w-full object-contain cursor-pointer block"
+                                    onClick={() => window.open(message.media!.url, '_blank')}
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = "none";
+                                    }}
+                                />
+                                {/* Discreet watermark — only shown for simulation images with a caption */}
+                                {message.media.caption && (
+                                    <div className="absolute bottom-1.5 right-1.5 pointer-events-none">
+                                        <span
+                                            className="text-[8px] font-semibold text-white tracking-wide px-1.5 py-0.5 rounded-md"
+                                            style={{ background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(2px)' }}
+                                        >
+                                            ✨ {message.media.caption}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        ) : message.media.url ? (
                             <img
                                 src={message.media.url}
                                 alt={message.media.name || "media"}
-                                className="max-h-48 w-full object-cover"
+                                className="max-h-64 w-full object-contain cursor-pointer"
+                                onClick={() => window.open(message.media!.url, '_blank')}
+                                onLoad={(e) => {
+                                    const next = (e.target as HTMLImageElement).nextElementSibling;
+                                    if (next) (next as HTMLElement).classList.add('hidden');
+                                }}
                                 onError={(e) => {
                                     (e.target as HTMLImageElement).style.display = "none";
-                                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+                                    const next = (e.target as HTMLImageElement).nextElementSibling;
+                                    if (next) (next as HTMLElement).classList.remove('hidden');
                                 }}
                             />
                         ) : null}
                         <div className={cn(
                             "bg-neutral-100 dark:bg-zinc-800 flex items-center justify-center",
-                            message.media.url && !message.media.url.startsWith("data:") ? "hidden" : "h-32"
+                            message.media.url ? "hidden" : "h-32"
                         )}>
                             {MediaIcon ? <MediaIcon className="h-10 w-10 text-neutral-300 dark:text-zinc-600" /> : <FileText className="h-10 w-10 text-neutral-300 dark:text-zinc-600" />}
                         </div>

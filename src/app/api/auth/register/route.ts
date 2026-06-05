@@ -29,7 +29,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
     const ip = getClientIp(request.headers);
-    const rateLimit = await checkAuthRateLimit(ip);
+    const rateLimit = await checkAuthRateLimit(ip, 'cadastro');
     
     if (!rateLimit.allowed) {
         return NextResponse.json({ error: rateLimit.message || 'Muitas tentativas. Tente novamente mais tarde.' }, { status: 429 });

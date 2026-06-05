@@ -21,9 +21,11 @@ import {
     HelpCircle, UserPlus, MessageCircle, GitBranch, Filter,
     Signpost, Clock, ArrowRightLeft, Bot, ShieldOff, RefreshCw,
     Brain, Send, MessageSquareHeart, Globe, Code2, PenLine,
-    Plus, Trash2, Zap, Settings2, Info, Loader2, CheckCircle2, AlertTriangle
+    Plus, Trash2, Zap, Settings2, Info, Loader2, CheckCircle2, AlertTriangle,
+    FolderOpen
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { AgentMediaLibrary, type AgentLibraryFile } from './AgentMediaLibrary';
 
 // ==============================
 // Types
@@ -1775,17 +1777,18 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 return (
                     <div className="space-y-5">
                         {/* Tab Selector */}
-                        <div className="flex gap-1 bg-gray-100 dark:bg-zinc-900/50 p-1 rounded-xl">
+                        <div className="flex gap-1 bg-gray-100 dark:bg-zinc-900/50 p-1 rounded-xl flex-wrap">
                             {[
                                 { id: 'params', label: 'Parâmetros' },
                                 { id: 'input', label: 'Input' },
                                 { id: 'config', label: 'Configurações' },
                                 { id: 'agenda', label: 'Agenda' },
+                                { id: 'library', label: '📂 Biblioteca' },
                             ].map(tab => (
                                 <button
                                     key={tab.id}
                                     onClick={() => update('_config_tab', tab.id)}
-                                    className={`flex-1 py-2 px-3 text-xs font-semibold rounded-lg transition-all ${aiTab === tab.id
+                                    className={`flex-1 py-2 px-2 text-[11px] font-semibold rounded-lg transition-all ${aiTab === tab.id
                                         ? 'bg-white dark:bg-zinc-800 text-indigo-700 dark:text-indigo-400 shadow-sm'
                                         : 'text-gray-500 dark:text-zinc-400 hover:text-foreground'
                                         }`}
@@ -2058,6 +2061,27 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 )}
                             </div>
                         )}
+
+                        {/* Tab: Biblioteca */}
+                        {/* Tab: Biblioteca — always mounted to preserve module-level fetch cache */}
+                        <div className={aiTab !== 'library' ? 'hidden' : ''}>
+                            <AgentMediaLibrary
+                                nodeId={node.id}
+                                ruleId={flowId || (params?.id as string) || undefined}
+                                enabled={!!d.media_library_enabled}
+                                onToggle={(v) => update('media_library_enabled', v)}
+                                onFilesChange={(files: AgentLibraryFile[]) => update('media_library_files', files)}
+                                simulationEnabled={!!d.media_library_simulation_enabled}
+                                onSimulationToggle={(v) => update('media_library_simulation_enabled', v)}
+                                simulationPrompt={d.media_library_simulation_prompt || ''}
+                                onSimulationPromptChange={(v) => update('media_library_simulation_prompt', v)}
+                                simulationStrength={d.media_library_simulation_strength !== undefined ? Number(d.media_library_simulation_strength) : 80}
+                                onSimulationStrengthChange={(v) => update('media_library_simulation_strength', v)}
+                                simulationModel={d.media_library_simulation_model || 'fal-ai/flux-pro/kontext/max|1920|28'}
+                                onSimulationModelChange={(v) => update('media_library_simulation_model', v)}
+                            />
+                        </div>
+
                     </div>
                 );
             }

@@ -148,7 +148,8 @@ export async function checkIpRateLimit(
  * TRUE SLIDING WINDOW de 15 minutos para prevenir brute-force em credenciais
  */
 export async function checkAuthRateLimit(
-  ipAddress: string
+  ipAddress: string,
+  actionText: string = 'login'
 ): Promise<RateLimitResult> {
   const authKey = `rate_limit:auth:${ipAddress}`;
   const allowed = await checkSlidingWindowLimit(authKey, AUTH_LIMIT, 900); // 900s = 15 min
@@ -159,7 +160,7 @@ export async function checkAuthRateLimit(
   if (!allowed) {
     return {
       allowed: false,
-      message: `Muitas tentativas de login. Tente novamente em 15 minutos.`,
+      message: `Muitas tentativas de ${actionText}. Tente novamente em 15 minutos.`,
     };
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAI } from "openai";
-// import pdfParse from "pdf-parse"; // Removed top-level import to avoid Webpack/Next.js build crash
+import { resolveAIKeys } from '@/lib/ai-keys-resolver';
+import { getCompanyIdFromSession } from '@/app/actions';
 
 export const maxDuration = 60; // 60 seconds timeout
 
@@ -17,6 +18,10 @@ export async function POST(req: NextRequest) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
+        const companyId = await getCompanyIdFromSession();
+        const resolvedKeys = await resolveAIKeys(companyId);
+        const resolvedOpenAIApiKey = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
+
         let transcription = "";
 
         // 1. PDF - Parse natively to save tokens
@@ -27,7 +32,7 @@ export async function POST(req: NextRequest) {
         } 
         // 2. Audio - Use Whisper
         else if (mimeType.startsWith("audio/") || mimeType.startsWith("video/")) {
-            const apiKey = process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
+            const apiKey = resolvedOpenAIApiKey;
             if (!apiKey) throw new Error("OpenAI API Key não configurada");
             const openai = new OpenAI({ apiKey });
 
@@ -39,27 +44,30 @@ export async function POST(req: NextRequest) {
             });
             transcription = response.text;
         } 
-        // 3. Image - Use Vision (Switched to Gemini due to OpenAI quota)
+        // 3. Image - Use Vision (Switched back to OpenAI GPT-4o)
         else if (mimeType.startsWith("image/")) {
-            const apiKey = process.env.GEMINI_API_KEY_AGENTS1 || process.env.GEMINI_API_KEY;
-            if (!apiKey) throw new Error("Google Gemini API Key não configurada");
-            
-            const { GoogleGenerativeAI } = await import("@google/generative-ai");
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const apiKey = resolvedOpenAIApiKey;
+            if (!apiKey) throw new Error("OpenAI API Key não configurada");
+            const openai = new OpenAI({ apiKey });
 
             const base64Image = buffer.toString("base64");
-            const imagePart = {
-                inlineData: {
-                    data: base64Image,
-                    mimeType
-                }
-            };
+            const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
-            const prompt = "Você é um assistente de extração de dados. Descreva detalhadamente esta imagem e transcreva TODO E QUALQUER texto legível nela. Caso seja uma oferta ou catálogo, liste os produtos e valores exatos.";
-            
-            const result = await model.generateContent([prompt, imagePart]);
-            transcription = result.response.text();
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: "Você é um assistente de extração de dados. Descreva detalhadamente esta imagem e transcreva TODO E QUALQUER texto legível nela. Caso seja uma oferta ou catálogo, liste os produtos e valores exatos." },
+                            { type: "image_url", image_url: { url: dataUrl } }
+                        ]
+                    }
+                ],
+                max_tokens: 300,
+            });
+
+            transcription = response.choices[0]?.message?.content || "";
         } 
         // 4. TXT / CSV / etc
         else if (mimeType.startsWith("text/")) {

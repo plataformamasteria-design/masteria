@@ -150,7 +150,7 @@ const INITIAL_NODES: Node[] = [
 // ── Sub-componente interno (precisa do ReactFlow context) ─────────────────────
 function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: { flowId: string; onSave?: (id: string, name: string) => void; onClose?: () => void }) {
     const { session } = useSession();
-    const { toast } = useToast();
+    const { toast: uiToast } = useToast();
 
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>(INITIAL_NODES);
     const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -451,19 +451,19 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                 reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
             }, 100);
             
-            toast({
+            uiToast({
                 title: "Importação concluída!",
                 description: `${enrichedNodes.length} nós e ${newEdges.length} conexões importadas.`,
             });
         } catch (error: any) {
             console.error('Falha ao importar:', error);
-            toast({
+            uiToast({
                 variant: 'destructive',
                 title: 'Falha ao importar',
                 description: error.message || 'O arquivo do Kommo é inválido.',
             });
         }
-    }, [enrichNodeWithCallbacks, setNodes, setEdges, reactFlowInstance, toast]);
+    }, [enrichNodeWithCallbacks, setNodes, setEdges, reactFlowInstance, uiToast]);
 
     // ── Derivados ─────────────────────────────────────────────────────────────
     const editingNodeTestOutput = editingNode ? getNodeOutput(editingNode.id) : undefined;
