@@ -49,7 +49,7 @@ async function main() {
     // The previous browser step failed on localhost:3000 but worked on REPLIT_DEV_URL.
     // I should generate the URL dynamically like in check-webhook-env.
 
-    let baseUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:3000';
+    let baseUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://masteria.app';
     if (!baseUrl.startsWith('http')) baseUrl = `https://${baseUrl}`;
 
     const url = `${baseUrl}/api/webhooks/meta/${slug}`;

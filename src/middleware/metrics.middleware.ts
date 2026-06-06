@@ -82,7 +82,7 @@ export function withMetrics<T extends (...args: any[]) => any>(
       }
       if ('url' in args[0]) {
         try {
-          const url = new URL(args[0].url, 'http://localhost');
+          const url = new URL(args[0].url, 'https://masteria.app');
           route = routeName || url.pathname;
         } catch {
           // Ignore URL parsing errors

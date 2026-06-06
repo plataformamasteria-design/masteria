@@ -5,7 +5,7 @@ import { users, contacts, messages, mediaAssets } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY_CALL;
-const BASE_URL = 'http://localhost:5000'; // Running on port 5000
+const BASE_URL = 'https://masteria.app';
 
 async function forgeToken(companyId: string, userId: string) {
     if (!JWT_SECRET_KEY) throw new Error('JWT_SECRET_KEY_CALL missing');

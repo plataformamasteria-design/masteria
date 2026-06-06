@@ -29,7 +29,8 @@ interface LeadsByUserProps {
 const RANK_COLORS = ['text-amber-400', 'text-zinc-300', 'text-amber-600'];
 const RANK_BG = ['bg-amber-500/10', 'bg-zinc-500/10', 'bg-amber-700/10'];
 
-function getInitials(name: string): string {
+function getInitials(name: string | undefined | null): string {
+  if (!name) return 'U';
   return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 }
 
@@ -151,7 +152,7 @@ export function LeadsByUserWidget({ dateRange }: LeadsByUserProps) {
 
                 {/* Name */}
                 <p className="text-xs font-semibold text-foreground dark:text-white text-center leading-tight line-clamp-2">
-                  {agent.name.split(' ')[0]}
+                  {(agent.name || 'Desconhecido').split(' ')[0]}
                 </p>
 
                 {/* Lead count */}

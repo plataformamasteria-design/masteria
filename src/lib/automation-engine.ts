@@ -807,18 +807,29 @@ async function callExternalAIAgent(
         recentMessages = chronologicalMessages.slice(-10);
 
         // ==========================================
-        // ðŸš¨ LAZY TRANSCRIPTION (JUST-IN-TIME)
+        // 🚨 LAZY TRANSCRIPTION (JUST-IN-TIME)
         // ==========================================
+        
+        let lazyTranscriptionApiKey: string | undefined = undefined;
+        if (persona.credentialId) {
+            try {
+                const [cred] = await db.select().from(aiCredentials).where(eq(aiCredentials.id, persona.credentialId)).limit(1);
+                if (cred && cred.apiKey) {
+                    lazyTranscriptionApiKey = cred.apiKey;
+                }
+            } catch(e) {}
+        }
+
         for (const m of recentMessages) {
             if (m.contentType === 'AUDIO' && m.mediaUrl && !(m as any).aiTranscription) {
                 try {
-                    await logAutomation('INFO', `[Lazy Transcription] Transcrevendo Ã¡udio ${m.id} sob demanda...`, logContextBase);
+                    await logAutomation('INFO', `[Lazy Transcription] Transcrevendo áudio ${m.id} sob demanda...`, logContextBase);
                     const mediaResponse = await fetch(m.mediaUrl);
                     if (mediaResponse.ok) {
                         const arrayBuffer = await mediaResponse.arrayBuffer();
                         const mediaBuffer = Buffer.from(arrayBuffer);
                         const { transcribeAudioOpenAI } = await import('@/services/openai-transcription.service');
-                        const transcription = await transcribeAudioOpenAI(mediaBuffer, 'audio/ogg', companyId);
+                        const transcription = await transcribeAudioOpenAI(mediaBuffer, 'audio/ogg', companyId, lazyTranscriptionApiKey);
                         
                         if (transcription && transcription.trim().length > 0 && !transcription.includes('[Sem fala detectada]')) {
                             const newTranscriptionText = `[Ãudio Transcrito]: ${transcription}`;

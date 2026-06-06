@@ -1,6 +1,7 @@
 import { Queue, Worker } from 'bullmq';
 import { createRedisConnection } from '../lib/redis-connection';
 import { conn } from '@/lib/db';
+import { getBaseUrl } from '@/utils/get-base-url';
 
 interface SyncJobData {
   companyId: string;
@@ -127,8 +128,9 @@ class WebhookSyncScheduler {
 
     try {
       // Call the sync endpoint
+      const baseUrl = getBaseUrl();
       const response = await fetch(
-        `http://localhost:5000/api/v1/webhooks/sync`,
+        `${baseUrl}/api/v1/webhooks/sync`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -128,7 +128,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             } else if (process.env.VERCEL_URL) {
                 baseUrl = `https://${process.env.VERCEL_URL}`;
             } else {
-                baseUrl = 'http://localhost:5000';
+                baseUrl = 'https://masteria.app';
             }
             
             fetch(`${baseUrl}/api/v1/campaigns/trigger`, {

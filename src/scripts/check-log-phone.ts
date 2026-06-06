@@ -25,7 +25,7 @@ async function main() {
 
     console.log('\n--- Checking System Health ---');
     try {
-        const res = await fetch('http://localhost:3000/api/health');
+        const res = await fetch('https://masteria.app/api/health');
         console.log(`Localhost Ping: ${res.status}`);
     } catch (e) {
         console.log('Localhost Ping: FAILED (Server might be sleeping or broken)');

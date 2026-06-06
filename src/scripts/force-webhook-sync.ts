@@ -22,7 +22,7 @@ async function main() {
 
     // Build Callback URL
     let baseUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : process.env.NEXT_PUBLIC_BASE_URL;
-    if (!baseUrl) baseUrl = 'http://localhost:3000'; // Fallback
+    if (!baseUrl) baseUrl = 'https://masteria.app'; // Fallback
     if (!baseUrl.startsWith('http')) baseUrl = `https://${baseUrl}`;
 
     const callbackUrl = `${baseUrl}/api/webhooks/meta/${company.webhookSlug}`;

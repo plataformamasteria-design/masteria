@@ -18,7 +18,7 @@ import crypto from 'crypto';
 const INSTAGRAM_CONNECTION_NAME = 'Instagram - Disparo Perfeito';
 const PAGE_ID = '223453144194155'; // Extracted from previous output
 const SENDER_PSID = '1896097054661185';
-const LOCAL_WEBHOOK_URL = 'http://localhost:3000/api/webhooks/instagram'; // Assuming Next.js runs on 3000
+const LOCAL_WEBHOOK_URL = 'https://masteria.app/api/webhooks/instagram';
 
 // Inline Crypto (Same as before to guarantee execution)
 function decryptInline(encryptedHex: string, keyString: string): string {

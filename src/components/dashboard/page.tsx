@@ -74,7 +74,7 @@ function getGreeting(): string {
 // ─── Main ───────────────────────────────────────────────────────────────────
 export default function DashboardClient() {
   const { session } = useSession();
-  const userName = session?.userData?.name?.split(' ')[0] ?? '';
+  const userName = session?.userData?.name ? session.userData.name.split(' ')[0] : '';
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfDay(subDays(new Date(), 29)),

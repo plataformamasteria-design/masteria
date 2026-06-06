@@ -209,7 +209,8 @@ class NeonStorageAdapter implements StorageAdapter {
     }
 
     getFileUrl(key: string): string {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://masteria.app';
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://masteria.app';
+        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
         return `${baseUrl}/api/storage/neon?key=${encodeURIComponent(key)}`;
     }
 

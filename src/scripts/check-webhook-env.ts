@@ -22,7 +22,7 @@ async function main() {
             baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
         } else {
             console.error('❌ NO VALID PUBLIC URL FOUND!');
-            baseUrl = 'http://localhost:3000';
+            baseUrl = 'https://masteria.app';
         }
 
         const fullUrl = `${baseUrl}/api/webhooks/meta/${company.webhookSlug}`;

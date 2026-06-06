@@ -1,9 +1,13 @@
 import { OpenAI, toFile } from 'openai';
 import { resolveAIKeys } from '@/lib/ai-keys-resolver';
 
-async function getOpenAIClient(companyId?: string): Promise<OpenAI> {
-  const resolvedKeys = await resolveAIKeys(companyId);
-  const OPENAI_API_KEY = resolvedKeys.openaiApiKey;
+async function getOpenAIClient(companyId?: string, overrideApiKey?: string): Promise<OpenAI> {
+  let OPENAI_API_KEY = overrideApiKey;
+  
+  if (!OPENAI_API_KEY) {
+    const resolvedKeys = await resolveAIKeys(companyId);
+    OPENAI_API_KEY = resolvedKeys.openaiApiKey;
+  }
 
   if (!OPENAI_API_KEY) {
     console.warn('[OpenAI Transcription] Nenhuma chave de API da OpenAI configurada.');
@@ -20,8 +24,8 @@ async function getOpenAIClient(companyId?: string): Promise<OpenAI> {
  * @param mimeType Tipo MIME do áudio (ex: 'audio/ogg')
  * @returns Texto transcrito
  */
-export async function transcribeAudioOpenAI(audioBuffer: Buffer, mimeType: string = 'audio/ogg', companyId?: string): Promise<string> {
-  const client = await getOpenAIClient(companyId);
+export async function transcribeAudioOpenAI(audioBuffer: Buffer, mimeType: string = 'audio/ogg', companyId?: string, overrideApiKey?: string): Promise<string> {
+  const client = await getOpenAIClient(companyId, overrideApiKey);
   
   // O Whisper precisa de um nome de arquivo com a extensão correta para inferir o formato
   let extension = 'ogg';
