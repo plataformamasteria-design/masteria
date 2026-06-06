@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './db';
-import { automationFlows, automationFlowExecutions, automationExecutionLogs, contacts, connections, messages, conversations, messageTemplates, mediaAssets, kanbanBoards, kanbanLeads, contactsToTags, tags } from './db/schema';
+import { automationFlows, automationFlowExecutions, automationExecutionLogs, contacts, connections, messages, conversations, messageTemplates, mediaAssets, kanbanBoards, kanbanLeads, contactsToTags, tags, agentMediaLibrary } from './db/schema';
 import { eq, and, or, desc, sql, isNull, inArray } from 'drizzle-orm';
 import { sendUnifiedMessage } from '@/services/unified-message-sender.service';
 import { sendWhatsappTemplateMessage, sendWhatsappTextMessage } from '@/lib/facebookApiService';
@@ -2125,6 +2125,54 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 }
             }
 
+            // ── Agent Media Library Setup ───────────────────────────────────
+            let libraryFiles: any[] = [];
+            if (step.data.media_library_enabled) {
+                try {
+                    const files = await db
+                        .select()
+                        .from(agentMediaLibrary)
+                        .where(
+                            and(
+                                eq(agentMediaLibrary.organizationId, ctx.companyId),
+                                eq(agentMediaLibrary.nodeId, step.id)
+                            )
+                        )
+                        .orderBy(desc(agentMediaLibrary.createdAt));
+                        
+                    libraryFiles = files;
+
+                    if (libraryFiles.length > 0) {
+                        const parts: string[] = [];
+                        parts.push("\n\n📂 CAPACIDADE DE ENVIO DE ARQUIVOS — LEIA COM ATENÇÃO:");
+                        parts.push("VOCÊ TEM TOTAL CAPACIDADE de enviar imagens e documentos para o cliente. NÃO diga que não pode enviar arquivos. Este sistema suporta envio de mídia.");
+                        parts.push("COMO FUNCIONA: Quando quiser enviar um arquivo, escreva sua mensagem normalmente e adicione ao FINAL exatamente esta tag: [ARQUIVO:nome-exato-do-arquivo.extensão]");
+                        parts.push("O sistema irá automaticamente converter essa tag no arquivo real enviado ao cliente.");
+                        parts.push("");
+                        parts.push("EXEMPLO CORRETO — se o cliente pede uma foto de mármore branco e você tem o arquivo 'marmore-branco.jpg':");
+                        parts.push('  Resposta: "Aqui está uma foto do mármore branco que temos disponível! Como pode ver, é um material muito elegante. [ARQUIVO:marmore-branco.jpg]"');
+                        parts.push("");
+                        parts.push("REGRAS OBRIGATÓRIAS:");
+                        parts.push("  1. SEMPRE escreva o texto ANTES da tag. NUNCA envie apenas a tag sem mensagem.");
+                        parts.push("  2. Use EXATAMENTE o nome do arquivo listado abaixo (incluindo extensão).");
+                        parts.push("  3. NUNCA diga ao cliente que não pode enviar arquivos. Se tiver um arquivo relevante, ENVIE.");
+                        parts.push("  4. Envie o arquivo quando o cliente pedir OU quando fizer sentido para a conversa.");
+                        parts.push("");
+                        parts.push("ARQUIVOS DISPONÍVEIS PARA ENVIO:");
+                        libraryFiles.forEach((f: any) => {
+                            const name = f.fileName;
+                            const desc = f.description ? ` (usar quando: ${f.description})` : ' (enviar quando o cliente pedir ou for relevante)';
+                            if (name) parts.push(`  → [ARQUIVO:${name}]${desc}`);
+                        });
+                        
+                        systemPrompt = systemPrompt + parts.join('\n');
+                        console.log(`[FLOW-ENGINE] 📎 Media Library enabled for this agent. Found ${libraryFiles.length} files.`);
+                    }
+                } catch (libErr) {
+                    console.error('[FLOW-ENGINE] Media Library setup error:', libErr);
+                }
+            }
+
             // Build webhook vars context string (used in both modes)
             let webhookContext = '';
             if (step.data.include_webhook_vars && step.data.webhook_var_keys?.length) {
@@ -2439,15 +2487,47 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
                 // Dividir mensagem em partes para simular humano
                 const parts = responseText.split('\n\n').filter((s: string) => s.trim());
+                
+                // Helper de extração de tag ARQUIVO
+                const extractFileTag = (text: string, files: any[]): { cleanText: string; file?: any } => {
+                    let cleanText = text;
+                    const fileMatch = cleanText.match(/\[ARQUIVO:([^\]]+)\]/i);
+                    let sendFileName = null;
+                    if (fileMatch) {
+                        sendFileName = fileMatch[1].trim().toLowerCase();
+                        cleanText = cleanText.replace(/\[ARQUIVO:[^\]]+\]/gi, '').trim();
+                    }
+
+                    if (!sendFileName) return { cleanText };
+
+                    let found = files.find((f: any) => f.fileName?.toLowerCase() === sendFileName);
+                    if (!found) {
+                        found = files.find((f: any) => {
+                            const name = f.fileName?.toLowerCase() || '';
+                            return name.includes(sendFileName!) || sendFileName!.includes(name.replace(/\.[^.]+$/, ''));
+                        });
+                    }
+                    if (!found && files.length > 0) {
+                        found = files[0];
+                    }
+                    return { cleanText, file: found };
+                };
+
                 for (let i = 0; i < parts.length; i++) {
                     if (i > 0) await new Promise(r => setTimeout(r, 2000));
                     try {
-                        // Enviar via sendUnifiedMessage (mesmo que chat.ts / auto-approach)
+                        const extracted = extractFileTag(parts[i].trim(), libraryFiles);
+                        const finalMessage = extracted.cleanText;
+                        const attachedFile = extracted.file;
+
+                        // Enviar via sendUnifiedMessage (suporta anexos nativos)
                         const sendResult = await sendUnifiedMessage({
                             provider: aiProvider as any,
                             connectionId: aiConnectionId,
                             to: ctx.contactPhone,
-                            message: parts[i].trim(),
+                            message: finalMessage,
+                            mediaUrl: attachedFile ? attachedFile.fileUrl : undefined,
+                            mediaType: attachedFile ? attachedFile.fileType : undefined,
                         });
 
                         if (!sendResult.success) {
@@ -2467,8 +2547,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                     senderType: 'AI',
                                     // 🔧 BUG FIX: Nunca persistir tokens no content — causava contaminação no histórico
                                     // e reprodução do padrão ___TOKENS pela IA nas próximas mensagens ao WhatsApp
-                                    content: parts[i].trim(),
-                                    contentType: 'TEXT',
+                                    content: finalMessage || (attachedFile ? `[Arquivo enviado: ${attachedFile.fileName}]` : ''),
+                                    contentType: attachedFile ? (attachedFile.fileType?.toUpperCase() || 'DOCUMENT') : 'TEXT',
                                     status: 'SENT',
                                     sentAt: new Date(),
                                     isAiGenerated: true,

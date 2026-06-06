@@ -1,1 +1,0 @@
-import fetch from 'node-fetch'; async function run() { try { const res = await fetch('https://masteria.app'); console.log('masteria.app status:', res.status); } catch (e) { console.error('masteria.app error:', e); } process.exit(0); } run();
