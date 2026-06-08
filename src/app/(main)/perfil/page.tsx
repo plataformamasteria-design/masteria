@@ -22,11 +22,7 @@ import { cn } from '@/lib/utils';
 import { signOut } from 'next-auth/react';
 
 // ── Timezones ─────────────────────────────────────────────────────────────────
-const TIMEZONES = [
-  'America/Sao_Paulo', 'America/New_York', 'America/Chicago',
-  'America/Los_Angeles', 'Europe/London', 'Europe/Paris',
-  'Asia/Tokyo', 'Asia/Shanghai', 'Australia/Sydney',
-];
+// Removed as it is not used in the database currently
 
 // ── Password Strength ─────────────────────────────────────────────────────────
 function PasswordStrengthBar({ password }: { password: string }) {
@@ -227,9 +223,6 @@ export default function PerfilPage() {
 
   // Form state
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [bio, setBio] = useState('');
-  const [timezone, setTimezone] = useState('America/Sao_Paulo');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   // UI state
@@ -357,32 +350,7 @@ export default function PerfilPage() {
                 className="bg-white/[0.05] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/50"
                 placeholder="Seu nome completo" />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-zinc-400 text-xs flex items-center gap-1.5"><Phone className="h-3 w-3" />Telefone</Label>
-              <Input value={phone} onChange={e => setPhone(e.target.value)}
-                className="bg-white/[0.05] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/50"
-                placeholder="+55 (11) 99999-9999" type="tel" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-zinc-400 text-xs flex items-center gap-1.5"><FileText className="h-3 w-3" />Bio / Descrição</Label>
-            <Textarea value={bio} onChange={e => setBio(e.target.value)}
-              className="bg-white/[0.05] border-white/10 text-white placeholder:text-zinc-600 focus-visible:ring-emerald-500/50 resize-none"
-              placeholder="Conte um pouco sobre você..." rows={3} maxLength={500} />
-            <p className="text-xs text-zinc-600 text-right">{bio.length}/500</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-zinc-400 text-xs flex items-center gap-1.5"><Clock className="h-3 w-3" />Fuso Horário</Label>
-            <Select value={timezone} onValueChange={setTimezone}>
-              <SelectTrigger className="bg-white/[0.05] border-white/10 text-white focus:ring-emerald-500/50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/10">
-                {TIMEZONES.map(tz => (
-                  <SelectItem key={tz} value={tz} className="text-white hover:bg-white/10">{tz.replace('_', ' ')}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Campos adicionais como Telefone, Bio e Fuso Horário foram temporariamente removidos pois não possuem integração com o DB. */}
           </div>
           <div className="flex justify-end pt-2">
             <Button onClick={handleSaveProfile} disabled={saving} className="bg-emerald-500 hover:bg-emerald-400 text-black font-semibold">

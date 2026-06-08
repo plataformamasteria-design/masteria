@@ -210,6 +210,12 @@ class NeonStorageAdapter implements StorageAdapter {
 
     getFileUrl(key: string): string {
         let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://masteria.app';
+        
+        // CORREÇÃO: Forçar uso do domínio público se as envs apontarem erroneamente para localhost dentro da produção Railway
+        if (baseUrl.includes('localhost') && process.env.RAILWAY_PUBLIC_DOMAIN) {
+            baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+        }
+        
         if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
         return `${baseUrl}/api/storage/neon?key=${encodeURIComponent(key)}`;
     }
@@ -297,9 +303,13 @@ class LocalStorageAdapter implements StorageAdapter {
             baseUrl = baseUrl.slice(0, -1);
         }
 
+        // CORREÇÃO: Forçar uso do domínio público se as envs apontarem erroneamente para localhost dentro da produção Railway
+        if (baseUrl.includes('localhost') && process.env.RAILWAY_PUBLIC_DOMAIN) {
+            baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+        } 
         // If empty (e.g. dev environment without env var) OR running locally on Windows logic
         // If on Windows, we MUST use localhost because the file is on this machine, not on the remote Replit URL defined in .env
-        if (!baseUrl || process.platform === 'win32') {
+        else if (!baseUrl || process.platform === 'win32') {
             // Try to infer from potential PORT or default
             const port = process.env.PORT || 3000;
             // Use IPv4 loopback to avoid IPv6 issues with some fetchers

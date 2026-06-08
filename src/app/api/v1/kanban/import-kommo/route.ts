@@ -5,6 +5,8 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
 import * as xlsx from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '@/lib/logger';
+
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; 
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Planilha vazia.' }, { status: 400 });
     }
 
-    console.log(`[IMPORT KOMMO] Iniciando importação de ${data.length} linhas.`);
+    logger.debug(`[IMPORT KOMMO] Iniciando importação de ${data.length} linhas.`);
 
     // 1. Mapeamento de Memória
     const uniqueBoards = new Map<string, any>(); // nome -> { ...board }
@@ -183,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Persistir Boards e Stages
-    console.log(`[IMPORT KOMMO] Sincronizando ${uniqueBoards.size} boards...`);
+    logger.debug(`[IMPORT KOMMO] Sincronizando ${uniqueBoards.size} boards...`);
     for (const [_, board] of uniqueBoards) {
       if (board._isNew) {
         await db.insert(kanbanBoards).values({
@@ -201,7 +203,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Persistir Tags em Bulk
-    console.log(`[IMPORT KOMMO] Sincronizando ${uniqueTags.size} tags...`);
+    logger.debug(`[IMPORT KOMMO] Sincronizando ${uniqueTags.size} tags...`);
     const tagNameToId = new Map<string, string>();
     if (uniqueTags.size > 0) {
       const allTagNames = Array.from(uniqueTags);
@@ -229,7 +231,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Persistir Contatos em Bulk
-    console.log(`[IMPORT KOMMO] Sincronizando ${uniqueContacts.size} contatos...`);
+    logger.debug(`[IMPORT KOMMO] Sincronizando ${uniqueContacts.size} contatos...`);
     const phoneToContactId = new Map<string, string>();
     const allPhones = Array.from(uniqueContacts.keys());
     
@@ -263,7 +265,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Persistir ContactsToTags em Bulk
-    console.log(`[IMPORT KOMMO] Sincronizando Tags dos contatos...`);
+    logger.debug(`[IMPORT KOMMO] Sincronizando Tags dos contatos...`);
     const contactsToTagsData: any[] = [];
     for (const [phone, cTags] of contactTagsMap) {
       const contactId = phoneToContactId.get(phone);
@@ -285,7 +287,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Persistir Leads em Bulk
-    console.log(`[IMPORT KOMMO] Inserindo ${leadsData.length} leads...`);
+    logger.debug(`[IMPORT KOMMO] Inserindo ${leadsData.length} leads...`);
     const finalLeadsData: any[] = [];
     for (const lData of leadsData) {
       const board = uniqueBoards.get(lData.funnelName.toLowerCase());
@@ -313,7 +315,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log(`[IMPORT KOMMO] Sucesso! ${finalLeadsData.length} leads criados.`);
+    logger.debug(`[IMPORT KOMMO] Sucesso! ${finalLeadsData.length} leads criados.`);
     return NextResponse.json({ success: true, leadsCount: finalLeadsData.length });
     
   } catch (error: any) {

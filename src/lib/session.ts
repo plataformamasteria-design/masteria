@@ -7,7 +7,7 @@ const COOKIE_NAME = "session_token";
 export interface SessionPayload {
   employeeId: string;
   role: "admin" | "closer" | "sdr";
-  entityId: string | null;
+  companyId: string | null;
   nome: string;
   usuario?: string;
   cargo?: string;

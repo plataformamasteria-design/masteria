@@ -302,6 +302,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 
 
+// external-api: untyped - Meta
 async function processWebhookEvents(payload: any, companyId: string, candidateConnection?: any) {
 
     // ── Formulários Nativos Meta (Lead Ads / EndForms) ──────────────────────
@@ -400,6 +401,7 @@ async function processWebhookEvents(payload: any, companyId: string, candidateCo
 }
 
 
+// external-api: untyped - Meta
 async function updateMessageStatus(statusObject: any, companyId: string) {
     const { id: wamid, status, errors, timestamp, recipient_id } = statusObject;
     if (!wamid) return;
@@ -518,6 +520,7 @@ async function updateMessageStatus(statusObject: any, companyId: string) {
     }
 }
 
+// external-api: untyped - Meta
 function getMessageContent(messageData: any): string {
     if (messageData.type === 'text') return messageData.text?.body;
     if (messageData.type === 'button') return messageData.button?.text;
@@ -845,6 +848,7 @@ async function uploadMediaToS3(messageId: string, messageType: string, mediaId: 
 // INSTAGRAM HANDLERS
 // --------------------------------------------------------------------------
 
+// external-api: untyped - Meta
 async function processIncomingInstagramMessage(event: any, companyId: string) {
     const isEcho = !!event.message?.is_echo;
     const mid = event.message?.mid || event.postback?.mid || `postback_${Date.now()}`;

@@ -21,8 +21,8 @@ interface LocalAccountData {
 }
 
 export async function POST() {
-  const { error: authError } = await verifySession();
-  if (authError) return authError;
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
 
   try {
     const startTime = Date.now();
@@ -41,8 +41,8 @@ export async function POST() {
     // 2. Fetch Creative Scores & Audience Performance
     // Se a coluna account_id foi preenchida pelo env/processo
     const [{ data: cs }, { data: ap }] = await Promise.all([
-      supabase.from("creative_scores").select("*"),
-      supabase.from("audience_performance").select("*")
+      supabase.from("creative_scores").select("*").eq("cliente_id", user.companyId),
+      supabase.from("audience_performance").select("*").eq("cliente_id", user.companyId)
     ]);
 
     if (!cs || cs.length === 0) {
@@ -139,12 +139,13 @@ Não adicione markdown ou blocos \`\`\`. Retorne APENAS o JSON puro.
 `;
 
     const aiResult = await callAI({
-      provider: "google-flash",
-      maxTokens: 4000,
-      systemPrompt: "Você é um Analista de Dados AI operando no backend. Apenas valide os dados e formule a resposta JSON estrita.",
-      userContent: llmPrompt
+      provider: "openai",
+      systemPrompt: "Você é um Analista Sênior de Tráfego Pago focando em segmentação e otimização por clusters de público.",
+      userContent: llmPrompt,
+      maxTokens: 2500,
+      companyId: user.companyId,
     });
-
+    
     let parsedResponse;
     try {
       const pureTxt = aiResult.text.replace(/```json/g, "").replace(/```/g, "").trim();

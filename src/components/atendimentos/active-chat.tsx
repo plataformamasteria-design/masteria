@@ -134,7 +134,7 @@ export function ActiveChat({
 
   const activeConnectionIdsInChat = React.useMemo(() => {
     const ids = new Set<string>();
-    messages.forEach((m: any) => {
+    messages.forEach((m: Message) => {
       if (m.connectionId) ids.add(m.connectionId);
     });
     return Array.from(ids);
@@ -406,14 +406,14 @@ export function ActiveChat({
                     type="button"
                     className={cn(
                       "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 mr-1 outline-none shrink min-w-0",
-                      ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '')
+                      ['baileys', 'evolution'].includes(('connectionType' in conversation ? conversation.connectionType as string : '') || '')
                         ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 focus:ring-2 focus:ring-blue-500/30'
                         : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 focus:ring-2 focus:ring-emerald-500/30'
                     )}
                   >
                     <Wifi className="h-3.5 w-3.5 shrink-0" />
                     <span className="hidden lg:inline max-w-[90px] truncate">
-                      {conversation.connectionName ? conversation.connectionName : (['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') ? 'Baileys' : 'API')}
+                      {conversation.connectionName ? conversation.connectionName : (['baileys', 'evolution'].includes(('connectionType' in conversation ? conversation.connectionType as string : '') || '') ? 'Baileys' : 'API')}
                     </span>
                   <ChevronDown className={cn(
                     "h-3 w-3 transition-transform duration-300",
@@ -573,7 +573,7 @@ export function ActiveChat({
                     >
                       <Filter className="h-[18px] w-[18px]" />
                       {messageFilter !== null && (() => {
-                        const count = messages.filter((m: any) => m.connectionId === messageFilter).length;
+                        const count = messages.filter((m: Message) => m.connectionId === messageFilter).length;
                         return (
                           <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded-full flex items-center justify-center leading-none">
                             {count}
@@ -603,7 +603,7 @@ export function ActiveChat({
                 Todas as conexões
               </DropdownMenuItem>
               {filterableConnections.map(conn => {
-                const count = messages.filter((m: any) => m.connectionId === conn.id).length;
+                const count = messages.filter((m: Message) => m.connectionId === conn.id).length;
                 return (
                   <DropdownMenuItem
                     key={conn.id}
@@ -682,7 +682,7 @@ export function ActiveChat({
           )}
 
           {/* Sync History Button - Only for Baileys */}
-          {onSyncHistory && ['baileys', 'evolution'].includes((conversation as any)?.connectionType || '') && (
+          {onSyncHistory && ['baileys', 'evolution'].includes(('connectionType' in conversation ? conversation.connectionType as string : '') || '') && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -736,7 +736,7 @@ export function ActiveChat({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/30" />
               </div>
             ) : (
-              (messageFilter === null ? messages : messages.filter((m: any) => m.connectionId === messageFilter)).map((msg, index, arr) => {
+              (messageFilter === null ? messages : messages.filter((m: Message) => m.connectionId === messageFilter)).map((msg, index, arr) => {
                 const currentDate = new Date(msg.sentAt);
                 const prevMsg = index > 0 ? arr[index - 1] : null;
                 const prevDate = prevMsg ? new Date(prevMsg.sentAt) : null;
@@ -756,8 +756,8 @@ export function ActiveChat({
                        </div>
                     )}
                     <MessageBubble 
-                      message={msg as any} 
-                      allMessages={messages as any} 
+                      message={msg} 
+                      allMessages={messages} 
                       contactName={contact.name}
                       templates={templates}
                       connections={availableConnections}

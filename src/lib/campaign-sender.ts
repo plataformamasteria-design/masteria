@@ -168,7 +168,7 @@ async function withRetry<T>(
 
             // Exponential backoff: 2s → 4s → 8s
             const delayMs = initialDelayMs * Math.pow(2, attempt);
-            if (DEBUG) console.log(`[RETRY] Tentativa ${attempt + 1}/${maxRetries} falhou com erro transiente. Tentando novamente em ${delayMs}ms...`, error);
+            if (DEBUG) logger.debug(`[RETRY] Tentativa ${attempt + 1}/${maxRetries} falhou com erro transiente. Tentando novamente em ${delayMs}ms...`, error);
             await sleep(delayMs);
         }
     }
@@ -284,7 +284,7 @@ async function sendViaEvolution(
         sessionStatus = null;
     }
     
-    console.log(`[Campaign-Evolution] Preparando envio | ConnectionID: ${connectionId} | Status: ${sessionStatus || 'NOT_FOUND'} | Contato: ${contact.phone}`);
+    logger.debug(`[Campaign-Evolution] Preparando envio | ConnectionID: ${connectionId} | Status: ${sessionStatus || 'NOT_FOUND'} | Contato: ${contact.phone}`);
 
     if (sessionStatus !== 'open') {
         const errorMsg = sessionStatus ? `Sessão ${sessionStatus} - não está conectada` : 'Sessão não encontrada no Evolution API';
@@ -321,7 +321,7 @@ async function sendViaEvolution(
         messageText = messageText.replace(placeholder, text);
     }
 
-    console.log(`[Campaign-Evolution] Texto final da mensagem: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
+    logger.debug(`[Campaign-Evolution] Texto final da mensagem: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
 
     try {
         // Envolve com retry logic para erros transientes
@@ -336,7 +336,7 @@ async function sendViaEvolution(
         const messageId = result?.key?.id;
 
         if (messageId) {
-            if (DEBUG) console.log(`[Campaign-Evolution] ✅ Mensagem enviada com sucesso | Contato: ${contact.phone} | MessageID: ${messageId}`);
+            if (DEBUG) logger.debug(`[Campaign-Evolution] ✅ Mensagem enviada com sucesso | Contato: ${contact.phone} | MessageID: ${messageId}`);
             return {
                 success: true,
                 contactId: contact.id,
@@ -461,18 +461,9 @@ async function sendCampaignMessage(
     variableMappings: Record<string, { type: 'dynamic' | 'fixed'; value: string }>,
     campaign: typeof campaigns.$inferSelect
 ): Promise<CampaignMessageResult> {
-    const isBaileys = connection.connectionType === 'baileys';
+    const isEvolution = ['baileys', 'evolution'].includes(connection.connectionType || '');
 
-    // Bloqueio de campanhas com mídia para Baileys
-    if (isBaileys && resolvedTemplate.hasMedia && campaign.mediaAssetId) {
-        return {
-            success: false,
-            contactId: contact.id,
-            error: 'Campanhas com mídia não são suportadas em conexões Baileys. Use Meta Cloud API.',
-        };
-    }
-
-    if (isBaileys) {
+    if (isEvolution) {
         return sendViaEvolution(connection.id, contact, resolvedTemplate, variableMappings, campaign.companyId);
     } else {
         return sendViaMetaApi(connection, contact, resolvedTemplate, variableMappings, campaign);
@@ -492,7 +483,10 @@ async function getMediaData(assetId: string, connectionId: string, wabaId: strin
         return { handle: existingHandle.handle, asset: asset as MediaAssetType };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:9002' : 'https://masteria.app');
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:9002' : 'https://masteria.app');
+    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+        baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+    }
     if (!baseUrl) {
         throw new Error("A variável de ambiente NEXT_PUBLIC_BASE_URL não está configurada.");
     }
@@ -544,11 +538,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
 
         if (!connection) throw new Error(`Conexão ID ${campaign.connectionId} não encontrada.`);
 
-        // Runtime guard: Baileys não pode ter mídia
-        const isBaileys = connection.connectionType === 'baileys';
-        if (isBaileys && campaign.mediaAssetId) {
-            throw new Error(`Campanha ${campaign.id} usa conexão Baileys mas possui mídia anexada. Remova a mídia ou use Meta Cloud API.`);
-        }
+        const isEvolution = ['baileys', 'evolution'].includes(connection.connectionType || '');
 
         let resolvedTemplate: ResolvedTemplate;
 
@@ -572,7 +562,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
             resolvedTemplate = resolveTemplate(template);
 
             // Valida mídia para Meta API
-            if (!isBaileys && resolvedTemplate.hasMedia) {
+            if (!isEvolution && resolvedTemplate.hasMedia) {
                 const hasMediaSource = campaign.mediaAssetId || resolvedTemplate.mediaAssetId || resolvedTemplate.mediaLink;
                 if (!hasMediaSource) {
                     throw new Error(`Campanha ${campaign.id} exige um anexo de mídia, mas o template original não possui mídia salva e nenhuma foi fornecida.`);
@@ -595,7 +585,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                         const buffer = Buffer.from(arrayBuffer);
                         const mimeType = mediaRes.headers.get('content-type') || 'application/octet-stream';
                         
-                        if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Fazendo upload de mídia legado para a Resumable API...`);
+                        if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Fazendo upload de mídia legado para a Resumable API...`);
                         
                         const handle = await uploadMediaToMeta(
                             connection.phoneNumberId!, // Meta API usa phoneNumberId para uploadMediaToMeta
@@ -629,7 +619,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
         let allContactIds: string[] = [];
 
         if (isRetryMode) {
-            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Modo de reenvio: processando ${campaign.retryContactIds!.length} contatos que falharam`);
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Modo de reenvio: processando ${campaign.retryContactIds!.length} contatos que falharam`);
             allContactIds = campaign.retryContactIds!;
         } else {
             const includedContactIds = new Set<string>();
@@ -712,7 +702,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
         const totalPending = pendingContactIds.length;
 
         if (totalPending > 0 && alreadySentContactIds.size > 0) {
-            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] ✅ Deduplicação: ${alreadySentContactIds.size} contatos já enviados, ${totalPending} pendentes.`);
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] ✅ Deduplicação: ${alreadySentContactIds.size} contatos já enviados, ${totalPending} pendentes.`);
         }
 
         // Suporte a offset e limite de contatos via variableMappings
@@ -722,12 +712,12 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
 
         // Aplicar offset e limite nos IDs (muito mais eficiente)
         if (contactOffset && contactOffset > 0) {
-            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Pulando os primeiros ${contactOffset} contatos (offset)`);
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Pulando os primeiros ${contactOffset} contatos (offset)`);
             pendingContactIds = pendingContactIds.slice(contactOffset);
         }
 
         if (maxContacts && pendingContactIds.length > maxContacts) {
-            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Limitando para ${maxContacts} contatos (limite)`);
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Limitando para ${maxContacts} contatos (limite)`);
             pendingContactIds = pendingContactIds.slice(0, maxContacts);
         }
 
@@ -755,17 +745,17 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
         let minDelaySeconds: number;
         let maxDelaySeconds: number;
 
-        if (isBaileys) {
+        if (isEvolution) {
             // Se delays configurados, usa eles (respeitando mínimo de segurança)
             if (configuredMinDelay !== undefined && configuredMaxDelay !== undefined) {
                 minDelaySeconds = Math.max(configuredMinDelay, MIN_SAFE_DELAY);
                 maxDelaySeconds = Math.max(configuredMaxDelay, minDelaySeconds);
-                if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] ✅ Delay configurado: ${minDelaySeconds}-${maxDelaySeconds}s`);
+                if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] ✅ Delay configurado: ${minDelaySeconds}-${maxDelaySeconds}s`);
             } else {
                 // Usa defaults se não configurado
                 minDelaySeconds = DEFAULT_MIN_DELAY;
                 maxDelaySeconds = DEFAULT_MAX_DELAY;
-                if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] ✅ Delay padrão: ${DEFAULT_MIN_DELAY}-${DEFAULT_MAX_DELAY}s`);
+                if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] ✅ Delay padrão: ${DEFAULT_MIN_DELAY}-${DEFAULT_MAX_DELAY}s`);
             }
         } else {
             // Meta API: usar delay configurado ou default
@@ -773,13 +763,13 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
             maxDelaySeconds = configuredMaxDelay ?? DEFAULT_MAX_DELAY;
         }
 
-        // Baileys SEMPRE usa delay (obrigatório), Meta API pode usar paralelo
-        const useRandomDelay = isBaileys || (minDelaySeconds !== undefined && maxDelaySeconds !== undefined);
+        // Evolution SEMPRE usa delay (obrigatório), Meta API pode usar paralelo
+        const useRandomDelay = isEvolution || (minDelaySeconds !== undefined && maxDelaySeconds !== undefined);
 
-        if (isBaileys) {
-            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] ⚠️ DELAY OBRIGATÓRIO BAILEYS ATIVO: ${minDelaySeconds}-${maxDelaySeconds}s entre mensagens (proteção anti-bloqueio)`);
+        if (isEvolution) {
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] ⚠️ DELAY OBRIGATÓRIO EVOLUTION ATIVO: ${minDelaySeconds}-${maxDelaySeconds}s entre mensagens (proteção anti-bloqueio)`);
         } else if (useRandomDelay) {
-            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Modo com delay aleatório: ${minDelaySeconds}-${maxDelaySeconds}s entre mensagens`);
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Modo com delay aleatório: ${minDelaySeconds}-${maxDelaySeconds}s entre mensagens`);
         }
 
         // PROCESSAMENTO EM LOTES COM CARREGAMENTO SOB DEMANDA (Memory-Safe)
@@ -806,11 +796,11 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                 eq(campaigns.companyId, campaign.companyId)
             ));
             if (currentCampaign?.status === 'PAUSED') {
-                if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Campanha pausada pelo usuário. Interrompendo envio.`);
+                if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Campanha pausada pelo usuário. Interrompendo envio.`);
                 return;
             }
 
-            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Processando lote ${batchIdx + 1}/${totalBatches} com ${batch.length} contatos carregados.`);
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Processando lote ${batchIdx + 1}/${totalBatches} com ${batch.length} contatos carregados.`);
 
             let results: PromiseSettledResult<CampaignMessageResult>[];
 
@@ -825,7 +815,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                             eq(campaigns.companyId, campaign.companyId)
                         ));
                         if (checkCampaign?.status === 'PAUSED') {
-                            if (DEBUG) console.log(`[Campanha WhatsApp ${campaign.id}] Campanha pausada durante processamento. Interrompendo.`);
+                            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Campanha pausada durante processamento. Interrompendo.`);
                             return;
                         }
                     }
@@ -871,7 +861,7 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                     // Delay aleatório entre mensagens
                     if (contactIndex < batch.length - 1 || batchIdx < totalBatches - 1) {
                         const randomDelay = Math.floor(Math.random() * (maxDelaySeconds! - minDelaySeconds! + 1)) + minDelaySeconds!;
-                        if (DEBUG && contactIndex % 5 === 0) console.log(`[Campanha WhatsApp ${campaign.id}] Aguardando ${randomDelay}s...`);
+                        if (DEBUG && contactIndex % 5 === 0) logger.debug(`[Campanha WhatsApp ${campaign.id}] Aguardando ${randomDelay}s...`);
                         await sleep(randomDelay * 1000);
                     }
                 }
@@ -1079,7 +1069,7 @@ async function sendSmsBatch(gateway: typeof smsGateways.$inferSelect, campaign: 
     const normalizedBatch = batch.map(contact => {
         const normalized = normalizeBrazilianSMS(contact.phone);
         if (normalized.ninthDigitAdded) {
-            console.log(`[SMS] 📱 Nono dígito adicionado: ${normalized.original} → ${normalized.number}`);
+            logger.debug(`[SMS] 📱 Nono dígito adicionado: ${normalized.original} → ${normalized.number}`);
         }
         if (!normalized.valid) {
             console.warn(`[SMS] ⚠️ Número inválido: ${contact.phone} - ${normalized.error}`);
@@ -1230,8 +1220,8 @@ async function sendSmsBatch(gateway: typeof smsGateways.$inferSelect, campaign: 
                 };
             });
 
-            console.log(`[SMS MKOM] Enviando ${mkomMessages.length} mensagens via MKSMS API`);
-            console.log(`[SMS MKOM] 📤 Payload Preview:`, JSON.stringify(mkomMessages.slice(0, 2).map(m => ({
+            logger.debug(`[SMS MKOM] Enviando ${mkomMessages.length} mensagens via MKSMS API`);
+            logger.debug(`[SMS MKOM] 📤 Payload Preview:`, JSON.stringify(mkomMessages.slice(0, 2).map(m => ({
                 msisdn: m.msisdn,
                 message: m.message.substring(0, 30) + '...',
                 reference: m.reference
@@ -1250,7 +1240,7 @@ async function sendSmsBatch(gateway: typeof smsGateways.$inferSelect, campaign: 
             const mkomUrl = 'https://sms.mkmservice.com/sms/api/transmission/v1';
 
             try {
-                console.log(`[SMS MKOM] 🌐 Chamando API: POST ${mkomUrl}`);
+                logger.debug(`[SMS MKOM] 🌐 Chamando API: POST ${mkomUrl}`);
                 const startTime = Date.now();
 
                 const mkomResponse = await fetch(mkomUrl, {
@@ -1265,8 +1255,8 @@ async function sendSmsBatch(gateway: typeof smsGateways.$inferSelect, campaign: 
                 const mkomResponseText = await mkomResponse.text();
                 const elapsed = Date.now() - startTime;
 
-                console.log(`[SMS MKOM] 📥 Response Status: ${mkomResponse.status} (${elapsed}ms)`);
-                console.log(`[SMS MKOM] 📥 Response Body:`, mkomResponseText);
+                logger.debug(`[SMS MKOM] 📥 Response Status: ${mkomResponse.status} (${elapsed}ms)`);
+                logger.debug(`[SMS MKOM] 📥 Response Body:`, mkomResponseText);
 
                 if (!mkomResponse.ok) {
                     console.error(`[SMS MKOM] ❌ API Error: Status ${mkomResponse.status}`);
@@ -1275,7 +1265,7 @@ async function sendSmsBatch(gateway: typeof smsGateways.$inferSelect, campaign: 
                 }
 
                 CircuitBreaker.recordSuccess('sms_mkom');
-                console.log(`[SMS MKOM] ✅ Envio bem-sucedido!`);
+                logger.debug(`[SMS MKOM] ✅ Envio bem-sucedido!`);
 
                 try {
                     // Formato de resposta MKOM: { mailing: { id: "..." }, messages: [{ success: boolean, reference: "...", id?: "..." }] }
@@ -1285,7 +1275,7 @@ async function sendSmsBatch(gateway: typeof smsGateways.$inferSelect, campaign: 
                         error?: string;
                         status?: string;
                     };
-                    console.log(`[SMS MKOM] 📊 Parsed Response:`, JSON.stringify(mkomData, null, 2));
+                    logger.debug(`[SMS MKOM] 📊 Parsed Response:`, JSON.stringify(mkomData, null, 2));
 
                     // Verificar se houve erro global
                     if (mkomData.error || mkomData.status === 'ERROR' || mkomData.status === 'ERRO') {
@@ -1487,7 +1477,7 @@ async function sendSmsBatch(gateway: typeof smsGateways.$inferSelect, campaign: 
 export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): Promise<void> {
     // GUARD: Verificar se já foi completada para evitar duplicações em caso de re-trigger ou restart
     if (campaign.sentAt || campaign.completedAt) {
-        console.log(`[Campanha SMS ${campaign.id}] Já foi completada (sentAt: ${campaign.sentAt}, completedAt: ${campaign.completedAt}). Ignorando re-trigger.`);
+        logger.debug(`[Campanha SMS ${campaign.id}] Já foi completada (sentAt: ${campaign.sentAt}, completedAt: ${campaign.completedAt}). Ignorando re-trigger.`);
         return;
     }
 
@@ -1525,7 +1515,7 @@ export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): 
         let campaignContacts;
 
         if (isRetryMode) {
-            console.log(`[Campanha SMS ${campaign.id}] Modo de reenvio: processando ${campaign.retryContactIds!.length} contatos que falharam`);
+            logger.debug(`[Campanha SMS ${campaign.id}] Modo de reenvio: processando ${campaign.retryContactIds!.length} contatos que falharam`);
             // Validar que os contatos pertencem à empresa
             campaignContacts = await db.selectDistinct({ phone: contacts.phone, id: contacts.id })
                 .from(contacts)
@@ -1561,7 +1551,7 @@ export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): 
         const remainingContacts = campaignContacts.slice(startIndex);
 
         if (remainingContacts.length === 0) {
-            console.log(`[Campanha SMS ${campaign.id}] Todos os contatos já foram processados (startIndex: ${startIndex}, total: ${campaignContacts.length}). Marcando como completa.`);
+            logger.debug(`[Campanha SMS ${campaign.id}] Todos os contatos já foram processados (startIndex: ${startIndex}, total: ${campaignContacts.length}). Marcando como completa.`);
             // SECURITY: Validar tenant ao atualizar status
             await db.update(campaigns).set({ status: 'COMPLETED', sentAt: new Date(), completedAt: new Date() }).where(and(
                 eq(campaigns.id, campaign.id),
@@ -1571,7 +1561,7 @@ export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): 
         }
 
         if (startIndex > 0) {
-            console.log(`[Campanha SMS ${campaign.id}] 🔄 Retomando campanha do índice ${startIndex}. Total: ${campaignContacts.length}, Restantes: ${remainingContacts.length}`);
+            logger.debug(`[Campanha SMS ${campaign.id}] 🔄 Retomando campanha do índice ${startIndex}. Total: ${campaignContacts.length}, Restantes: ${remainingContacts.length}`);
         }
 
         const batchSize = campaign.batchSize || 100;
@@ -1592,11 +1582,11 @@ export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): 
                 eq(campaigns.companyId, campaign.companyId)
             ));
             if (currentCampaign?.status === 'PAUSED') {
-                console.log(`[Campanha SMS ${campaign.id}] Campanha pausada pelo usuário. Interrompendo envio no índice ${absoluteIndex}.`);
+                logger.debug(`[Campanha SMS ${campaign.id}] Campanha pausada pelo usuário. Interrompendo envio no índice ${absoluteIndex}.`);
                 return; // Sai da função sem marcar como completa ou falha
             }
 
-            console.log(`[Campanha SMS ${campaign.id}] Processando lote ${batchIndex + 1}/${contactBatches.length} (índice ${absoluteIndex}) com ${batch.length} contatos.`);
+            logger.debug(`[Campanha SMS ${campaign.id}] Processando lote ${batchIndex + 1}/${contactBatches.length} (índice ${absoluteIndex}) com ${batch.length} contatos.`);
             try {
                 const providerResponse = await sendSmsBatch(gateway, campaign, batch);
 
@@ -1614,7 +1604,7 @@ export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): 
                         eq(campaigns.id, campaign.id),
                         eq(campaigns.companyId, campaign.companyId)
                     ));
-                    console.log(`[Campanha SMS ${campaign.id}] ✅ Mailing ID salvo: ${responseMailingId}`);
+                    logger.debug(`[Campanha SMS ${campaign.id}] ✅ Mailing ID salvo: ${responseMailingId}`);
                 }
 
                 await logSmsDelivery(campaign, gateway, batch, providerResponse as any);
@@ -1630,7 +1620,7 @@ export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): 
                         eq(campaigns.id, campaign.id),
                         eq(campaigns.companyId, campaign.companyId)
                     ));
-                    console.log(`[Campanha SMS ${campaign.id}] 📍 Índice atualizado: ${nextIndex}`);
+                    logger.debug(`[Campanha SMS ${campaign.id}] 📍 Índice atualizado: ${nextIndex}`);
                 } else {
                     // Lote com falha parcial ou total - pausar campanha para intervenção manual
                     console.warn(`[Campanha SMS ${campaign.id}] ⚠️ Lote ${batchIndex + 1} teve falhas. Marcando campanha como PARTIAL_FAILURE para revisão.`);
@@ -1655,13 +1645,13 @@ export async function sendSmsCampaign(campaign: typeof campaigns.$inferSelect): 
             }
 
             if (batchIndex < contactBatches.length - 1) {
-                console.log(`[Campanha SMS ${campaign.id}] Pausando por ${batchDelaySeconds} segundos...`);
+                logger.debug(`[Campanha SMS ${campaign.id}] Pausando por ${batchDelaySeconds} segundos...`);
                 await sleep(batchDelaySeconds * 1000);
             }
         }
 
         await db.update(campaigns).set({ status: 'COMPLETED', sentAt: new Date(), completedAt: new Date() }).where(eq(campaigns.id, campaign.id));
-        console.log(`[Campanha SMS ${campaign.id}] ✅ Campanha concluída com sucesso. Total de contatos processados: ${campaignContacts.length}`);
+        logger.debug(`[Campanha SMS ${campaign.id}] ✅ Campanha concluída com sucesso. Total de contatos processados: ${campaignContacts.length}`);
 
     } catch (error) {
         console.error(`Falha crítica ao enviar campanha SMS ${campaign.id}:`, error);
@@ -1680,6 +1670,8 @@ import { voiceAIPlatform } from './voice-ai-platform';
 import { voiceCalls, voiceDeliveryReports, voiceRetryQueue } from '@/lib/db/schema';
 
 import { VoiceCallOutcome, VOICE_MAX_RETRY_ATTEMPTS, VOICE_RETRY_DELAY_MINUTES } from './voice-utils';
+import { logger } from '@/lib/logger';
+
 
 const _VOICE_BATCH_SIZE = 20;
 const VOICE_BATCH_DELAY_SECONDS = 50;
@@ -1735,7 +1727,7 @@ async function initiateVoiceCall(
             metadata: { attemptNumber },
         });
 
-        console.log(`[Voice Campaign] ✅ Chamada iniciada para ${toNumber} | CallID: ${retellCall.call_id} | Tentativa: ${attemptNumber}`);
+        logger.debug(`[Voice Campaign] ✅ Chamada iniciada para ${toNumber} | CallID: ${retellCall.call_id} | Tentativa: ${attemptNumber}`);
         return {
             success: true,
             contactId: contact.id,
@@ -1786,7 +1778,7 @@ export async function scheduleVoiceRetry(
     const nextAttempt = currentAttempt + 1;
 
     if (nextAttempt > VOICE_MAX_RETRY_ATTEMPTS) {
-        console.log(`[Voice Retry] Máximo de tentativas atingido para contato ${contactId}. Não será reagendado.`);
+        logger.debug(`[Voice Retry] Máximo de tentativas atingido para contato ${contactId}. Não será reagendado.`);
         return false;
     }
 
@@ -1804,7 +1796,7 @@ export async function scheduleVoiceRetry(
             lastAttemptReason,
         }).onConflictDoNothing();
 
-        console.log(`[Voice Retry] ✅ Agendada tentativa ${nextAttempt} para contato ${contactId} em ${scheduledAt.toISOString()}`);
+        logger.debug(`[Voice Retry] ✅ Agendada tentativa ${nextAttempt} para contato ${contactId} em ${scheduledAt.toISOString()}`);
         return true;
     } catch (error) {
         console.error(`[Voice Retry] ❌ Erro ao agendar retry para contato ${contactId}:`, error);
@@ -1869,21 +1861,21 @@ export async function updateVoiceDeliveryWithOutcome(
             })
             .where(eq(voiceDeliveryReports.providerCallId, providerCallId));
 
-        console.log(`[Voice Delivery] ✅ Atualizado report ${providerCallId}: outcome=${callOutcome}, retry=${shouldRetry}`);
+        logger.debug(`[Voice Delivery] ✅ Atualizado report ${providerCallId}: outcome=${callOutcome}, retry=${shouldRetry}`);
     } catch (error) {
         console.error(`[Voice Delivery] ❌ Erro ao atualizar report ${providerCallId}:`, error);
     }
 }
 
 export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect): Promise<void> {
-    console.log(`[Campanha Voice ${campaign.id}] ▶️ Iniciando sendVoiceCampaign - status=${campaign.status}, name=${campaign.name}`);
+    logger.debug(`[Campanha Voice ${campaign.id}] ▶️ Iniciando sendVoiceCampaign - status=${campaign.status}, name=${campaign.name}`);
 
     if (campaign.sentAt || campaign.completedAt) {
-        console.log(`[Campanha Voice ${campaign.id}] Já foi completada. Ignorando re-trigger.`);
+        logger.debug(`[Campanha Voice ${campaign.id}] Já foi completada. Ignorando re-trigger.`);
         return;
     }
 
-    console.log(`[Campanha Voice ${campaign.id}] 📋 Verificações: companyId=${campaign.companyId}, voiceAgentId=${campaign.voiceAgentId}, contactListIds=${JSON.stringify(campaign.contactListIds)}`);
+    logger.debug(`[Campanha Voice ${campaign.id}] 📋 Verificações: companyId=${campaign.companyId}, voiceAgentId=${campaign.voiceAgentId}, contactListIds=${JSON.stringify(campaign.contactListIds)}`);
 
     // SECURITY: Validar tenant ao atualizar status
     await db.update(campaigns).set({ status: 'SENDING' }).where(and(
@@ -1908,7 +1900,7 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
         let agent: { id: string; name: string; retellAgentId: string | null } | null = null;
 
         if (localAgent) {
-            console.log(`[Campanha Voice ${campaign.id}] Agente encontrado no banco local: ${localAgent.name}`);
+            logger.debug(`[Campanha Voice ${campaign.id}] Agente encontrado no banco local: ${localAgent.name}`);
             agent = {
                 id: localAgent.id,
                 name: localAgent.name,
@@ -1934,7 +1926,7 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
 
         let retellAgentId = agent.retellAgentId;
         if (!retellAgentId) {
-            console.log(`[Campanha Voice ${campaign.id}] retellAgentId não configurado no agente. Buscando do Retell...`);
+            logger.debug(`[Campanha Voice ${campaign.id}] retellAgentId não configurado no agente. Buscando do Retell...`);
             try {
                 const retellAgents = await retellService.listAgents();
                 if (retellAgents && retellAgents.length > 0) {
@@ -1943,7 +1935,7 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
                     );
                     const selectedAgent = matchingAgent ?? retellAgents[0]!;
                     retellAgentId = selectedAgent.agent_id;
-                    console.log(`[Campanha Voice ${campaign.id}] Usando agente Retell: ${selectedAgent.agent_name} (${retellAgentId})`);
+                    logger.debug(`[Campanha Voice ${campaign.id}] Usando agente Retell: ${selectedAgent.agent_name} (${retellAgentId})`);
                 }
             } catch (err) {
                 console.error(`[Campanha Voice ${campaign.id}] Erro ao buscar agentes Retell:`, err);
@@ -1959,14 +1951,14 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
 
         if (!isRetryMode && (!campaign.contactListIds || campaign.contactListIds.length === 0)) {
             await db.update(campaigns).set({ status: 'COMPLETED', completedAt: new Date() }).where(eq(campaigns.id, campaign.id));
-            console.log(`[Campanha Voice ${campaign.id}] Concluída: sem listas de contatos.`);
+            logger.debug(`[Campanha Voice ${campaign.id}] Concluída: sem listas de contatos.`);
             return;
         }
 
         let campaignContacts;
 
         if (isRetryMode) {
-            console.log(`[Campanha Voice ${campaign.id}] Modo retry: ${campaign.retryContactIds!.length} contatos`);
+            logger.debug(`[Campanha Voice ${campaign.id}] Modo retry: ${campaign.retryContactIds!.length} contatos`);
             campaignContacts = await db
                 .selectDistinct({ phone: contacts.phone, id: contacts.id, name: contacts.name })
                 .from(contacts)
@@ -1984,11 +1976,11 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
 
         if (campaignContacts.length === 0) {
             await db.update(campaigns).set({ status: 'COMPLETED', completedAt: new Date() }).where(eq(campaigns.id, campaign.id));
-            console.log(`[Campanha Voice ${campaign.id}] Concluída: sem contatos nas listas.`);
+            logger.debug(`[Campanha Voice ${campaign.id}] Concluída: sem contatos nas listas.`);
             return;
         }
 
-        console.log(`[Campanha Voice ${campaign.id}] Iniciando campanha com ${campaignContacts.length} contatos`);
+        logger.debug(`[Campanha Voice ${campaign.id}] Iniciando campanha com ${campaignContacts.length} contatos`);
 
         const batchDelaySeconds = campaign.batchDelaySeconds || VOICE_BATCH_DELAY_SECONDS;
         const maxConcurrent = VOICE_MAX_CONCURRENT;
@@ -2005,14 +1997,14 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
                 .where(eq(campaigns.id, campaign.id));
 
             if (currentCampaign?.status === 'PAUSED') {
-                console.log(`[Campanha Voice ${campaign.id}] Campanha pausada. Parando no contato ${processedIndex + 1}.`);
+                logger.debug(`[Campanha Voice ${campaign.id}] Campanha pausada. Parando no contato ${processedIndex + 1}.`);
                 return;
             }
 
             const availableSlots = await retellService.getAvailableSlots(maxConcurrent);
 
             if (availableSlots === 0) {
-                console.log(`[Campanha Voice ${campaign.id}] Nenhum slot disponível. Aguardando ${batchDelaySeconds}s...`);
+                logger.debug(`[Campanha Voice ${campaign.id}] Nenhum slot disponível. Aguardando ${batchDelaySeconds}s...`);
                 await sleep(batchDelaySeconds * 1000);
                 continue;
             }
@@ -2020,7 +2012,7 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
             const batch = campaignContacts.slice(processedIndex, processedIndex + availableSlots);
             batchNumber++;
 
-            console.log(`[Campanha Voice ${campaign.id}] Lote ${batchNumber}: ${batch.length} chamadas (slots disponíveis: ${availableSlots})`);
+            logger.debug(`[Campanha Voice ${campaign.id}] Lote ${batchNumber}: ${batch.length} chamadas (slots disponíveis: ${availableSlots})`);
 
             const callPromises = batch.map(contact =>
                 initiateVoiceCall(
@@ -2042,10 +2034,10 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
             totalFailed += batchFailed;
             processedIndex += batch.length;
 
-            console.log(`[Campanha Voice ${campaign.id}] Lote ${batchNumber}: ${batchSuccess} sucesso, ${batchFailed} falhas. Progresso: ${processedIndex}/${campaignContacts.length}`);
+            logger.debug(`[Campanha Voice ${campaign.id}] Lote ${batchNumber}: ${batchSuccess} sucesso, ${batchFailed} falhas. Progresso: ${processedIndex}/${campaignContacts.length}`);
 
             if (processedIndex < campaignContacts.length) {
-                console.log(`[Campanha Voice ${campaign.id}] Aguardando ${batchDelaySeconds}s antes do próximo lote...`);
+                logger.debug(`[Campanha Voice ${campaign.id}] Aguardando ${batchDelaySeconds}s antes do próximo lote...`);
                 await sleep(batchDelaySeconds * 1000);
             }
         }
@@ -2064,7 +2056,7 @@ export async function sendVoiceCampaign(campaign: typeof campaigns.$inferSelect)
             eq(campaigns.companyId, campaign.companyId)
         ));
 
-        console.log(`[Campanha Voice ${campaign.id}] ✅ Campanha ${finalStatus}. Total: ${campaignContacts.length}, Sucesso: ${totalSuccess}, Falhas: ${totalFailed}`);
+        logger.debug(`[Campanha Voice ${campaign.id}] ✅ Campanha ${finalStatus}. Total: ${campaignContacts.length}, Sucesso: ${totalSuccess}, Falhas: ${totalFailed}`);
 
     } catch (error) {
         console.error(`Falha crítica na campanha de voz ${campaign.id}:`, error);

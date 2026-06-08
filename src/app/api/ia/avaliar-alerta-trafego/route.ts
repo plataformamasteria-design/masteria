@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await verifySession();
-  if (authError) return authError;
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
 
   const guard = await checkAIBudget("/api/ia/avaliar-alerta-trafego");
   if (guard.error) return guard.error;
@@ -39,13 +39,14 @@ ID CAMPANHA: ${campaign_id || "N/A"}
 Avalie se este valor é preocupante e o que deve ser feito com a campanha/anúncio baseado nas melhores práticas do Meta Ads.`;
 
     const result = await callAI({
-      provider: "gemini",
+      provider: "openai",
       systemPrompt,
       userContent,
       maxTokens: 1000,
+      companyId: user.companyId,
     });
 
-    logAIUsage(guard.userId, "gemini", getModelName("gemini"), estimateTokens(userContent + result.text), "/api/ia/avaliar-alerta-trafego");
+    logAIUsage(guard.userId, "openai", getModelName("openai"), estimateTokens(userContent + result.text), "/api/ia/avaliar-alerta-trafego");
 
     let analise;
     try {

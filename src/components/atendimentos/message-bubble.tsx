@@ -17,6 +17,7 @@ type MessageReaction = {
 
 type MessageWithReactions = Message & {
     reactions?: MessageReaction[];
+    aiTranscription?: string;
 };
 
 const StatusIcon = ({ status }: { status: Message['status'] }) => {
@@ -65,7 +66,14 @@ const MediaPending = ({ type, sentAt }: { type: string, sentAt?: Date | string |
     );
 };
 
-const ChatImage = ({ src, alt, className, width, height }: any) => {
+interface ChatImageProps {
+    src: string;
+    alt?: string;
+    className?: string;
+    width?: number;
+    height?: number;
+}
+const ChatImage = ({ src, alt, className, width, height }: ChatImageProps) => {
     const [hasError, setHasError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -323,7 +331,7 @@ const MeetingIndicator = ({ text, isMe }: { text: string, isMe?: boolean }) => {
     );
 };
 
-export function MessageBubble({ message, allMessages, contactName, templates, connections }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null, templates?: any[], connections?: any[] }) {
+export function MessageBubble({ message, allMessages, contactName, templates, connections }: { message: MessageWithReactions, allMessages: MessageWithReactions[], contactName?: string | null, templates?: Template[], connections?: Array<{ id: string, config_name: string, connectionType: string }> }) {
     const isMe = message.senderType === 'AGENT' || message.senderType === 'AI' || (message.senderType === 'SYSTEM' && message.content?.startsWith('Template:'));
     
     if (message.senderType === 'SYSTEM' && !message.content?.startsWith('Template:')) {
@@ -415,9 +423,9 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                             <AudioPlayer key={message.id} src={message.mediaUrl} />
                         ) : <MediaPending type="AUDIO" sentAt={message.sentAt} />}
                         
-                        {message.mediaUrl && (message as any).aiTranscription && (
+                        {message.mediaUrl && message.aiTranscription && (
                             <p className="text-xs italic opacity-70 border-t border-black/5 dark:border-white/5 pt-1 mt-1">
-                                {(message as any).aiTranscription}
+                                {message.aiTranscription}
                             </p>
                         )}
                     </div>
@@ -469,10 +477,10 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                     
                     if (templateDef) {
                         const components = templateDef.components || [];
-                        const header = components.find((c: any) => c.type === 'HEADER');
-                        const body = components.find((c: any) => c.type === 'BODY');
-                        const footer = components.find((c: any) => c.type === 'FOOTER');
-                        const buttons = components.find((c: any) => c.type === 'BUTTONS');
+                        const header = components.find((c: { type: string, [key: string]: any }) => c.type === 'HEADER');
+                        const body = components.find((c: { type: string, [key: string]: any }) => c.type === 'BODY');
+                        const footer = components.find((c: { type: string, [key: string]: any }) => c.type === 'FOOTER');
+                        const buttons = components.find((c: { type: string, [key: string]: any }) => c.type === 'BUTTONS');
 
                         return (
                             <div className="flex flex-col gap-1.5 w-full min-w-[200px]">
@@ -515,7 +523,7 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                                 )}
                                 {buttons && buttons.buttons?.length > 0 && (
                                     <div className="flex flex-col gap-0 mt-2 border-t border-white/10">
-                                        {buttons.buttons.map((btn: any, i: number) => (
+                                        {buttons.buttons.map((btn: { type: string, text?: string, url?: string }, i: number) => (
                                             <div key={i} className={cn(
                                                 "text-center font-semibold text-[13px] py-2 border-b border-white/10 last:border-0 hover:bg-white/5 transition-colors cursor-pointer rounded-sm",
                                                 isMe ? "text-white" : "text-[#00a884] dark:text-[#33c2a6]"

@@ -156,16 +156,13 @@ export default function PreferenciasPage() {
       </SectionCard>
 
       {/* ── Notificações ── */}
-      <SectionCard icon={Bell} color="bg-amber-500/10 text-amber-400" title="Notificações" desc="Controle o que você quer ser alertado">
-        <ToggleRow label="Notificações por E-mail" desc="Receba resumos e alertas por e-mail" checked={prefs.emailNotif} onChange={v => set('emailNotif', v)} />
-        <ToggleRow label="Notificações Push" desc="Alertas em tempo real no navegador" checked={prefs.pushNotif} onChange={v => set('pushNotif', v)} />
-
+      <SectionCard icon={Bell} color="bg-amber-500/10 text-amber-400" title="Notificações" desc="Controle o que você quer ser alertado (Somente Interface por enquanto)">
         {/* Sound */}
         <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {prefs.soundEnabled ? <Volume2 className="h-4 w-4 text-zinc-400" /> : <VolumeX className="h-4 w-4 text-zinc-600" />}
-              <p className="text-sm text-white font-medium">Som de Notificações</p>
+              <p className="text-sm text-white font-medium">Som de Notificações (Browser)</p>
             </div>
             <Switch checked={prefs.soundEnabled} onCheckedChange={v => set('soundEnabled', v)} className="data-[state=checked]:bg-emerald-500" />
           </div>
@@ -178,12 +175,6 @@ export default function PreferenciasPage() {
             </div>
           )}
         </div>
-
-        <p className="text-xs text-zinc-500 pt-1">Tipos de Alerta</p>
-        <ToggleRow label="Novos Leads" desc="Quando um lead chega via campanha ou formulário" checked={prefs.newLeadNotif} onChange={v => set('newLeadNotif', v)} />
-        <ToggleRow label="Novas Mensagens" checked={prefs.messageNotif} onChange={v => set('messageNotif', v)} />
-        <ToggleRow label="Relatórios de Campanha" desc="Ao finalizar disparos e processos" checked={prefs.campaignNotif} onChange={v => set('campaignNotif', v)} />
-        <ToggleRow label="Eventos de IA" desc="Conclusões e erros dos agentes" checked={prefs.aiNotif} onChange={v => set('aiNotif', v)} />
       </SectionCard>
 
       {/* Save */}

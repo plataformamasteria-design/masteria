@@ -11,6 +11,8 @@ import OpenAI from 'openai';
 import { createSystemMessage } from '@/services/system-message.service';
 import { resolveAIKeys } from './ai-keys-resolver';
 import { logContactEvent } from './contact-events';
+import { logger } from '@/lib/logger';
+
 
 // =====================================================
 // FLOW ENGINE V3 — BFS Graph Traversal + Context
@@ -293,10 +295,10 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
             // ✅ Advanced Filters (from TriggerNodeV4)
             if (shouldTrigger && trigger.data?.message_category && trigger.data?.message_category !== 'general') {
                 const category = trigger.data.message_category;
-                console.log(`[FLOW-ENGINE] Evaluating advanced filters for trigger category: ${category}`);
-                console.log(`[FLOW-ENGINE] Data state -> ConversationConnectionId: ${conversationData?.connectionId}, FilterConnection: ${trigger.data.filter_connection}`);
-                console.log(`[FLOW-ENGINE] Data state -> ContactTags: ${JSON.stringify(contactTags)}, FilterTag: ${trigger.data.filter_tag}`);
-                console.log(`[FLOW-ENGINE] Data state -> LeadBoardId: ${leadData?.boardId}, FilterFunnel: ${trigger.data.filter_funnel}, LeadStageId: ${leadData?.stageId}, FilterStage: ${trigger.data.filter_stage}`);
+                logger.debug(`[FLOW-ENGINE] Evaluating advanced filters for trigger category: ${category}`);
+                logger.debug(`[FLOW-ENGINE] Data state -> ConversationConnectionId: ${conversationData?.connectionId}, FilterConnection: ${trigger.data.filter_connection}`);
+                logger.debug(`[FLOW-ENGINE] Data state -> ContactTags: ${JSON.stringify(contactTags)}, FilterTag: ${trigger.data.filter_tag}`);
+                logger.debug(`[FLOW-ENGINE] Data state -> LeadBoardId: ${leadData?.boardId}, FilterFunnel: ${trigger.data.filter_funnel}, LeadStageId: ${leadData?.stageId}, FilterStage: ${trigger.data.filter_stage}`);
                 
                 if (category === 'connection' && trigger.data.filter_connection) {
                     if (String(conversationData?.connectionId) !== String(trigger.data.filter_connection)) {
@@ -364,7 +366,7 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
                 ),
             });
             if (existingExec) {
-                console.log(`[FLOW - ENGINE] ⏩ Skipping trigger for flow ${flow.id} — existing ${existingExec.status} execution ${existingExec.id} for contact ${contactId}`);
+                logger.debug(`[FLOW - ENGINE] ⏩ Skipping trigger for flow ${flow.id} — existing ${existingExec.status} execution ${existingExec.id} for contact ${contactId}`);
                 continue;
             }
 
@@ -476,7 +478,7 @@ export async function evaluateContactCreatedTriggers(companyId: string, contactI
         });
         if (existingExec) continue;
 
-        console.log(`[FLOW-ENGINE] 👤 Contact created trigger: flow ${flow.id} for contact ${contactId}`);
+        logger.debug(`[FLOW-ENGINE] 👤 Contact created trigger: flow ${flow.id} for contact ${contactId}`);
         await triggerFlow(flow.id, companyId, contactId, {
             trigger_type: 'contact_created',
         });
@@ -520,7 +522,7 @@ export async function evaluateTagAddedTriggers(companyId: string, contactId: str
         });
         if (existingExec) continue;
 
-        console.log(`[FLOW-ENGINE] 🏷️ Tag added trigger: flow ${flow.id}, tag="${addedTag}", contact ${contactId}`);
+        logger.debug(`[FLOW-ENGINE] 🏷️ Tag added trigger: flow ${flow.id}, tag="${addedTag}", contact ${contactId}`);
         await triggerFlow(flow.id, companyId, contactId, {
             trigger_type: 'contact_tag_added',
             added_tag: addedTag,
@@ -582,7 +584,7 @@ export async function evaluateScheduleTriggers() {
 
         if (!shouldRun) continue;
 
-        console.log(`[FLOW-ENGINE] ⏰ Schedule trigger: flow ${flow.id} (freq=${freq}, time=${scheduleTime})`);
+        logger.debug(`[FLOW-ENGINE] ⏰ Schedule trigger: flow ${flow.id} (freq=${freq}, time=${scheduleTime})`);
 
         // Trigger without a specific contact — flow should use lookup_lead or run company-wide
         await triggerFlow(flow.id, flow.companyId, null, {
@@ -598,7 +600,7 @@ export async function evaluateScheduleTriggers() {
 // ==============================
 
 export async function triggerFlow(flowId: string, companyId: string, contactId: string | null, initialVars: any = {}): Promise<string | null> {
-    console.log(`[FLOW - ENGINE] 🔥 Triggering flow: ${flowId} for contact: ${contactId} `);
+    logger.debug(`[FLOW - ENGINE] 🔥 Triggering flow: ${flowId} for contact: ${contactId} `);
 
     const flow = await db.query.automationFlows.findFirst({
         where: and(
@@ -625,7 +627,7 @@ export async function triggerFlow(flowId: string, companyId: string, contactId: 
         variables: { vars: initialVars },
     }).returning();
 
-    console.log(`[FLOW - ENGINE] 📝 Execution created: ${execution.id} `);
+    logger.debug(`[FLOW - ENGINE] 📝 Execution created: ${execution.id} `);
 
     if (contactId) {
         try {
@@ -696,7 +698,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
             connection = await db.query.connections.findFirst({
                 where: eq(connections.id, activeConv.connectionId)
             }) ?? undefined;
-            console.log(`[FLOW-ENGINE] 🔗 Resolved connection from conversation: ${activeConv.connectionId} (type: ${connection?.connectionType})`);
+            logger.debug(`[FLOW-ENGINE] 🔗 Resolved connection from conversation: ${activeConv.connectionId} (type: ${connection?.connectionType})`);
         }
     }
     // Fallback: any active connection for the company (schedule triggers, etc.)
@@ -707,16 +709,16 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
                 eq(connections.isActive, true)
             )
         }) ?? undefined;
-        console.log(`[FLOW-ENGINE] 🔗 Fallback connection: ${connection?.id} (type: ${connection?.connectionType})`);
+        logger.debug(`[FLOW-ENGINE] 🔗 Fallback connection: ${connection?.id} (type: ${connection?.connectionType})`);
     }
 
     // Build execution context
     // Derive provider from connectionType (no 'provider' column exists)
-    let derivedProvider = 'baileys';
+    let derivedProvider = 'evolution';
     if (connection?.connectionType === 'meta_api' || connection?.connectionType === 'apicloud') {
         derivedProvider = 'apicloud';
     } else if (['baileys', 'evolution'].includes(connection?.connectionType || '')) {
-        derivedProvider = 'baileys';
+        derivedProvider = 'evolution';
     }
 
     let realContactTags: string[] = [];
@@ -772,11 +774,11 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
         if (!step) continue;
 
         try {
-            console.log(`[FLOW - ENGINE] 🚀 Executing: ${step.type} (${step.id})`);
+            logger.debug(`[FLOW - ENGINE] 🚀 Executing: ${step.type} (${step.id})`);
 
             // --- TIMEOUT BYPASS ---
             if (ctx.variables._timeout_triggered_for_step === step.id) {
-                console.log(`[FLOW - ENGINE] ⏱️ Timeout forced bypass for step ${step.id}`);
+                logger.debug(`[FLOW - ENGINE] ⏱️ Timeout forced bypass for step ${step.id}`);
                 // Remover flag para não travar próximos nós
                 delete ctx.variables._timeout_triggered_for_step;
                 
@@ -851,7 +853,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
                 await db.update(automationFlowExecutions)
                     .set({ status: 'paused', currentStepId: step.id })
                     .where(eq(automationFlowExecutions.id, executionId));
-                console.log(`[FLOW - ENGINE] ⏸️ Paused at ${step.id} `);
+                logger.debug(`[FLOW - ENGINE] ⏸️ Paused at ${step.id} `);
                 return;
             }
 
@@ -864,7 +866,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
                         variables: { vars: ctx.variables, _resumeAt: Date.now() + delayMs }
                     })
                     .where(eq(automationFlowExecutions.id, executionId));
-                console.log(`[FLOW - ENGINE] ⏳ Delayed ${delayMs}ms at ${step.id} `);
+                logger.debug(`[FLOW - ENGINE] ⏳ Delayed ${delayMs}ms at ${step.id} `);
                 // Schedule resume via setTimeout (in-process; the cron module handles crash recovery)
                 setTimeout(() => {
                     processFlowExecution(executionId, logic, resolveNextNode(step));
@@ -876,7 +878,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
                 await db.update(automationFlowExecutions)
                     .set({ status: 'completed', finishedAt: new Date() })
                     .where(eq(automationFlowExecutions.id, executionId));
-                console.log(`[FLOW - ENGINE] 🛑 Stopped at ${step.id} `);
+                logger.debug(`[FLOW - ENGINE] 🛑 Stopped at ${step.id} `);
                 return;
             }
 
@@ -932,7 +934,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
     await db.update(automationFlowExecutions)
         .set({ status: 'completed', finishedAt: new Date() })
         .where(eq(automationFlowExecutions.id, executionId));
-    console.log(`[FLOW - ENGINE] ✅ Execution ${executionId} completed(${nodeCount} nodes).`);
+    logger.debug(`[FLOW - ENGINE] ✅ Execution ${executionId} completed(${nodeCount} nodes).`);
 
     // System message: notificar conclusão da automação
     if (execution.contactId) {
@@ -1676,7 +1678,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     
                     if (activeConv) {
                         await db.update(conversations).set({ aiActive: botEnabled }).where(eq(conversations.id, activeConv.id));
-                        console.log(`[FLOW-ENGINE] 🤖 Bot toggled to ${botEnabled} for conversation ${activeConv.id}`);
+                        logger.debug(`[FLOW-ENGINE] 🤖 Bot toggled to ${botEnabled} for conversation ${activeConv.id}`);
                     }
                 } catch (e) {
                     console.error('[FLOW-ENGINE] bot_toggle error:', e);
@@ -1737,7 +1739,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 for (const [key, val] of Object.entries(ctx.variables)) {
                     if (typeof val === 'string' && /^\+?\d{10,15}$/.test(val.replace(/[\s\-\(\)]/g, ''))) {
                         rawPhone = val;
-                        console.log(`[FLOW - ENGINE] Lookup: found phone in variable "${key}": ${val} `);
+                        logger.debug(`[FLOW - ENGINE] Lookup: found phone in variable "${key}": ${val} `);
                         break;
                     }
                 }
@@ -1749,7 +1751,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             }
 
             const phoneVariations = normalizePhoneVariations(rawPhone);
-            console.log(`[FLOW - ENGINE] Lookup lead: raw = ${rawPhone}, variations = ${phoneVariations.join(', ')} `);
+            logger.debug(`[FLOW - ENGINE] Lookup lead: raw = ${rawPhone}, variations = ${phoneVariations.join(', ')} `);
 
             // Buscar contato por qualquer variação do telefone — ALL at once
             const { inArray } = await import('drizzle-orm');
@@ -1767,7 +1769,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 foundContact = allMatches.find(c => (c as any).whatsappName)
                     || allMatches.find(c => c.name && c.name.trim() !== '')
                     || allMatches[0];
-                console.log(`[FLOW - ENGINE] Lookup: ${allMatches.length} match(es) found, selected: ${foundContact.name} (${foundContact.phone})`);
+                logger.debug(`[FLOW - ENGINE] Lookup: ${allMatches.length} match(es) found, selected: ${foundContact.name} (${foundContact.phone})`);
             }
 
             if (foundContact) {
@@ -1782,7 +1784,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         try {
                             const { eq } = await import('drizzle-orm');
                             await db.update(contacts).set({ name: finalName }).where(eq(contacts.id, foundContact.id));
-                            console.log(`[FLOW-ENGINE] Lookup: Updated empty name for contact ${foundContact.id} to "${finalName}"`);
+                            logger.debug(`[FLOW-ENGINE] Lookup: Updated empty name for contact ${foundContact.id} to "${finalName}"`);
                         } catch (e) {
                             console.error(`[FLOW-ENGINE] Lookup: Failed to update contact name`, e);
                         }
@@ -1933,7 +1935,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                     parameters: [{ type: headerType, [headerType]: { id: match.handle } }],
                                 });
                                 headerAdded = true;
-                                console.log(`[FLOW - ENGINE] 📎 Header ${headerType} via config asset: handle = ${match.handle} `);
+                                logger.debug(`[FLOW - ENGINE] 📎 Header ${headerType} via config asset: handle = ${match.handle} `);
                             }
                         }
                     }
@@ -1957,7 +1959,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                     parameters: [{ type: headerType, [headerType]: { id: match.handle } }],
                                 });
                                 headerAdded = true;
-                                console.log(`[FLOW - ENGINE] 📎 Header ${headerType} via fallback asset: ${asset.name} handle = ${match.handle} `);
+                                logger.debug(`[FLOW - ENGINE] 📎 Header ${headerType} via fallback asset: ${asset.name} handle = ${match.handle} `);
                                 break;
                             }
                         }
@@ -1971,7 +1973,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             parameters: [{ type: headerType, [headerType]: { link: headerUrl } }],
                         });
                         headerAdded = true;
-                        console.log(`[FLOW - ENGINE] 📎 Header ${headerType} via explicit URL`);
+                        logger.debug(`[FLOW - ENGINE] 📎 Header ${headerType} via explicit URL`);
                     }
 
                     if (!headerAdded) {
@@ -1998,9 +2000,9 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 sendToPhone = '55' + sendToPhone;
             }
 
-            console.log(`[FLOW - ENGINE] 📨 Sending template "${templateName}"(${templateLanguage}) to ${sendToPhone} via connection ${connId} `);
-            console.log(`[FLOW - ENGINE] 📨 Body params: `, bodyParams.map((p: any) => p.text));
-            console.log(`[FLOW - ENGINE] 📨 Components: `, JSON.stringify(components));
+            logger.debug(`[FLOW - ENGINE] 📨 Sending template "${templateName}"(${templateLanguage}) to ${sendToPhone} via connection ${connId} `);
+            logger.debug(`[FLOW - ENGINE] 📨 Body params: `, bodyParams.map((p: any) => p.text));
+            logger.debug(`[FLOW - ENGINE] 📨 Components: `, JSON.stringify(components));
 
             // 5. Chamar sendWhatsappTemplateMessage DIRETAMENTE (mesmo padrão do campaign-sender)
             let sendSuccess = false;
@@ -2017,7 +2019,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 });
                 sendSuccess = true;
                 sendMessageId = (response as any)?.messages?.[0]?.id || null;
-                console.log(`[FLOW - ENGINE] ✅ Template sent successfully! MessageId: ${sendMessageId} `);
+                logger.debug(`[FLOW - ENGINE] ✅ Template sent successfully! MessageId: ${sendMessageId} `);
             } catch (err: any) {
                 sendError = err?.message || 'Erro desconhecido ao enviar template';
                 console.error(`[FLOW - ENGINE] ❌ Template send error: `, sendError);
@@ -2040,7 +2042,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             status: 'IN_PROGRESS',
                         }).returning();
                         conv = newConv;
-                        console.log(`[FLOW - ENGINE] 📝 Created conversation ${conv.id} for contact ${ctx.contactId}`);
+                        logger.debug(`[FLOW - ENGINE] 📝 Created conversation ${conv.id} for contact ${ctx.contactId}`);
                     }
                     const flowMsgId = sendMessageId || `flow - tpl - ${Date.now()} -${Math.random().toString(36).substring(7)} `;
                     await db.insert(messages).values({
@@ -2052,7 +2054,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         providerMessageId: flowMsgId,
                         status: sendSuccess ? 'SENT' : 'FAILED',
                     });
-                    console.log(`[FLOW - ENGINE] ✅ Template message saved to conversation ${conv.id} `);
+                    logger.debug(`[FLOW - ENGINE] ✅ Template message saved to conversation ${conv.id} `);
                 }
             } catch (saveErr: any) {
                 console.error(`[FLOW - ENGINE] ⚠️ Failed to save template message: `, saveErr?.message);
@@ -2116,7 +2118,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         // Prepend calendar context to system prompt
                         const calCtx = buildCalendarSystemContext(calendarToolConfig);
                         systemPrompt = calCtx + (systemPrompt ? '\n\n' + systemPrompt : '');
-                        console.log('[FLOW-ENGINE] 📅 Google Calendar tools enabled for this agent');
+                        logger.debug('[FLOW-ENGINE] 📅 Google Calendar tools enabled for this agent');
                     } else {
                         console.warn('[FLOW-ENGINE] ⚠️ google_calendar_enabled=true but no active credential found');
                     }
@@ -2166,7 +2168,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         });
                         
                         systemPrompt = systemPrompt + parts.join('\n');
-                        console.log(`[FLOW-ENGINE] 📎 Media Library enabled for this agent. Found ${libraryFiles.length} files.`);
+                        logger.debug(`[FLOW-ENGINE] 📎 Media Library enabled for this agent. Found ${libraryFiles.length} files.`);
                     }
                 } catch (libErr) {
                     console.error('[FLOW-ENGINE] Media Library setup error:', libErr);
@@ -2230,7 +2232,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 if (!content) continue;
 
                                 if (totalChars + content.length > MAX_CHARS) {
-                                    console.log(`[FLOW-ENGINE] ✂️ Context limit reached. Truncating older messages (Char count: ${totalChars})`);
+                                    logger.debug(`[FLOW-ENGINE] ✂️ Context limit reached. Truncating older messages (Char count: ${totalChars})`);
                                     break; // Stop adding older messages to stay within token limits
                                 }
                                 totalChars += content.length;
@@ -2256,7 +2258,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 const leadMessage = ctx.variables.last_response || ctx.variables.message_text || 'Olá';
                 chatHistory.push({ role: 'user', content: leadMessage });
 
-                console.log(`[FLOW-ENGINE] 💬 Dialogue mode: ${chatHistory.length} history entries, sending new message`);
+                logger.debug(`[FLOW-ENGINE] 💬 Dialogue mode: ${chatHistory.length} history entries, sending new message`);
 
                 try {
                     const completionParams: Parameters<typeof openai.chat.completions.create>[0] = {
@@ -2285,7 +2287,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             let toolArgs: Record<string, unknown> = {};
                             try { toolArgs = JSON.parse(toolCall.function.arguments); } catch {}
 
-                            console.log(`[FLOW-ENGINE] 🔧 Tool call: ${toolCall.function.name}`, toolArgs);
+                            logger.debug(`[FLOW-ENGINE] 🔧 Tool call: ${toolCall.function.name}`, toolArgs);
 
                             const toolResult = await executeCalendarTool(
                                 toolCall.function.name,
@@ -2301,7 +2303,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 }
                             );
 
-                            console.log(`[FLOW-ENGINE] ✅ Tool result: ${toolCall.function.name}`, toolResult);
+                            logger.debug(`[FLOW-ENGINE] ✅ Tool result: ${toolCall.function.name}`, toolResult);
 
                             chatHistory.push({
                                 role: 'tool' as const,
@@ -2324,7 +2326,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                         to: ctx.contactPhone || '',
                                         message: meetMsg,
                                     });
-                                    console.log('[FLOW-ENGINE] 📅 Meet link sent to lead');
+                                    logger.debug('[FLOW-ENGINE] 📅 Meet link sent to lead');
                                 } catch (meetSendErr) {
                                     console.warn('[FLOW-ENGINE] Failed to send Meet link:', meetSendErr);
                                 }
@@ -2442,7 +2444,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             }
 
             if (tokenInfo) {
-                console.log(`[FLOW-ENGINE] 📊 Tokens: prompt=${tokenInfo.promptTokens}, completion=${tokenInfo.completionTokens}, total=${tokenInfo.totalTokens}`);
+                logger.debug(`[FLOW-ENGINE] 📊 Tokens: prompt=${tokenInfo.promptTokens}, completion=${tokenInfo.completionTokens}, total=${tokenInfo.totalTokens}`);
             }
 
             // 3. ENVIAR RESPOSTA ao lead (mesmo padrão do chat.ts / auto-approach)
@@ -2476,18 +2478,36 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         where: eq(connections.id, aiConnectionId)
                     });
                     if (['baileys', 'evolution'].includes(resolvedConn?.connectionType || '')) {
-                        aiProvider = 'baileys';
+                        aiProvider = 'evolution';
                     }
                 } catch (e) {
                     console.warn('[FLOW-ENGINE] Failed to resolve connection type for ai_agent, falling back to ctx.provider:', e);
                     aiProvider = ctx.provider || 'apicloud';
                 }
 
-                console.log(`[FLOW - ENGINE] 🤖 AI sending via ${aiProvider} connection = ${aiConnectionId} to = ${ctx.contactPhone} `);
+                logger.debug(`[FLOW - ENGINE] 🤖 AI sending via ${aiProvider} connection = ${aiConnectionId} to = ${ctx.contactPhone} `);
 
                 // Dividir mensagem em partes para simular humano
                 const parts = responseText.split('\n\n').filter((s: string) => s.trim());
-                
+
+                // ✅ FIX Bug #1: Normaliza fileType do banco ('pdf', 'jpg', etc.) para categoria
+                // aceita pelo sendUnifiedMessage ('document' | 'image' | 'video' | 'audio')
+                const resolveMediaCategory = (fileType: string | null | undefined, fileName: string | null | undefined): 'image' | 'video' | 'audio' | 'document' => {
+                    const ft = (fileType || '').toLowerCase();
+                    const ext = (fileName || '').split('.').pop()?.toLowerCase() || '';
+
+                    if (['image', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ft) ||
+                        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
+
+                    if (['video', 'mp4', 'mov', 'avi', 'webm'].includes(ft) ||
+                        ['mp4', 'mov', 'avi', 'webm'].includes(ext)) return 'video';
+
+                    if (['audio', 'mp3', 'ogg', 'wav', 'm4a'].includes(ft) ||
+                        ['mp3', 'ogg', 'wav', 'm4a'].includes(ext)) return 'audio';
+
+                    return 'document'; // pdf, docx, xlsx, txt, etc.
+                };
+
                 // Helper de extração de tag ARQUIVO
                 const extractFileTag = (text: string, files: any[]): { cleanText: string; file?: any } => {
                     let cleanText = text;
@@ -2520,6 +2540,15 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         const finalMessage = extracted.cleanText;
                         const attachedFile = extracted.file;
 
+                        // ✅ FIX Bug #1: usar resolveMediaCategory em vez de attachedFile.fileType raw
+                        const resolvedMediaType = attachedFile
+                            ? resolveMediaCategory(attachedFile.fileType, attachedFile.fileName)
+                            : undefined;
+
+                        if (attachedFile) {
+                            logger.debug(`[FLOW-ENGINE] 📎 Sending media file: ${attachedFile.fileName} (raw type: ${attachedFile.fileType} → resolved: ${resolvedMediaType})`);
+                        }
+
                         // Enviar via sendUnifiedMessage (suporta anexos nativos)
                         const sendResult = await sendUnifiedMessage({
                             provider: aiProvider as any,
@@ -2527,7 +2556,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             to: ctx.contactPhone,
                             message: finalMessage,
                             mediaUrl: attachedFile ? attachedFile.fileUrl : undefined,
-                            mediaType: attachedFile ? attachedFile.fileType : undefined,
+                            mediaType: resolvedMediaType,
                         });
 
                         if (!sendResult.success) {
@@ -2535,7 +2564,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             continue;
                         }
 
-                        console.log(`[FLOW - ENGINE] ✅ AI message sent: ${sendResult.messageId || 'ok'} `);
+                        logger.debug(`[FLOW - ENGINE] ✅ AI message sent: ${sendResult.messageId || 'ok'} `);
 
                         // Salvar no DB (mesmo padrão do auto-approach: company_id + SENT)
                         if (aiConversation) {
@@ -2772,7 +2801,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     where: eq(connections.id, aiConnectionId)
                 });
                 if (['baileys', 'evolution'].includes(resolvedConn?.connectionType || '')) {
-                    aiProvider = 'baileys';
+                    aiProvider = 'evolution';
                 }
             } catch (e) {
                 console.warn('[FLOW-ENGINE] Failed to resolve connection type for follow_up_ai, falling back to ctx.provider:', e);
@@ -3542,7 +3571,7 @@ export async function resumeFlowForContact(contactId: string, messageText: strin
             }
         }
 
-        console.log(`[FLOW-ENGINE] 🔎 Searching paused executions for contactIds: [${contactIds.join(', ')}]`);
+        logger.debug(`[FLOW-ENGINE] 🔎 Searching paused executions for contactIds: [${contactIds.join(', ')}]`);
 
         // 2. Find the LATEST paused execution across all contact IDs
         const pausedExecution = await db.query.automationFlowExecutions.findFirst({
@@ -3555,11 +3584,11 @@ export async function resumeFlowForContact(contactId: string, messageText: strin
         });
 
         if (!pausedExecution) {
-            console.log(`[FLOW-ENGINE] No paused execution found for contact ${contactId} (phone: ${contact?.phone || 'unknown'})`);
+            logger.debug(`[FLOW-ENGINE] No paused execution found for contact ${contactId} (phone: ${contact?.phone || 'unknown'})`);
             return false;
         }
 
-        console.log(`[FLOW-ENGINE] 🔄 Resuming paused execution ${pausedExecution.id} (step: ${pausedExecution.currentStepId}) for contact ${pausedExecution.contactId}`);
+        logger.debug(`[FLOW-ENGINE] 🔄 Resuming paused execution ${pausedExecution.id} (step: ${pausedExecution.currentStepId}) for contact ${pausedExecution.contactId}`);
 
         // 3. Cancel ALL other paused executions for these contacts (stale cleanup)
         await db.update(automationFlowExecutions)
@@ -3577,7 +3606,7 @@ export async function resumeFlowForContact(contactId: string, messageText: strin
         });
 
         if (flow && !flow.isActive) {
-            console.log(`[FLOW-ENGINE] 🛑 A Automação ${flow.id} foi DESATIVADA! Cancelando a execução pausada ${pausedExecution.id}.`);
+            logger.debug(`[FLOW-ENGINE] 🛑 A Automação ${flow.id} foi DESATIVADA! Cancelando a execução pausada ${pausedExecution.id}.`);
             await db.update(automationFlowExecutions)
                 .set({ status: 'failed', error: 'Automação desativada pelo usuário', finishedAt: new Date() })
                 .where(eq(automationFlowExecutions.id, pausedExecution.id));
@@ -3597,7 +3626,7 @@ export async function resumeFlowForContact(contactId: string, messageText: strin
         currentVars.last_response = messageText;
         currentVars.message_text = messageText;
 
-        console.log(`[FLOW-ENGINE] 📝 Updating vars: last_response="${messageText.slice(0, 50)}"`);
+        logger.debug(`[FLOW-ENGINE] 📝 Updating vars: last_response="${messageText.slice(0, 50)}"`);
 
         // 6. Set status back to running
         await db.update(automationFlowExecutions)
@@ -3610,7 +3639,7 @@ export async function resumeFlowForContact(contactId: string, messageText: strin
         // 7. Resume processing the current step
         const resumeStepId = pausedExecution.currentStepId;
         if (resumeStepId) {
-            console.log(`[FLOW-ENGINE] ▶️ Resuming from step: ${resumeStepId}`);
+            logger.debug(`[FLOW-ENGINE] ▶️ Resuming from step: ${resumeStepId}`);
             await processFlowExecution(pausedExecution.id, flow.executionLogic as any, resumeStepId);
         } else {
             console.warn(`[FLOW-ENGINE] ⚠️ No currentStepId on paused execution, completing.`);

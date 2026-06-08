@@ -366,9 +366,9 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
 
 
 
-export function TeamTable(): JSX.Element {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+export function TeamTable({ initialUsers = [] }: { initialUsers?: User[] }): JSX.Element {
+  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [loading, setLoading] = useState(initialUsers.length === 0);
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -406,8 +406,10 @@ export function TeamTable(): JSX.Element {
   }, [notify]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (initialUsers.length === 0) {
+      fetchUsers();
+    }
+  }, [fetchUsers, initialUsers.length]);
 
   const handleInvite = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();

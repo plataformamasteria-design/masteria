@@ -13,8 +13,8 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await verifySession();
-  if (authError) return authError;
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
 
   const guard = await checkAIBudget("/api/ad-intelligence/diagnostico");
   if (guard.error) return guard.error;
@@ -32,10 +32,10 @@ export async function POST(req: NextRequest) {
       { data: leads },
       { data: contratos },
     ] = await Promise.all([
-      supabase.from("ads_performance").select("ad_id, spend, leads, cpl").gte("data_ref", startDate).lte("data_ref", endDate),
-      supabase.from("ads_metadata").select("ad_id, ad_name, campaign_name, status"),
-      supabase.from("leads_crm").select("id, ad_id, etapa, contrato_id").gte("ghl_created_at", startDate + "T00:00:00").lte("ghl_created_at", endDate + "T23:59:59"),
-      supabase.from("contratos").select("id, mrr, valor_entrada, valor_total_projeto, data_fechamento").gte("data_fechamento", startDate).lte("data_fechamento", endDate).neq("status", "rascunho"),
+      supabase.from("ads_performance").select("ad_id, spend, leads, cpl").eq("cliente_id", user.companyId).gte("data_ref", startDate).lte("data_ref", endDate),
+      supabase.from("ads_metadata").select("ad_id, ad_name, campaign_name, status").eq("cliente_id", user.companyId),
+      supabase.from("leads_crm").select("id, ad_id, etapa, contrato_id").eq("cliente_id", user.companyId).gte("ghl_created_at", startDate + "T00:00:00").lte("ghl_created_at", endDate + "T23:59:59"),
+      supabase.from("contratos").select("id, mrr, valor_entrada, valor_total_projeto, data_fechamento").eq("cliente_id", user.companyId).gte("data_fechamento", startDate).lte("data_fechamento", endDate).neq("status", "rascunho"),
     ]);
 
     // Aggregate
@@ -118,13 +118,14 @@ export async function POST(req: NextRequest) {
     const prompt = `Você é um especialista em tráfego pago para o mercado jurídico. Analise os dados abaixo de uma agência de marketing digital e forneça: 1) Diagnóstico de desempenho (o que está funcionando e o que não está), 2) Alertas críticos (anúncios para pausar imediatamente), 3) Oportunidades (anúncios para escalar), 4) Próximos 3 passos prioritários com ação específica. Seja direto e comercial. Dados do período ${startDate} a ${endDate}: ${dadosJson}`;
 
     const result = await callAI({
-      provider: "anthropic-haiku",
+      provider: "openai",
       systemPrompt: "Você é um consultor de tráfego pago especializado no mercado jurídico brasileiro. Responda em português, de forma direta e acionável. Use markdown para formatar.",
       userContent: prompt,
       maxTokens: 2000,
+      companyId: user.companyId,
     });
 
-    logAIUsage(guard.userId, "anthropic-haiku", getModelName("anthropic-haiku"), estimateTokens(prompt + result.text), "/api/ad-intelligence/diagnostico");
+    logAIUsage(guard.userId, "openai", getModelName("openai"), estimateTokens(prompt + result.text), "/api/ad-intelligence/diagnostico");
 
     return NextResponse.json({ diagnostico: result.text, periodo: { startDate, endDate } });
   } catch (e) {

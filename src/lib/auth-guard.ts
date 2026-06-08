@@ -46,7 +46,7 @@ export async function verifySession(): Promise<VerifyResult> {
     const mappedUser: SessionPayload = {
       employeeId: session.user.id,
       role: (session.user.role as any) || "admin",
-      entityId: session.user.companyId || null,
+      companyId: session.user.companyId || null,
       nome: session.user.name || "Usuário",
     };
 

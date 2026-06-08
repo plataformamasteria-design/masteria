@@ -49,27 +49,36 @@ export function AdAccountProvider({ children }: { children: ReactNode }) {
 
   const accounts = data?.data || [];
 
-  // Hidrata do localStorage na primeira carga de dados
+  // Hidrata a conta selecionada assim que os dados chegarem
   useEffect(() => {
-    if (hydrated || isLoading) return;
-    setHydrated(true);
+    if (isLoading || !accounts.length) return;
 
-    if (!accounts.length) return;
+    // Se já temos uma conta selecionada e ela está na lista, não precisa reidratar
+    if (account && accounts.some(a => a.id === account.id)) {
+      setHydrated(true);
+      return;
+    }
 
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed: AdAccount = JSON.parse(saved);
-        // Verifica se ainda está na lista de contas disponíveis
         const found = accounts.find(a => a.id === parsed.id);
-        if (found) { setAccountState(found); return; }
+        if (found) { 
+          setAccountState(found); 
+          setHydrated(true);
+          return; 
+        }
       }
     } catch { /* ignore parse errors */ }
 
-    // Fallback: usa a conta padrão ou a primeira
+    // Fallback: usa a conta padrão (salva no DB) ou a primeira
     const defaultAcc = accounts.find(a => a.is_default) || accounts[0];
-    if (defaultAcc) setAccountState(defaultAcc);
-  }, [accounts, isLoading, hydrated]);
+    if (defaultAcc) {
+      setAccountState(defaultAcc);
+    }
+    setHydrated(true);
+  }, [accounts, isLoading, account]);
 
   const setAccount = useCallback((a: AdAccount) => {
     setAccountState(a);

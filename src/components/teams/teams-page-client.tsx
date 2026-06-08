@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Plus, Users, Settings2, Trash2, ShieldAlert, Edit2, PauseCircle, PlayCircle, MoreVertical } from "lucide-react";
-import { m as motion } from 'framer-motion';
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,23 +144,13 @@ export function TeamsPageClient({ initialTeams, allUsers }: { initialTeams: any[
             </div>
 
             {/* Teams Grid */}
-            <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
-                variants={{
-                    hidden: { opacity: 0 },
-                    show: { opacity: 1, transition: { staggerChildren: 0.08 } }
-                }}
-                initial="hidden"
-                animate="show"
+            <div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-in fade-in duration-500"
             >
                 {teams.map((t: any) => (
-                    <motion.div
+                    <div
                         key={t.id}
-                        variants={{
-                            hidden: { opacity: 0, y: 15, scale: 0.98 },
-                            show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
-                        }}
-                        className="group relative glass-card hover:border-emerald-500/30 hover:bg-black/[0.02] dark:hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] transition-all duration-300 rounded-[2rem] p-6 flex flex-col"
+                        className="group relative glass-card hover:border-emerald-500/30 hover:bg-black/[0.02] dark:hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(16,185,129,0.05)] transition-all duration-300 rounded-[2rem] p-6 flex flex-col animate-in fade-in slide-in-from-bottom-4 zoom-in-95"
                     >
                         <div className="flex justify-between items-start mb-5">
                             <div className="space-y-2 pr-6">
@@ -213,22 +202,21 @@ export function TeamsPageClient({ initialTeams, allUsers }: { initialTeams: any[
                                 {/* Visual representation of users can go here in the future */}
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
 
                 {teams.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                        className="col-span-full py-16 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-[2rem] bg-white/[0.01]"
+                    <div
+                        className="col-span-full py-16 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-[2rem] bg-white/[0.01] animate-in fade-in zoom-in-95 duration-500"
                     >
                         <div className="h-16 w-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
                             <ShieldAlert className="h-8 w-8 text-zinc-400" />
                         </div>
                         <h3 className="text-lg font-bold text-white tracking-tight">Nenhum departamento</h3>
                         <p className="text-sm font-medium text-zinc-400 mt-1">Crie sua primeira equipe para segmentar os atendimentos.</p>
-                    </motion.div>
+                    </div>
                 )}
-            </motion.div>
+            </div>
 
             {/* Modal de Edição */}
             <Dialog open={!!teamToEdit} onOpenChange={(open) => !open && setTeamToEdit(null)}>

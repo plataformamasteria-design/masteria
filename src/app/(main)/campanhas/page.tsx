@@ -6,13 +6,12 @@ import { PageHeader } from '@/components/page-header';
 import { CampaignTable } from '@/components/campaigns/campaign-table';
 import { CreateWhatsappCampaignWrapper } from '@/components/campaigns/create-whatsapp-campaign-wrapper';
 import { CampaignsDashboard } from '@/components/campaigns/campaigns-dashboard';
-import { BaileysCampaignTable } from '@/components/campaigns/baileys-campaign-table';
-import { CreateBaileysCampaignDialog } from '@/components/campaigns/create-baileys-campaign-dialog';
 import { CreateSmsCampaignDialog } from '@/components/campaigns/create-sms-campaign-dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Send, MessageSquareText, MessageCircle, MessageSquare, FileText, PlusCircle } from 'lucide-react';
+import { Send, MessageCircle, MessageSquare, FileText, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
 
 // Lazy load heavy components
 const TemplatesV2Content = dynamic(() => import('@/app/(main)/templates-v2/page'), { ssr: false });
@@ -61,13 +60,7 @@ export default function CampanhasHubPage() {
                                             <span>WhatsApp Oficial (API)</span>
                                         </DropdownMenuItem>
                                     </CreateWhatsappCampaignWrapper>
-                                    <CreateBaileysCampaignDialog>
-                                        <DropdownMenuItem className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-white/[0.05] rounded-lg p-2.5 flex items-center" onSelect={(e) => e.preventDefault()}>
-                                            <MessageSquareText className="mr-2 h-4 w-4 text-blue-400" />
-                                            <span>WhatsApp Não Oficial (Baileys)</span>
-                                        </DropdownMenuItem>
-                                    </CreateBaileysCampaignDialog>
-                                </DropdownMenuContent>
+                                    </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
                         <CampaignTable channel="WHATSAPP" />

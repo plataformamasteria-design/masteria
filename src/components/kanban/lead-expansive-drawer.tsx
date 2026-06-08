@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import useSWR from 'swr';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,6 +26,11 @@ import type { KanbanCard, ExtendedContact, Tag, KanbanStage } from '@/lib/types'
 import { NeurolinguisticCard } from '@/components/contacts/neurolinguistic-card';
 import { ContactHistoryTimeline } from '@/components/contacts/contact-history-timeline';
 import { OutboundConversationStarter } from '@/components/kanban/outbound-conversation-starter';
+
+const fetcher = (url: string) => fetch(url).then(res => {
+  if (!res.ok) throw new Error('Falha ao buscar dados');
+  return res.json();
+});
 
 interface LeadExpansiveDrawerProps {
   open: boolean;
@@ -67,38 +73,37 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
   const [pendingStageId, setPendingStageId] = useState<string | null>(null);
   const [lossReason, setLossReason] = useState('');
 
-  // Load Contact Details deeper
-  const [contactDetails, setContactDetails] = useState<ExtendedContact | null>(null);
-  const [loadingContact, setLoadingContact] = useState(false);
+  // Data Fetching with SWR
+  const { 
+    data: contactDetails, 
+    isLoading: isLoadingContact, 
+    mutate: mutateContact 
+  } = useSWR(
+    open && card.contact?.id ? `/api/v1/contacts/${card.contact.id}` : null,
+    fetcher
+  );
 
-  const fetchContactDetails = useCallback(async () => {
-    if (!card.contact?.id) return;
-    setLoadingContact(true);
-    try {
-      const res = await fetch(`/api/v1/contacts/${card.contact.id}?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: {
-          'Pragma': 'no-cache'
-        }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setContactDetails(data);
-        setContactForm(data);
-        setSelectedTagIds(data.tags?.map((t: Tag) => t.id) || []);
-      }
-      
-      const tagsRes = await fetch('/api/v1/tags');
-      if (tagsRes.ok) {
-        const tagsData = await tagsRes.json();
-        setAvailableTags(tagsData.tags || tagsData);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingContact(false);
+  const { data: tagsData } = useSWR(
+    open ? '/api/v1/tags' : null,
+    fetcher
+  );
+
+  // Sync Form State with SWR Data
+  useEffect(() => {
+    if (contactDetails && !editingSection) {
+      setContactForm(contactDetails);
+      setSelectedTagIds(contactDetails.tags?.map((t: Tag) => t.id) || []);
     }
-  }, [card.contact?.id]);
+  }, [contactDetails, editingSection]);
+
+  useEffect(() => {
+    if (tagsData) {
+      setAvailableTags(tagsData.tags || tagsData);
+    }
+  }, [tagsData]);
+
+  // Loading state abstraction
+  const loadingContact = isLoadingContact && !contactDetails;
 
   useEffect(() => {
     if (open) {
@@ -112,8 +117,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
       setIsChatMode(initialTab === 'chat');
       setIsContactDetailsOpen(false);
       setActiveTab('overview');
-      setContactDetails(null);
-      void fetchContactDetails();
+      // No need to nullify contactDetails or fetch manually, SWR handles it
     }
   // card.id ensures state resets when user opens a DIFFERENT card without closing drawer first
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,7 +151,7 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
 
       if (!response.ok) throw new Error('Falha ao salvar as alterações do contato.');
       
-      await fetchContactDetails();
+      await mutateContact();
       onUpdateCards?.();
       setEditingSection(null);
       notify.success('Contato atualizado!');
@@ -410,9 +414,9 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                 contactId={card.contact?.id as string}
                 kanbanCardId={card.id}
                 onConversationStarted={async () => {
-                  // Rebuscar detalhes do contato (inclui activeConversations)
+                  // Rebuscar detalhes do contato via SWR
                   // para que o drawer troque automaticamente para o chat criado
-                  await fetchContactDetails();
+                  await mutateContact();
                   onUpdateCards?.();
                   // Forçar re-render do isChatMode para mostrar o InboxView
                   setIsChatMode(false);

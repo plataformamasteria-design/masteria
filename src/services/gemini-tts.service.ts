@@ -3,29 +3,36 @@ import { sanitizeCurrencyForTTS } from '@/utils/tts-sanitizer';
 
 
 
+import { resolveAIKeys } from '@/lib/ai-keys-resolver';
+
 // Clients cache para cada chave
 const genAIClients: Map<string, GoogleGenerativeAI> = new Map();
 
-function getGeminiClient(keyIndex: number = 0): GoogleGenerativeAI {
-  // Lista de chaves disponíveis (com rotação)
-  const availableKeys = [
-    process.env.GOOGLE_GEMINI_AGENTS1,
-    process.env.google_api_key_agents1,
-    process.env.GOOGLE_API_KEY,
-    process.env.GOOGLE_API_KEY_SECONDARY, // Nova chave de backup se existir
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY
-  ].filter(k => !!k && k.length > 10); // Filtra chaves válidas
+async function getGeminiClient(companyId?: string, keyIndex: number = 0): Promise<GoogleGenerativeAI> {
+  const resolvedKeys = await resolveAIKeys(companyId);
+  const companyKey = resolvedKeys.geminiApiKey;
+
+  // Lista de chaves disponíveis (com rotação se for fallback)
+  const availableKeys = companyKey 
+    ? [companyKey] // Se tiver chave própria, usa apenas a chave própria (sem rotação global)
+    : [
+        process.env.GOOGLE_GEMINI_AGENTS1,
+        process.env.google_api_key_agents1,
+        process.env.GOOGLE_API_KEY,
+        process.env.GOOGLE_API_KEY_SECONDARY,
+        process.env.NEXT_PUBLIC_GEMINI_API_KEY
+      ].filter(k => !!k && k.length > 10); // Filtra chaves válidas
 
   // Remove duplicatas
   const uniqueKeys = [...new Set(availableKeys)];
 
   if (uniqueKeys.length === 0) {
     console.warn('[Gemini TTS] ❌ Nenhuma chave de API do Gemini configurada.');
-    throw new Error('Chave de API do Gemini não configurada.');
+    throw new Error('Chave de API do Gemini não configurada (nem no BD nem .env).');
   }
 
   // Seleciona a chave baseada no índice (rotação)
-  const selectedKey = uniqueKeys[keyIndex % uniqueKeys.length] as string; // Cast seguro pois filtramos e verificamos length
+  const selectedKey = uniqueKeys[keyIndex % uniqueKeys.length] as string;
 
   if (!genAIClients.has(selectedKey)) {
     console.log(`[Gemini TTS] 🔑 Inicializando cliente Gemini com chave índice ${keyIndex} (termina em ...${selectedKey.slice(-4)})`);
@@ -42,7 +49,7 @@ function getGeminiClient(keyIndex: number = 0): GoogleGenerativeAI {
  * @param voiceName Nome da voz (Padrão: 'Aoede'). Opções: 'Puck', 'Charon', 'Kore', 'Fenrir', 'Aoede'
  * @returns Buffer do áudio (WAV/PCM)
  */
-export async function generateAudioFromText(text: string, voiceName: string = 'Aoede'): Promise<Buffer> {
+export async function generateAudioFromText(text: string, voiceName: string = 'Aoede', companyId?: string): Promise<Buffer> {
   const MAX_RETRIES = 3;
   const INITIAL_DELAY_MS = 1000;
 
@@ -82,7 +89,7 @@ export async function generateAudioFromText(text: string, voiceName: string = 'A
     try {
       // Use different key for each attempt (rotation)
       currentKeyIndex = attempt - 1;
-      const client = getGeminiClient(currentKeyIndex);
+      const client = await getGeminiClient(companyId, currentKeyIndex);
 
       // Modelo validado na investigação: gemini-2.5-flash-preview-tts
       const model = client.getGenerativeModel({ model: 'gemini-2.5-flash-preview-tts' });

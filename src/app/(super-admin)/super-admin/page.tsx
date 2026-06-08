@@ -1,12 +1,12 @@
-
-'use client';
-
 import { PageHeader } from '@/components/page-header';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building, Users, MessageSquare, Send, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Building, Users, MessageSquare, Send } from 'lucide-react';
+import { db } from '@/lib/db';
+import { companies, users, contacts, campaigns } from '@/lib/db/schema';
+import { count, eq, isNull } from 'drizzle-orm';
+import { getUserSession } from '@/app/actions';
+import { redirect } from 'next/navigation';
 
 interface CompanyStat {
     id: string;
@@ -24,46 +24,62 @@ interface OverallStats {
     companyStats: CompanyStat[];
 }
 
-const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: string | number, icon: React.ElementType, loading: boolean }) => (
+const StatCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            {loading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{value}</div>}
+            <div className="text-2xl font-bold">{value}</div>
         </CardContent>
     </Card>
 );
 
 
-export default function SuperAdminPage() {
-    const [stats, setStats] = useState<OverallStats | null>(null);
-    const [loading, setLoading] = useState(true);
+export default async function SuperAdminPage() {
+    const session = await getUserSession();
+    if (!session.user || session.user.role !== 'superadmin') {
+      redirect('/');
+    }
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/v1/super-admin/stats');
-                if (!response.ok) throw new Error('Falha ao carregar estatísticas.');
-                const data = await response.json();
-                setStats(data);
-            } catch (error) {
-                // Em uma app real, você usaria um sistema de toast para erros.
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
+    // 1. Obter todas as empresas
+    const allCompanies = await db.select({ id: companies.id, name: companies.name }).from(companies).where(isNull(companies.deletedAt));
+    
+    // 2. Contagens globais
+    const [totalUsersResult] = await db.select({ value: count() }).from(users).where(isNull(users.deletedAt));
+    const [totalContactsResult] = await db.select({ value: count() }).from(contacts).where(isNull(contacts.deletedAt));
+    const [totalCampaignsResult] = await db.select({ value: count() }).from(campaigns);
+
+    // 3. Contagens por empresa
+    const companyStatsPromises = allCompanies.map(async (company) => {
+      const [userCountResult] = await db.select({ value: count() }).from(users).where(eq(users.companyId, company.id));
+      const [contactCountResult] = await db.select({ value: count() }).from(contacts).where(eq(contacts.companyId, company.id));
+      const [campaignCountResult] = await db.select({ value: count() }).from(campaigns).where(eq(campaigns.companyId, company.id));
+      return {
+        id: company.id,
+        name: company.name,
+        userCount: userCountResult?.value ?? 0,
+        contactCount: contactCountResult?.value ?? 0,
+        campaignCount: campaignCountResult?.value ?? 0,
+      };
+    });
+
+    const companyStats = await Promise.all(companyStatsPromises);
+
+    const stats = {
+      totalCompanies: allCompanies.length,
+      totalUsers: totalUsersResult?.value ?? 0,
+      totalContacts: totalContactsResult?.value ?? 0,
+      totalCampaigns: totalCampaignsResult?.value ?? 0,
+      companyStats,
+    };
 
     const statCards = [
-        { title: 'Total de Empresas', value: stats?.totalCompanies ?? 0, icon: Building },
-        { title: 'Total de Utilizadores', value: stats?.totalUsers ?? 0, icon: Users },
-        { title: 'Total de Contatos', value: stats?.totalContacts ?? 0, icon: MessageSquare },
-        { title: 'Total de Campanhas', value: stats?.totalCampaigns ?? 0, icon: Send },
+        { title: 'Total de Empresas', value: stats.totalCompanies, icon: Building },
+        { title: 'Total de Utilizadores', value: stats.totalUsers, icon: Users },
+        { title: 'Total de Contatos', value: stats.totalContacts, icon: MessageSquare },
+        { title: 'Total de Campanhas', value: stats.totalCampaigns, icon: Send },
     ];
 
     return (
@@ -75,7 +91,7 @@ export default function SuperAdminPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {statCards.map(stat => (
-                    <StatCard key={stat.title} title={stat.title} value={stat.value} icon={stat.icon} loading={loading} />
+                    <StatCard key={stat.title} title={stat.title} value={stat.value} icon={stat.icon} />
                 ))}
             </div>
             
@@ -95,9 +111,7 @@ export default function SuperAdminPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {loading ? (
-                                    <TableRow><TableCell colSpan={4} className="h-24 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
-                                ) : stats?.companyStats.map(company => (
+                                {stats.companyStats.map(company => (
                                     <TableRow key={company.id}>
                                         <TableCell className="font-medium">{company.name}</TableCell>
                                         <TableCell className="text-center">{company.userCount}</TableCell>

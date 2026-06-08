@@ -80,7 +80,7 @@ export type AutomationCondition = {
 
 export type AutomationAction = {
   id?: string;
-  type: 'send_message' | 'send_message_apicloud' | 'send_message_baileys' | 'add_tag' | 'add_to_list' | 'assign_user' | 'move_to_stage';
+  type: 'send_message' | 'send_message_apicloud' | 'add_tag' | 'add_to_list' | 'assign_user' | 'move_to_stage';
   value: string;
   connectionId?: string;
   templateId?: string;
@@ -252,30 +252,7 @@ export const connections = pgTable('connections', {
   companyTypeIdx: sql`CREATE INDEX IF NOT EXISTS connections_company_type_idx ON ${table} (company_id, connection_type)`,
 }));
 
-export const baileysAuthState = pgTable('baileys_auth_state', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
-  companyId: text('company_id').references(() => companies.id, { onDelete: 'cascade' }),
-  connectionId: text('connection_id').notNull().references(() => connections.id, { onDelete: 'cascade' }),
-  creds: jsonb('creds'),
-  keys: jsonb('keys'),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
 
-export const baileysMessages = pgTable('baileys_messages', {
-  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
-  connectionId: text('connection_id').notNull(),
-  conversationId: text('conversation_id'),
-  jid: text('jid').notNull(),
-  messageId: text('message_id').notNull().unique(),
-  fromMe: boolean('from_me').default(false).notNull(),
-  timestamp: integer('timestamp'),
-  text: text('text'),
-  content: jsonb('content'),
-}, (table) => ({
-  baileysMessagesConnectionIdIdx: index('baileys_messages_connection_id_idx').on(table.connectionId),
-  jidTimestampIdx: sql`CREATE INDEX IF NOT EXISTS idx_baileys_msgs_jid_timestamp ON ${table} (jid, timestamp DESC)`,
-  convTimestampIdx: sql`CREATE INDEX IF NOT EXISTS idx_baileys_msgs_conv_timestamp ON ${table} (conversation_id, timestamp DESC)`,
-}));
 
 export const apiKeys = pgTable('api_keys', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -1857,7 +1834,6 @@ export const featureEnum = pgEnum('feature_type', [
   'CRM_BASIC',
   'CRM_ADVANCED',
   'WHATSAPP_API',
-  'WHATSAPP_BAILEYS',
   'SMS',
   'VOICE_AI',
   'EMAIL_SENDING',

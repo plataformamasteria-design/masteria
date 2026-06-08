@@ -1,23 +1,21 @@
 
-'use client';
 
 import { PageHeader } from '@/components/page-header';
 import { TeamTable } from '@/components/settings/team-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Plug, Settings } from 'lucide-react';
-import { m as motion } from 'framer-motion';
 import { Api4ComIntegration } from '@/components/settings/api4com-integration';
 import { MetaAdsIntegration } from '@/components/settings/meta-ads-integration';
 import { GoogleCalendarIntegration } from '@/components/settings/google-calendar-integration';
 import { KommoIntegration } from '@/components/settings/kommo-integration';
 
-const tabMotion = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.25, ease: 'easeOut' },
-};
 
-export default function ManagementPage() {
+
+import { getCompanyUsers } from '@/app/actions/teams';
+
+export default async function ManagementPage() {
+  const initialUsers = await getCompanyUsers();
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -46,19 +44,19 @@ export default function ManagementPage() {
           </TabsList>
         </div>
         <TabsContent value="team" className="mt-6">
-          <motion.div {...tabMotion}>
-            <TeamTable />
-          </motion.div>
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <TeamTable initialUsers={initialUsers} />
+          </div>
         </TabsContent>
         <TabsContent value="integrations" className="mt-6">
-          <motion.div {...tabMotion}>
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="space-y-6">
               <Api4ComIntegration />
               <MetaAdsIntegration />
               <GoogleCalendarIntegration />
               <KommoIntegration />
             </div>
-          </motion.div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

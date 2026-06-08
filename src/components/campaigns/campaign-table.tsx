@@ -41,12 +41,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { useDebounce } from '@/hooks/use-debounce';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-import { BaileysReportModal } from './baileys-report-modal';
+
 
 
 type CampaignTableProps = {
   channel: 'WHATSAPP' | 'SMS';
-  baileysOnly?: boolean;
 }
 type ViewType = 'grid' | 'table';
 
@@ -68,7 +67,7 @@ const statusConfig = {
 } as const;
 
 
-const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify, onOpenBaileysReport }: { campaign: Campaign, onUpdate: () => void, onDelete: (id: string) => void, allTemplates: Template[], notify: ReturnType<typeof createToastNotifier>, onOpenBaileysReport?: (campaignId: string) => void }) => {
+const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify }: { campaign: Campaign, onUpdate: () => void, onDelete: (id: string) => void, allTemplates: Template[], notify: ReturnType<typeof createToastNotifier> }) => {
   const [isTriggering, setIsTriggering] = useState(false);
   const [isPauseResuming, setIsPauseResuming] = useState(false);
   const statusKey = campaign.status as keyof typeof statusConfig;
@@ -173,7 +172,7 @@ const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify,
           <div className="flex flex-col gap-1 pr-2">
             <CardTitle className="text-lg font-black tracking-tight line-clamp-2 drop-shadow-md">{campaign.name}</CardTitle>
             <Badge variant="outline" className={cn("w-fit text-[9px] uppercase tracking-wider", isSms ? "border-white/20 text-white" : (!campaign.templateId ? "border-blue-500/50 text-blue-400 bg-blue-500/10" : "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"))}>
-              {isSms ? 'SMS' : (!campaign.templateId ? 'Baileys' : 'Oficial')}
+              {isSms ? 'SMS' : (!campaign.templateId ? 'Evolution' : 'Oficial')}
             </Badge>
           </div>
           <DropdownMenu>
@@ -192,7 +191,7 @@ const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify,
                   </DropdownMenuItem>
                 </Link>
               ) : (
-                <DropdownMenuItem onClick={() => onOpenBaileysReport?.(campaign.id)}>
+                <DropdownMenuItem>
                   <FileText className="mr-2 h-4 w-4" />
                   Ver Relatório
                 </DropdownMenuItem>
@@ -292,7 +291,7 @@ const CampaignCard = memo(({ campaign, onUpdate, onDelete, allTemplates, notify,
 
 CampaignCard.displayName = 'CampaignCard';
 
-export function CampaignTable({ channel, baileysOnly = false }: CampaignTableProps) {
+export function CampaignTable({ channel }: CampaignTableProps) {
   const router = useRouter();
   const { toast } = useToast();
   const notify = useMemo(() => createToastNotifier(toast), [toast]);
@@ -302,14 +301,6 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
   const [smsGateways, setSmsGateways] = useState<SmsGateway[]>([]);
   const [loading, setLoading] = useState(true);
   const isSms = channel === 'SMS';
-
-  const [baileysReportCampaignId, setBaileysReportCampaignId] = useState<string | null>(null);
-  const [baileysReportOpen, setBaileysReportOpen] = useState(false);
-
-  const handleOpenBaileysReport = (campaignId: string) => {
-    setBaileysReportCampaignId(campaignId);
-    setBaileysReportOpen(true);
-  };
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -355,10 +346,6 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
       if (Array.isArray(data.data)) {
         let filteredData = data.data;
 
-        if (baileysOnly) {
-          filteredData = data.data.filter((c: Campaign) => c.templateId === null);
-        }
-
         setCampaigns(filteredData);
         setTotalPages(data.totalPages || 1);
       } else {
@@ -373,7 +360,7 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
     } finally {
       setLoading(false);
     }
-  }, [notify, channel, page, limit, debouncedDateRange, debouncedFilterType, debouncedSelectedId, baileysOnly]);
+  }, [notify, channel, page, limit, debouncedDateRange, debouncedFilterType, debouncedSelectedId]);
 
   useEffect(() => {
     fetchCampaigns();
@@ -442,7 +429,7 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
     if (campaigns.length === 0) {
       // Only consider selectedId as a custom filter - dateRange has a default value
       const hasCustomFilters = debouncedSelectedId !== 'all';
-      const createCampaignUrl = isSms ? '/sms' : (baileysOnly ? '/campaigns-baileys' : '/campaigns');
+      const createCampaignUrl = isSms ? '/sms' : '/campaigns';
       return (
         <div className="col-span-full">
           <EmptyState
@@ -464,7 +451,7 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {campaigns.map(campaign => (
-            <CampaignCard key={campaign.id} campaign={campaign} onUpdate={fetchCampaigns} onDelete={handleCampaignDeleted} allTemplates={allTemplates} notify={notify} onOpenBaileysReport={handleOpenBaileysReport} />
+            <CampaignCard key={campaign.id} campaign={campaign} onUpdate={fetchCampaigns} onDelete={handleCampaignDeleted} allTemplates={allTemplates} notify={notify} />
           ))}
         </div>
       );
@@ -498,7 +485,7 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
                       <div className="flex flex-col gap-1">
                         <span>{campaign.name}</span>
                         <Badge variant="outline" className={cn("w-fit text-[9px] uppercase tracking-wider", isSms ? "border-white/20 text-white" : (!campaign.templateId ? "border-blue-500/50 text-blue-400 bg-blue-500/10" : "border-emerald-500/50 text-emerald-400 bg-emerald-500/10"))}>
-                          {isSms ? 'SMS' : (!campaign.templateId ? 'Baileys' : 'Oficial')}
+                          {isSms ? 'SMS' : (!campaign.templateId ? 'Evolution' : 'Oficial')}
                         </Badge>
                       </div>
                     </TableCell>
@@ -514,7 +501,7 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
                           <Button variant="outline" size="sm">Ver Relatório</Button>
                         </Link>
                       ) : (
-                        <Button variant="outline" size="sm" onClick={() => handleOpenBaileysReport(campaign.id)}>Ver Relatório</Button>
+                        <Button variant="outline" size="sm">Ver Relatório</Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -619,11 +606,6 @@ export function CampaignTable({ channel, baileysOnly = false }: CampaignTablePro
         </div>
       )}
 
-      <BaileysReportModal
-        campaignId={baileysReportCampaignId}
-        open={baileysReportOpen}
-        onOpenChange={setBaileysReportOpen}
-      />
     </div>
   );
 }

@@ -3,8 +3,8 @@ import { callAI } from "@/lib/ai-client";
 import { verifySession } from "@/lib/auth-guard";
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await verifySession();
-  if (authError) return authError;
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
 
   try {
     const { campanhas } = await req.json();
@@ -40,10 +40,11 @@ ${resumo}
 CPL médio geral: R$${(campanhas.reduce((s: number, c: { spend: number }) => s + c.spend, 0) / Math.max(campanhas.reduce((s: number, c: { leads: number }) => s + c.leads, 0), 1)).toFixed(2)}`;
 
     const result = await callAI({
-      provider: "anthropic-haiku",
+      provider: "openai",
       systemPrompt,
       userContent,
       maxTokens: 1500,
+      companyId: user.companyId,
     });
 
     return NextResponse.json({ analise: result.text });

@@ -603,7 +603,7 @@ async function callExternalAIAgent(
                 const connectionData = await db.select().from(connections).where(eq(connections.id, conversation.connectionId!)).limit(1);
                 if (connectionData[0]) {
                     await sendUnifiedMessage({
-                        provider: ['baileys', 'evolution'].includes(connectionData[0].connectionType || '') ? 'baileys' : 'apicloud',
+                        provider: ['baileys', 'evolution'].includes(connectionData[0].connectionType || '') ? 'evolution' : 'apicloud',
                         connectionId: conversation.connectionId!,
                         to: contact.phone,
                         message: securityResult.blockedResponse || 'Desculpe, nÃ£o posso processar esse tipo de solicitaÃ§Ã£o.',
@@ -1458,7 +1458,7 @@ async function callExternalAIAgent(
             throw new Error(`ConexÃ£o ${conversation.connectionId} nÃ£o encontrada.`);
         }
 
-        const isBaileys = ['baileys', 'evolution'].includes(connectionData.connectionType || '');
+        const isEvolution = ['baileys', 'evolution'].includes(connectionData.connectionType || '');
 
         // ðŸŽ¤ LÃ“GICA NATIVA DE ÃUDIO (Fase 5)
         const audioModeEnabled = (persona as any).audioModeEnabled ?? false;
@@ -1558,7 +1558,7 @@ async function callExternalAIAgent(
 
                     if (s3Url) {
                         const audioSendResult = await sendUnifiedMessage({
-                            provider: isBaileys ? 'baileys' : 'apicloud',
+                            provider: isEvolution ? 'evolution' : 'apicloud',
                             connectionId: conversation.connectionId!,
                             to: contact.phone,
                             message: '',
@@ -1661,7 +1661,7 @@ async function callExternalAIAgent(
 
                     try {
                         const result = await sendUnifiedMessage({
-                            provider: isBaileys ? 'baileys' : 'apicloud',
+                            provider: isEvolution ? 'evolution' : 'apicloud',
                             connectionId: conversation.connectionId!,
                             to: contact.phone,
                             message: part.trim(),
@@ -1700,7 +1700,7 @@ async function callExternalAIAgent(
 
                 try {
                     const resourceSendResult = await sendUnifiedMessage({
-                        provider: isBaileys ? 'baileys' : 'apicloud',
+                        provider: isEvolution ? 'evolution' : 'apicloud',
                         connectionId: conversation.connectionId!,
                         to: contact.phone,
                         message: resource,
@@ -1799,7 +1799,7 @@ async function callExternalAIAgent(
                         await logAutomation('INFO', 'DRY-RUN: Resposta padrÃ£o simulada apÃ³s erro de cota no Gemini', logContextBase);
                     } else {
                         await sendUnifiedMessage({
-                            provider: ['baileys', 'evolution'].includes(connectionData.connectionType || '') ? 'baileys' : 'apicloud',
+                            provider: ['baileys', 'evolution'].includes(connectionData.connectionType || '') ? 'evolution' : 'apicloud',
                             connectionId: conversation.connectionId!,
                             to: contact.phone,
                             message: defaultText

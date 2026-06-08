@@ -10,8 +10,8 @@ import { WebhookInfoCard } from './webhook-info-card';
 import { TokenAlerts } from './token-alerts';
 import { ImportDialog } from './import-dialog';
 import { ConnectionDialog } from './connection-dialog';
-import { QRCodeModal } from '@/components/whatsapp-baileys/qr-code-modal';
-import { CreateSessionDialog } from '@/components/whatsapp-baileys/create-session-dialog';
+// import { QRCodeModal } from '@/components/whatsapp-baileys/qr-code-modal';
+// import { CreateSessionDialog } from '@/components/whatsapp-baileys/create-session-dialog';
 import { getInstagramAuthUrl } from '@/app/actions/instagram-connect';
 import { toast } from '@/hooks/use-toast';
 import { UnifiedConnectionCard, UnifiedConnectionItem, UnifiedPlatform, UnifiedStatus } from './unified-connection-card';
@@ -275,6 +275,7 @@ export function UnifiedConnectionsHub() {
                 onSave={handleSaveConnection}
             />
 
+            {/* 
             <CreateSessionDialog 
                 onCreateSession={createBaileysSession} 
                 onSessionCreated={handleSessionCreated} 
@@ -286,6 +287,7 @@ export function UnifiedConnectionsHub() {
                 sessionId={selectedSessionId}
                 sessionName={selectedSessionName}
             />
+            */}
 
             {/* DELETE CONFIRMATION */}
             <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>

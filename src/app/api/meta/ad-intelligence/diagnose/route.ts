@@ -38,10 +38,11 @@ NÃO retorne formatação markdown \`\`\`json. Apenas o objeto JSON puro.`;
 ${payloadString}`;
 
     const aiRes = await callAI({
-      provider: provider || "gemini",
+      provider: provider || "openai",
       systemPrompt,
       userContent: userPrompt,
       maxTokens: 1000,
+      companyId: user.companyId,
     });
 
     let rawText = aiRes.text.trim();
@@ -61,7 +62,7 @@ ${payloadString}`;
       };
     }
 
-    logAIUsage(userId, provider || "gemini", getModelName(provider || "gemini"), estimateTokens(systemPrompt + userPrompt + aiRes.text), "/api/meta/ad-intelligence/diagnose");
+    logAIUsage(userId, provider || "openai", getModelName(provider || "openai"), estimateTokens(systemPrompt + userPrompt + aiRes.text), "/api/meta/ad-intelligence/diagnose");
 
     return NextResponse.json({
       diagnosis: parsed.diagnosis || parsed.diagnostico || parsed.diagnóstico || parsed.Diagnosis || "Não foi possível gerar um diagnóstico inteligível.",

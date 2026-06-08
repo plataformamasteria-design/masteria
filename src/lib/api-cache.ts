@@ -84,17 +84,17 @@ export async function getCachedOrFetch<T>(
   
   if (cached !== null) {
     const fetchTime = Date.now() - startTime;
-    console.log(`📊 [API CACHE HIT] Key: ${key} - Fetch time: ${fetchTime}ms`);
+    if (process.env.DEBUG_CACHE === 'true') console.log(`📊 [API CACHE HIT] Key: ${key} - Fetch time: ${fetchTime}ms`);
     return cached;
   }
 
   const existingFetch = pendingFetches.get(key);
   if (existingFetch) {
-    console.log(`📊 [API CACHE COALESCE] Key: ${key} - Waiting for existing fetch...`);
+    if (process.env.DEBUG_CACHE === 'true') console.log(`📊 [API CACHE COALESCE] Key: ${key} - Waiting for existing fetch...`);
     return existingFetch as Promise<T>;
   }
 
-  console.log(`📊 [API CACHE MISS] Key: ${key} - Fetching from source...`);
+  if (process.env.DEBUG_CACHE === 'true') console.log(`📊 [API CACHE MISS] Key: ${key} - Fetching from source...`);
   
   const fetchPromise = (async () => {
     try {
@@ -102,7 +102,7 @@ export async function getCachedOrFetch<T>(
       apiCache.set(key, data, ttl);
       
       const totalTime = Date.now() - startTime;
-      console.log(`📊 [API CACHE SET] Key: ${key} - TTL: ${ttl}ms - Total time: ${totalTime}ms`);
+      if (process.env.DEBUG_CACHE === 'true') console.log(`📊 [API CACHE SET] Key: ${key} - TTL: ${ttl}ms - Total time: ${totalTime}ms`);
       
       return data;
     } finally {

@@ -37,25 +37,30 @@ export async function GET(req: NextRequest) {
       supabase
         .from("ads_performance")
         .select("ad_id, data_ref, spend, leads, impressoes, cliques, cpl, ctr, cpc")
+        .eq("cliente_id", user.companyId)
         .gte("data_ref", startDate)
         .lte("data_ref", endDate),
       supabase
         .from("ads_metadata")
-        .select("ad_id, ad_name, campaign_id, campaign_name, adset_id, adset_name, status, thumbnail_url, image_url, ad_body, ad_title"),
+        .select("ad_id, ad_name, campaign_id, campaign_name, adset_id, adset_name, status, thumbnail_url, image_url, ad_body, ad_title")
+        .eq("cliente_id", user.companyId),
       supabase
         .from("leads_crm")
         .select("id, ad_id, campaign_id, etapa, contrato_id, nome, ghl_created_at, canal_aquisicao")
+        .eq("cliente_id", user.companyId)
         .gte("ghl_created_at", startDate + "T00:00:00")
         .lte("ghl_created_at", endDate + "T23:59:59"),
       supabase
         .from("contratos")
         .select("id, mrr, valor_entrada, valor_total_projeto, data_fechamento, lead_id, status")
+        .eq("cliente_id", user.companyId)
         .gte("data_fechamento", startDate)
         .lte("data_fechamento", endDate)
         .neq("status", "rascunho"),
       supabase
         .from("creative_scores")
         .select("ad_id, composite_score, alert_status, alert_message")
+        .eq("cliente_id", user.companyId)
         .order("composite_score", { ascending: false }),
     ]);
 

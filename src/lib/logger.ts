@@ -33,15 +33,27 @@ class Logger {
   }
 
   private log(level: LogLevel, message: string, context?: LogContext) {
+    const isProd = process.env.NODE_ENV === 'production';
+    const isDebugEnabled = process.env.DEBUG === 'true';
+
+    // SUPRESSÃO EM PRODUÇÃO: Para economizar I/O, ignorar debug/info se não estiver em modo debug
+    if (isProd && !isDebugEnabled && (level === 'debug' || level === 'info')) {
+        return;
+    }
+
     const timestamp = new Date().toISOString();
     const scrubbedMessage = this.scrub(message);
     const scrubbedContext = context ? this.scrubObject(context) : undefined;
 
     const contextStr = scrubbedContext ? ` ${JSON.stringify(scrubbedContext)}` : '';
 
-    // In production, we'd use a more robust logger like Pino or Winston
-    // For now, let's keep it simple but scrubbed.
-    console.log(`[${timestamp}] [${level.toUpperCase()}] ${scrubbedMessage}${contextStr}`);
+    if (level === 'error') {
+        console.error(`[${timestamp}] [${level.toUpperCase()}] ${scrubbedMessage}${contextStr}`);
+    } else if (level === 'warn') {
+        console.warn(`[${timestamp}] [${level.toUpperCase()}] ${scrubbedMessage}${contextStr}`);
+    } else {
+        console.log(`[${timestamp}] [${level.toUpperCase()}] ${scrubbedMessage}${contextStr}`);
+    }
   }
 
   info(message: string, context?: LogContext) {

@@ -1,5 +1,0 @@
-- [x] Obter confirmação do usuário sobre o método de migração (Confirmado o diretório do projeto legado)
-- [x] Recuperar rotas de API do sistema antigo ou reconstruir APIs de Tráfego/Inteligência (APIs de KPIs, Funil e Inteligência reconstruídas para usar o schema Drizzle Neon em vez de views legadas do Supabase)
-- [x] Refatorar ações da Meta Graph API para remover tipos `any` e melhorar robustez
-- [x] Implementar integrações de IA faltantes para análise de criativos e alertas (Drizzle + Gemini + Anthropic)
-- [x] Validar UI com o novo Backend reconstruído

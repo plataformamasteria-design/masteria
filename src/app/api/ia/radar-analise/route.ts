@@ -3,8 +3,8 @@ import { callAI } from "@/lib/ai-client";
 import { verifySession } from "@/lib/auth-guard";
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await verifySession();
-  if (authError) return authError;
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
 
   try {
     const body = await req.json();
@@ -25,10 +25,11 @@ Sem markdown, sem explicação extra. Apenas o JSON.`;
 Analise e retorne o JSON.`;
 
     const result = await callAI({
-      provider: "gemini",
+      provider: "openai",
       systemPrompt,
       userContent,
       maxTokens: 300,
+      companyId: user.companyId,
     });
 
     const jsonMatch = result.text.match(/\{[\s\S]*\}/);

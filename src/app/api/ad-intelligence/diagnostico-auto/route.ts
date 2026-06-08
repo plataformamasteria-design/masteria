@@ -13,8 +13,8 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await verifySession();
-  if (authError) return authError;
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
 
   const guard = await checkAIBudget("/api/ad-intelligence/diagnostico-auto");
   if (guard.error) return guard.error;
@@ -26,9 +26,9 @@ export async function POST(req: NextRequest) {
     }
 
     const [{ data: adsPerf }, { data: adsMeta }, { data: leads }] = await Promise.all([
-      supabase.from("ads_performance").select("ad_id, spend, leads, cpl").gte("data_ref", startDate).lte("data_ref", endDate),
-      supabase.from("ads_metadata").select("ad_id, ad_name, status"),
-      supabase.from("leads_crm").select("id, ad_id").gte("ghl_created_at", startDate + "T00:00:00").lte("ghl_created_at", endDate + "T23:59:59"),
+      supabase.from("ads_performance").select("ad_id, spend, leads, cpl").eq("cliente_id", user.companyId).gte("data_ref", startDate).lte("data_ref", endDate),
+      supabase.from("ads_metadata").select("ad_id, ad_name, status").eq("cliente_id", user.companyId),
+      supabase.from("leads_crm").select("id, ad_id").eq("cliente_id", user.companyId).gte("ghl_created_at", startDate + "T00:00:00").lte("ghl_created_at", endDate + "T23:59:59"),
     ]);
 
     const metaMap = new Map((adsMeta || []).map((m) => [m.ad_id, m]));
@@ -70,13 +70,14 @@ Responda EXATAMENTE neste formato JSON (sem markdown):
 {"critico":"<1 insight critico em 1 frase>","oportunidade":"<1 oportunidade em 1 frase>","confianca":"Baseado em ${scored.length} criativos com dados completos"}`;
 
     const result = await callAI({
-      provider: "anthropic-haiku",
+      provider: "openai",
       systemPrompt: "Voce analisa criativos de ads. Retorne SOMENTE JSON valido, sem texto extra.",
       userContent: prompt,
       maxTokens: 300,
+      companyId: user.companyId,
     });
 
-    logAIUsage(guard.userId, "anthropic-haiku", "claude-haiku-4-5-20251001", estimateTokens(prompt + result.text), "/api/ad-intelligence/diagnostico-auto");
+    logAIUsage(guard.userId, "openai", getModelName("openai"), estimateTokens(prompt + result.text), "/api/ad-intelligence/diagnostico-auto");
 
     try {
       const parsed = JSON.parse(result.text.trim());

@@ -3,7 +3,6 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
 import type { Conversation, Message } from '@/lib/types';
-import { AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';

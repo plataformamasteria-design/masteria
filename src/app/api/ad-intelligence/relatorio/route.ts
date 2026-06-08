@@ -13,8 +13,8 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const { error: authError } = await verifySession();
-  if (authError) return authError;
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
 
   const guard = await checkAIBudget("/api/ad-intelligence/relatorio");
   if (guard.error) return guard.error;
@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
     }
 
     const [{ data: adsPerf }, { data: adsMeta }, { data: leads }, { data: contratos }] = await Promise.all([
-      supabase.from("ads_performance").select("ad_id, spend, leads, cpl").gte("data_ref", startDate).lte("data_ref", endDate),
-      supabase.from("ads_metadata").select("ad_id, ad_name, campaign_name, status"),
-      supabase.from("leads_crm").select("id, ad_id, etapa, contrato_id").gte("ghl_created_at", startDate + "T00:00:00").lte("ghl_created_at", endDate + "T23:59:59"),
-      supabase.from("contratos").select("id, mrr, valor_entrada, valor_total_projeto, data_fechamento").gte("data_fechamento", startDate).lte("data_fechamento", endDate).neq("status", "rascunho"),
+      supabase.from("ads_performance").select("ad_id, spend, leads, cpl").eq("cliente_id", user.companyId).gte("data_ref", startDate).lte("data_ref", endDate),
+      supabase.from("ads_metadata").select("ad_id, ad_name, campaign_name, status").eq("cliente_id", user.companyId),
+      supabase.from("leads_crm").select("id, ad_id, etapa, contrato_id").eq("cliente_id", user.companyId).gte("ghl_created_at", startDate + "T00:00:00").lte("ghl_created_at", endDate + "T23:59:59"),
+      supabase.from("contratos").select("id, mrr, valor_entrada, valor_total_projeto, data_fechamento").eq("cliente_id", user.companyId).gte("data_fechamento", startDate).lte("data_fechamento", endDate).neq("status", "rascunho"),
     ]);
 
     const metaMap = new Map((adsMeta || []).map((m) => [m.ad_id, m]));
@@ -98,13 +98,14 @@ Estrutura obrigatoria:
 Dados: ${dadosJson}`;
 
     const result = await callAI({
-      provider: "anthropic-haiku",
+      provider: "openai",
       systemPrompt: "Voce e um analista de trafego pago senior especializado no mercado juridico brasileiro. Gere relatorios profissionais em portugues com markdown. Seja direto e acionavel.",
       userContent: prompt,
       maxTokens: isDetalhado ? 3000 : 1500,
+      companyId: user.companyId,
     });
 
-    logAIUsage(guard.userId, "anthropic-haiku", getModelName("anthropic-haiku"), estimateTokens(prompt + result.text), "/api/ad-intelligence/relatorio");
+    logAIUsage(guard.userId, "openai", getModelName("openai"), estimateTokens(prompt + result.text), "/api/ad-intelligence/relatorio");
 
     return NextResponse.json({ relatorio: result.text, periodo: { startDate, endDate } });
   } catch (e) {

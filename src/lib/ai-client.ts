@@ -1,3 +1,5 @@
+import { resolveAIKeys } from "@/lib/ai-keys-resolver";
+
 export type AIProvider = "anthropic" | "anthropic-haiku" | "gemini" | "openai" | "openai-mini";
 
 interface CallAIParams {
@@ -5,6 +7,7 @@ interface CallAIParams {
   systemPrompt: string;
   userContent: string;
   maxTokens?: number;
+  companyId?: string | null;
 }
 
 interface CallAIResult {
@@ -23,11 +26,14 @@ export function getModelName(provider: AIProvider): string {
   return MODELS[provider]?.model || provider;
 }
 
-export async function callAI({ provider, systemPrompt, userContent, maxTokens = 1000 }: CallAIParams): Promise<CallAIResult> {
+export async function callAI({ provider, systemPrompt, userContent, maxTokens = 1000, companyId }: CallAIParams): Promise<CallAIResult> {
   const config = MODELS[provider];
   if (!config) throw new Error(`Provider "${provider}" não suportado.`);
 
+  const resolvedKeys = await resolveAIKeys(companyId);
+
   if (config.type === "anthropic") {
+    // Note: AI keys resolver doesn't have anthropic natively yet, fallback to env for anthropic
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY não configurada.");
 
@@ -45,8 +51,8 @@ export async function callAI({ provider, systemPrompt, userContent, maxTokens = 
   }
 
   if (config.type === "gemini") {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("GEMINI_API_KEY não configurada.");
+    const apiKey = resolvedKeys.geminiApiKey;
+    if (!apiKey) throw new Error("GEMINI_API_KEY não configurada (nem no .env nem no banco de dados).");
 
     const response = await fetch(`${config.endpoint}?key=${apiKey}`, {
       method: "POST",
@@ -62,8 +68,8 @@ export async function callAI({ provider, systemPrompt, userContent, maxTokens = 
   }
 
   if (config.type === "openai") {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY não configurada.");
+    const apiKey = resolvedKeys.openaiApiKey;
+    if (!apiKey) throw new Error("OPENAI_API_KEY não configurada (nem no .env nem no banco de dados).");
 
     const response = await fetch(config.endpoint, {
       method: "POST",

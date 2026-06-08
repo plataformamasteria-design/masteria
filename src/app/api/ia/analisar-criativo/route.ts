@@ -3,11 +3,15 @@ import { db } from "@/lib/db";
 import { marketingAds } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { callAI, getModelName } from "@/lib/ai-client";
+import { verifySession } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
+  const { error: authError, user } = await verifySession();
+  if (authError || !user) return authError;
+
   try {
     const { criativo_id } = await req.json();
     if (!criativo_id) {
@@ -50,10 +54,11 @@ ${conteudo}`;
 
     // Note: AI usage requires OPENAI_API_KEY or ANTHROPIC_API_KEY, relying on ai-client wrapper
     const result = await callAI({
-      provider: "anthropic-haiku",
+      provider: "openai",
       systemPrompt,
       userContent,
       maxTokens: 2000,
+      companyId: user.companyId,
     });
 
     let analise;

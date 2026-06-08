@@ -37,7 +37,6 @@ import type { Connection, ConnectionStatus, WebhookStatus, HealthStatus } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
 import { Power, QrCode, Unplug } from 'lucide-react';
-import { m as motion, AnimatePresence } from 'framer-motion';
 
 // --- CONFIG HELPER MAPS ---
 const connectionStatusConfig: Record<ConnectionStatus, { icon: React.ElementType, color: string, text: string, pulse?: boolean, glow?: string }> = {
@@ -71,8 +70,6 @@ interface ConnectionsTableProps {
     onDelete: (id: string) => Promise<void>;
     onCheckHealth: (connection: Connection) => Promise<void>;
     onRenewToken?: (id: string) => Promise<void>;
-    onConnectBaileys?: (id: string, type: string) => void;
-    onDisconnectBaileys?: (id: string) => void;
 }
 
 export function ConnectionsTable({
@@ -83,9 +80,7 @@ export function ConnectionsTable({
     onEdit,
     onDelete,
     onCheckHealth,
-    onRenewToken,
-    onConnectBaileys,
-    onDisconnectBaileys
+    onRenewToken
 }: ConnectionsTableProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -178,11 +173,6 @@ export function ConnectionsTable({
                                 let statusInfo = connectionStatusConfig[conn.connectionStatus] || connectionStatusConfig['Não Verificado'];
                                 let webInfo = webhookStatusConfig[conn.webhookStatus] || webhookStatusConfig['VERIFICANDO'];
                                 const healthInfo = conn.healthStatus ? (healthStatusConfig[conn.healthStatus] || healthStatusConfig['error']) : null;
-
-                                if (conn.connectionType === 'baileys' && conn.healthStatus === 'healthy') {
-                                    statusInfo = connectionStatusConfig['Conectado'];
-                                    webInfo = webhookStatusConfig['CONFIGURADO'];
-                                }
 
                                 const Icon = conn.connectionType?.includes('instagram') ? Instagram : Phone;
                                 const idLabel = conn.connectionType?.includes('instagram') ? 'User ID' : 'Phone ID';
@@ -286,36 +276,6 @@ export function ConnectionsTable({
                                                             <RefreshCw className="mr-2 h-4 w-4" />
                                                             <span>Renovar Token</span>
                                                         </DropdownMenuItem>
-                                                    )}
-
-                                                    {/* WhatsMeow Actions */}
-                                                    {conn.connectionType === 'baileys' && onConnectBaileys && onDisconnectBaileys && (
-                                                        <>
-                                                            <DropdownMenuSeparator />
-                                                            {/* ALWAYS Show Connect/New Session options to allow forced reconnection */}
-                                                            <DropdownMenuItem onClick={() => onConnectBaileys(conn.id, 'resume')}>
-                                                                <Power className="mr-2 h-4 w-4 text-green-600" />
-                                                                <span>Conectar / Resume</span>
-                                                            </DropdownMenuItem>
-
-                                                            <DropdownMenuItem asChild>
-                                                                <Link href="/whatsapp-sessoes" className="w-full cursor-pointer flex items-center">
-                                                                    <QrCode className="mr-2 h-4 w-4" />
-                                                                    <span>Nova Sessão</span>
-                                                                </Link>
-                                                            </DropdownMenuItem>
-
-                                                            {/* Only show Disconnect if technically connected or healthy */}
-                                                            {!(conn.baileysStatus === 'disconnected' || conn.baileysStatus === 'failed') && (
-                                                                <>
-                                                                    <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem onClick={() => onDisconnectBaileys(conn.id)}>
-                                                                        <Unplug className="mr-2 h-4 w-4 text-orange-600" />
-                                                                        <span>Desconectar</span>
-                                                                    </DropdownMenuItem>
-                                                                </>
-                                                            )}
-                                                        </>
                                                     )}
 
                                                     <DropdownMenuSeparator />

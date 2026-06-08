@@ -535,18 +535,7 @@ const continueInitialization = () => {
         // ✅ Migração: Sessões agora são gerenciadas pelo microserviço Go
         // Legado removido para evitar erro Require no server startup
 
-        // ✅ FASE 3: Inicializar o Listener de WebSockets do Baileys Microservice
-        try {
-          const { initBaileysWSListener } = require(path.join(PROJECT_ROOT, 'src', 'lib', 'baileys-ws-listener.ts'));
-          if (!global.__BAILEYS_WS_LISTENER_INITIALIZED) {
-            initBaileysWSListener();
-            global.__BAILEYS_WS_LISTENER_INITIALIZED = true;
-            console.log('✅ Baileys WS Listener initialized');
-          }
-        } catch (error) {
-          console.error('❌ Failed to start Baileys WS Listener:', error.message);
-          console.error('❌ Stack:', error.stack);
-        }
+
 
         // ✅ FASE 3.1: Inicializar queue de upload de mídia
         try {
@@ -558,27 +547,7 @@ const continueInitialization = () => {
           console.error('❌ Stack:', error.stack);
         }
 
-        // ✅ FASE 4: Inicializar monitoramento de sessões (Auto-Recovery Worker)
-        try {
-          const { SessionMonitor } = require(path.join(PROJECT_ROOT, 'src', 'lib', 'baileys', 'session-monitor.ts'));
-          const monitor = SessionMonitor.getInstance();
 
-          // Intervalo de 4 minutos (240000ms) - Verifica e reconecta sessões desconectadas
-          setInterval(() => {
-            console.log('🔄 [SessionMonitor] Running scheduled session check...');
-            monitor.checkAndRecoverSessions();
-          }, 240000);
-
-          // Executar imediatamente uma vez (com delay para garantir que o banco conectou)
-          setTimeout(() => {
-            console.log('🔄 [SessionMonitor] Running initial session check...');
-            monitor.checkAndRecoverSessions();
-          }, 10000);
-
-          console.log('✅ Baileys Session Monitor initialized (runs every 4 minutes)');
-        } catch (error) {
-          console.error('❌ Failed to initialize Session Monitor:', error.message);
-        }
       })();
 
       setTimeout(async () => {
@@ -749,25 +718,7 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('🔴 Unhandled Rejection at Promise:', promise, 'reason:', reason);
 
-  // ✅ FIX: Detectar erros Baileys recuperáveis (crypto/auth)
-  // Esses erros ocorrem quando credenciais de sessão estão corrompidas ou out-of-sync
-  // Baileys tentará reconectar automaticamente, não precisa fazer shutdown
-  const reasonStr = String(reason?.message || '') + String(reason?.stack || '');
-  const isBaileysAuthError = (
-    reasonStr.includes('unable to authenticate') ||
-    reasonStr.includes('Unsupported state') ||
-    reasonStr.includes('aesDecryptGCM') ||
-    reasonStr.includes('noise-handler') ||
-    reasonStr.includes('Bad MAC')
-  );
 
-  if (isBaileysAuthError) {
-    console.warn('⚠️ [Baileys] Session authentication/crypto error detected.');
-    console.warn('⚠️ [Baileys] This is a recoverable error. Baileys will attempt to reconnect.');
-    console.warn('⚠️ [Baileys] If problem persists, user should disconnect and reconnect WhatsApp.');
-    // NÃO fazer shutdown - Baileys vai tentar reconectar com backoff exponencial
-    return;
-  }
 
   // CRITICAL FIX: Auto-recover from Next.js cache corruption
   // Error: ENOENT: no such file or directory, stat '.../.next/cache/...'

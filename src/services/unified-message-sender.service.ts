@@ -9,7 +9,7 @@ import { convertMp3ToOgg, getAudioDurationInSeconds } from '@/services/audio-con
 import { formatJid } from '@/lib/utils/whatsapp';
 
 export interface UnifiedSendOptions {
-  provider: 'apicloud' | 'baileys';
+  provider: 'apicloud' | 'evolution';
   connectionId: string;
   to: string;
   message: string;
@@ -32,15 +32,15 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
   const { connectionId, to, message, templateId, templateName: providedTemplateName, templateParams: _templateParams, mediaUrl, mediaType, isVoice } = options;
   let { mediaBuffer } = options;
 
-  // Normalize provider: ensure it's exactly 'apicloud' or 'baileys'
+  // Normalize provider: ensure it's exactly 'apicloud' or 'evolution'
   let provider = options.provider;
-  if (provider !== 'apicloud' && provider !== 'baileys') {
+  if (provider !== 'apicloud' && provider !== 'evolution') {
     const normalized = String(provider || '').toLowerCase().trim();
     if (normalized.includes('meta') || normalized.includes('api') || normalized.includes('cloud')) {
       console.log(`[UNIFIED-SENDER] ⚠️ Provider normalized: "${provider}" → "apicloud"`);
       provider = 'apicloud';
-    } else if (normalized.includes('baileys')) {
-      provider = 'baileys';
+    } else if (normalized.includes('evolution') || normalized.includes('baileys')) {
+      provider = 'evolution';
     } else {
       console.error(`[UNIFIED-SENDER] ❌ Unknown provider: "${provider}" (raw: "${options.provider}")`);
       return { success: false, error: `Provedor inválido: "${provider}"` };
@@ -225,8 +225,8 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
         return { success: false, error: (error as Error).message };
       }
 
-    } else if (provider === 'baileys') {
-      // Send via Evolution API (Replacing Baileys)
+    } else if (provider === 'evolution') {
+      // Send via Evolution API
       try {
         const phoneJid = formatJid(to);
         const number = phoneJid?.split('@')[0]; // Evolution uses just the number
@@ -252,15 +252,52 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
               }
           }
 
+          // ✅ FIX Bug #2: Se mediaUrl é URL HTTP e não temos buffer, fazer fetch
+          // A Evolution API não consegue acessar buckets S3 privados diretamente.
+          // O servidor MasterIA busca o arquivo e converte para base64.
+          if (mediaUrl && mediaUrl.startsWith('http') && !finalBuffer) {
+              try {
+                  console.log(`[UNIFIED-SENDER] 📥 [Evolution] Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
+                  const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
+                  if (resp.ok) {
+                      const arrBuf = await resp.arrayBuffer();
+                      finalBuffer = Buffer.from(arrBuf);
+                      console.log(`[UNIFIED-SENDER] ✅ [Evolution] Fetched media buffer (${finalBuffer.length} bytes)`);
+                  } else {
+                      console.warn(`[UNIFIED-SENDER] ⚠️ [Evolution] Failed to fetch mediaUrl (${resp.status}). Will pass URL directly.`);
+                  }
+              } catch (fetchErr) {
+                  console.warn('[UNIFIED-SENDER] ⚠️ [Evolution] Could not fetch mediaUrl as buffer, passing URL directly:', fetchErr);
+              }
+          }
+
           // Evolution API requires a URL or base64 string
+          // ✅ FIX Bug #3: MIME type detectado pela extensão real do arquivo
           const getMimeType = (type: string, url?: string) => {
+              const ext = (url || '').split('?')[0].split('.').pop()?.toLowerCase() || '';
               if (type === 'audio') return url?.endsWith('.wav') ? 'audio/wav' : 'audio/ogg; codecs=opus';
-              if (type === 'image') return 'image/jpeg';
+              if (type === 'image') {
+                  if (ext === 'png') return 'image/png';
+                  if (ext === 'gif') return 'image/gif';
+                  if (ext === 'webp') return 'image/webp';
+                  return 'image/jpeg';
+              }
               if (type === 'video') return 'video/mp4';
-              if (type === 'document') return 'application/pdf';
+              if (type === 'document') {
+                  if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                  if (ext === 'xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                  if (ext === 'pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+                  if (ext === 'txt') return 'text/plain';
+                  if (ext === 'csv') return 'text/csv';
+                  return 'application/pdf'; // default para pdf e outros
+              }
               return 'application/octet-stream';
           };
           const mediaBase64 = finalBuffer ? `data:${getMimeType(mediaType, mediaUrl)};base64,${finalBuffer.toString('base64')}` : mediaUrl!;
+
+          // Derivar nome real do arquivo da URL (sem query string)
+          const rawFileName = (mediaUrl || '').split('?')[0].split('/').pop() || '';
+          const resolvedFileName = mediaType === 'document' ? (rawFileName || 'document.pdf') : undefined;
 
           const result = await evolutionApiService.sendMedia(
              connection.sessionName || connection.id,
@@ -268,7 +305,7 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
              mediaType,
              mediaBase64,
              message || '',
-             mediaType === 'document' ? (mediaUrl?.split('/').pop() || 'document.pdf') : undefined
+             resolvedFileName
           );
 
           if (!result?.key?.id) {
