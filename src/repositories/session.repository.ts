@@ -4,7 +4,7 @@
  */
 
 import { db } from '@/lib/db';
-import { connections, baileysAuthState } from '@/lib/db/schema';
+import { connections } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 
 export interface SessionData {
@@ -55,11 +55,8 @@ export class SessionRepository {
         lastConnected: connections.lastConnected,
         isActive: connections.isActive,
         createdAt: connections.createdAt,
-        // ✅ FASE 1.3: Verificar auth no banco com JOIN
-        hasAuthInDB: sql<boolean>`EXISTS (
-          SELECT 1 FROM ${baileysAuthState} 
-          WHERE ${baileysAuthState.connectionId} = ${connections.id}
-        )`,
+        // Legacy auth checks removed
+        hasAuthInDB: sql<boolean>`false`,
       })
       .from(connections)
       .where(and(
@@ -92,10 +89,7 @@ export class SessionRepository {
         lastConnected: connections.lastConnected,
         isActive: connections.isActive,
         createdAt: connections.createdAt,
-        hasAuthInDB: sql<boolean>`EXISTS (
-          SELECT 1 FROM ${baileysAuthState} 
-          WHERE ${baileysAuthState.connectionId} = ${connections.id}
-        )`,
+        hasAuthInDB: sql<boolean>`false`,
       })
       .from(connections)
       .where(and(
