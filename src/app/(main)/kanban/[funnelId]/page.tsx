@@ -637,7 +637,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
           </div>
         </div>
 
-        <TabsContent value="kanban" className="flex-1 mt-0 min-h-0">
+        <TabsContent value="kanban" className="flex-1 mt-0 min-h-0 data-[state=active]:flex data-[state=active]:flex-col">
           <KanbanView
             funnel={funnel}
             cards={filteredCards}
@@ -663,7 +663,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
           />
         </TabsContent>
 
-        <TabsContent value="agents" className="flex-1 mt-0 min-h-0 overflow-auto p-4">
+        <TabsContent value="agents" className="flex-1 mt-0 min-h-0 overflow-auto p-4 data-[state=active]:flex data-[state=active]:flex-col">
           <StagePersonaConfig
             boardId={funnelId}
             stages={funnel.stages}
@@ -671,7 +671,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
           />
         </TabsContent>
 
-        <TabsContent value="report" className="flex-1 mt-0 min-h-0 overflow-auto">
+        <TabsContent value="report" className="flex-1 mt-0 min-h-0 overflow-auto data-[state=active]:flex data-[state=active]:flex-col">
           <FunnelReport boardId={funnelId} />
         </TabsContent>
       </Tabs>

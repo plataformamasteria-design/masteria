@@ -260,8 +260,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
       <div 
         ref={scrollRef}
         onScroll={handleBottomScroll}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden premium-scrollbar ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}

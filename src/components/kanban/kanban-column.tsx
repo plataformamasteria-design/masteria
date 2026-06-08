@@ -3,7 +3,6 @@
 
 import { Droppable } from '@hello-pangea/dnd';
 import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
 import type { KanbanStage, KanbanCard as KanbanCardType } from '@/lib/types';
 import { KanbanCard } from './kanban-card';
 
@@ -78,12 +77,11 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 min-h-0 overflow-hidden transition-all duration-300 ${
+            className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar transition-all duration-300 ${
               snapshot.isDraggingOver ? 'bg-primary/5 ring-1 ring-primary/20 ring-inset' : ''
             }`}
           >
-            <ScrollArea className="h-full custom-scrollbar">
-              <div className="p-2 pb-12 space-y-2">
+            <div className="p-2 pb-12 space-y-2">
                 {stageCards.length === 0 && !snapshot.isDraggingOver && (
                   <div className="flex items-center justify-center py-8 text-[11px] uppercase tracking-wider text-muted-foreground/40 font-medium">
                     Sem leads
@@ -107,7 +105,6 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
                 ))}
                 {provided.placeholder}
               </div>
-            </ScrollArea>
           </div>
         )}
       </Droppable>
