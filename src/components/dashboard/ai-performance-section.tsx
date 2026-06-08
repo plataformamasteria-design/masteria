@@ -85,7 +85,7 @@ export function AIPerformanceSection() {
     );
   }
 
-  if (!data || (data.summary.totalPersonas === 0 && data.summary.totalAIMessages === 0)) {
+  if (!data || !data.summary || (data.summary.totalPersonas === 0 && data.summary.totalAIMessages === 0)) {
     return (
       <div className="flex flex-col items-center justify-center py-10 gap-3">
         <Bot className="h-10 w-10 text-zinc-700" />

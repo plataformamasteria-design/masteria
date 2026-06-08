@@ -60,8 +60,9 @@ export function CampaignsWithPerformance({ dateRange }: Props) {
         const res = await fetch(`/api/v1/campaigns?${params.toString()}`);
         if (!res.ok) throw new Error('Falha ao buscar campanhas');
         const result = await res.json();
-        // Show campaigns created in period, max 5
-        const data: CampaignWithStats[] = (result.data || result || []).slice(0, 5);
+        const resultData = result.data || result;
+        const campaignsList = Array.isArray(resultData) ? resultData : [];
+        const data: CampaignWithStats[] = campaignsList.slice(0, 5);
         setCampaigns(data);
       } catch (err) {
         notify.error('Erro', (err as Error).message);

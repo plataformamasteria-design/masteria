@@ -41,8 +41,8 @@ export function ActiveAutomationsWidget() {
       try {
         const res = await fetch('/api/v1/automations');
         if (res.ok) {
-          const data: AutomationRule[] = await res.json();
-          setRules(data);
+          const data = await res.json();
+          setRules(Array.isArray(data) ? data : []);
         }
       } catch {
         // silently fail

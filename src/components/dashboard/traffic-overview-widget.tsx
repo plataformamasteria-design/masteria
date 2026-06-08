@@ -130,7 +130,8 @@ export function TrafficOverviewWidget({ dateRange }: Props) {
     { dedupingInterval: 60000, revalidateOnFocus: false }
   );
 
-  const activeCampaigns: CampaignActive[] = (campaignsData?.data || campaignsData || [])
+  const campaignsList = Array.isArray(campaignsData?.data) ? campaignsData.data : Array.isArray(campaignsData) ? campaignsData : [];
+  const activeCampaigns: CampaignActive[] = campaignsList
     .filter((c: Campaign) => ['ACTIVE'].includes(c.status))
     .slice(0, 4);
 

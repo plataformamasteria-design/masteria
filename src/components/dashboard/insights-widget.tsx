@@ -57,7 +57,7 @@ export function DashboardInsightsWidget() {
     ? new Date(data.generatedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
     : null;
 
-  const parsedInsights = data?.insights?.map(parseInsight) || [];
+  const parsedInsights = Array.isArray(data?.insights) ? data.insights.map(parseInsight) : [];
   const positiveInsights = parsedInsights.filter(i => i.type === 'positive');
   const negativeInsights = parsedInsights.filter(i => i.type === 'negative' || i.type === 'neutral');
 
