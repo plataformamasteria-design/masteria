@@ -17,5 +17,5 @@ RUN npm run build
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
-ENV NODE_OPTIONS="--max-old-space-size=300 --expose-gc"
+
 CMD ["npm", "start"]
