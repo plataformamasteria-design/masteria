@@ -438,7 +438,7 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24">
+    <div className="h-full overflow-y-auto bg-background text-foreground pb-24 premium-scrollbar">
       {/* HEADER FLUTUANTE (ACTION BAR) */}
       <div className="sticky top-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl border-b border-zinc-200 dark:border-white/5 py-4 px-6 md:px-12 flex items-center justify-between shadow-sm dark:shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-4">

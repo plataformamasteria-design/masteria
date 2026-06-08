@@ -76,7 +76,8 @@ export function FunnelList() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-full overflow-y-auto premium-scrollbar p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Filter className="h-6 w-6" /> Funis Kanban
@@ -165,6 +166,7 @@ export function FunnelList() {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }

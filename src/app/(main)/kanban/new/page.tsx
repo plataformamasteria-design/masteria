@@ -184,7 +184,8 @@ export default function NewFunnelPage() {
   };
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="h-full overflow-y-auto premium-scrollbar">
+      <div className="container max-w-4xl py-8">
       <div className="mb-6">
         <Link href="/kanban">
           <Button variant="ghost" size="sm">
@@ -366,6 +367,7 @@ export default function NewFunnelPage() {
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
