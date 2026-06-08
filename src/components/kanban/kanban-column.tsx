@@ -83,7 +83,7 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
             }`}
           >
             <ScrollArea className="h-full custom-scrollbar">
-              <div className="p-2 space-y-2">
+              <div className="p-2 pb-12 space-y-2">
                 {stageCards.length === 0 && !snapshot.isDraggingOver && (
                   <div className="flex items-center justify-center py-8 text-[11px] uppercase tracking-wider text-muted-foreground/40 font-medium">
                     Sem leads

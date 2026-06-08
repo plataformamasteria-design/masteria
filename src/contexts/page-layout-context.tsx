@@ -10,7 +10,7 @@ interface PageLayoutContextType {
   setLayoutMode: (mode: LayoutMode) => void;
 }
 
-const FULL_HEIGHT_ROUTES = ['/atendimentos'];
+const FULL_HEIGHT_ROUTES = ['/atendimentos', '/kanban'];
 
 function getInitialLayoutMode(pathname: string): LayoutMode {
   return FULL_HEIGHT_ROUTES.some(route => pathname.startsWith(route)) ? 'full-height' : 'default';
