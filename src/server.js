@@ -224,11 +224,11 @@ const server = createServer(async (req, res) => {
 
     // CRITICAL: Health check endpoints ALWAYS respond immediately (even if Next.js not ready)
     // Also handle root path for deployment health checks (Autoscale sends to / by default)
-    const isHealthCheck = pathname === '/health' || pathname === '/_health' ||
+    const isHealthCheck = pathname === '/health' || pathname === '/health/' || pathname === '/_health' ||
       (pathname === '/' && (
         req.headers['user-agent']?.includes('kube-probe') ||
         req.headers['user-agent']?.includes('GoogleHC') ||
-        req.headers['user-agent']?.includes('HealthChecker') ||
+        req.headers['user-agent']?.toLowerCase().includes('health') ||
         req.headers['x-replit-health-check'] === 'true' ||
         req.method === 'HEAD'
       ));
@@ -285,8 +285,8 @@ const server = createServer(async (req, res) => {
         req.method === 'HEAD';
 
       if (acceptsJson) {
-        // Return JSON with 503 for health checkers (more semantically correct)
-        res.statusCode = 503; // Service Unavailable
+        // Return JSON with 200 for health checkers to prevent timeout during long Next.js startup
+        res.statusCode = 200; // Service is initializing, but we need Railway to keep it alive
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Retry-After', '5');
