@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { kanbanLeads, contacts, contactsToTags, tags, kanbanBoards, conversations, messages } from '@/lib/db/schema';
 import { asc, eq, and, inArray, min } from 'drizzle-orm';
 import { z } from 'zod';
-import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
+import { requireCompanyIdOr401, requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { webhookDispatcher } from '@/services/webhook-dispatcher.service';
 import type { KanbanStage } from '@/lib/types';
@@ -21,11 +21,11 @@ const leadCreateSchema = z.object({
 // GET /api/v1/leads?boardId={boardId}
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await requireCompanyIdOr401();
+    const authResult = await requireAuthWithUserOr401();
     if (authResult instanceof NextResponse) {
       return authResult; // Retorna 401 se não autenticado
     }
-    const { companyId } = authResult;
+    const { companyId, user } = authResult;
     const { searchParams } = new URL(request.url);
     const boardId = searchParams.get('boardId');
 
@@ -33,11 +33,46 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'O parâmetro boardId é obrigatório.' }, { status: 400 });
     }
 
-    // Cache baseado no boardId
+    // Cache baseado no boardId apenas (dados crus)
     const cacheKey = `leads:${companyId}:${boardId}`;
-    const leads = await getCachedOrFetch(cacheKey, async () => {
+    let leads = await getCachedOrFetch(cacheKey, async () => {
       return await fetchLeadsData(companyId, boardId);
     }, CacheTTL.SHORT); // 30s cache - dados atualizados frequentemente no Kanban
+
+    // Aplicar filtros baseados nas permissões do usuário
+    if (user.role === 'atendente') {
+        const kanbanViewMode = user.permissions?.kanbanViewMode || 'all';
+        const allowedConnectionIds = user.permissions?.allowedConnectionIds || [];
+        
+        if (allowedConnectionIds.length === 0) {
+            leads = []; // Sem conexões permitidas -> sem leads
+        } else {
+            leads = leads.filter((leadObj: any) => {
+                const convo = leadObj.conversation;
+
+                // 1. Connection Filtering
+                if (convo && convo.connectionId) {
+                    if (!allowedConnectionIds.includes(convo.connectionId)) {
+                        return false;
+                    }
+                } else {
+                    // Lead manual sem conexão: só mostra na visão total
+                    if (kanbanViewMode === 'assigned_only') {
+                        return false;
+                    }
+                }
+
+                // 2. Assignment Filtering
+                if (kanbanViewMode === 'assigned_only') {
+                    if (!convo || convo.assignedTo !== user.id) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+        }
+    }
 
     return NextResponse.json(leads);
   } catch (error) {

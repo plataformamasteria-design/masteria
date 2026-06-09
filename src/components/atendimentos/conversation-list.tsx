@@ -182,9 +182,10 @@ interface AdvancedFiltersPanelProps {
     filters: AdvancedFilters;
     onFiltersChange: (filters: AdvancedFilters) => void;
     availableConnections: any[];
+    isRestrictedAgent?: boolean;
 }
 
-function AdvancedFiltersPanel({ filters, onFiltersChange, availableConnections }: AdvancedFiltersPanelProps) {
+function AdvancedFiltersPanel({ filters, onFiltersChange, availableConnections, isRestrictedAgent }: AdvancedFiltersPanelProps) {
     const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
     const [agents, setAgents] = useState<{ id: string; name: string | null }[]>([]);
     const [tagsList, setTagsList] = useState<{ id: string; name: string; color: string }[]>([]);
@@ -239,6 +240,15 @@ function AdvancedFiltersPanel({ filters, onFiltersChange, availableConnections }
                     onToggle={() => toggle('robotService')}
                     color="text-violet-500"
                 />
+                {isRestrictedAgent && (
+                    <FilterToggle
+                        icon={Users}
+                        label="Ver de outras conexões"
+                        active={filters.showOtherConnections || false}
+                        onToggle={() => onFiltersChange({ ...filters, showOtherConnections: !filters.showOtherConnections })}
+                        color="text-rose-500"
+                    />
+                )}
             </div>
 
             {/* Dropdown filters */}
@@ -423,8 +433,9 @@ export function ConversationList({
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     
     const { session } = useSession();
-    const userPermissions = session?.userData?.permissions as { viewMode?: string } | undefined;
+    const userPermissions = session?.userData?.permissions as { viewMode?: string, allowedConnectionIds?: string[] } | undefined;
     const isLimitedView = session?.userData?.role === 'atendente' && userPermissions?.viewMode === 'assigned_only';
+    const isRestrictedAgent = session?.userData?.role === 'atendente' && userPermissions?.allowedConnectionIds !== undefined && userPermissions.allowedConnectionIds.length > 0;
     
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
@@ -497,7 +508,7 @@ export function ConversationList({
     ] as const;
 
     const advFilterCount = advancedFilters
-        ? [advancedFilters.onlyUnread, advancedFilters.awaitingResponse, advancedFilters.robotService, !!advancedFilters.filterTeamId, !!advancedFilters.filterAgentId].filter(Boolean).length
+        ? [advancedFilters.onlyUnread, advancedFilters.awaitingResponse, advancedFilters.robotService, advancedFilters.showOtherConnections, !!advancedFilters.filterTeamId, !!advancedFilters.filterAgentId].filter(Boolean).length
         : 0;
 
     return (
@@ -606,7 +617,7 @@ export function ConversationList({
                     <div className="px-3 pb-3 space-y-3 animate-in slide-in-from-top-2 fade-in duration-200">
                         {advancedFilters && onAdvancedFiltersChange && (
                             <div className="p-2 rounded-2xl bg-white dark:bg-[#111b21] shadow-xl shadow-black/5 dark:shadow-none">
-                                <AdvancedFiltersPanel filters={advancedFilters} onFiltersChange={onAdvancedFiltersChange} availableConnections={availableConnections} />
+                                <AdvancedFiltersPanel filters={advancedFilters} onFiltersChange={onAdvancedFiltersChange} availableConnections={availableConnections} isRestrictedAgent={isRestrictedAgent} />
                             </div>
                         )}
                     </div>

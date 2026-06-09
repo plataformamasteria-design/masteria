@@ -15,6 +15,7 @@ import {
 import type { MediaAsset as MediaAssetType, MetaApiMessageResponse } from '@/lib/types';
 import { eq, and } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
+import { requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 import { sendWhatsappTemplateMessage } from '@/lib/facebookApiService';
 import { z } from 'zod';
 
@@ -70,7 +71,13 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
-        const companyId = await getCompanyIdFromSession();
+        const authResult = await requireAuthWithUserOr401();
+        if (authResult instanceof NextResponse) return authResult;
+        const { companyId, user } = authResult;
+
+        const isRestricted = user.role === 'atendente' && user.permissions?.viewMode === 'assigned_only';
+        const allowedConnectionIds = isRestricted ? (user.permissions?.allowedConnectionIds || []) : null;
+
         const body = await request.json() as unknown;
         const parsed = startConversationSchema.safeParse(body);
 
@@ -79,6 +86,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         const { contactId, connectionId, templateId, variableMappings, mediaAssetId } = parsed.data;
+
+        if (isRestricted) {
+            if (!allowedConnectionIds || allowedConnectionIds.length === 0 || !allowedConnectionIds.includes(connectionId)) {
+                return NextResponse.json({ error: 'Você não tem permissão para iniciar conversas através desta conexão.' }, { status: 403 });
+            }
+        }
 
         // 1. Fetch all necessary data in parallel
         // SECURITY: Validar tenant em todas as queries

@@ -346,27 +346,32 @@ async function executeAction(action: AutomationAction, context: AutomationTrigge
                 if (activeLeadResult && activeLeadResult[0]) {
                     const lead = activeLeadResult[0];
                     const targetStageId = action.value;
-                    // TODO: implement board relationship loading
-                    const stages: any[] = [];
+                    
+                    const boardResult = await db.select({ stages: kanbanBoards.stages }).from(kanbanBoards).where(eq(kanbanBoards.id, lead.boardId)).limit(1);
+                    const stages = (boardResult[0]?.stages || []) as KanbanStage[];
                     const targetStage = stages.find(s => s.id === targetStageId);
 
                     if (!targetStage) {
-                        await logAutomation('WARN', `EstÃ¡gio invÃ¡lido "${targetStageId}" nÃ£o encontrado no funil. AÃ§Ã£o 'move_to_stage' ignorada.`, logContext);
+                        await logAutomation('WARN', `Estágio inválido "${targetStageId}" não encontrado no funil. Ação 'move_to_stage' ignorada.`, logContext);
                         return;
                     }
 
                     if (targetStage.type === 'WIN' || targetStage.type === 'LOSS') {
-                        await logAutomation('WARN', `EstÃ¡gio final "${targetStage.title}" (${targetStage.type}). MovimentaÃ§Ã£o via automaÃ§Ã£o bloqueada por seguranÃ§a.`, logContext);
+                        await logAutomation('WARN', `Estágio final "${targetStage.title}" (${targetStage.type}). Movimentação via automação bloqueada por segurança.`, logContext);
                         return;
                     }
 
                     await db.update(kanbanLeads)
-                        .set({ stageId: targetStageId })
+                        .set({ 
+                            stageId: targetStageId,
+                            currentStage: targetStage,
+                            lastStageChangeAt: new Date()
+                        })
                         .where(and(
                             eq(kanbanLeads.id, lead.id),
                             eq(kanbanLeads.companyId, context.companyId)
                         ));
-                    await logAutomation('INFO', `Lead movido para o estÃ¡gio: ${targetStage.title} (${targetStageId})`, logContext);
+                    await logAutomation('INFO', `Lead movido para o estágio: ${targetStage.title} (${targetStageId})`, logContext);
                 } else {
                     await logAutomation('WARN', `Contato nÃ£o possui lead ativo no Kanban. AÃ§Ã£o 'move_to_stage' ignorada.`, logContext);
                 }
@@ -1875,7 +1880,11 @@ async function detectAndProgressLead(
 
             // SECURITY: Validar tenant ao atualizar (activeLeadQuery jÃ¡ foi buscado com companyId)
             await db.update(kanbanLeads)
-                .set({ stageId: nextStage.id })
+                .set({ 
+                    stageId: nextStage.id,
+                    currentStage: nextStage,
+                    lastStageChangeAt: new Date()
+                })
                 .where(and(
                     eq(kanbanLeads.id, activeLeadQuery.id),
                     eq(kanbanLeads.companyId, context.companyId)
@@ -2223,8 +2232,12 @@ async function moveLeadToSemanticStage(
             return false;
         }
 
-        // Preparar atualizaÃ§Ã£o do lead com horÃ¡rio se disponÃ­vel
-        const updateData: { stageId: string; notes?: string } = { stageId: targetStage.id };
+        // Preparar atualização do lead com horário se disponível
+        const updateData: { stageId: string; notes?: string; currentStage?: any; lastStageChangeAt?: Date } = { 
+            stageId: targetStage.id,
+            currentStage: targetStage,
+            lastStageChangeAt: new Date()
+        };
         if (scheduledTime && targetSemanticType === 'meeting_scheduled') {
             const currentNotes = activeLeadQuery.notes || '';
             const newNote = `ðŸ“… ReuniÃ£o agendada: ${scheduledTime}`;

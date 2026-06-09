@@ -3,9 +3,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { connections } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
+import { requireCompanyIdOr401, requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 import { encrypt } from '@/lib/crypto';
 import { apiCache } from '@/lib/api-cache';
 import { getCompanyIdFromSession } from '@/app/actions';
@@ -27,14 +27,35 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(_request: NextRequest) {
     try {
-        const authResult = await requireCompanyIdOr401();
+        const authResult = await requireAuthWithUserOr401();
         if (authResult instanceof NextResponse) {
             return authResult; // Retorna 401 se não autenticado
         }
-        const { companyId } = authResult;
+        const { companyId, user } = authResult;
+
+        const isRestricted = user.role === 'atendente' && user.permissions?.viewMode === 'assigned_only';
+        const allowedConnectionIds = isRestricted ? (user.permissions?.allowedConnectionIds || []) : null;
 
         // Force cache invalidation for this request to ensure Baileys connections are seen
         const cacheKey = `connections:${companyId}`;
+        
+        let queryConditions = [eq(connections.companyId, companyId)];
+        
+        if (isRestricted) {
+            if (allowedConnectionIds && allowedConnectionIds.length > 0) {
+                queryConditions.push(inArray(connections.id, allowedConnectionIds));
+            } else {
+                // If restricted but no connections allowed, return empty list immediately
+                return NextResponse.json([], {
+                    headers: {
+                        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0',
+                    }
+                });
+            }
+        }
+
         const companyConnections = await db
             .select({
                 id: connections.id,
@@ -59,7 +80,7 @@ export async function GET(_request: NextRequest) {
                 tokenRefreshError: connections.tokenRefreshError
             })
             .from(connections)
-            .where(eq(connections.companyId, companyId))
+            .where(and(...queryConditions))
             .orderBy(desc(connections.createdAt));
 
         // Retorna os dados, mas o token permanece encriptado

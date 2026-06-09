@@ -148,7 +148,15 @@ export async function submitTemplateToMeta(
         }
 
         if (comp.buttons) {
-          component.buttons = comp.buttons;
+          component.buttons = comp.buttons.map(btn => {
+            if (btn.type === 'URL' && btn.url && btn.url.includes('{{1}}')) {
+              return {
+                ...btn,
+                example: ['exemplo_url_1']
+              };
+            }
+            return btn;
+          });
         }
 
         return component;

@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
         let filterParam = searchParams.get('filter') || 'all';
 
         // Validação RBAC (Limitação de Visibilidade)
-        if (user.role === 'atendente' && user.permissions?.viewMode === 'assigned_only') {
+        const viewMode = user.permissions?.viewMode || 'all';
+        const isAssignedOnly = user.role === 'atendente' && viewMode === 'assigned_only';
+        
+        if (isAssignedOnly) {
             // Se o agente está restrito, forçamos o filtro para mostrar APENAS os leads dele
             // mesmo se ele tentar acessar 'all', 'team', etc.
             if (filterParam !== 'resolved') {
@@ -40,6 +43,7 @@ export async function GET(request: NextRequest) {
         const filterKanbanId = searchParams.get('filterKanbanId') || null;
         const filterConnectionId = searchParams.get('filterConnectionId') || null;
         const filterSource = searchParams.get('filterSource') || null;
+        const showOtherConnections = searchParams.get('showOtherConnections') === 'true';
 
         const SAFETY_CAP = 10000;
         let limit: number;
@@ -54,24 +58,30 @@ export async function GET(request: NextRequest) {
         }
 
         const offset = parseInt(searchParams.get('offset') || '0', 10);
-        const advKey = `${onlyUnread}:${awaitingResponse}:${robotService}:${filterTeamId}:${filterAgentId}:${filterTagId}:${filterKanbanId}:${filterConnectionId}:${filterSource}`;
+        const advKey = `${onlyUnread}:${awaitingResponse}:${robotService}:${filterTeamId}:${filterAgentId}:${filterTagId}:${filterKanbanId}:${filterConnectionId}:${filterSource}:${showOtherConnections}`;
+        
+        // Passa a config de allowedConnectionIds + isAssignedOnly pro helper
+        const allowedConnectionIds = user.role === 'atendente' 
+            ? (user.permissions?.allowedConnectionIds || []) 
+            : null;
+        const userAccessConfig = { isAssignedOnly, allowedConnectionIds };
 
         const tParam = searchParams.get('t');
 
         if (search) {
-            const data = await fetchConversationsWithSearch(companyId, userId, search, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource });
+            const data = await fetchConversationsWithSearch(companyId, userId, search, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource, showOtherConnections }, userAccessConfig);
             return NextResponse.json(data);
         }
 
         if (tParam) {
             // Bypass cache explicitly for polling and real-time updates
-            const data = await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource });
+            const data = await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource, showOtherConnections }, userAccessConfig);
             return NextResponse.json(data);
         }
 
-        const cacheKey = `conversations:${companyId}:${userId}:${filterParam}:${advKey}:${limit}:${offset}`;
+        const cacheKey = `conversations:${companyId}:${userId}:${filterParam}:${advKey}:${limit}:${offset}:${allowedConnectionIds?.join(',') || 'none'}:${isAssignedOnly}`;
         const data = await getCachedOrFetch(cacheKey, async () => {
-            return await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource });
+            return await fetchConversationsData(companyId, userId, limit, offset, filterParam, { onlyUnread, awaitingResponse, robotService, filterTeamId, filterAgentId, filterTagId, filterKanbanId, filterConnectionId, filterSource, showOtherConnections }, userAccessConfig);
         }, CacheTTL.SHORT);
 
         return NextResponse.json(data);
@@ -92,16 +102,35 @@ interface AdvFilters {
     filterKanbanId: string | null;
     filterConnectionId: string | null;
     filterSource: string | null;
+    showOtherConnections?: boolean;
 }
 
-const defaultAdv: AdvFilters = { onlyUnread: false, awaitingResponse: false, robotService: false, filterTeamId: null, filterAgentId: null, filterTagId: null, filterKanbanId: null, filterConnectionId: null, filterSource: null };
+const defaultAdv: AdvFilters = { onlyUnread: false, awaitingResponse: false, robotService: false, filterTeamId: null, filterAgentId: null, filterTagId: null, filterKanbanId: null, filterConnectionId: null, filterSource: null, showOtherConnections: false };
 
-// Helper local para resolver a baseCondition do switch Case
-async function getBaseConditions(companyId: string, userId: string, filterParam: string, adv: AdvFilters = defaultAdv) {
+async function getBaseConditions(companyId: string, userId: string, filterParam: string, adv: AdvFilters = defaultAdv, userAccessConfig: { isAssignedOnly: boolean, allowedConnectionIds: string[] | null }) {
     const base: any[] = [
         eq(conversations.companyId, companyId),
         or(eq(contacts.isGroup, false), isNull(contacts.isGroup))
     ];
+
+    const { isAssignedOnly, allowedConnectionIds } = userAccessConfig;
+
+    // GLOBAL RBAC CONNECTION FILTER
+    if (allowedConnectionIds !== null) {
+        if (allowedConnectionIds.length > 0) {
+            if (!adv.showOtherConnections) {
+                base.push(inArray(conversations.connectionId, allowedConnectionIds));
+            }
+        } else {
+            // Se restrito e não tem conexões liberadas (mas deveria ter via RBAC), não vê nenhuma conversa
+            base.push(sql`false`);
+        }
+    }
+
+    // GLOBAL RBAC ASSIGNMENT FILTER (Visão Limitada)
+    if (isAssignedOnly) {
+        base.push(eq(conversations.assignedTo, userId));
+    }
 
     if (filterParam === 'mine') {
         base.push(
@@ -190,9 +219,9 @@ async function getBaseConditions(companyId: string, userId: string, filterParam:
     return base;
 }
 
-async function fetchConversationsData(companyId: string, userId: string, limit: number = 50, offset: number = 0, filterParam: string = 'all', adv: AdvFilters = defaultAdv) {
+async function fetchConversationsData(companyId: string, userId: string, limit: number = 50, offset: number = 0, filterParam: string = 'all', adv: AdvFilters = defaultAdv, userAccessConfig: { isAssignedOnly: boolean, allowedConnectionIds: string[] | null }) {
     const startTime = Date.now();
-    const dynamicConditions = await getBaseConditions(companyId, userId, filterParam, adv);
+    const dynamicConditions = await getBaseConditions(companyId, userId, filterParam, adv, userAccessConfig);
 
     // Passo 1: Buscar apenas os IDs e base de forma rápida
     const baseConvos = await db.select({ id: conversations.id })
@@ -245,6 +274,8 @@ async function fetchConversationsData(companyId: string, userId: string, limit: 
             FROM ${messages} 
             WHERE ${messages.conversationId} = ${conversations.id} 
             AND ${messages.companyId} = ${conversations.companyId}
+            AND (${userAccessConfig.allowedConnectionIds && userAccessConfig.allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(userAccessConfig.allowedConnectionIds)})` : sql`1=1`})
+            AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
             ORDER BY ${messages.sentAt} DESC 
             LIMIT 1
         )`.as('last_message_data'),
@@ -292,10 +323,10 @@ async function fetchConversationsData(companyId: string, userId: string, limit: 
     };
 }
 
-async function fetchConversationsWithSearch(companyId: string, userId: string, searchTerm: string, limit: number = 50, offset: number = 0, filterParam: string = 'all', adv: AdvFilters = defaultAdv) {
+async function fetchConversationsWithSearch(companyId: string, userId: string, searchTerm: string, limit: number = 50, offset: number = 0, filterParam: string = 'all', adv: AdvFilters = defaultAdv, userAccessConfig: { isAssignedOnly: boolean, allowedConnectionIds: string[] | null }) {
     const startTime = Date.now();
     const searchPattern = `%${searchTerm}%`;
-    const dynamicConditions = await getBaseConditions(companyId, userId, filterParam, adv);
+    const dynamicConditions = await getBaseConditions(companyId, userId, filterParam, adv, userAccessConfig);
 
     // Passo 1: Busca base rápida com filtros
     const baseConvos = await db.select({ id: conversations.id })

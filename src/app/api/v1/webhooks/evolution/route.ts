@@ -177,11 +177,12 @@ export async function POST(req: NextRequest) {
 
             let [conversation] = await tx.select().from(conversations).where(and(
                 eq(conversations.companyId, companyId),
-                eq(conversations.contactId, contact.id)
+                eq(conversations.contactId, contact.id),
+                eq(conversations.connectionId, connection.id)
             ));
 
             if (!conversation) {
-                // Primeira mensagem deste contato: cria conversa com a conexão atual
+                // Primeira mensagem deste contato NESTA CONEXÃO: cria conversa isolada
                 [conversation] = await tx.insert(conversations).values({
                     companyId,
                     contactId: contact.id,
@@ -189,9 +190,7 @@ export async function POST(req: NextRequest) {
                     status: 'NEW',
                 }).returning();
             } else {
-                // MULTI-CONEXÃO: atualiza apenas lastMessageAt.
-                // NÃO sobrescreve connectionId para preservar a conexão original da conversa.
-                // Mensagens de qualquer conexão são salvas na mesma thread do lead.
+                // Atualiza a conversa existente DESTA conexão
                 [conversation] = await tx.update(conversations)
                     .set({ lastMessageAt: new Date() })
                     .where(eq(conversations.id, conversation.id))

@@ -105,12 +105,12 @@ export function AppHeader() {
       // 2. Limpar sessão do NextAuth (Frontend/Client State)
       // Isso garante que useSession() retorne 'unauthenticated' e destrói o cookie next-auth.session-token.
       // O redirect: true levará o usuário para a página de login automaticamente.
-      await signOut({ callbackUrl: '/login', redirect: true });
+      await signOut({ callbackUrl: '/', redirect: true });
     } catch (error) {
       console.error("Logout failed:", error);
       notify.error('Erro ao Sair', 'Não foi possível fazer o logout. Por favor, tente novamente.');
       // Fallback safety: force redirect via router if signOut fails
-      router.push('/login');
+      router.push('/');
     } finally {
       if (mounted) {
         setIsLoggingOut(false);

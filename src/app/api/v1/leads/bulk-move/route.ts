@@ -107,9 +107,18 @@ export async function POST(request: NextRequest) {
 
   for (const [key, leadIds] of groupedMoves.entries()) {
     const [targetBoardId, targetStageId] = key.split('::');
+    const targetBoard = boardMap.get(targetBoardId);
+    const stages = (targetBoard?.stages as any[]) || [];
+    const targetStageObj = stages.find(s => s.id === targetStageId) || null;
+
     await db
       .update(kanbanLeads)
-      .set({ boardId: targetBoardId, stageId: targetStageId })
+      .set({ 
+        boardId: targetBoardId, 
+        stageId: targetStageId,
+        currentStage: targetStageObj,
+        lastStageChangeAt: new Date()
+      })
       .where(and(inArray(kanbanLeads.id, leadIds), eq(kanbanLeads.companyId, companyId)));
     totalMoved += leadIds.length;
     affectedBoards.add(targetBoardId);

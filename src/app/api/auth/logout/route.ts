@@ -9,24 +9,18 @@ export async function POST() {
     try {
         const response = NextResponse.json({ success: true, message: 'Logout bem-sucedido.' });
         
-        // Apaga os dois cookies de sessão definindo uma data de expiração no passado
-        response.cookies.set({
-            name: 'session_token',
-            value: '',
+        const clearOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
             path: '/',
-            maxAge: -1,
-        });
-        
-        response.cookies.set({
-            name: '__session',
-            value: '',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            path: '/',
-            maxAge: -1,
-        });
+            maxAge: 0,
+        };
+
+        response.cookies.set('session_token', '', clearOptions);
+        response.cookies.set('__session', '', clearOptions);
+        response.cookies.set('next-auth.session-token', '', clearOptions);
+        response.cookies.set('__Secure-next-auth.session-token', '', { ...clearOptions, secure: true });
 
         return response;
 

@@ -5,7 +5,7 @@ import { createToastNotifier } from '@/lib/toast-helper';
 import { conversationService, type AdvancedFilters } from '@/services/api/conversations-service';
 import { contactsService } from '@/services/api/contacts-service';
 // Import Server Actions
-import { sendMessageAction, toggleAiAction, archiveConversationAction, unarchiveConversationAction, fetchAvailableConnections, switchConnectionAction, syncBaileysHistoryAction } from '@/app/actions/chat';
+import { sendMessageAction, toggleAiAction, archiveConversationAction, unarchiveConversationAction, fetchAvailableConnections, switchConnectionAction, syncBaileysHistoryAction, startOutboundConversationAction } from '@/app/actions/chat';
 import type { Conversation, Message, Contact } from '@/lib/types';
 import { useSession } from '@/contexts/session-context';
 import { useInboxWebSocket } from './use-inbox-websocket';
@@ -186,8 +186,10 @@ export function useInboxController({
         router.push(`/atendimentos?conversationId=${conversationId}`, { scroll: false });
     }, [conversations, fetchAndSetMessages, fetchContactDetails, router]);
 
-    const handleSendMessage = useCallback(async (text: string, isInternalNote?: boolean) => {
+    const handleSendMessage = useCallback(async (text: string, isInternalNote?: boolean, overrideConnectionId?: string) => {
         if (!selectedConversation || !session?.userId) return;
+
+        const isCrossConnection = overrideConnectionId && overrideConnectionId !== selectedConversation.connectionId;
 
         // Optimistic Update
         const tempId = `temp-${Date.now()}`;
@@ -203,8 +205,8 @@ export function useInboxController({
 
         const optimisticMessage: Message = {
             id: tempId,
-            conversationId: selectedConversation.id,
-            connectionId: selectedConversation.connectionId,
+            conversationId: selectedConversation.id, // Temporariamente mantemos esse ID na tela atual
+            connectionId: overrideConnectionId || selectedConversation.connectionId,
             senderType: 'AGENT',
             senderId: session.userId,
             content: optimisticContent,
@@ -220,7 +222,20 @@ export function useInboxController({
         setCurrentMessages(prev => [...prev, optimisticMessage]);
 
         try {
-            const result = await sendMessageAction(selectedConversation.id, text, isInternalNote);
+            let result;
+            if (isCrossConnection && !isInternalNote) {
+                // Inicia nova conversa (ou usa existente da mesma conexão) e envia a mensagem
+                result = await startOutboundConversationAction(selectedConversation.contactId, '', overrideConnectionId, text);
+                
+                if (result.success && result.conversationId && result.conversationId !== selectedConversation.id) {
+                    // Após enviar na nova conexão, seleciona a nova conversa imediatamente!
+                    handleSelectConversation(result.conversationId);
+                    return; // Termina o fluxo porque o switch de conversa vai resetar o estado e puxar do DB
+                }
+            } else {
+                result = await sendMessageAction(selectedConversation.id, text, isInternalNote);
+            }
+
             if (!result.success) throw new Error(result.error);
 
             // Replace temp id with real DB id so polling merge won't duplicate
@@ -233,7 +248,7 @@ export function useInboxController({
             notify.error('Erro de Envio', (error as Error).message);
             setCurrentMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'FAILED' } as Message : m));
         }
-    }, [selectedConversation, session, notify]);
+    }, [selectedConversation, session, notify, handleSelectConversation]);
 
     const handleSendMedia = useCallback(async (file: File, caption?: string) => {
         if (!selectedConversation || !session?.userId) return;

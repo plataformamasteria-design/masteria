@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { contacts, contactsToContactLists, contactsToTags } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
+import { requireCompanyIdOr401, requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 import { getCachedOrFetch, CacheTTL, apiCache } from '@/lib/api-cache';
 import { sanitizePhone, canonicalizeBrazilPhone } from '@/lib/utils';
 
@@ -66,11 +66,11 @@ const contactCreateSchema = z.object({
 // GET /api/v1/contacts
 export async function GET(request: NextRequest): Promise<NextResponse> {
     try {
-        const authResult = await requireCompanyIdOr401();
+        const authResult = await requireAuthWithUserOr401();
         if (authResult instanceof NextResponse) {
             return authResult; // Retorna 401 se não autenticado
         }
-        const { companyId } = authResult;
+        const { companyId, user } = authResult;
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get('page') || '1', 10);
         // Enforce maximum limit to prevent performance issues
@@ -83,12 +83,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         const listId = searchParams.get('listId');
         const listIds = searchParams.getAll('listIds');
 
-        // Cache key baseado em todos os parâmetros
-        const cacheKey = `contacts:${companyId}:${page}:${limit}:${search || ''}:${sortBy}:${sortOrder}:${tagId || ''}:${listId || ''}:${listIds.join(',')}`;
+        // Cache key baseado em todos os parâmetros + role do usuário (para não misturar cache de admin com atendente)
+        const cacheKey = `contacts:${companyId}:${user.id}:${page}:${limit}:${search || ''}:${sortBy}:${sortOrder}:${tagId || ''}:${listId || ''}:${listIds.join(',')}`;
 
         // Buscar dados com cache (30 segundos - CacheTTL.SHORT)
         const data = await getCachedOrFetch(cacheKey, async () => {
-            return await fetchContactsData({ companyId, page, limit, search, sortBy, sortOrder, tagId, listId, listIds });
+            return await fetchContactsData({ companyId, user, page, limit, search, sortBy, sortOrder, tagId, listId, listIds });
         }, CacheTTL.SHORT);
 
         console.log(`[Contacts API] Returning ${data?.data?.length || 0} contacts out of ${data?.totalPages || 0} pages for company ${companyId}`);
@@ -106,6 +106,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 async function fetchContactsData(options: {
     companyId: string;
+    user: any;
     page: number;
     limit: number;
     search: string | null;
@@ -115,7 +116,7 @@ async function fetchContactsData(options: {
     listId: string | null;
     listIds: string[];
 }) {
-    const { companyId, page, limit, search, sortBy, sortOrder, tagId, listId, listIds } = options;
+    const { companyId, user, page, limit, search, sortBy, sortOrder, tagId, listId, listIds } = options;
     const offset = (page - 1) * limit;
 
     // ✅ IMPORTANTE: Usar a mesma lógica SQL para contagem e dados para garantir consistência
@@ -130,6 +131,10 @@ async function fetchContactsData(options: {
 
     // Construir filtros WHERE dinâmicos (usados tanto para contagem quanto para dados)
     let whereConditions = sql`c.company_id = ${companyId}`;
+
+    // Acesso à lista de contatos é global. Se o admin não quiser que o agente veja contatos, 
+    // ele deve desabilitar a aba "Contatos" nas permissões do agente.
+    // Filtrar contatos baseado em conversas (EXISTS) esconde contatos recém-criados.
 
     if (search) {
         const digitsOnlySearch = search.replace(/\D/g, '');

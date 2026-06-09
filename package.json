@@ -7,7 +7,6 @@
   },
   "packageManager": "npm@10.2.4",
   "scripts": {
-    "predev": "node scripts/portal-clean.js .next/cache",
     "dev": "next dev -p 3000 --hostname 0.0.0.0",
     "dev:server": "NODE_OPTIONS='--max-old-space-size=2048 --expose-gc' tsx watch src/server.ts",
     "dev:safe": "node scripts/auto-fix-server.js && npm run dev:server",

@@ -144,14 +144,24 @@ export async function fetchInitialConversations() {
         const userId = await getUserIdFromSession();
 
         const [user] = await db.select({ role: users.role, permissions: users.permissions }).from(users).where(eq(users.id, userId));
-        const isLimited = user?.role === 'atendente' && (user.permissions as any)?.viewMode === 'assigned_only';
+        const viewMode = (user?.permissions as any)?.viewMode || 'all';
+        const isAssignedOnly = user?.role === 'atendente' && viewMode === 'assigned_only';
+        const allowedConnectionIds = user?.role === 'atendente' ? ((user?.permissions as any)?.allowedConnectionIds || []) : null;
 
         const conditions = [
             eq(conversations.companyId, companyId),
             not(eq(conversations.status, 'archived'))
         ];
 
-        if (isLimited) {
+        if (allowedConnectionIds !== null) {
+            if (allowedConnectionIds.length > 0) {
+                conditions.push(inArray(conversations.connectionId, allowedConnectionIds));
+            } else {
+                conditions.push(sql`false`);
+            }
+        }
+
+        if (isAssignedOnly) {
             conditions.push(eq(conversations.assignedTo, userId));
         }
 
@@ -196,6 +206,8 @@ export async function fetchInitialConversations() {
                     FROM ${messages} 
                     WHERE ${messages.conversationId} = ${conversations.id} 
                     AND ${messages.companyId} = ${conversations.companyId}
+                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds)})` : sql`1=1`})
+                    AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
                     ORDER BY ${messages.sentAt} DESC 
                     LIMIT 1
                 )`.as('last_message'),
@@ -204,6 +216,8 @@ export async function fetchInitialConversations() {
                     FROM ${messages} 
                     WHERE ${messages.conversationId} = ${conversations.id} 
                     AND ${messages.companyId} = ${conversations.companyId}
+                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds)})` : sql`1=1`})
+                    AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
                     ORDER BY ${messages.sentAt} DESC 
                     LIMIT 1
                 )`.as('last_message_status'),
@@ -212,6 +226,8 @@ export async function fetchInitialConversations() {
                     FROM ${messages} 
                     WHERE ${messages.conversationId} = ${conversations.id} 
                     AND ${messages.companyId} = ${conversations.companyId}
+                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds)})` : sql`1=1`})
+                    AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
                     ORDER BY ${messages.sentAt} DESC 
                     LIMIT 1
                 )`.as('last_message_sender_type'),
@@ -505,13 +521,18 @@ export async function startOutboundConversationAction(contactId: string, kanbanC
         // DB Transaction
         let savedConvId = '';
         await db.transaction(async (tx) => {
-            const [existing] = await tx.select().from(conversations).where(and(eq(conversations.contactId, contact.id), not(eq(conversations.status, 'archived')))).limit(1);
+            const [existing] = await tx.select().from(conversations).where(and(
+                eq(conversations.contactId, contact.id),
+                eq(conversations.connectionId, connectionId),
+                not(eq(conversations.status, 'archived'))
+            )).limit(1);
             
             if (existing) {
                 savedConvId = existing.id;
-                // NÃO sobrescreve connectionId — mantém a conexão original da conversa
+                // Atualiza o assignedTo e o timestamp da conversa desta conexão
                 await tx.update(conversations).set({ assignedTo: userId, lastMessageAt: new Date() }).where(eq(conversations.id, savedConvId));
             } else {
+                // Cria nova conversa isolada para esta conexão
                 const [newConv] = await tx.insert(conversations).values({
                     companyId,
                     contactId: contact.id,

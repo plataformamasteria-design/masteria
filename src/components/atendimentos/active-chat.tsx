@@ -65,7 +65,7 @@ interface ActiveChatProps {
   messages: Message[];
   loadingMessages: boolean;
   templates: Template[];
-  onSendMessage: (text: string, isInternalNote?: boolean) => Promise<void>;
+  onSendMessage: (text: string, isInternalNote?: boolean, overrideConnectionId?: string) => Promise<void>;
   onSendMedia?: (file: File) => Promise<void>;
   onBack: () => void;
   onToggleAi: (conversationId: string, aiActive: boolean) => Promise<void>;
@@ -176,8 +176,37 @@ export function ActiveChat({
 
   const isConversationAssigned = !!activeAssignedTo || !!activeTeamId;
   const isAssignedToMe = activeAssignedTo === currentUserId;
-  // Admins/SuperAdmins podem sempre enviar — sem bloqueio de atribuição
-  const canSendMessage = isAdminOrSuperAdmin || isAssignedToMe;
+
+  const viewMode = (session?.userData?.permissions as any)?.viewMode || 'all';
+  const isAssignedOnly = currentUserRole === 'atendente' && viewMode === 'assigned_only';
+  const allowedConnectionIds = currentUserRole === 'atendente' ? ((session?.userData?.permissions as any)?.allowedConnectionIds || []) : null;
+  const isConnectionAllowedOriginal = currentUserRole === 'atendente' && allowedConnectionIds?.length > 0
+    ? (conversation?.connectionId && allowedConnectionIds.includes(conversation.connectionId))
+    : true;
+
+  // OVERRIDE DE CONEXÃO: Se for restrito e não for a conexão dele, forçamos a conexão dele!
+  let activeConnectionId = conversation?.connectionId;
+  let isConnectionForced = false;
+  if (!isConnectionAllowedOriginal && allowedConnectionIds?.length > 0) {
+    activeConnectionId = allowedConnectionIds[0]; // Trava na conexão atribuída
+    isConnectionForced = true;
+  }
+
+  // O dropdown só deve mostrar as conexões permitidas
+  const finalAvailableConnections = allowedConnectionIds?.length > 0 
+    ? availableConnections.filter(c => allowedConnectionIds.includes(c.id))
+    : availableConnections;
+
+  const currentConnection = finalAvailableConnections.find(c => c.id === activeConnectionId) 
+    || availableConnections.find(c => c.id === activeConnectionId);
+
+  // Como forçamos a conexão permitida, o usuário sempre pode enviar (na SUA conexão)
+  const isConnectionAllowed = true; 
+
+  // Admins/SuperAdmins podem sempre enviar
+  // Atendentes com visão total podem enviar se isConnectionAllowed
+  // Atendentes restritos só podem enviar se atribuídos E isConnectionAllowed (no caso de novo chat, consideramos true)
+  const canSendMessage = isAdminOrSuperAdmin || ((!isAssignedOnly || isAssignedToMe || isConnectionForced) && isConnectionAllowed);
 
   const lastWindowOpeningMessage = React.useMemo(() => {
     // A janela de 24 horas da Meta SÓ É ABERTA por mensagens do cliente.
@@ -296,7 +325,7 @@ export function ActiveChat({
 
     setIsSending(true);
     try {
-      await onSendMessage(messageText, isInternalNote);
+      await onSendMessage(messageText, isInternalNote, isConnectionForced ? activeConnectionId : undefined);
       setMessageText('');
       setReplyToMessage(null);
       // Don't reset isInternalNote to allow multiple internal notes easily
@@ -399,26 +428,30 @@ export function ActiveChat({
           />
 
           {/* Connection Toggle */}
-          {availableConnections.length > 0 && onSwitchConnection && (
-            <DropdownMenu open={showConnectionDropdown} onOpenChange={setShowConnectionDropdown}>
+          {finalAvailableConnections.length > 0 && onSwitchConnection && (
+            <DropdownMenu open={showConnectionDropdown && finalAvailableConnections.length > 1} onOpenChange={setShowConnectionDropdown}>
               <DropdownMenuTrigger asChild>
                   <button
                     type="button"
+                    disabled={finalAvailableConnections.length <= 1}
                     className={cn(
                       "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 mr-1 outline-none shrink min-w-0",
-                      ['baileys', 'evolution'].includes(('connectionType' in conversation ? conversation.connectionType as string : '') || '')
+                      ['baileys', 'evolution'].includes(currentConnection?.connectionType || ('connectionType' in conversation ? conversation.connectionType as string : '') || '')
                         ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/15 focus:ring-2 focus:ring-blue-500/30'
-                        : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 focus:ring-2 focus:ring-emerald-500/30'
+                        : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15 focus:ring-2 focus:ring-emerald-500/30',
+                      finalAvailableConnections.length <= 1 && 'cursor-default opacity-90 hover:bg-transparent'
                     )}
                   >
                     <Wifi className="h-3.5 w-3.5 shrink-0" />
                     <span className="hidden lg:inline max-w-[90px] truncate">
-                      {conversation.connectionName ? conversation.connectionName : (['baileys', 'evolution'].includes(('connectionType' in conversation ? conversation.connectionType as string : '') || '') ? 'Baileys' : 'API')}
+                      {currentConnection?.config_name || conversation.connectionName || (['baileys', 'evolution'].includes(('connectionType' in conversation ? conversation.connectionType as string : '') || '') ? 'Baileys' : 'API')}
                     </span>
-                  <ChevronDown className={cn(
-                    "h-3 w-3 transition-transform duration-300",
-                    showConnectionDropdown && 'rotate-180'
-                  )} />
+                  {finalAvailableConnections.length > 1 && (
+                    <ChevronDown className={cn(
+                      "h-3 w-3 transition-transform duration-300",
+                      showConnectionDropdown && 'rotate-180'
+                    )} />
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-72 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 p-1">
@@ -427,7 +460,7 @@ export function ActiveChat({
                 </DropdownMenuLabel>
                 <div className="max-h-[350px] overflow-y-auto overflow-x-hidden">
                   {(() => {
-                    if (availableConnections.length === 0) {
+                    if (finalAvailableConnections.length === 0) {
                       return (
                         <div className="px-3 py-6 flex flex-col items-center gap-2 text-center text-xs text-muted-foreground">
                           <Wifi className="h-5 w-5 opacity-20" />
@@ -436,9 +469,9 @@ export function ActiveChat({
                       );
                     }
 
-                    const sortedConnections = [...availableConnections].sort((a, b) => {
-                      const isCurrentA = a.id === conversation?.connectionId;
-                      const isCurrentB = b.id === conversation?.connectionId;
+                    const sortedConnections = [...finalAvailableConnections].sort((a, b) => {
+                      const isCurrentA = a.id === activeConnectionId;
+                      const isCurrentB = b.id === activeConnectionId;
                       if (isCurrentA) return -1;
                       if (isCurrentB) return 1;
 
@@ -774,7 +807,23 @@ export function ActiveChat({
 
       {/* Premium Input Area */}
       <div className="shrink-0 border-t border-white/5 bg-transparent p-3 pt-2 overflow-x-hidden relative">
-        {!isArchived && is24hRestricted && (
+        {!isArchived && currentUserRole === 'atendente' && !isConnectionAllowed && (
+          <div className="w-full flex justify-center mb-1.5 pointer-events-none">
+            <div className="text-[10px] text-rose-500 font-semibold flex items-center gap-1.5 bg-rose-500/10 py-1 px-3 rounded-full border border-rose-500/20">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              <span>Você não tem permissão para enviar mensagens por esta conexão.</span>
+            </div>
+          </div>
+        )}
+        {!isArchived && currentUserRole === 'atendente' && isConnectionAllowed && isAssignedOnly && !isAssignedToMe && (
+          <div className="w-full flex justify-center mb-1.5 pointer-events-none">
+            <div className="text-[10px] text-rose-500 font-semibold flex items-center gap-1.5 bg-rose-500/10 py-1 px-3 rounded-full border border-rose-500/20">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              <span>Você só pode enviar mensagens em conversas atribuídas a você.</span>
+            </div>
+          </div>
+        )}
+        {!isArchived && is24hRestricted && canSendMessage && (
           <div className="w-full flex justify-center mb-1.5 pointer-events-none">
             {canSendFreeform && timeLeft !== null && timeLeft > 0 ? (
               <div className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1.5 bg-emerald-500/10 py-1 px-3 rounded-full border border-emerald-500/20">

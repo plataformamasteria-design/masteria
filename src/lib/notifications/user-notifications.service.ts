@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { userNotifications } from '@/lib/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 
 export type UserNotificationType = 'campaign_completed' | 'new_conversation' | 'new_appointment' | 'system_error' | 'info';
 
@@ -148,7 +148,7 @@ export class UserNotificationsService {
 
   static async getUnreadCount(userId: string): Promise<number> {
     const result = await db
-      .select()
+      .select({ count: sql<number>`count(*)` })
       .from(userNotifications)
       .where(
         and(
@@ -157,7 +157,7 @@ export class UserNotificationsService {
         )
       );
     
-    return result.length;
+    return Number(result[0]?.count) || 0;
   }
 
   static async notifyOpenAIQuotaExhausted(

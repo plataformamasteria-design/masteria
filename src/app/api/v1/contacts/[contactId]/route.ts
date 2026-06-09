@@ -6,6 +6,7 @@ import { eq, and, sql, inArray } from 'drizzle-orm';
 import { logContactEvent } from '@/lib/contact-events';
 import { z } from 'zod';
 import { getCompanyIdFromSession } from '@/app/actions';
+import { requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 
 const contactUpdateSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').optional(),
@@ -33,7 +34,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ contactId: string }> }) {
   try {
-    const companyId = await getCompanyIdFromSession();
+    const authResult = await requireAuthWithUserOr401();
+    if (authResult instanceof NextResponse) return authResult;
+    const { companyId, user } = authResult;
+
+    const viewMode = user.permissions?.viewMode || 'all';
+    const isAssignedOnly = user.role === 'atendente' && viewMode === 'assigned_only';
+    const allowedConnectionIds = user.role === 'atendente' ? (user.permissions?.allowedConnectionIds || []) : null;
+
     const { contactId } = await params;
     const results = await db
       .select()
@@ -72,9 +80,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         eq(contactLists.companyId, companyId)
       ));
 
-    // ✅ CORREÇÃO: Buscar apenas conversas ativas com connectionId válido
-    // Filtrar conversas órfãs (sem connectionId) e agrupar por número de telefone
-    // Retornar apenas uma conversa por número (a mais recente)
+    let connectionFilter = sql``;
+    if (user.role === 'atendente') {
+        if (allowedConnectionIds && allowedConnectionIds.length > 0) {
+            const inClause = sql.join(allowedConnectionIds.map((id: string) => sql`${id}`), sql`, `);
+            connectionFilter = sql`AND c.connection_id IN (${inClause})`;
+        } else if (allowedConnectionIds && allowedConnectionIds.length === 0) {
+            // Atendente sem nenhuma conexão configurada, não vê nada
+            connectionFilter = sql`AND false`;
+        }
+
+        if (isAssignedOnly) {
+            connectionFilter = sql`${connectionFilter} AND c.assigned_to = ${user.id}`;
+        }
+    }
+
     const activeConversationsRaw = await db.execute(sql`
       WITH ranked_conversations AS (
         SELECT 
@@ -96,6 +116,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         WHERE c.contact_id = ${contact.id}
           AND c.company_id = ${companyId}
           AND c.archived_at IS NULL
+          ${connectionFilter}
       )
       SELECT 
         id,

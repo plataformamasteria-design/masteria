@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { conversations, messages, contacts, templates, connections, messageReactions } from '@/lib/db/schema';
 import { eq, and, desc, inArray, lt, or } from 'drizzle-orm';
 import { getCompanyIdFromSession, getUserIdFromSession } from '@/app/actions';
+import { requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 import { sendWhatsappTemplateMessage, sendWhatsappTextMessage } from '@/lib/facebookApiService';
 import { evolutionApiService } from '@/services/evolution-api.service';
 import { z } from 'zod';
@@ -52,12 +53,23 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ conversationId: string }> }): Promise<NextResponse> {
     try {
-        const companyId = await getCompanyIdFromSession();
+        const authResult = await requireAuthWithUserOr401();
+        if (authResult instanceof NextResponse) return authResult;
+        const { companyId, user } = authResult;
+        
+        const viewMode = user.permissions?.viewMode || 'all';
+        const isAssignedOnly = user.role === 'atendente' && viewMode === 'assigned_only';
+        const allowedConnectionIds = user.role === 'atendente' ? (user.permissions?.allowedConnectionIds || []) : null;
+
         const { conversationId } = await params;
 
         // [SECURITY] Validate Multi-Tenant Ownership
         // Prevents IDOR: Users can only see messages from their own company's conversations
-        const [isValidConversation] = await db.select({ id: conversations.id })
+        const [isValidConversation] = await db.select({ 
+            id: conversations.id, 
+            connectionId: conversations.connectionId, 
+            assignedTo: conversations.assignedTo 
+        })
             .from(conversations)
             .where(and(
                 eq(conversations.id, conversationId),
@@ -69,16 +81,38 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: 'Conversa não encontrada ou sem permissão.' }, { status: 404 });
         }
 
+        if (user.role === 'atendente') {
+            if (allowedConnectionIds && allowedConnectionIds.length > 0) {
+                if (!isValidConversation.connectionId || !allowedConnectionIds.includes(isValidConversation.connectionId)) {
+                    return NextResponse.json({ error: 'Você não tem permissão para visualizar mensagens desta conexão.' }, { status: 403 });
+                }
+            }
+
+            if (isAssignedOnly) {
+                if (isValidConversation.assignedTo !== user.id) {
+                    return NextResponse.json({ error: 'Você não tem permissão para visualizar mensagens de uma conversa que não está atribuída a você.' }, { status: 403 });
+                }
+            }
+        }
+
+        if (!isValidConversation) {
+            return NextResponse.json({ error: 'Conversa não encontrada ou sem permissão.' }, { status: 404 });
+        }
+
         const { searchParams } = new URL(request.url);
 
         const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
         const before = searchParams.get('before');
 
-        // SECURITY: Validar tenant ao buscar mensagens
+        // SECURITY: Validar tenant e garantir que mensagens antigas vazadas não apareçam
         const conditions = [
             eq(messages.conversationId, conversationId),
             eq(messages.companyId, companyId)
         ];
+
+        if (isValidConversation.connectionId) {
+            conditions.push(eq(messages.connectionId, isValidConversation.connectionId));
+        }
 
         if (before) {
             const beforeDate = new Date(before);
@@ -137,14 +171,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ conversationId: string }> }): Promise<NextResponse> {
     try {
-        const companyId = await getCompanyIdFromSession();
-        if (!companyId) {
-            return NextResponse.json({ error: 'Empresa não autenticada.' }, { status: 401 });
-        }
-        const agentId = await getUserIdFromSession();
-        if (!agentId) {
-            return NextResponse.json({ error: 'Agente não autenticado.' }, { status: 401 });
-        }
+        const authResult = await requireAuthWithUserOr401();
+        if (authResult instanceof NextResponse) return authResult;
+        const { companyId, user } = authResult;
+        const agentId = user.id;
+
+        const viewMode = user.permissions?.viewMode || 'all';
+        const isAssignedOnly = user.role === 'atendente' && viewMode === 'assigned_only';
+        const allowedConnectionIds = user.role === 'atendente' ? (user.permissions?.allowedConnectionIds || []) : null;
 
         const { conversationId } = await params;
         const body = await request.json();
@@ -190,6 +224,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         if (!conversation.connectionId) {
             return NextResponse.json({ error: 'A conversa não está associada a nenhuma conexão.' }, { status: 400 });
+        }
+
+        if (user.role === 'atendente') {
+            if (allowedConnectionIds && allowedConnectionIds.length > 0) {
+                if (!allowedConnectionIds.includes(conversation.connectionId)) {
+                    return NextResponse.json({ error: 'Você não tem permissão para enviar mensagens através desta conexão.' }, { status: 403 });
+                }
+            }
+
+            if (isAssignedOnly) {
+                if (conversation.assignedTo !== user.id) {
+                    return NextResponse.json({ error: 'Você não tem permissão para enviar mensagens em uma conversa não atribuída a você.' }, { status: 403 });
+                }
+            }
         }
 
         // SECURITY: Validar tenant ao buscar conexão

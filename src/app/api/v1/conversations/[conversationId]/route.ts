@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { conversations } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { getCompanyIdFromSession } from '@/app/actions';
+import { requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 
 // GET /api/v1/conversations/[conversationId] -> Retrieve a conversation
 
@@ -13,8 +13,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ conversationId: string }> }) {
     try {
-        const companyId = await getCompanyIdFromSession();
+        const authResult = await requireAuthWithUserOr401();
+        if (authResult instanceof NextResponse) return authResult;
+        const { companyId, user } = authResult;
         const { conversationId } = await params;
+
+        const viewMode = user.permissions?.viewMode || 'all';
+        const isAssignedOnly = user.role === 'atendente' && viewMode === 'assigned_only';
+        const allowedConnectionIds = user.role === 'atendente' ? (user.permissions?.allowedConnectionIds || []) : null;
 
         const [conversation] = await db
             .select()
@@ -27,6 +33,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         if (!conversation) {
             return NextResponse.json({ error: 'Conversa não encontrada.' }, { status: 404 });
+        }
+
+        if (user.role === 'atendente') {
+            if (allowedConnectionIds && allowedConnectionIds.length > 0) {
+                if (!allowedConnectionIds.includes(conversation.connectionId)) {
+                    return NextResponse.json({ error: 'Você não tem permissão para acessar esta conversa.' }, { status: 403 });
+                }
+            }
+
+            if (isAssignedOnly) {
+                if (conversation.assignedTo !== user.id) {
+                    return NextResponse.json({ error: 'Você não tem permissão para acessar esta conversa pois não está atribuída a você.' }, { status: 403 });
+                }
+            }
         }
 
         return NextResponse.json(conversation);

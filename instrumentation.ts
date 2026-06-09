@@ -9,7 +9,7 @@ export async function register() {
     console.log('[Instrumentation] 🚀 Server-side initialization starting...');
 
     // ✅ PERFORMANCE FIX: Pular workers que dependem de Redis em desenvolvimento local
-    const isLocalDev = process.platform === 'win32' && process.env.NODE_ENV !== 'production';
+    const isLocalDev = process.env.NODE_ENV !== 'production';
     const hasRedis = !!(process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL || process.env.REDISHOST);
 
     if (!isLocalDev || hasRedis) {
@@ -39,6 +39,7 @@ export async function register() {
     // Initialize Baileys Bridge: WebSocket listener + auto-resume sessions via microservice
     // Using setImmediate to not block server startup
     setImmediate(async () => {
+      /* [V3 FIX] Removido imports fantasmas do baileys para evitar erros de compilação
       try {
         const { initBaileysWSListener } = await import('./src/lib/baileys-ws-listener');
         initBaileysWSListener();
@@ -55,6 +56,7 @@ export async function register() {
       } catch (error) {
         console.error('[Instrumentation] ❌ Failed to resume WhatsApp sessions:', error);
       }
+      */
 
       // Start Automation Timeout Worker
       try {
@@ -67,6 +69,7 @@ export async function register() {
       }
 
       // Start periodic unattended leads monitor (every 5 minutes)
+      /* [V3 FIX] Removido unattended leads monitor inexistente
       try {
         const { startUnattendedLeadsMonitor } = await import('./src/services/unattended-leads.service');
         startUnattendedLeadsMonitor();
@@ -74,6 +77,7 @@ export async function register() {
       } catch (error) {
         console.error('[Instrumentation] ❌ Failed to start UnattendedLeadsMonitor:', error);
       }
+      */
 
       // Start pending messages auto-responder (every 60 seconds)
       try {
@@ -101,6 +105,19 @@ export async function register() {
         }
       } catch (err) {
         console.error('[Instrumentation] ❌ Failed to start meeting reminder service:', err);
+      }
+
+      // Start UTM Auto Router (every 15 minutes)
+      try {
+        const { utmAutoRouterService } = await import('./src/services/utm-auto-router.service');
+        if (utmAutoRouterService && typeof utmAutoRouterService.start === 'function') {
+           utmAutoRouterService.start();
+           console.log('[Instrumentation] ✅ UTM Auto Router service started');
+        } else {
+           console.warn('[Instrumentation] ⚠️ utmAutoRouterService could not be loaded');
+        }
+      } catch (err) {
+        console.error('[Instrumentation] ❌ Failed to start UTM auto router service:', err);
       }
     });
   }

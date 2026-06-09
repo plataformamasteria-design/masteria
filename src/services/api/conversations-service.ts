@@ -12,6 +12,7 @@ export interface AdvancedFilters {
     filterKanbanId: string | null;
     filterConnectionId?: string | null;
     filterSource?: string | null;
+    showOtherConnections?: boolean;
 }
 
 class ConversationService {

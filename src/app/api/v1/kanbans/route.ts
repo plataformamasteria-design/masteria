@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { ensureCancelledStage, type KanbanStage } from '@/lib/kanban/ensure-cancelled-stage';
 import { getCachedOrFetch, CacheTTL } from '@/lib/api-cache';
+import { requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 
 const boardSchema = z.object({
     name: z.string().min(1, 'Nome do funil é obrigatório'),
@@ -33,7 +34,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(_request: NextRequest) {
     try {
-        const companyId = await getCompanyIdFromSession();
+        const authResult = await requireAuthWithUserOr401();
+        if (authResult instanceof NextResponse) return authResult;
+        const { companyId, user } = authResult;
+
+        const isRestricted = user.role === 'atendente';
+        const kanbanViewMode = isRestricted ? (user.permissions?.kanbanViewMode || 'all') : 'all';
+        const allowedConnectionIds = isRestricted ? (user.permissions?.allowedConnectionIds || []) : null;
 
         // Otimização: Em vez de buscar e depois fazer loop (problema N+1),
         // usamos um LEFT JOIN e agregamos os dados diretamente no banco.
@@ -47,6 +54,7 @@ export async function GET(_request: NextRequest) {
                     stages: kanbanBoards.stages,
                     createdAt: kanbanBoards.createdAt,
                     companyId: kanbanBoards.companyId,
+                    connectionIds: kanbanBoards.connectionIds,
                     totalLeads: sql<number>`count(${kanbanLeads.id})`.mapWith(Number),
                     totalValue: sql<number>`sum(${kanbanLeads.value})`.mapWith(Number),
                 })
@@ -56,6 +64,18 @@ export async function GET(_request: NextRequest) {
                 .groupBy(kanbanBoards.id)
                 .orderBy(desc(kanbanBoards.createdAt));
         }, CacheTTL.SHORT);
+
+        if (isRestricted) {
+            if (allowedConnectionIds && allowedConnectionIds.length > 0) {
+                const filtered = boardsWithCounts.filter(board => {
+                    if (!board.connectionIds || board.connectionIds.length === 0) return false;
+                    return board.connectionIds.some((id: string) => allowedConnectionIds.includes(id));
+                });
+                return NextResponse.json(filtered);
+            } else {
+                return NextResponse.json([]); // No allowed connections -> no boards
+            }
+        }
 
         return NextResponse.json(boardsWithCounts);
     } catch (error) {

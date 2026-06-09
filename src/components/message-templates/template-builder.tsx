@@ -114,6 +114,16 @@ export function TemplateBuilder({
         }
       }
 
+      if (comp.text) {
+        const allVars = comp.text.match(/\{\{.*?\}\}/g) || [];
+        const invalidVars = allVars.filter(v => !/^\{\{\d+\}\}$/.test(v));
+        if (invalidVars.length > 0) {
+           if (comp.type === 'BODY') newErrors[`body_${idx}`] = 'Variáveis inválidas detectadas. A Meta exige apenas números, ex: {{1}}, {{2}}';
+           if (comp.type === 'HEADER') newErrors[`header_${idx}`] = 'Variáveis inválidas detectadas. A Meta exige apenas números, ex: {{1}}';
+           if (comp.type === 'FOOTER') newErrors[`footer_${idx}`] = 'Não é permitido usar variáveis no rodapé.';
+        }
+      }
+
       if (comp.type === 'FOOTER') {
         if (comp.text && comp.text.length > 60) {
           newErrors[`footer_${idx}`] = 'Footer limitado a 60 caracteres';
@@ -124,6 +134,18 @@ export function TemplateBuilder({
          if (!comp.example?.header_handle || comp.example.header_handle.length === 0) {
             newErrors[`header_media_${idx}`] = 'É obrigatório enviar uma mídia de exemplo para aprovação do modelo';
          }
+      }
+
+      if (comp.type === 'BUTTONS' && comp.buttons) {
+        comp.buttons.forEach((btn, btnIdx) => {
+           if (btn.type === 'URL' && btn.url) {
+             const allVars = btn.url.match(/\{\{.*?\}\}/g) || [];
+             const invalidVars = allVars.filter(v => !/^\{\{\d+\}\}$/.test(v));
+             if (invalidVars.length > 0) {
+                 newErrors[`btn_url_${idx}_${btnIdx}`] = 'URLs só podem usar variáveis numéricas, ex: {{1}}';
+             }
+           }
+        });
       }
     });
 
@@ -527,7 +549,11 @@ export function TemplateBuilder({
                             handleButtonChange(index, buttonIndex, 'url', e.target.value)
                           }
                           placeholder="https://exemplo.com"
+                          className={errors[`btn_url_${index}_${buttonIndex}`] ? 'border-red-500' : ''}
                         />
+                        {errors[`btn_url_${index}_${buttonIndex}`] && (
+                          <p className="text-sm text-red-500 mt-1">{errors[`btn_url_${index}_${buttonIndex}`]}</p>
+                        )}
                       </div>
                     )}
 

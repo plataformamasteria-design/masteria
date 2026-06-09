@@ -242,6 +242,10 @@ function ResetPasswordDialog({ user, isOpen, setIsOpen }: { user: User | null, i
 function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | null, isOpen: boolean, setIsOpen: (open: boolean) => void, onSaved: () => void }): JSX.Element {
   const [tabs, setTabs] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<'all' | 'assigned_only'>('all');
+  const [kanbanViewMode, setKanbanViewMode] = useState<'all' | 'assigned_only'>('all');
+  const [allowedConnectionIds, setAllowedConnectionIds] = useState<string[]>([]);
+  const [connectionsList, setConnectionsList] = useState<any[]>([]);
+  const [isLoadingConnections, setIsLoadingConnections] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const notify = useMemo(() => createToastNotifier(toast), [toast]);
@@ -250,8 +254,30 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
   const agentTabs = allNavItems.filter(item => !item.requireEmail);
 
   useEffect(() => {
+    async function loadConnections() {
+      if (!isOpen) return;
+      setIsLoadingConnections(true);
+      try {
+        const response = await fetch('/api/v1/connections');
+        if (response.ok) {
+          const data = await response.json();
+          setConnectionsList(data);
+        }
+      } catch (err) {
+        console.error('Failed to load connections', err);
+      } finally {
+        setIsLoadingConnections(false);
+      }
+    }
+    loadConnections();
+  }, [isOpen]);
+
+  useEffect(() => {
     if (user && isOpen) {
-      const perms = (user as any).permissions || {};
+      let perms = (user as any).permissions || {};
+      if (typeof perms === 'string') {
+        try { perms = JSON.parse(perms); } catch (e) { perms = {}; }
+      }
       const userTabs = perms.tabs || {};
       const initTabs: Record<string, boolean> = {};
       
@@ -263,8 +289,16 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
       
       setTabs(initTabs);
       setViewMode(perms.viewMode || 'all');
+      setKanbanViewMode(perms.kanbanViewMode || 'all');
+      setAllowedConnectionIds(perms.allowedConnectionIds || []);
     }
   }, [user, isOpen]);
+
+  const handleToggleConnection = (connId: string) => {
+    setAllowedConnectionIds(prev => 
+      prev.includes(connId) ? prev.filter(id => id !== connId) : [...prev, connId]
+    );
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,7 +312,9 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
         body: JSON.stringify({ 
           permissions: {
             tabs,
-            viewMode
+            viewMode,
+            kanbanViewMode,
+            allowedConnectionIds
           }
         }),
       });
@@ -323,6 +359,60 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
                   <Label htmlFor="r2" className="font-normal cursor-pointer">Visão Limitada (Apenas conversas atribuídas a ele)</Label>
                 </div>
               </RadioGroup>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-1">Visibilidade do Pipeline Kanban</h4>
+                <p className="text-sm text-muted-foreground mb-3">Defina se o agente pode ver todos os leads ou apenas os que estão em suas conexões e atribuídos a ele.</p>
+              </div>
+              <RadioGroup value={kanbanViewMode} onValueChange={(val) => setKanbanViewMode(val as 'all' | 'assigned_only')}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="all" id="k1" />
+                  <Label htmlFor="k1" className="font-normal cursor-pointer">Visão Total (Pode ver o Pipeline Completo das conexões liberadas)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="assigned_only" id="k2" />
+                  <Label htmlFor="k2" className="font-normal cursor-pointer">Visão Limitada (Apenas leads atribuídos a ele nas conexões liberadas)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div className="h-px bg-border w-full my-4" />
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-1">Conexões Permitidas</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Quais conexões (números/contas) este agente pode acessar? 
+                  <br/>
+                  <span className="text-xs opacity-80">Isso limita o envio de mensagens e, na visão limitada, permite visualizar todas as conversas das conexões selecionadas.</span>
+                </p>
+              </div>
+              
+              <div className="space-y-3 bg-muted/30 p-4 rounded-lg border max-h-[200px] overflow-y-auto">
+                {isLoadingConnections ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : connectionsList.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center">Nenhuma conexão encontrada.</p>
+                ) : (
+                  connectionsList.map(conn => (
+                    <div key={conn.id} className="flex items-center justify-between">
+                      <Label htmlFor={`conn-${conn.id}`} className="flex flex-col cursor-pointer font-normal">
+                        <span className="font-medium">{conn.config_name}</span>
+                        <span className="text-xs text-muted-foreground">{conn.connectionType} {conn.phone ? `- ${conn.phone}` : ''}</span>
+                      </Label>
+                      <Switch 
+                        id={`conn-${conn.id}`} 
+                        checked={allowedConnectionIds.includes(conn.id)} 
+                        onCheckedChange={() => handleToggleConnection(conn.id)}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             <div className="h-px bg-border w-full my-4" />
@@ -392,7 +482,7 @@ export function TeamTable({ initialUsers = [] }: { initialUsers?: User[] }): JSX
   const fetchUsers = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      const response = await fetch('/api/v1/team/users');
+      const response = await fetch(`/api/v1/team/users?t=${Date.now()}`);
       if (!response.ok) {
         throw new Error('Falha ao buscar os utilizadores da equipe.');
       }

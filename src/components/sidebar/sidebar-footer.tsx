@@ -19,8 +19,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { createToastNotifier } from '@/lib/toast-helper';
 import { m as motion, AnimatePresence } from 'framer-motion';
-// Assuming useNotifications is available or we stub it inside if not needed here
-import { useNotifications } from '@/hooks/use-notifications';
+import { NotificationPopover } from '@/components/notifications/notification-popover';
 
 interface SidebarFooterProps {
     expanded: boolean;
@@ -42,9 +41,6 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
     
     useEffect(() => setMounted(true), []);
 
-    // Real implementation for notifications
-    const { notifications, unreadCount, markAsRead, mounted: notifMounted } = useNotifications(30000);
-
     const userName = session?.userData?.name || 'Utilizador';
     const userRole = session?.userData?.role;
     const userEmail = session?.userData?.email || 'email@exemplo.com';
@@ -53,11 +49,11 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
         setIsLoggingOut(true);
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
-            await signOut({ callbackUrl: '/login', redirect: true });
+            await signOut({ callbackUrl: '/', redirect: true });
         } catch (error) {
             console.error("Logout failed:", error);
             notify.error('Erro ao Sair', 'Não foi possível fazer o logout.');
-            router.push('/login');
+            router.push('/');
         } finally {
             setIsLoggingOut(false);
         }
@@ -88,72 +84,7 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
                     </TooltipProvider>
 
                     {/* Notifications */}
-                    <DropdownMenu>
-                        <TooltipProvider>
-                            <Tooltip delayDuration={300}>
-                                <TooltipTrigger asChild>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="relative h-10 w-10 rounded-2xl text-muted-foreground transition-all duration-300 hover:text-foreground dark:hover:text-white hover:bg-black/[0.05] dark:hover:bg-white/[0.08] hover:shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]"
-                                        >
-                                            <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
-                                            <AnimatePresence>
-                                                {notifMounted && unreadCount > 0 && (
-                                                    <motion.span
-                                                        initial={{ scale: 0 }}
-                                                        animate={{ scale: 1 }}
-                                                        exit={{ scale: 0 }}
-                                                        className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] rounded-full bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] font-bold flex items-center justify-center px-1 shadow-sm"
-                                                    >
-                                                        {unreadCount}
-                                                    </motion.span>
-                                                )}
-                                            </AnimatePresence>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="bg-card/95 backdrop-blur-md border border-white/[0.05] shadow-xl">
-                                    Notificações
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-
-                        <DropdownMenuContent align="end" side="right" className="w-80 max-h-[400px] overflow-y-auto bg-card/95 backdrop-blur-2xl border-border/50 shadow-2xl">
-                            <DropdownMenuLabel className="font-bold tracking-tight">Registro de Alertas</DropdownMenuLabel>
-                            <DropdownMenuSeparator className="bg-border/50" />
-                            {notifications.length === 0 ? (
-                                <div className="p-4 text-center text-sm text-muted-foreground opacity-70">
-                                    Nenhuma notificação recente
-                                </div>
-                            ) : (
-                                notifications.map((notification) => (
-                                    <DropdownMenuItem
-                                        key={notification.id}
-                                        className={cn(
-                                            "flex flex-col items-start gap-1 cursor-pointer transition-colors focus:bg-black/[0.05] dark:focus:bg-white/[0.05]",
-                                            !notification.isRead && "bg-primary/5"
-                                        )}
-                                        onClick={() => {
-                                            if (!notification.isRead) markAsRead(notification.id);
-                                            if (notification.linkTo) router.push(notification.linkTo);
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-start w-full">
-                                            <p className={cn("text-sm", !notification.isRead ? "font-bold text-primary" : "font-semibold")}>
-                                                {notification.title}
-                                            </p>
-                                            <span className="text-[10px] text-muted-foreground">
-                                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: ptBR })}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
-                                    </DropdownMenuItem>
-                                ))
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <NotificationPopover />
 
 
 

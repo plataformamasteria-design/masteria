@@ -16,17 +16,22 @@ const DEFAULT_RULES: UtmRoutingRule[] = [
   { id: 'default-casais',  pattern: 'casal[- ]?de[- ]?neg[oó]cios|encontro de casais', isRegex: true, targetBoardId: '', targetBoardName: 'FUNIL ENCONTRO DE CASAIS', isActive: true, label: 'CASAIS'},
 ];
 
-// ─── Extração de utm_campaign ─────────────────────────────────────────────────
-function extractUtmCampaign(customFields: unknown): string | null {
-  if (!customFields || typeof customFields !== 'object') return null;
+// ─── Extração de utm_campaign (suporta múltiplos UTMs separados por vírgula) ───
+function extractUtmCampaigns(customFields: unknown): string[] {
+  if (!customFields || typeof customFields !== 'object') return [];
   const key = Object.keys(customFields as Record<string, unknown>).find(k =>
     k.toLowerCase().includes('utm_campaign') ||
     k.toLowerCase().includes('utm campaing') ||
     k.toLowerCase().includes('utm campaign')
   );
-  if (!key) return null;
+  if (!key) return [];
   const val = (customFields as Record<string, unknown>)[key];
-  return val ? String(val).trim() : null;
+  if (!val) return [];
+  
+  if (Array.isArray(val)) {
+    return val.map(v => String(v).trim()).filter(Boolean);
+  }
+  return String(val).split(',').map(v => v.trim()).filter(Boolean);
 }
 
 // ─── Match UTM contra uma regra ───────────────────────────────────────────────
@@ -163,24 +168,32 @@ export async function GET(request: NextRequest) {
     let cf = row.customFields as unknown;
     if (typeof cf === 'string') { try { cf = JSON.parse(cf); } catch { cf = {}; } }
 
-    const utm = extractUtmCampaign(cf);
-    if (!utm) continue;
+    const utms = extractUtmCampaigns(cf);
+    if (utms.length === 0) continue;
     totalWithUtm++;
 
-    // Encontrar primeira regra que faz match
-    const matchedRule = activeRules.find(r => matchRule(utm, r));
-    if (!matchedRule) continue;
+    // Encontrar primeira regra que faz match em QUALQUER um dos UTMs
+    let matchedRule: UtmRoutingRule | undefined;
+    let matchedUtm = '';
+    
+    for (const utm of utms) {
+      const rule = activeRules.find(r => matchRule(utm, r));
+      if (rule && rule.targetBoardId && rule.targetBoardId !== boardId) {
+        // Encontrou um mismatch!
+        const targetBoard = boardById.get(rule.targetBoardId);
+        // Garantir que não é um falso positivo para o próprio board
+        if (targetBoard && targetBoard.id !== boardId) {
+          matchedRule = rule;
+          matchedUtm = utm;
+          break;
+        }
+      }
+    }
 
-    // Verificar se a regra aponta para o próprio board atual
-    if (matchedRule.targetBoardId === boardId) continue;
+    if (!matchedRule || !matchedRule.targetBoardId) continue;
 
-    // Verificar também pelo keyword do funil (para defaults sem boardId correto)
-    if (!matchedRule.targetBoardId) continue;
     const targetBoard = boardById.get(matchedRule.targetBoardId);
     if (!targetBoard) continue;
-
-    // Evitar falsos positivos: se o funil atual é o destino
-    if (targetBoard.id === boardId) continue;
 
     const targetStages = (targetBoard.stages as KanbanStage[]) || [];
 
@@ -195,7 +208,7 @@ export async function GET(request: NextRequest) {
       contactId: row.contactId,
       contactName: row.contactName || '',
       contactPhone: row.contactPhone || '',
-      utmCampaign: utm,
+      utmCampaign: matchedUtm,
       matchedRuleId: matchedRule.id,
       matchedRuleLabel: matchedRule.label ?? matchedRule.pattern,
       suggestedBoardId: targetBoard.id,

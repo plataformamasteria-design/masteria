@@ -11,16 +11,18 @@ export function getRedisConnection(): Redis {
   if (!redisConnection) {
     // ✅ PERFORMANCE FIX: No Windows sem REDIS_URL, retornar mock imediatamente
     // Evita loop infinito de ECONNREFUSED que trava o event loop
-    const isWindows = process.platform === 'win32';
     const hasRedisConfig = !!(process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL || process.env.REDISHOST);
-    if (isWindows && !hasRedisConfig) {
-      console.warn('⚠️ [BullMQ] Windows sem Redis configurado. Retornando mock silencioso.');
+    if (!hasRedisConfig) {
+      console.warn('⚠️ [BullMQ] Sem Redis configurado. Retornando mock silencioso para evitar lags.');
       return new Proxy({}, {
         get: (target, prop) => {
           if (prop === 'on' || prop === 'once') return () => { };
           if (prop === 'quit' || prop === 'disconnect') return async () => { };
           if (prop === 'ping') return async () => 'PONG';
           if (prop === 'status') return 'ready';
+          if (prop === 'info') return async () => 'redis_version:999.999.999\r\n';
+          if (prop === 'client') return async () => 'OK';
+          if (prop === 'options') return {};
           return () => Promise.resolve(null);
         }
       }) as any;
@@ -132,12 +134,10 @@ export function createRedisConnection(): Redis {
     process.env.SKIP_REDIS_CHECK === 'true' ||
     process.env.CI === 'true') && process.env.NODE_ENV !== 'production';
 
-  // ✅ PERFORMANCE FIX: No Windows sem Redis, retornar mock imediatamente
-  const isWindows = process.platform === 'win32';
   const hasRedisConfig = !!(process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL || process.env.REDISHOST);
 
-  if (isBuild || (isWindows && !hasRedisConfig)) {
-    if (isWindows && !hasRedisConfig) {
+  if (isBuild || !hasRedisConfig) {
+    if (!hasRedisConfig) {
       // Log apenas uma vez
     }
     return new Proxy({}, {
@@ -146,6 +146,9 @@ export function createRedisConnection(): Redis {
         if (prop === 'quit' || prop === 'disconnect') return async () => { };
         if (prop === 'ping') return async () => 'PONG';
         if (prop === 'status') return 'ready';
+        if (prop === 'info') return async () => 'redis_version:999.999.999\r\n';
+        if (prop === 'client') return async () => 'OK';
+        if (prop === 'options') return {};
         return () => Promise.resolve(null);
       }
     }) as any;

@@ -665,14 +665,17 @@ async function processIncomingMessage(
 
         if (!contact) throw new Error("Falha ao criar ou encontrar o contato.");
 
-        let [conversation] = await tx.select().from(conversations).where(eq(conversations.contactId, contact.id));
+        let [conversation] = await tx.select().from(conversations).where(and(
+            eq(conversations.contactId, contact.id),
+            eq(conversations.connectionId, connection.id)
+        ));
         let isNewConversation = false;
         
         if (!conversation) {
             [conversation] = await tx.insert(conversations).values({ companyId, contactId: contact.id, connectionId: connection.id }).returning();
             isNewConversation = !isEcho;
         } else {
-            const updatePayload: any = { lastMessageAt: new Date(), connectionId: connection.id };
+            const updatePayload: any = { lastMessageAt: new Date() };
             if (!isEcho) {
                 updatePayload.status = 'IN_PROGRESS';
                 updatePayload.archivedAt = null;

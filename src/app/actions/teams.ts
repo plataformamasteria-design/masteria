@@ -29,7 +29,15 @@ export async function getTeams() {
 export async function getCompanyUsers() {
     const auth = await requireAuthOr401();
     if ('status' in auth) throw new Error("Unauthorized");
-    const usersData = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, avatarUrl: users.avatarUrl }).from(users).where(eq(users.companyId, auth.companyId));
+    const usersData = await db.select({ 
+        id: users.id, 
+        name: users.name, 
+        email: users.email, 
+        role: users.role, 
+        avatarUrl: users.avatarUrl,
+        emailVerified: users.emailVerified,
+        permissions: users.permissions
+    }).from(users).where(eq(users.companyId, auth.companyId));
     return JSON.parse(JSON.stringify(usersData));
 }
 

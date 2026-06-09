@@ -2096,6 +2096,42 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             // Determine if we're in dialogue mode to use chat-based approach
             const isDialogueMode = !!step.data.dialogue_mode;
 
+            // ── Resolving Connection and Provider early for Tools and Sending ──
+            let aiConversation: any = null;
+            if (ctx.contactId) {
+                try {
+                    aiConversation = await db.query.conversations.findFirst({
+                        where: and(
+                            eq(conversations.contactId, ctx.contactId),
+                            eq(conversations.companyId, ctx.companyId)
+                        ),
+                        with: { connection: true },
+                        orderBy: [desc(conversations.lastMessageAt)],
+                    });
+                } catch (e) {
+                    console.warn('[FLOW-ENGINE] Failed to find conversation:', e);
+                }
+            }
+
+            let aiConnectionId = step.data.connection_id || '';
+            if (!aiConnectionId && aiConversation?.connectionId) {
+                aiConnectionId = aiConversation.connectionId;
+            }
+            if (!aiConnectionId) aiConnectionId = ctx.connectionId;
+
+            let aiProvider = 'apicloud';
+            try {
+                const resolvedConn = await db.query.connections.findFirst({
+                    where: eq(connections.id, aiConnectionId)
+                });
+                if (['baileys', 'evolution'].includes(resolvedConn?.connectionType || '')) {
+                    aiProvider = 'evolution';
+                }
+            } catch (e) {
+                console.warn('[FLOW-ENGINE] Failed to resolve connection type for ai_agent, falling back to ctx.provider:', e);
+                aiProvider = ctx.provider || 'apicloud';
+            }
+
             // ── Google Calendar Tool Setup ───────────────────────────────────
             let calendarTools: object[] = [];
             let calendarToolConfig: import('@/lib/ai-calendar-tools').CalendarToolConfig | null = null;
@@ -2129,6 +2165,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
             // ── Agent Media Library Setup ───────────────────────────────────
             let libraryFiles: any[] = [];
+            let mediaTools: object[] = [];
             if (step.data.media_library_enabled) {
                 try {
                     const files = await db
@@ -2146,29 +2183,52 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
                     if (libraryFiles.length > 0) {
                         const parts: string[] = [];
-                        parts.push("\n\n📂 CAPACIDADE DE ENVIO DE ARQUIVOS — LEIA COM ATENÇÃO:");
-                        parts.push("VOCÊ TEM TOTAL CAPACIDADE de enviar imagens e documentos para o cliente. NÃO diga que não pode enviar arquivos. Este sistema suporta envio de mídia.");
-                        parts.push("COMO FUNCIONA: Quando quiser enviar um arquivo, escreva sua mensagem normalmente e adicione ao FINAL exatamente esta tag: [ARQUIVO:nome-exato-do-arquivo.extensão]");
-                        parts.push("O sistema irá automaticamente converter essa tag no arquivo real enviado ao cliente.");
-                        parts.push("");
-                        parts.push("EXEMPLO CORRETO — se o cliente pede uma foto de mármore branco e você tem o arquivo 'marmore-branco.jpg':");
-                        parts.push('  Resposta: "Aqui está uma foto do mármore branco que temos disponível! Como pode ver, é um material muito elegante. [ARQUIVO:marmore-branco.jpg]"');
-                        parts.push("");
-                        parts.push("REGRAS OBRIGATÓRIAS:");
-                        parts.push("  1. SEMPRE escreva o texto ANTES da tag. NUNCA envie apenas a tag sem mensagem.");
-                        parts.push("  2. Use EXATAMENTE o nome do arquivo listado abaixo (incluindo extensão).");
-                        parts.push("  3. NUNCA diga ao cliente que não pode enviar arquivos. Se tiver um arquivo relevante, ENVIE.");
-                        parts.push("  4. Envie o arquivo quando o cliente pedir OU quando fizer sentido para a conversa.");
-                        parts.push("");
-                        parts.push("ARQUIVOS DISPONÍVEIS PARA ENVIO:");
-                        libraryFiles.forEach((f: any) => {
-                            const name = f.fileName;
-                            const desc = f.description ? ` (usar quando: ${f.description})` : ' (enviar quando o cliente pedir ou for relevante)';
-                            if (name) parts.push(`  → [ARQUIVO:${name}]${desc}`);
-                        });
+                        
+                        if (isDialogueMode) {
+                            const fileNames = libraryFiles.map((f: any) => f.fileName).filter(Boolean);
+                            mediaTools.push({
+                                type: 'function',
+                                function: {
+                                    name: 'send_media_file',
+                                    description: 'Envia um catálogo, imagem, áudio ou documento para o cliente imediatamente pelo WhatsApp.',
+                                    parameters: {
+                                        type: 'object',
+                                        properties: {
+                                            fileName: {
+                                                type: 'string',
+                                                description: 'O nome exato do arquivo a enviar.',
+                                                enum: fileNames
+                                            }
+                                        },
+                                        required: ['fileName']
+                                    }
+                                }
+                            });
+
+                            parts.push("\n\n📂 [BIBLIOTECA DE ARQUIVOS]");
+                            parts.push("Você possui acesso a arquivos da empresa para enviar ao lead. NÃO DIGA que não consegue enviar arquivos ou que só pode enviar por e-mail. VOCÊ PODE ENVIAR ARQUIVOS DIRETAMENTE VIA WHATSAPP.");
+                            parts.push("COMO ENVIAR: Chame IMEDIATAMENTE a função 'send_media_file' passando o 'fileName' exato do arquivo desejado.");
+                            parts.push("ARQUIVOS DISPONÍVEIS:");
+                            libraryFiles.forEach((f: any) => {
+                                const name = f.fileName;
+                                const desc = f.description ? `(quando usar: ${f.description})` : '';
+                                if (name) parts.push(` - ${name} ${desc}`);
+                            });
+                        } else {
+                            // Fallback for single-shot
+                            parts.push("\n\n📂 CAPACIDADE DE ENVIO DE ARQUIVOS — LEIA COM ATENÇÃO:");
+                            parts.push("VOCÊ TEM TOTAL CAPACIDADE de enviar imagens e documentos para o cliente. NÃO diga que não pode enviar arquivos. Este sistema suporta envio de mídia.");
+                            parts.push("COMO FUNCIONA: Quando quiser enviar um arquivo, adicione ao FINAL de sua mensagem exatamente esta tag: [ARQUIVO:nome-exato-do-arquivo.extensão]");
+                            parts.push("ARQUIVOS DISPONÍVEIS PARA ENVIO:");
+                            libraryFiles.forEach((f: any) => {
+                                const name = f.fileName;
+                                const desc = f.description ? ` (usar quando: ${f.description})` : '';
+                                if (name) parts.push(`  → [ARQUIVO:${name}]${desc}`);
+                            });
+                        }
                         
                         systemPrompt = systemPrompt + parts.join('\n');
-                        logger.debug(`[FLOW-ENGINE] 📎 Media Library enabled for this agent. Found ${libraryFiles.length} files.`);
+                        logger.debug(`[FLOW-ENGINE] 📎 Media Library enabled. Found ${libraryFiles.length} files.`);
                     }
                 } catch (libErr) {
                     console.error('[FLOW-ENGINE] Media Library setup error:', libErr);
@@ -2265,7 +2325,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         model: modelName,
                         messages: chatHistory,
                         temperature,
-                        ...(calendarTools.length > 0 && { tools: calendarTools as any, tool_choice: 'auto' as const }),
+                        ...((calendarTools.length > 0 || mediaTools.length > 0) && { tools: [...calendarTools, ...mediaTools] as any, tool_choice: 'auto' as const }),
                     };
 
                     let completion = await openai.chat.completions.create(completionParams);
@@ -2289,19 +2349,70 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
                             logger.debug(`[FLOW-ENGINE] 🔧 Tool call: ${toolCall.function.name}`, toolArgs);
 
-                            const toolResult = await executeCalendarTool(
-                                toolCall.function.name,
-                                toolArgs,
-                                ctx.companyId,
-                                {
-                                    contactName: ctx.contactName || '',
-                                    contactEmail: ctx.contactEmail || null,
-                                    contactPhone: ctx.contactPhone,
-                                    contactId: ctx.contactId,
-                                    conversationId: ctx.variables.conversation_id as string | undefined,
-                                    config: calendarToolConfig!,
+                            let toolResult: any;
+
+                            if (toolCall.function.name === 'send_media_file') {
+                                const fileName = toolArgs.fileName as string;
+                                const attachedFile = libraryFiles.find((f: any) => f.fileName === fileName);
+                                
+                                if (attachedFile) {
+                                    try {
+                                        const resolveMediaCategory = (ft: string | null | undefined, name: string | null | undefined): 'image' | 'video' | 'audio' | 'document' => {
+                                            const type = (ft || '').toLowerCase();
+                                            const ext = (name || '').split('.').pop()?.toLowerCase() || '';
+                                            if (['image', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(type) || ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
+                                            if (['video', 'mp4', 'mov', 'avi', 'webm'].includes(type) || ['mp4', 'mov', 'avi', 'webm'].includes(ext)) return 'video';
+                                            if (['audio', 'mp3', 'ogg', 'wav', 'm4a'].includes(type) || ['mp3', 'ogg', 'wav', 'm4a'].includes(ext)) return 'audio';
+                                            return 'document';
+                                        };
+
+                                        const resolvedType = resolveMediaCategory(attachedFile.fileType, attachedFile.fileName);
+                                        
+                                        await sendUnifiedMessage({
+                                            provider: aiProvider as any,
+                                            connectionId: aiConnectionId,
+                                            to: ctx.contactPhone || '',
+                                            message: '', 
+                                            mediaUrl: attachedFile.fileUrl,
+                                            mediaType: resolvedType,
+                                        });
+
+                                        if (aiConversation) {
+                                            await db.insert(messages).values({
+                                                companyId: ctx.companyId,
+                                                conversationId: aiConversation.id,
+                                                senderType: 'AI',
+                                                content: `[Arquivo enviado: ${attachedFile.fileName}]`,
+                                                contentType: attachedFile.fileType?.toUpperCase() || 'DOCUMENT',
+                                                status: 'SENT',
+                                                sentAt: new Date(),
+                                                isAiGenerated: true,
+                                            });
+                                        }
+
+                                        toolResult = { success: true, message: `O arquivo ${fileName} foi enviado no WhatsApp do cliente com sucesso. Agora responda confirmando que enviou.` };
+                                        logger.debug(`[FLOW-ENGINE] 📎 Media Tool: Sent ${fileName}`);
+                                    } catch (err: any) {
+                                        toolResult = { success: false, message: `Falha ao enviar arquivo: ${err.message}` };
+                                    }
+                                } else {
+                                    toolResult = { success: false, message: `Arquivo não encontrado: ${fileName}.` };
                                 }
-                            );
+                            } else {
+                                toolResult = await executeCalendarTool(
+                                    toolCall.function.name,
+                                    toolArgs,
+                                    ctx.companyId,
+                                    {
+                                        contactName: ctx.contactName || '',
+                                        contactEmail: ctx.contactEmail || null,
+                                        contactPhone: ctx.contactPhone,
+                                        contactId: ctx.contactId,
+                                        conversationId: ctx.variables.conversation_id as string | undefined,
+                                        config: calendarToolConfig!,
+                                    }
+                                );
+                            }
 
                             logger.debug(`[FLOW-ENGINE] ✅ Tool result: ${toolCall.function.name}`, toolResult);
 
@@ -2321,8 +2432,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 try {
                                     const meetMsg = `📅 Link da sua videochamada:\n${toolResult.meetLink}`;
                                     await sendUnifiedMessage({
-                                        provider: 'baileys',
-                                        connectionId: ctx.connectionId,
+                                        provider: aiProvider as any,
+                                        connectionId: aiConnectionId,
                                         to: ctx.contactPhone || '',
                                         message: meetMsg,
                                     });
@@ -2449,43 +2560,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
             // 3. ENVIAR RESPOSTA ao lead (mesmo padrão do chat.ts / auto-approach)
             if (responseText && ctx.contactPhone) {
-                // Buscar conversa do lead (para connectionId correto + salvar mensagem)
-                let aiConversation: any = null;
-                try {
-                    aiConversation = await db.query.conversations.findFirst({
-                        where: and(
-                            eq(conversations.contactId, ctx.contactId),
-                            eq(conversations.companyId, ctx.companyId)
-                        ),
-                        with: { connection: true },
-                        orderBy: [desc(conversations.lastMessageAt)],
-                    });
-                } catch (e) {
-                    console.warn('[FLOW-ENGINE] Failed to find conversation:', e);
-                }
-
-                // Determinar conexão: conversa > override > fallback
-                let aiConnectionId = step.data.connection_id || '';
-                if (!aiConnectionId && aiConversation?.connectionId) {
-                    aiConnectionId = aiConversation.connectionId;
-                }
-                if (!aiConnectionId) aiConnectionId = ctx.connectionId;
-
-                // Determinar provider real buscando a conexão resolvida
-                let aiProvider = 'apicloud';
-                try {
-                    const resolvedConn = await db.query.connections.findFirst({
-                        where: eq(connections.id, aiConnectionId)
-                    });
-                    if (['baileys', 'evolution'].includes(resolvedConn?.connectionType || '')) {
-                        aiProvider = 'evolution';
-                    }
-                } catch (e) {
-                    console.warn('[FLOW-ENGINE] Failed to resolve connection type for ai_agent, falling back to ctx.provider:', e);
-                    aiProvider = ctx.provider || 'apicloud';
-                }
-
-                logger.debug(`[FLOW - ENGINE] 🤖 AI sending via ${aiProvider} connection = ${aiConnectionId} to = ${ctx.contactPhone} `);
+                logger.debug(`[FLOW-ENGINE] 🤖 AI sending via ${aiProvider} connection=${aiConnectionId} to=${ctx.contactPhone}`);
 
                 // Dividir mensagem em partes para simular humano
                 const parts = responseText.split('\n\n').filter((s: string) => s.trim());

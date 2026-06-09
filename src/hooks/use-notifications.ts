@@ -2,6 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { createToastNotifier } from '@/lib/toast-helper';
 
 export interface UserNotification {
   id: string;
@@ -27,6 +29,8 @@ export function useNotifications(refreshInterval: number = 30000) {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const sessionExpiredRef = useRef(false);
+  const previousIdsRef = useRef<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const fetchNotifications = useCallback(async () => {
     if (sessionExpiredRef.current) return;
@@ -46,6 +50,29 @@ export function useNotifications(refreshInterval: number = 30000) {
         throw new Error('Falha ao buscar notificações');
       }
       const data: NotificationsResponse = await response.json();
+      
+      // Detecção de novas notificações para disparar Toast
+      if (previousIdsRef.current.size > 0) {
+        const newUnread = data.notifications.filter(
+          n => !n.isRead && !previousIdsRef.current.has(n.id)
+        );
+        
+        if (newUnread.length > 0) {
+          const notify = createToastNotifier(toast);
+          newUnread.forEach(n => {
+            const isError = n.type === 'system_error';
+            if (isError) {
+              notify.error(n.title, n.message);
+            } else {
+              notify.info(n.title, n.message);
+            }
+          });
+        }
+      }
+      
+      // Atualizar lista de IDs conhecidos
+      previousIdsRef.current = new Set(data.notifications.map(n => n.id));
+
       setNotifications(data.notifications);
       setUnreadCount(data.unreadCount);
       setError(null);

@@ -17,22 +17,18 @@ export async function POST() {
             message: 'Logout realizado com sucesso.' 
         });
         
-        // Limpar ambos os cookies de sessão com configurações explícitas
-        response.cookies.set('__session', '', {
+        const clearOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'lax' as const,
             path: '/',
-            maxAge: 0, // Expira imediatamente
-        });
+            maxAge: 0,
+        };
         
-        response.cookies.set('session_token', '', {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 0, // Expira imediatamente
-        });
+        response.cookies.set('__session', '', clearOptions);
+        response.cookies.set('session_token', '', clearOptions);
+        response.cookies.set('next-auth.session-token', '', clearOptions);
+        response.cookies.set('__Secure-next-auth.session-token', '', { ...clearOptions, secure: true });
 
         return response;
 
