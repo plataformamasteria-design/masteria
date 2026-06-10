@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { webhookSubscriptions } from '@/lib/db/schema';
-import { eq, and, desc, sql, or, like } from 'drizzle-orm';
+import { eq, and, desc, sql, or, ilike } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
 import crypto from 'crypto';
 import { z } from 'zod';
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       whereConditions.push(
         or(
-          like(webhookSubscriptions.name, `%${search}%`),
-          like(webhookSubscriptions.url, `%${search}%`)
+          ilike(webhookSubscriptions.name, `%${search}%`),
+          ilike(webhookSubscriptions.url, `%${search}%`)
         )!
       );
     }

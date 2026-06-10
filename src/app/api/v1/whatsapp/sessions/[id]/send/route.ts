@@ -60,7 +60,14 @@ export async function POST(
       );
     }
 
-    const result = await evolutionApiService.sendMessage(id, to, text);
+    const { formatJid } = await import('@/lib/utils/whatsapp');
+    const phoneJid = formatJid(to);
+    const number = phoneJid?.split('@')[0];
+    if (!number) {
+      return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
+    }
+
+    const result = await evolutionApiService.sendMessage(id, number, text);
     const messageId = result?.key?.id;
 
     if (!messageId) {

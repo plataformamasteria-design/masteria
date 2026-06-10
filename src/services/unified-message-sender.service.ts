@@ -333,7 +333,27 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
         return { success: true, messageId: result.key.id };
       } catch (error) {
         console.error(`[UNIFIED-SENDER] ❌ Failed to send via Evolution API:`, error);
-        return { success: false, error: (error as Error).message };
+        let errorMessage = (error as Error).message;
+        
+        // Formatar erros comuns para o usuário final
+        if (errorMessage.includes('Connection Closed') || errorMessage.includes('connecting')) {
+            errorMessage = 'O celular/instância desta conexão está desconectado. Verifique a conexão no painel de configurações.';
+        } else if (errorMessage.includes('is not exists') || errorMessage.includes('not found')) {
+            errorMessage = 'A instância do WhatsApp não existe ou foi excluída.';
+        } else if (errorMessage.includes('{')) {
+            try {
+                // Tenta extrair a mensagem se for um JSON da Evolution API
+                const jsonPart = errorMessage.substring(errorMessage.indexOf('{'));
+                const parsed = JSON.parse(jsonPart);
+                if (parsed?.response?.message) {
+                    errorMessage = Array.isArray(parsed.response.message) ? parsed.response.message[0] : parsed.response.message;
+                } else if (parsed?.error) {
+                    errorMessage = parsed.error;
+                }
+            } catch (e) {}
+        }
+        
+        return { success: false, error: errorMessage };
       }
     }
 

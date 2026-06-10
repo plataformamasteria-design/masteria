@@ -37,6 +37,7 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
         const companyId = await getCompanyIdFromSession();
 
         // 1. Validate Conversation & Ownership + Get Connection/Contact Info
+        console.log("sendMessageAction CALLED WITH conversationId:", conversationId, "companyId:", companyId);
         const [conversationResult] = await db.select({
             id: conversations.id,
             companyId: conversations.companyId,

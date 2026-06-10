@@ -255,20 +255,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         if (parsedBody.data.type === 'text') {
             // SECURITY: Passar companyId para validação de tenant
-            const canSend = await canSendFreeFormMessage(conversation.id, companyId);
-            if (!canSend) {
-                return NextResponse.json({ error: 'A janela de 24 horas para resposta livre expirou. Use um modelo.' }, { status: 403 });
+            // A janela de 24h se aplica APENAS para Meta API e Instagram
+            if (['meta_api', 'instagram'].includes(connection.connectionType)) {
+                const canSend = await canSendFreeFormMessage(conversation.id, companyId);
+                if (!canSend) {
+                    return NextResponse.json({ error: 'A janela de 24 horas para resposta livre expirou. Use um modelo.' }, { status: 403 });
+                }
             }
 
             if (['baileys', 'evolution'].includes(connection.connectionType)) {
-                const result = await evolutionApiService.sendMessage(
-                    conversation.connectionId, 
-                    contact.phone, 
-                    parsedBody.data.text
-                );
-                providerMessageId = result?.key?.id;
-                if (!providerMessageId) {
-                    return NextResponse.json({ error: 'Falha ao enviar mensagem - instância não conectada ou erro na Evolution API.' }, { status: 500 });
+                try {
+                    const { formatJid } = await import('@/lib/utils/whatsapp');
+                    const phoneJid = formatJid(contact.phone);
+                    const number = phoneJid?.split('@')[0];
+                    if (!number) throw new Error("Número de telefone inválido.");
+
+                    const result = await evolutionApiService.sendMessage(
+                        conversation.connectionId, 
+                        number, 
+                        parsedBody.data.text
+                    );
+                    providerMessageId = result?.key?.id;
+                    if (!providerMessageId) {
+                        return NextResponse.json({ error: 'Falha ao enviar mensagem - instância não conectada ou erro na Evolution API.' }, { status: 500 });
+                    }
+                } catch (e: any) {
+                    if (e.message && e.message.includes('Connection Closed')) {
+                        return NextResponse.json({ error: 'Falha no envio: O celular/instância desta conexão está desconectado. Verifique a conexão no painel de configurações.' }, { status: 400 });
+                    }
+                    throw e;
                 }
             } else if (connection.connectionType === 'meta_api') {
                 sentMessageResponse = await sendWhatsappTextMessage({

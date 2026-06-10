@@ -651,8 +651,9 @@ async function handleGrapfyEvent(
       status: data.status,
     });
 
-    // Extract phone number (pode vir como phoneNumber ou phone)
-    const _customerPhone = customer.phoneNumber || customer.phone;
+    // Extract and normalize phone number
+    const rawCustomerPhone = customer.phoneNumber || customer.phone || '';
+    const normalizedCustomerPhone = rawCustomerPhone ? normalizePhoneNumber(rawCustomerPhone) : '';
 
     // ✅ CHANGE v2.10.6: Notifications ONLY via automations (must have active rules)
     // Removed: sendPixNotification() and sendOrderApprovedNotification()
@@ -668,7 +669,7 @@ async function handleGrapfyEvent(
       customer: {
         name: customer.name || 'Unknown',
         email: customer.email || '',
-        phoneNumber: customer.phoneNumber || '',
+        phoneNumber: normalizedCustomerPhone, // Enviar telefone normalizado
         document: customer.document || '',
       },
       product: product.name ? { name: product.name } : undefined,
@@ -687,14 +688,13 @@ async function handleGrapfyEvent(
     logger.info(`✅ Grapfy campaign triggered successfully for event: ${eventType}`);
 
     // 🆕 AUTO-APPROACH: Fire-and-forget approach message
-    const customerPhone = customer.phoneNumber || customer.phone || '';
-    if (webhookConfig?.auto_approach_enabled && customerPhone) {
+    if (webhookConfig?.auto_approach_enabled && normalizedCustomerPhone) {
       // Find or create contact for approach
       try {
         let approachContactId: string | null = null;
-        if (customerPhone) {
+        if (normalizedCustomerPhone) {
           const contactResult = await conn`
-            SELECT id FROM contacts WHERE company_id = ${companyId} AND phone = ${customerPhone} LIMIT 1
+            SELECT id FROM contacts WHERE company_id = ${companyId} AND phone = ${normalizedCustomerPhone} LIMIT 1
           `;
           approachContactId = (contactResult as any)?.[0]?.id;
         }
@@ -707,7 +707,7 @@ async function handleGrapfyEvent(
             webhookConfig as AutoApproachConfig,
             data,
             approachContactId,
-            customerPhone,
+            normalizedCustomerPhone,
             undefined
           ).catch(err => logger.warn('[Grapfy] Auto-approach failed (non-blocking):', err));
         }

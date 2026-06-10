@@ -176,6 +176,7 @@ export function ActiveChat({
 
   const isConversationAssigned = !!activeAssignedTo || !!activeTeamId;
   const isAssignedToMe = activeAssignedTo === currentUserId;
+  const isTeamAssignedOnly = !activeAssignedTo && !!activeTeamId;
 
   const viewMode = (session?.userData?.permissions as any)?.viewMode || 'all';
   const isAssignedOnly = currentUserRole === 'atendente' && viewMode === 'assigned_only';
@@ -850,6 +851,7 @@ export function ActiveChat({
            onClearReply={() => setReplyToMessage(null)}
            isConversationAssigned={isConversationAssigned}
            isAssignedToMe={isAdminOrSuperAdmin ? true : isAssignedToMe}
+           isTeamAssignedOnly={isTeamAssignedOnly}
            assignedUserName={conversation.assignedUserName || conversation.teamName || null}
            isAssigning={isAssigning}
            onAssignToMe={async () => {

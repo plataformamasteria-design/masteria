@@ -13,34 +13,16 @@ export function getRedisConnection(): Redis {
     // Evita loop infinito de ECONNREFUSED que trava o event loop
     const hasRedisConfig = !!(process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL || process.env.REDISHOST);
     if (!hasRedisConfig) {
-      console.warn('⚠️ [BullMQ] Sem Redis configurado. Retornando mock silencioso para evitar lags.');
-      return new Proxy({}, {
-        get: (target, prop) => {
-          if (prop === 'on' || prop === 'once') return () => { };
-          if (prop === 'quit' || prop === 'disconnect') return async () => { };
-          if (prop === 'ping') return async () => 'PONG';
-          if (prop === 'status') return 'ready';
-          if (prop === 'info') return async () => 'redis_version:999.999.999\r\n';
-          if (prop === 'client') return async () => 'OK';
-          if (prop === 'options') return {};
-          return () => Promise.resolve(null);
-        }
-      }) as any;
+      console.warn('⚠️ [BullMQ] Sem Redis configurado. Desativando BullMQ localmente para otimizar CPU e remover lags.');
+      return null as any;
     }
     const isBuild = (process.env.NEXT_PHASE === 'phase-production-build' ||
       process.env.BUILD_PHASE === 'true' ||
       process.env.CI === 'true') && process.env.NODE_ENV !== 'production';
 
     if (isBuild || (process.env.SKIP_REDIS_CHECK === 'true' && process.env.NODE_ENV !== 'production')) {
-      console.warn('🏗️ [BullMQ] Build phase or Skip-Check detected. Returning safe proxy mock.');
-      return new Proxy({}, {
-        get: (target, prop) => {
-          if (prop === 'on' || prop === 'once') return () => { };
-          if (prop === 'quit' || prop === 'disconnect') return async () => { };
-          if (prop === 'ping') return async () => 'PONG';
-          return () => Promise.resolve(null);
-        }
-      }) as any;
+      console.warn('🏗️ [BullMQ] Build phase or Skip-Check detected. Desativando BullMQ.');
+      return null as any;
     }
 
     const redisUrl = process.env.REDIS_URL;
@@ -138,20 +120,9 @@ export function createRedisConnection(): Redis {
 
   if (isBuild || !hasRedisConfig) {
     if (!hasRedisConfig) {
-      // Log apenas uma vez
+      console.warn('⚠️ [BullMQ] Sem Redis configurado. Desativando worker do BullMQ.');
     }
-    return new Proxy({}, {
-      get: (target, prop) => {
-        if (prop === 'on' || prop === 'once') return () => { };
-        if (prop === 'quit' || prop === 'disconnect') return async () => { };
-        if (prop === 'ping') return async () => 'PONG';
-        if (prop === 'status') return 'ready';
-        if (prop === 'info') return async () => 'redis_version:999.999.999\r\n';
-        if (prop === 'client') return async () => 'OK';
-        if (prop === 'options') return {};
-        return () => Promise.resolve(null);
-      }
-    }) as any;
+    return null as any;
   }
 
 

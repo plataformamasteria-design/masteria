@@ -241,10 +241,14 @@ export class NotificationService {
     };
 
     try {
+      const { formatJid } = await import('@/lib/utils/whatsapp');
+      const formattedJid = formatJid(groupJid);
+      const number = formattedJid?.split('@')[0];
+
       // Enviar mensagem via Evolution API
       const result = await evolutionApiService.sendMessage(
         connectionId,
-        groupJid,
+        number || groupJid,
         message
       );
       

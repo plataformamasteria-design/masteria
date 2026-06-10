@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getUserSession } from '@/app/actions';
 import { db } from '@/lib/db';
 import { messageTemplates, connections } from '@/lib/db/schema';
-import { eq, and, or, like, desc } from 'drizzle-orm';
+import { eq, and, or, ilike, desc } from 'drizzle-orm';
 import { getCachedOrFetch, CacheTTL, apiCache } from '@/lib/api-cache';
 
 
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
       if (search) {
         conditions.push(
           or(
-            like(messageTemplates.name, `%${search}%`),
-            like(messageTemplates.displayName, `%${search}%`)
+            ilike(messageTemplates.name, `%${search}%`),
+            ilike(messageTemplates.displayName, `%${search}%`)
           )
         );
       }

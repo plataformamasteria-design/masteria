@@ -300,7 +300,7 @@ async function createApproachConversation(
           status = 'IN_PROGRESS',
           archived_at = NULL,
           archived_by = NULL,
-          ai_active = COALESCE(ai_active, ${aiPersonaId ? true : false}),
+          ai_active = COALESCE(ai_active, true),
           assigned_persona_id = COALESCE(assigned_persona_id, ${aiPersonaId || null})
         WHERE id = ${conversationId}
       `;
@@ -308,7 +308,7 @@ async function createApproachConversation(
             // Create new conversation
             const newConvo = await conn`
         INSERT INTO conversations (company_id, contact_id, connection_id, status, last_message_at, ai_active, assigned_persona_id)
-        VALUES (${companyId}, ${contactId}, ${connectionId}, 'IN_PROGRESS', NOW(), ${aiPersonaId ? true : false}, ${aiPersonaId || null})
+        VALUES (${companyId}, ${contactId}, ${connectionId}, 'IN_PROGRESS', NOW(), true, ${aiPersonaId || null})
         RETURNING id
       `;
             conversationId = (newConvo as any)?.[0]?.id;
@@ -321,8 +321,8 @@ async function createApproachConversation(
 
         // Save the approach message
         await conn`
-      INSERT INTO messages (company_id, conversation_id, provider_message_id, sender_type, content, content_type, status, sent_at)
-      VALUES (${companyId}, ${conversationId}, ${providerMessageId}, 'SYSTEM', ${messageContent}, 'TEXT', 'SENT', NOW())
+      INSERT INTO messages (company_id, conversation_id, connection_id, provider_message_id, sender_type, content, content_type, status, sent_at)
+      VALUES (${companyId}, ${conversationId}, ${connectionId}, ${providerMessageId}, 'AI', ${messageContent}, 'TEXT', 'SENT', NOW())
     `;
 
         logger.info('✅ Conversation + message created', { conversationId, contactId });

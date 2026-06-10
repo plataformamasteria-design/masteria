@@ -19,7 +19,7 @@ import {
     contactsToTags,
     kanbanLeads
 } from '@/lib/db/schema';
-import { eq, inArray, and, sql } from 'drizzle-orm';
+import { eq, inArray, and, sql, desc } from 'drizzle-orm';
 import { ensureTenantAccess } from '@/lib/db/tenant-guard';
 import { decrypt } from './crypto';
 import { uploadMediaToMeta } from './metaMediaUpload';
@@ -55,24 +55,28 @@ async function createCampaignConversationAndMessage(
     providerMessageId: string | null,
     messageContent: string,
     _campaignId: string,
-    disableBotOnSend: boolean = false
+    disableBotOnSend: boolean = false,
+    isTemplate: boolean = false
 ): Promise<void> {
     try {
         await db.transaction(async (tx) => {
-            // Buscar ou criar conversa
+            // Buscar conversa mais recente do contato nesta empresa
             let [conversation] = await tx
                 .select()
                 .from(conversations)
                 .where(and(
                     eq(conversations.contactId, contactId),
-                    eq(conversations.connectionId, connectionId)
-                ));
+                    eq(conversations.companyId, companyId)
+                ))
+                .orderBy(desc(conversations.lastMessageAt))
+                .limit(1);
 
             if (conversation) {
-                // Atualiza conversa existente
+                // Atualiza conversa existente e centraliza na conexão do disparo
                 const [updatedConvo] = await tx
                     .update(conversations)
                     .set({
+                        connectionId: connectionId, // Consolida o histórico
                         lastMessageAt: new Date(),
                         status: 'IN_PROGRESS',
                         archivedAt: null,
@@ -83,7 +87,7 @@ async function createCampaignConversationAndMessage(
                     .returning();
                 conversation = updatedConvo;
             } else {
-                // Cria nova conversa
+                // Cria nova conversa se não existir nenhuma
                 [conversation] = await tx
                     .insert(conversations)
                     .values({
@@ -101,14 +105,15 @@ async function createCampaignConversationAndMessage(
                 throw new Error('Falha ao criar ou atualizar conversa para mensagem de campanha.');
             }
 
-            // Salvar mensagem de campanha
+            // Salvar mensagem de campanha visível no frontend como balão enviado
             await tx.insert(messages).values({
-                companyId, // Added missing companyId
+                companyId,
                 conversationId: conversation.id,
+                connectionId: connectionId, // FIX: Inclui o connectionId para não sumir no filtro do frontend
                 providerMessageId,
-                senderType: 'SYSTEM',
+                senderType: 'AGENT', // Fix: Renderiza como mensagem normal, não log de sistema
                 content: messageContent,
-                contentType: 'TEXT',
+                contentType: isTemplate ? 'TEMPLATE' : 'TEXT',
                 status: 'SENT',
                 sentAt: new Date(),
             });
@@ -324,11 +329,15 @@ async function sendViaEvolution(
     logger.debug(`[Campaign-Evolution] Texto final da mensagem: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
 
     try {
+        const { formatJid } = await import('@/lib/utils/whatsapp');
+        const phoneJid = formatJid(contact.phone);
+        const number = phoneJid?.split('@')[0];
+
         // Envolve com retry logic para erros transientes
         const result = await withRetry(async () => {
             return await evolutionApiService.sendMessage(
                 connectionId,
-                contact.phone,
+                number || contact.phone,
                 messageText
             );
         });
@@ -840,7 +849,8 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                         } as any);
 
                         if (result.success) {
-                            const messageContent = resolvedTemplate.name !== 'direct_message'
+                            const isTemplate = resolvedTemplate.name !== 'direct_message';
+                            const messageContent = isTemplate
                                 ? `Template: ${resolvedTemplate.name}`
                                 : resolvedTemplate.bodyText;
 
@@ -851,7 +861,8 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                                 result.providerMessageId || null,
                                 messageContent,
                                 campaign.id,
-                                disableBotOnSend
+                                disableBotOnSend,
+                                isTemplate
                             );
                         }
                     } catch (dbError) {
@@ -907,7 +918,8 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                     for (let i = 0; i < deliveryReports.length; i++) {
                         const report = deliveryReports[i];
                         if (report && report.status === 'SENT') {
-                            const messageContent = resolvedTemplate.name !== 'direct_message' ? `Template: ${resolvedTemplate.name}` : resolvedTemplate.bodyText;
+                            const isTemplate = resolvedTemplate.name !== 'direct_message';
+                            const messageContent = isTemplate ? `Template: ${resolvedTemplate.name}` : resolvedTemplate.bodyText;
                             await createCampaignConversationAndMessage(
                                 campaign.companyId!,
                                 report.contactId,
@@ -915,7 +927,8 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                                 report.providerMessageId || null,
                                 messageContent,
                                 campaign.id,
-                                disableBotOnSend
+                                disableBotOnSend,
+                                isTemplate
                             );
                         }
                     }

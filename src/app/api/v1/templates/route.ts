@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { customMessageTemplates, customTemplateCategories } from '@/lib/db/schema';
-import { eq, and, desc, sql, or, like, isNull } from 'drizzle-orm';
+import { eq, and, desc, sql, or, ilike, isNull } from 'drizzle-orm';
 import { requireCompanyIdOr401 } from '@/lib/api-auth-helper';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { z } from 'zod';
@@ -60,8 +60,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       whereConditions.push(
         or(
-          like(customMessageTemplates.name, `%${search}%`),
-          like(customMessageTemplates.content, `%${search}%`)
+          ilike(customMessageTemplates.name, `%${search}%`),
+          ilike(customMessageTemplates.content, `%${search}%`)
         )!
       );
     }

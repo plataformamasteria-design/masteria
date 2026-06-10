@@ -266,7 +266,7 @@ export class EvolutionApiService {
         return response.json();
     }
 
-    async sendMedia(instanceName: string, number: string, mediaType: 'image' | 'video' | 'audio' | 'document', urlOrBase64: string, caption?: string, fileName?: string) {
+    async sendMedia(instanceName: string, number: string, mediaType: 'image' | 'video' | 'audio' | 'document', urlOrBase64: string, caption?: string, fileName?: string, mimetype?: string) {
         const config = this.getConfig();
         
         const isUrl = urlOrBase64.startsWith('http');
@@ -304,6 +304,7 @@ export class EvolutionApiService {
 
         if (caption) body.caption = caption;
         if (fileName) body.fileName = fileName;
+        if (mimetype) body.mimetype = mimetype;
 
         const response = await fetch(`${config.url}/message/sendMedia/${instanceName}`, {
             method: 'POST',

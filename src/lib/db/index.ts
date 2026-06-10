@@ -14,7 +14,7 @@ if (!DATABASE_URL) {
 
 // Configuração de connection pooling (Otimizado para Performance)
 const connectionConfig = {
-  max: 15, // Reduzido de 50 para 15 para evitar estouro de limite no Neon Free Tier
+  max: 30, // Aumentado de 15 para 30 para suportar carga simultânea do App Router
   idle_timeout: 20, // 20s — evita reconexão excessiva sem segurar conexões ociosas
   connect_timeout: 5,
   prepare: false,

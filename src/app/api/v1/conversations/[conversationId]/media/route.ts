@@ -106,14 +106,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         if (['baileys', 'evolution'].includes(connection.connectionType)) {
-            const base64Media = `data:${metaMimeType};base64,${finalBuffer.toString('base64')}`;
+            const base64Media = finalBuffer.toString('base64');
             const result = await evolutionApiService.sendMedia(
                 connection.sessionName || connection.id,
                 contact.phone,
                 type,
                 base64Media,
                 undefined, // caption
-                finalFileName   // fileName
+                finalFileName,  // fileName
+                metaMimeType    // mimetype
             );
             providerMessageId = result?.key?.id;
         } else if (connection.connectionType === 'meta_api') {

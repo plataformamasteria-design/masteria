@@ -596,7 +596,7 @@ async function callExternalAIAgent(
             // âœ… Fix: Use static import to avoid runtime resolution issues
             const securityResult = await performInputSecurityCheck(message.content || '', {
                 companyId,
-                conversationId: conversation.id,
+                conversationId: conversation.id, connectionId: conversation.connectionId,
                 contactId: contact.id,
                 contactPhone: contact.phone,
             });
@@ -1067,14 +1067,14 @@ async function callExternalAIAgent(
 
                     try {
                         if (faName === 'schedule_meeting') {
-                            const meetingResult = await scheduleMeeting({ companyId, conversationId: conversation.id, contactId: contact.id, ...faArgs });
+                            const meetingResult = await scheduleMeeting({ companyId, conversationId: conversation.id, connectionId: conversation.connectionId, contactId: contact.id, ...faArgs });
                             aiResponse = meetingResult.message;
                             if (meetingResult.suggestedSlots && meetingResult.suggestedSlots.length > 0) aiResponse += `\nHorÃ¡rios disponÃ­veis: ${meetingResult.suggestedSlots.join(', ')}`;
                         } else if (faName === 'cancel_meeting') {
-                            const cancelResult = await cancelMeeting({ companyId, conversationId: conversation.id, contactId: contact.id, ...faArgs });
+                            const cancelResult = await cancelMeeting({ companyId, conversationId: conversation.id, connectionId: conversation.connectionId, contactId: contact.id, ...faArgs });
                             aiResponse = cancelResult.message;
                         } else if (faName === 'reschedule_meeting') {
-                            const reschResult = await rescheduleMeeting({ companyId, conversationId: conversation.id, contactId: contact.id, ...faArgs });
+                            const reschResult = await rescheduleMeeting({ companyId, conversationId: conversation.id, connectionId: conversation.connectionId, contactId: contact.id, ...faArgs });
                             aiResponse = reschResult.message;
                             if (reschResult.suggestedSlots && reschResult.suggestedSlots.length > 0) aiResponse += `\nSugestÃµes: ${reschResult.suggestedSlots.join(', ')}`;
                         } else if (faName === 'check_availability') {
@@ -1313,7 +1313,7 @@ async function callExternalAIAgent(
                                 try {
                                     const meetingResult = await scheduleMeeting({
                                         companyId,
-                                        conversationId: conversation.id,
+                                        conversationId: conversation.id, connectionId: conversation.connectionId,
                                         contactId: contact.id,
                                         ...(call.args as any),
                                     });
@@ -1333,7 +1333,7 @@ async function callExternalAIAgent(
                                 try {
                                     const cancelResult = await cancelMeeting({
                                         companyId,
-                                        conversationId: conversation.id,
+                                        conversationId: conversation.id, connectionId: conversation.connectionId,
                                         contactId: contact.id,
                                         ...(call.args as any),
                                     });
@@ -1348,7 +1348,7 @@ async function callExternalAIAgent(
                                 try {
                                     const rescheduleResult = await rescheduleMeeting({
                                         companyId,
-                                        conversationId: conversation.id,
+                                        conversationId: conversation.id, connectionId: conversation.connectionId,
                                         contactId: contact.id,
                                         ...(call.args as any),
                                     });
@@ -1389,7 +1389,7 @@ async function callExternalAIAgent(
                                             await logAutomation('INFO', `ðŸ“… IA chamou schedule_meeting apÃ³s check_availability: ${JSON.stringify(nextCall.args)}`, logContextBase);
                                             const meetingResult = await scheduleMeeting({
                                                 companyId,
-                                                conversationId: conversation.id,
+                                                conversationId: conversation.id, connectionId: conversation.connectionId,
                                                 contactId: contact.id,
                                                 ...(nextCall.args as any),
                                             });
@@ -1536,10 +1536,10 @@ async function callExternalAIAgent(
 
         await logAutomation('INFO', `ðŸ§  DecisÃ£o de Formato: ${finalFormat} (UserAudio=${userSentAudio}, Count=${dailyMessageCount}, Len=${sanitizedAiResponse.length})`, logContextBase);
 
-        // 1. EXECUÃ‡ÃƒO DE ÃUDIO (se aplicÃ¡vel)
+        // 1. EXECUÃ‡ÃƒO DE Ã UDIO (se aplicÃ¡vel)
         let audioSentSuccessfully = false;
         if (shouldSendAudio) {
-            await logAutomation('INFO', `ðŸŽ¤ PROCESSANDO ÃUDIO (Modo: ${audioMode}, Voz: ${voiceSettings.voiceId})`, logContextBase);
+            await logAutomation('INFO', `ðŸŽ¤ PROCESSANDO Ã UDIO (Modo: ${audioMode}, Voz: ${voiceSettings.voiceId})`, logContextBase);
 
             // âœ… USANDO sanitizedAiResponse (jÃ¡ limpo de PIX/Links na extraÃ§Ã£o global acima)
             const audioSafeText = sanitizedAiResponse;
@@ -1576,7 +1576,7 @@ async function callExternalAIAgent(
                         if (audioSendResult.success) {
                             await db.insert(messages).values({
                                 companyId: companyId,
-                                conversationId: conversation.id,
+                                conversationId: conversation.id, connectionId: conversation.connectionId,
                                 senderType: 'AI',
                                 senderId: 'ai_agent_voice',
                                 content: audioSafeText || '[Ãudio]',
@@ -1660,7 +1660,7 @@ async function callExternalAIAgent(
             for (const part of messageParts) {
                 if (part.trim()) {
                     const [insertedMsg] = await db.insert(messages).values({
-                        companyId, conversationId: conversation.id, senderType: 'AI', senderId: 'ai_agent',
+                        companyId, conversationId: conversation.id, connectionId: conversation.connectionId, senderType: 'AI', senderId: 'ai_agent',
                         content: part.trim(), contentType: 'TEXT', status: 'sending', sentAt: new Date(),
                     }).returning({ id: messages.id });
 
@@ -1695,6 +1695,7 @@ async function callExternalAIAgent(
                 const [insertedResourceMsg] = await db.insert(messages).values({
                     companyId,
                     conversationId: conversation.id,
+                    connectionId: conversation.connectionId,
                     senderType: 'AI',
                     senderId: 'ai_agent',
                     content: resource,
@@ -1800,7 +1801,7 @@ async function callExternalAIAgent(
                 if (connectionData) {
                     const defaultText = 'Estamos com alta demanda no momento. Vou te responder em instantes.';
                     if (options?.dryRunSend) {
-                        await db.insert(messages).values({ companyId, conversationId: conversation.id, senderType: 'AI', senderId: 'ai_agent', content: defaultText, contentType: 'TEXT' });
+                        await db.insert(messages).values({ companyId, conversationId: conversation.id, connectionId: conversation.connectionId, senderType: 'AI', senderId: 'ai_agent', content: defaultText, contentType: 'TEXT' });
                         await logAutomation('INFO', 'DRY-RUN: Resposta padrÃ£o simulada apÃ³s erro de cota no Gemini', logContextBase);
                     } else {
                         await sendUnifiedMessage({
@@ -1809,7 +1810,7 @@ async function callExternalAIAgent(
                             to: contact.phone,
                             message: defaultText
                         });
-                        await db.insert(messages).values({ companyId, conversationId: conversation.id, senderType: 'AI', senderId: 'ai_agent', content: defaultText, contentType: 'TEXT' });
+                        await db.insert(messages).values({ companyId, conversationId: conversation.id, connectionId: conversation.connectionId, senderType: 'AI', senderId: 'ai_agent', content: defaultText, contentType: 'TEXT' });
                         await logAutomation('INFO', 'âœ… Resposta padrÃ£o enviada apÃ³s erro de cota no Gemini', logContextBase);
                     }
                     return true;

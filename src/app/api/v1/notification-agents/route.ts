@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { notificationAgents, notificationAgentGroups, connections } from '@/lib/db/schema';
-import { eq, and, sql, desc, like, or } from 'drizzle-orm';
+import { eq, and, sql, desc, ilike, or } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
 
 // GET - Listar todos os agentes de notificação
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
     if (search) {
       whereConditions.push(
         or(
-          like(notificationAgents.name, `%${search}%`),
-          like(notificationAgents.description, `%${search}%`)
+          ilike(notificationAgents.name, `%${search}%`),
+          ilike(notificationAgents.description, `%${search}%`)
         )!
       );
     }

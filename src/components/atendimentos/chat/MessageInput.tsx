@@ -23,6 +23,7 @@ interface MessageInputProps {
   onSendMedia?: (file: File) => Promise<void>;
   isInternalNote?: boolean;
   setIsInternalNote?: (val: boolean) => void;
+  isTeamAssignedOnly?: boolean;
 }
 
 const formatTime = (seconds: number) => {
@@ -48,7 +49,8 @@ export function MessageInput({
   placeholder = "Digite sua mensagem...",
   onSendMedia,
   isInternalNote = false,
-  setIsInternalNote
+  setIsInternalNote,
+  isTeamAssignedOnly = false
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recorder = useAudioRecorder();
@@ -85,7 +87,7 @@ export function MessageInput({
     }
   };
 
-  if (!isConversationAssigned && onAssignToMe) {
+  if ((!isConversationAssigned || isTeamAssignedOnly) && !isAssignedToMe && onAssignToMe) {
     return (
       <div className="flex w-full items-center">
         <Button
@@ -107,7 +109,7 @@ export function MessageInput({
     );
   }
 
-  if (isConversationAssigned && !isAssignedToMe) {
+  if (isConversationAssigned && !isAssignedToMe && !isTeamAssignedOnly) {
     return (
       <div className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 bg-amber-500/5 border border-amber-500/15 text-amber-500">
         <LockKeyhole className="h-5 w-5 shrink-0 text-amber-500/60" />
