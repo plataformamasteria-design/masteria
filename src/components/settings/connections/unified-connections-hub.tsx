@@ -10,8 +10,8 @@ import { WebhookInfoCard } from './webhook-info-card';
 import { TokenAlerts } from './token-alerts';
 import { ImportDialog } from './import-dialog';
 import { ConnectionDialog } from './connection-dialog';
-// import { QRCodeModal } from '@/components/whatsapp-baileys/qr-code-modal';
-// import { CreateSessionDialog } from '@/components/whatsapp-baileys/create-session-dialog';
+import { BaileysQrModal } from './baileys-qr-modal';
+import { CreateBaileysSessionDialog } from './create-baileys-session-dialog';
 import { getInstagramAuthUrl } from '@/app/actions/instagram-connect';
 import { toast } from '@/hooks/use-toast';
 import { UnifiedConnectionCard, UnifiedConnectionItem, UnifiedPlatform, UnifiedStatus } from './unified-connection-card';
@@ -55,6 +55,7 @@ export function UnifiedConnectionsHub() {
 
     // --- State para Modais Baileys ---
     const [qrModalOpen, setQrModalOpen] = React.useState(false);
+    const [isCreateBaileysOpen, setIsCreateBaileysOpen] = React.useState(false);
     const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
     const [selectedSessionName, setSelectedSessionName] = React.useState<string>('');
 
@@ -71,11 +72,15 @@ export function UnifiedConnectionsHub() {
             setSelectedSessionName(e.detail.sessionName);
             setQrModalOpen(true);
         };
+        const handleOpenBaileys = () => setIsCreateBaileysOpen(true);
+
         window.addEventListener('open-qr-modal', handleOpenQR as EventListener);
+        window.addEventListener('open-baileys-modal', handleOpenBaileys);
         
         return () => {
             window.removeEventListener('open-official-modal', handleOpen);
             window.removeEventListener('open-qr-modal', handleOpenQR as EventListener);
+            window.removeEventListener('open-baileys-modal', handleOpenBaileys);
         };
     }, [setIsEditModalOpen]);
 
@@ -275,19 +280,19 @@ export function UnifiedConnectionsHub() {
                 onSave={handleSaveConnection}
             />
 
-            {/* 
-            <CreateSessionDialog 
+            <CreateBaileysSessionDialog 
+                open={isCreateBaileysOpen}
+                onOpenChange={setIsCreateBaileysOpen}
                 onCreateSession={createBaileysSession} 
                 onSessionCreated={handleSessionCreated} 
             />
 
-            <QRCodeModal 
+            <BaileysQrModal 
                 isOpen={qrModalOpen}
                 onClose={() => setQrModalOpen(false)}
                 sessionId={selectedSessionId}
                 sessionName={selectedSessionName}
             />
-            */}
 
             {/* DELETE CONFIRMATION */}
             <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
