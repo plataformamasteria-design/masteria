@@ -152,6 +152,7 @@ export function InboxView({
                 onToggleContactDetails={() => controller.setShowContactDetails(prev => !prev)}
                 availableConnections={controller.availableConnections}
                 onSwitchConnection={controller.handleSwitchConnection}
+                onFetchAllMessages={controller.handleFetchAllMessages}
                 onRefreshConversations={() => controller.handleFilterChange(controller.activeFilter)}
                 onSyncHistory={controller.handleSyncHistory}
               />

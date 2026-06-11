@@ -51,10 +51,11 @@ class ConversationService {
         return Array.isArray(response) ? response : response.data;
     }
 
-    async getMessages(conversationId: string, limit = 50, before?: string, bypassCache = false): Promise<{ messages: Message[]; hasMore: boolean }> {
+    async getMessages(conversationId: string, limit = 50, before?: string, bypassCache = false, connectionId?: string): Promise<{ messages: Message[]; hasMore: boolean }> {
         const params = new URLSearchParams({ limit: String(limit) });
         if (before) params.set('before', before);
         if (bypassCache) params.set('t', Date.now().toString());
+        if (connectionId) params.set('connectionId', connectionId);
 
         const response = await this.fetchCall<{ messages: Message[]; hasMore: boolean } | Message[]>(
             `${API_BASE}/${conversationId}/messages?${params}`

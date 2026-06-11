@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface ActiveChatProps {
+  onFetchAllMessages?: () => void;
   conversation: Conversation | null;
   contact: Contact | null;
   messages: Message[];
@@ -101,6 +102,7 @@ export function ActiveChat({
   availableConnections = [],
   onSwitchConnection,
   onRefreshConversations,
+  onFetchAllMessages,
   onSyncHistory,
 }: ActiveChatProps) {
   const isMobile = useIsMobile();
@@ -539,6 +541,7 @@ export function ActiveChat({
                       onClick={() => {
                         setShowAllMessages(true);
                         setShowConnectionDropdown(false);
+                        if (onFetchAllMessages) onFetchAllMessages();
                       }}
                       className={cn(
                         "w-full flex items-center justify-center gap-2 px-3 py-2 text-center transition-all duration-200 cursor-pointer rounded-lg text-xs font-semibold",

@@ -67,6 +67,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         // Prevents IDOR: Users can only see messages from their own company's conversations
         const [isValidConversation] = await db.select({ 
             id: conversations.id, 
+            contactId: conversations.contactId,
             connectionId: conversations.connectionId, 
             assignedTo: conversations.assignedTo 
         })
@@ -104,11 +105,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
         const before = searchParams.get('before');
 
+        const contactConversations = await db.select({ id: conversations.id })
+            .from(conversations)
+            .where(eq(conversations.contactId, isValidConversation.contactId));
+        
+        const contactConversationIds = contactConversations.map(c => c.id);
+
         // SECURITY: Validar tenant e garantir que mensagens antigas vazadas não apareçam
         const conditions = [
-            eq(messages.conversationId, conversationId),
+            inArray(messages.conversationId, contactConversationIds),
             eq(messages.companyId, companyId)
         ];
+
+        const connectionIdFilter = searchParams.get('connectionId');
+        if (connectionIdFilter) {
+            conditions.push(eq(messages.connectionId, connectionIdFilter));
+        }
 
         // Removido o filtro estrito de connectionId para permitir que o frontend 
         // controle a exibição via toggle 'showAllMessages'
@@ -161,9 +173,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             hasMore,
             nextBefore
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Erro ao buscar mensagens:', error);
-        return NextResponse.json({ error: 'Erro interno ao buscar mensagens.' }, { status: 500 });
+        return NextResponse.json({ error: 'Erro interno ao buscar mensagens.', details: error.message }, { status: 500 });
     }
 }
 

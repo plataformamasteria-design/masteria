@@ -141,10 +141,10 @@ export function useInboxController({
         }
     }, []);
 
-    const fetchAndSetMessages = useCallback(async (conversationId: string, before?: string, prepend = false, silent = false, bypassCache = false) => {
+    const fetchAndSetMessages = useCallback(async (conversationId: string, before?: string, prepend = false, silent = false, bypassCache = false, connectionId?: string) => {
         if (!prepend && !silent) setLoadingMessages(true);
         try {
-            const result = await conversationService.getMessages(conversationId, 16, before, bypassCache);
+            const result = await conversationService.getMessages(conversationId, 30, before, bypassCache, connectionId);
 
             setCurrentMessages(prev => {
                 // ✅ FIX: Merge inteligente UNIVERSAL para evitar duplicatas do prepend(scroll) e Polling.
@@ -178,7 +178,7 @@ export function useInboxController({
         setHasMoreMessages(true);
 
         await Promise.all([
-            fetchAndSetMessages(conversationId),
+            fetchAndSetMessages(conversationId, undefined, false, false, false, conversation.connectionId),
             fetchContactDetails(conversation.contactId)
         ]);
 
@@ -343,12 +343,17 @@ export function useInboxController({
                     : c
             ));
 
+            // Force refresh of the messages array to instantly reflect the new connection's context
+            setCurrentMessages([]);
+            setHasMoreMessages(true);
+            await fetchAndSetMessages(selectedConversation.id, undefined, false, false, true, connectionId);
+
             const label = ['baileys', 'evolution'].includes(result.connectionType) ? 'Baileys (Gratuito)' : 'API Oficial';
             notify.success('Conexão Alterada', `Usando: ${label}`);
         } catch (error) {
             notify.error('Erro', (error as Error).message);
         }
-    }, [selectedConversation, notify]);
+    }, [selectedConversation, notify, fetchAndSetMessages]);
 
     const handleSyncHistory = useCallback(async () => {
         if (!selectedConversation || (selectedConversation as any)?.connectionType !== 'baileys') return;
@@ -362,6 +367,11 @@ export function useInboxController({
             notify.error('Erro', (error as Error).message);
         }
     }, [selectedConversation, notify]);
+
+    const handleFetchAllMessages = useCallback(() => {
+        if (!selectedConversation) return;
+        fetchAndSetMessages(selectedConversation.id, undefined, false, true, false, selectedConversation.connectionId);
+    }, [selectedConversation?.id, selectedConversation?.connectionId, fetchAndSetMessages]);
 
     // Initialization Logic
     useEffect(() => {
@@ -521,7 +531,7 @@ export function useInboxController({
                 const isRecentFastPath = lastFastPath && (Date.now() - lastFastPath) < 2000;
 
                 if (!isRecentFastPath) {
-                    await fetchAndSetMessages(selectedConversation.id, undefined, false, true, true);
+                    fetchAndSetMessages(selectedConversation.id, undefined, false, true, true, selectedConversation.connectionId);
                 } else {
                     console.log('[InboxController] Slow-path suprimido (fast-path recente)');
                 }
@@ -566,13 +576,14 @@ export function useInboxController({
         handleSwitchConnection,
         handleSyncHistory,
         availableConnections,
+        handleFetchAllMessages,
         loadMoreMessages: async () => {
             if (isLoadingMoreMessages || !hasMoreMessages || !currentMessages[0]) return;
             setIsLoadingMoreMessages(true);
             const oldestTime = currentMessages[0].sentAt instanceof Date
                 ? currentMessages[0].sentAt.toISOString()
                 : new Date(currentMessages[0].sentAt!).toISOString();
-            await fetchAndSetMessages(selectedConversation!.id, oldestTime, true);
+            await fetchAndSetMessages(selectedConversation!.id, oldestTime, true, false, false, selectedConversation!.connectionId);
             setIsLoadingMoreMessages(false);
         },
         // Missing actions like Archive can be added here
