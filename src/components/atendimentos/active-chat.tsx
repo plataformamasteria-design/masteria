@@ -114,7 +114,6 @@ export function ActiveChat({
   const [isAssigning, setIsAssigning] = React.useState(false);
   const [replyToMessage, setReplyToMessage] = React.useState<Message | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
-  const [pendingConnectionId, setPendingConnectionId] = React.useState<string | null>(null);
   const [showAllMessages, setShowAllMessages] = React.useState(false);
   const [isInternalNote, setIsInternalNote] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -479,7 +478,9 @@ export function ActiveChat({
                           onClick={() => {
                             setShowAllMessages(false);
                             if (!isActive) {
-                              setPendingConnectionId(conn.id);
+                              if (onSwitchConnection) {
+                                onSwitchConnection(conn.id);
+                              }
                               setShowConnectionDropdown(false);
                             }
                           }}
@@ -673,7 +674,7 @@ export function ActiveChat({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/30" />
               </div>
             ) : (
-              (showAllMessages ? messages : messages.filter((m: Message) => !m.connectionId || m.connectionId === (pendingConnectionId || conversation.connectionId))).map((msg, index, arr) => {
+              (showAllMessages ? messages : messages.filter((m: Message) => !m.connectionId || m.connectionId === conversation.connectionId)).map((msg, index, arr) => {
                 const currentDate = new Date(msg.sentAt);
                 const prevMsg = index > 0 ? arr[index - 1] : null;
                 const prevDate = prevMsg ? new Date(prevMsg.sentAt) : null;
@@ -853,38 +854,7 @@ export function ActiveChat({
         />
       </div>
 
-      {/* Modal de Confirmação de Troca de Conexão */}
-      <Dialog open={!!pendingConnectionId} onOpenChange={(open) => !open && setPendingConnectionId(null)}>
-        <DialogContent className="sm:max-w-[380px]">
-          <DialogHeader>
-            <DialogTitle>Trocar Conexão</DialogTitle>
-          </DialogHeader>
-          <div className="py-3">
-            <p className="text-sm text-muted-foreground">
-              Ao trocar a conexão, as próximas mensagens serão enviadas pelo novo canal. Esta ação não desfaz mensagens já enviadas.
-            </p>
-            {pendingConnectionId && (() => {
-              const conn = availableConnections.find(c => c.id === pendingConnectionId);
-              return conn ? (
-                <div className="mt-3 p-3 rounded-lg border border-primary/20 bg-primary/5 text-sm font-medium">
-                  ✅ {conn.config_name} · {conn.phoneNumber || conn.phone || 'Sem número'}
-                </div>
-              ) : null;
-            })()}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPendingConnectionId(null)}>Cancelar</Button>
-            <Button onClick={async () => {
-              if (pendingConnectionId && onSwitchConnection) {
-                await onSwitchConnection(pendingConnectionId);
-              }
-              setPendingConnectionId(null);
-            }}>
-              Confirmar Troca
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Modal de Preview de Mídia */}
       <Dialog open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
