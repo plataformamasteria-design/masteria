@@ -55,11 +55,19 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
   const contact = card.contact as any;
   let customFields = {};
   try {
+    let contactFields = {};
+    let cardFields = {};
     if (typeof contact?.customFields === 'string') {
-      customFields = JSON.parse(contact.customFields);
+       try { contactFields = JSON.parse(contact.customFields); } catch(e) {}
     } else if (contact?.customFields && typeof contact.customFields === 'object') {
-      customFields = contact.customFields;
+       contactFields = contact.customFields;
     }
+    if (typeof (card as any).customFields === 'string') {
+       try { cardFields = JSON.parse((card as any).customFields); } catch(e) {}
+    } else if ((card as any).customFields && typeof (card as any).customFields === 'object') {
+       cardFields = (card as any).customFields;
+    }
+    customFields = { ...contactFields, ...cardFields };
   } catch(e) {}
   
   // Filter custom fields based on boardSettings

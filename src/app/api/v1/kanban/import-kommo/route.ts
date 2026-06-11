@@ -11,15 +11,27 @@ import { logger } from '@/lib/logger';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; 
 
+import { canonicalizeBrazilPhone } from '@/lib/utils';
+
 function cleanPhone(phone: string | undefined | null) {
   if (!phone) return null;
-  const cleaned = phone.toString().replace(/\D/g, '');
+  // First clean anything that isn't a digit or +
+  const cleaned = phone.toString().replace(/[^\d+]/g, '');
   if (!cleaned) return null;
-  if (cleaned.length < 10) return null;
-  if (cleaned.length === 10 || cleaned.length === 11) {
-    return `55${cleaned}`;
+  
+  // If it doesn't have country code, add it temporarily so canonicalizeBrazilPhone works
+  let withCountry = cleaned;
+  if (!cleaned.startsWith('+')) {
+    if (cleaned.length === 10 || cleaned.length === 11) {
+      withCountry = `+55${cleaned}`;
+    } else if (cleaned.startsWith('55') && cleaned.length >= 12) {
+      withCountry = `+${cleaned}`;
+    } else {
+      withCountry = `+${cleaned}`;
+    }
   }
-  return cleaned;
+  
+  return canonicalizeBrazilPhone(withCountry);
 }
 
 function extractFunnelFromUTM(row: any): string | null {

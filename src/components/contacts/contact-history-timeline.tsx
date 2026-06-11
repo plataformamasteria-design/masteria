@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Loader2, Tag, Kanban, CheckCircle2, AlertCircle, Calendar, Zap, UserCheck } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { useInboxWebSocket } from '@/hooks/use-inbox-websocket';
 
 interface ContactEvent {
     id: string;
@@ -110,6 +111,19 @@ export function ContactHistoryTimeline({ contactId }: { contactId: string }) {
     const [events, setEvents] = useState<ContactEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const handleWebSocketEvent = useCallback((event: string, payload: any) => {
+        if (event === 'contact:event' && payload?.contactId === contactId && payload?.event) {
+            setEvents((prev) => {
+                // Evitar duplicatas caso o evento já exista
+                if (prev.some(e => e.id === payload.event.id)) return prev;
+                // Adiciona o evento no topo (mais recente primeiro)
+                return [payload.event, ...prev];
+            });
+        }
+    }, [contactId]);
+
+    useInboxWebSocket(handleWebSocketEvent);
 
     useEffect(() => {
         const fetchEvents = async () => {

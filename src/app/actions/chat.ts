@@ -43,7 +43,8 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
             companyId: conversations.companyId,
             connectionId: conversations.connectionId,
             contactPhone: contacts.phone,
-            connectionType: connections.connectionType
+            connectionType: connections.connectionType,
+            assignedTo: conversations.assignedTo
         })
             .from(conversations)
             .leftJoin(contacts, eq(conversations.contactId, contacts.id))
@@ -57,6 +58,23 @@ export async function sendMessageAction(conversationIdRaw: string, contentRaw: s
         if (!conversationResult || !conversationResult.contactPhone) {
             throw new Error("Conversa ou contato não encontrado.");
         }
+
+        // --- INÍCIO DA VALIDAÇÃO RBAC ---
+        const [user] = await db.select({ role: users.role, permissions: users.permissions }).from(users).where(eq(users.id, userId)).limit(1);
+        const viewMode = (user?.permissions as any)?.viewMode || 'all';
+        const isAssignedOnly = user?.role === 'atendente' && viewMode === 'assigned_only';
+        const allowedConnectionIds = user?.role === 'atendente' ? ((user?.permissions as any)?.allowedConnectionIds || []) : null;
+
+        if (isAssignedOnly && conversationResult.assignedTo !== userId) {
+            throw new Error("Acesso negado: Você só pode interagir com conversas atribuídas a você.");
+        }
+
+        if (allowedConnectionIds !== null && conversationResult.connectionId) {
+            if (!allowedConnectionIds.includes(conversationResult.connectionId)) {
+                throw new Error("Acesso negado: Você não tem permissão para utilizar esta conexão.");
+            }
+        }
+        // --- FIM DA VALIDAÇÃO RBAC ---
 
         // Reconstruct expected object format
         const conversation = {
@@ -316,6 +334,12 @@ export async function toggleAiAction(conversationIdRaw: string, aiActiveRaw: boo
             ))
             .returning();
 
+        if (updated?.contactId) {
+            import('@/lib/contact-events').then(({ logContactEvent }) => {
+                logContactEvent(companyId, updated.contactId, 'SYSTEM', aiActive ? 'Atendimento da IA reativado manualmente' : 'Atendimento da IA pausado manualmente');
+            }).catch(() => {});
+        }
+
         revalidatePath('/atendimentos');
         emitInboxUpdate(companyId);
         return { success: true, conversation: JSON.parse(JSON.stringify(updated)) };
@@ -378,14 +402,30 @@ export async function unarchiveConversationAction(conversationId: string) {
 export async function fetchAvailableConnections() {
     try {
         const companyId = await getCompanyIdFromSession();
+        const userId = await getUserIdFromSession();
         // Dynamic import to avoid circular dependencies if any
         const { evolutionApiService } = await import('@/services/evolution-api.service');
 
+        // --- INÍCIO DA VALIDAÇÃO RBAC ---
+        const [user] = await db.select({ role: users.role, permissions: users.permissions }).from(users).where(eq(users.id, userId)).limit(1);
+        const allowedConnectionIds = user?.role === 'atendente' ? ((user?.permissions as any)?.allowedConnectionIds || []) : null;
+
+        const baseConditions: any[] = [
+            eq(connections.companyId, companyId),
+            eq(connections.isActive, true)
+        ];
+
+        if (allowedConnectionIds !== null) {
+            if (allowedConnectionIds.length > 0) {
+                baseConditions.push(inArray(connections.id, allowedConnectionIds));
+            } else {
+                return []; // Nenhuma conexão permitida
+            }
+        }
+        // --- FIM DA VALIDAÇÃO RBAC ---
+
         const activeConnections = await db.query.connections.findMany({
-            where: and(
-                eq(connections.companyId, companyId),
-                eq(connections.isActive, true)
-            ),
+            where: and(...baseConditions),
             columns: {
                 id: true,
                 config_name: true,
@@ -456,6 +496,18 @@ export async function switchConnectionAction(conversationIdRaw: string, newConne
             throw new Error("Conexão não encontrada ou inativa.");
         }
 
+        const userId = await getUserIdFromSession();
+        // --- INÍCIO DA VALIDAÇÃO RBAC ---
+        const [user] = await db.select({ role: users.role, permissions: users.permissions }).from(users).where(eq(users.id, userId)).limit(1);
+        const allowedConnectionIds = user?.role === 'atendente' ? ((user?.permissions as any)?.allowedConnectionIds || []) : null;
+
+        if (allowedConnectionIds !== null) {
+            if (!allowedConnectionIds.includes(newConnectionId)) {
+                throw new Error("Acesso negado: Você não tem permissão para transferir a conversa para esta conexão.");
+            }
+        }
+        // --- FIM DA VALIDAÇÃO RBAC ---
+
         // Update the conversation's connectionId
         const [updated] = await db.update(conversations)
             .set({ connectionId: newConnectionId })
@@ -504,6 +556,17 @@ export async function startOutboundConversationAction(contactId: string, kanbanC
 
         const [connection] = await db.select().from(connections).where(and(eq(connections.id, connectionId), eq(connections.companyId, companyId))).limit(1);
         if (!connection) throw new Error("Conexão não encontrada.");
+
+        // --- INÍCIO DA VALIDAÇÃO RBAC ---
+        const [user] = await db.select({ role: users.role, permissions: users.permissions }).from(users).where(eq(users.id, userId)).limit(1);
+        const allowedConnectionIds = user?.role === 'atendente' ? ((user?.permissions as any)?.allowedConnectionIds || []) : null;
+
+        if (allowedConnectionIds !== null) {
+            if (!allowedConnectionIds.includes(connectionId)) {
+                throw new Error("Acesso negado: Você não tem permissão para iniciar mensagens através desta conexão.");
+            }
+        }
+        // --- FIM DA VALIDAÇÃO RBAC ---
 
         // Dispara mensagem
         const provider = ['baileys', 'evolution'].includes(connection.connectionType || '') ? 'baileys' : 'apicloud';

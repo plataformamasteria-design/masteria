@@ -22,6 +22,7 @@ import {
   ChevronDown,
   UserPlus,
   FileText,
+  ImageIcon,
   Filter,
   Check,
   Link as LinkIcon,
@@ -114,8 +115,7 @@ export function ActiveChat({
   const [replyToMessage, setReplyToMessage] = React.useState<Message | null>(null);
   const [showConnectionDropdown, setShowConnectionDropdown] = React.useState(false);
   const [pendingConnectionId, setPendingConnectionId] = React.useState<string | null>(null);
-  const [messageFilter, setMessageFilter] = React.useState<string | null>(null);
-  const [isAutoSyncEnabled, setIsAutoSyncEnabled] = React.useState(false);
+  const [showAllMessages, setShowAllMessages] = React.useState(false);
   const [isInternalNote, setIsInternalNote] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const connectionDropdownRef = React.useRef<HTMLDivElement>(null);
@@ -144,18 +144,7 @@ export function ActiveChat({
     return availableConnections.filter(c => activeConnectionIdsInChat.includes(c.id));
   }, [availableConnections, activeConnectionIdsInChat]);
 
-  React.useEffect(() => {
-    const saved = localStorage.getItem('masteria_chat_auto_sync');
-    if (saved) setIsAutoSyncEnabled(saved === 'true');
-  }, []);
 
-  const toggleAutoSync = () => {
-    setIsAutoSyncEnabled(prev => {
-      const next = !prev;
-      localStorage.setItem('masteria_chat_auto_sync', String(next));
-      return next;
-    });
-  };
 
   React.useEffect(() => {
     if (previewFile) {
@@ -419,12 +408,6 @@ export function ActiveChat({
             conversation={conversation}
             onAssignUpdate={(newUserId) => {
                onRefreshConversations?.();
-               if (isAutoSyncEnabled && newUserId) {
-                 const userConn = availableConnections.find(c => c.ownerId === newUserId);
-                 if (userConn && userConn.id !== conversation.connectionId && onSwitchConnection) {
-                    onSwitchConnection(userConn.id);
-                 }
-               }
             }}
           />
 
@@ -494,20 +477,9 @@ export function ActiveChat({
                         <DropdownMenuItem
                           key={conn.id}
                           onClick={() => {
+                            setShowAllMessages(false);
                             if (!isActive) {
-                              if (isAutoSyncEnabled && conn.ownerId) {
-                                // Mudar Conexão E Atribuir
-                                if (onSwitchConnection) {
-                                  onSwitchConnection(conn.id).then(() => {
-                                    assignChatToUser(conversation.id, conn.ownerId!).then(() => {
-                                       setOptimisticAssignment({ assignedTo: conn.ownerId!, teamId: null });
-                                       onRefreshConversations?.();
-                                    });
-                                  });
-                                }
-                              } else {
-                                setPendingConnectionId(conn.id);
-                              }
+                              setPendingConnectionId(conn.id);
                               setShowConnectionDropdown(false);
                             }
                           }}
@@ -559,101 +531,32 @@ export function ActiveChat({
                     });
                   })()}
                 </div>
+                {finalAvailableConnections.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator className="bg-white/[0.06]" />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setShowAllMessages(true);
+                        setShowConnectionDropdown(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-center gap-2 px-3 py-2 text-center transition-all duration-200 cursor-pointer rounded-lg text-xs font-semibold",
+                        showAllMessages
+                          ? 'bg-primary/10 text-primary border border-primary/20'
+                          : 'hover:bg-white/[0.04] text-muted-foreground hover:text-foreground border border-transparent'
+                      )}
+                    >
+                      Mostrar mensagens de todas conexões
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
 
-          {/* Sincronizar Repasse Toggle */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleAutoSync}
-                  className={cn(
-                    "shrink-0 h-9 w-9 rounded-lg transition-all duration-200 relative",
-                    isAutoSyncEnabled
-                      ? "bg-primary/10 text-primary hover:bg-primary/15"
-                      : "hover:bg-white/[0.04] text-muted-foreground"
-                  )}
-                >
-                  {isAutoSyncEnabled ? <LinkIcon className="h-[18px] w-[18px]" /> : <Unlink className="h-[18px] w-[18px]" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-card/95 backdrop-blur-md border-white/[0.08]">
-                <p>{isAutoSyncEnabled ? 'Sincronizar Atribuição: LIGADO' : 'Sincronizar Atribuição: DESLIGADO'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
 
-          {/* Message Filter Dropdown */}
-          <DropdownMenu>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "shrink-0 h-9 w-9 rounded-lg transition-all duration-200 relative",
-                        messageFilter !== null
-                          ? "bg-primary/10 text-primary hover:bg-primary/15"
-                          : "hover:bg-white/[0.04] text-muted-foreground"
-                      )}
-                    >
-                      <Filter className="h-[18px] w-[18px]" />
-                      {messageFilter !== null && (() => {
-                        const count = messages.filter((m: Message) => m.connectionId === messageFilter).length;
-                        return (
-                          <span className="absolute -top-1 -right-1 h-4 min-w-4 px-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded-full flex items-center justify-center leading-none">
-                            {count}
-                          </span>
-                        );
-                      })()}
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent className="bg-card/95 backdrop-blur-md border-white/[0.08]">
-                  <p>{messageFilter !== null ? 'Filtrado por conexão. Clique para alterar.' : 'Filtrar mensagens por conexão'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
 
-            <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 p-1">
-              <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 border-b border-white/[0.06] mb-1">
-                Filtrar Conversa
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => setMessageFilter(null)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm transition-all duration-200 cursor-pointer rounded-lg",
-                  messageFilter === null ? 'bg-primary/5 text-primary' : 'hover:bg-white/[0.04]'
-                )}
-              >
-                Todas as conexões
-              </DropdownMenuItem>
-              {filterableConnections.map(conn => {
-                const count = messages.filter((m: Message) => m.connectionId === conn.id).length;
-                return (
-                  <DropdownMenuItem
-                    key={conn.id}
-                    onClick={() => setMessageFilter(conn.id)}
-                    className={cn(
-                      "w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left text-sm transition-all duration-200 cursor-pointer rounded-lg",
-                      messageFilter === conn.id ? 'bg-primary/5 text-primary' : 'hover:bg-white/[0.04]'
-                    )}
-                  >
-                    <span className="truncate flex-1">{conn.config_name}</span>
-                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">{count}</span>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+
 
           {/* AI Toggle */}
           <TooltipProvider>
@@ -770,7 +673,7 @@ export function ActiveChat({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/30" />
               </div>
             ) : (
-              (messageFilter === null ? messages : messages.filter((m: Message) => m.connectionId === messageFilter)).map((msg, index, arr) => {
+              (showAllMessages ? messages : messages.filter((m: Message) => !m.connectionId || m.connectionId === (pendingConnectionId || conversation.connectionId))).map((msg, index, arr) => {
                 const currentDate = new Date(msg.sentAt);
                 const prevMsg = index > 0 ? arr[index - 1] : null;
                 const prevDate = prevMsg ? new Date(prevMsg.sentAt) : null;
@@ -874,17 +777,12 @@ export function ActiveChat({
            actionMenuSlot={
               <div className="flex items-center gap-1">
                 {onSendMedia && (
-                  <label
-                    className={cn(
-                      "cursor-pointer shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-muted-foreground transition-all duration-200",
-                      isArchived || (!canSendFreeform && is24hRestricted)
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:text-foreground hover:bg-muted focus:bg-muted"
-                    )}
-                  >
+                  <>
                     <input
                       type="file"
+                      id={`media-upload-photo-${conversation.id}`}
                       className="hidden"
+                      accept="image/*,video/*"
                       disabled={isArchived || (!canSendFreeform && is24hRestricted)}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
@@ -895,8 +793,49 @@ export function ActiveChat({
                         e.target.value = ''; // Reset
                       }}
                     />
-                    <Paperclip className="h-5 w-5" />
-                  </label>
+                    <input
+                      type="file"
+                      id={`media-upload-doc-${conversation.id}`}
+                      className="hidden"
+                      accept="*"
+                      disabled={isArchived || (!canSendFreeform && is24hRestricted)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPreviewFile(file);
+                          setPreviewCaption('');
+                        }
+                        e.target.value = ''; // Reset
+                      }}
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        disabled={isArchived || (!canSendFreeform && is24hRestricted)}
+                        className={cn(
+                          "shrink-0 h-10 w-10 rounded-full transition-all duration-200 flex items-center justify-center outline-none focus:outline-none",
+                          isArchived || (!canSendFreeform && is24hRestricted)
+                            ? "opacity-50 cursor-not-allowed"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted focus:bg-muted"
+                        )}
+                      >
+                        <Paperclip className="h-5 w-5" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" sideOffset={12} className="w-56 bg-card/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl shadow-black/30 z-50 p-2 mb-2">
+                        <DropdownMenuItem onClick={() => document.getElementById(`media-upload-doc-${conversation.id}`)?.click()} className="cursor-pointer gap-3 p-3 hover:bg-muted/80 focus:bg-muted/80 rounded-lg transition-colors">
+                          <div className="bg-violet-500/10 text-violet-500 p-2.5 rounded-full shadow-sm border border-violet-500/20"><FileText className="h-5 w-5" /></div>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-sm">Documento</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => document.getElementById(`media-upload-photo-${conversation.id}`)?.click()} className="cursor-pointer gap-3 p-3 hover:bg-muted/80 focus:bg-muted/80 rounded-lg transition-colors mt-1">
+                          <div className="bg-blue-500/10 text-blue-500 p-2.5 rounded-full shadow-sm border border-blue-500/20"><ImageIcon className="h-5 w-5" /></div>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-sm">Fotos e Vídeos</span>
+                          </div>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
                 )}
                 <SendTemplateDialog templates={templates} connectionId={conversation.connectionId!} contact={contact}>
                   <Button

@@ -88,6 +88,28 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
     fetcher
   );
 
+  const activeConversationId = (contactDetails as any)?.activeConversations?.[0]?.id;
+  const { data: realConversationData, isLoading: isLoadingConversation } = useSWR(
+    (open && isChatMode && activeConversationId) ? `/api/v1/conversations/${activeConversationId}` : null,
+    fetcher
+  );
+
+  const mergedCustomFields = useMemo(() => {
+    let contactFields: Record<string, any> = {};
+    let cardFields: Record<string, any> = {};
+    if (typeof contactDetails?.customFields === 'string') {
+      try { contactFields = JSON.parse(contactDetails.customFields); } catch(e) {}
+    } else if (contactDetails?.customFields && typeof contactDetails.customFields === 'object') {
+      contactFields = contactDetails.customFields;
+    }
+    if (typeof (card as any).customFields === 'string') {
+      try { cardFields = JSON.parse((card as any).customFields); } catch(e) {}
+    } else if ((card as any).customFields && typeof (card as any).customFields === 'object') {
+      cardFields = (card as any).customFields;
+    }
+    return { ...contactFields, ...cardFields };
+  }, [contactDetails?.customFields, (card as any).customFields]);
+
   // Sync Form State with SWR Data
   useEffect(() => {
     if (contactDetails && !editingSection) {
@@ -136,7 +158,14 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
           const key = f.key.trim();
           if (key) customObj[key] = f.value;
         });
-        payload.customFields = customObj;
+        
+        // Salvar os campos customizados diretamente no Lead (Card) e não no Contato Geral
+        await onUpdate(card.id, { customFields: customObj });
+        onUpdateCards?.();
+        setEditingSection(null);
+        notify.success('Campos atualizados no funil!');
+        setIsSaving(false);
+        return;
       }
 
       if (editingSection === 'segmentation') {
@@ -215,7 +244,8 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
 
   const handleEditCustomFields = () => {
     setEditingSection('customFields');
-    const fields = Object.entries(contactDetails?.customFields || {}).map(([k, v], i) => ({
+    
+    const fields = Object.entries(mergedCustomFields).map(([k, v], i) => ({
       id: `field-${i}-${Date.now()}`,
       key: k,
       value: String(v)
@@ -364,10 +394,22 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
         {/* TABS OR CHAT */}
         {isChatMode ? (
           <div className="flex-1 overflow-hidden h-full flex flex-col">
-            {loadingContact ? (
-              <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            {loadingContact || (activeConversationId && isLoadingConversation) ? (
+              <div className="flex-1 flex items-center justify-center flex-col gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                <span className="text-sm text-muted-foreground animate-pulse">Sincronizando chat...</span>
               </div>
+            ) : activeConversationId && realConversationData ? (
+              <InboxView 
+                preselectedConversationId={realConversationData.id}
+                preselectedConversation={realConversationData}
+                initialConversations={[realConversationData]}
+                hideConversationList={true}
+                hideContactDetails={false}
+                onBack={() => setIsChatMode(false)}
+                forceShowBack={true}
+                onContactDetailsToggle={(isOpen) => setIsContactDetailsOpen(isOpen)}
+              />
             ) : (contactDetails as any)?.activeConversations?.length > 0 ? (() => {
               const activeConvs = (contactDetails as any).activeConversations;
               
@@ -558,16 +600,19 @@ export function LeadExpansiveDrawer({ open, onOpenChange, card, stages, initialT
                       </div>
                     ) : (
                       <div className="space-y-0 divide-y divide-border/40 border rounded-md overflow-hidden">
-                        {contactDetails?.customFields && Object.entries(contactDetails.customFields).map(([key, value]) => {
-                          if (!value) return null;
-                          return (
-                            <div key={key} className="flex justify-between p-3 text-sm gap-4 items-center bg-zinc-50/50 dark:bg-zinc-900/30">
-                              <span className="font-semibold text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[40%] flex-shrink-0" title={key}>{key}</span>
-                              <span className="text-right text-xs text-zinc-900 dark:text-zinc-100 break-all w-full leading-relaxed" style={{ wordBreak: 'break-all' }}>{String(value)}</span>
-                            </div>
-                          )
-                        })}
-                        {(!contactDetails?.customFields || Object.keys(contactDetails.customFields).length === 0) && <p className="p-3 text-xs text-muted-foreground">Nenhum campo personalizado.</p>}
+                        {Object.entries(mergedCustomFields).length > 0 ? (
+                          Object.entries(mergedCustomFields).map(([key, value]) => {
+                            if (!value) return null;
+                            return (
+                              <div key={key} className="flex justify-between p-3 text-sm gap-4 items-center bg-zinc-50/50 dark:bg-zinc-900/30">
+                                <span className="font-semibold text-xs text-zinc-500 dark:text-zinc-400 truncate max-w-[40%] flex-shrink-0" title={key}>{key}</span>
+                                <span className="text-right text-xs text-zinc-900 dark:text-zinc-100 break-all w-full leading-relaxed" style={{ wordBreak: 'break-all' }}>{String(value)}</span>
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <p className="p-3 text-xs text-muted-foreground">Nenhum campo personalizado.</p>
+                        )}
                       </div>
                     )}
                   </CardContent>

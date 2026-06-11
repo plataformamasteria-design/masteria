@@ -1022,6 +1022,10 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 } catch (saveErr: any) {
                     console.error('[FLOW-ENGINE] Failed to save send_message message:', saveErr.message);
                 }
+                
+                try {
+                    await logContactEvent(ctx.companyId, ctx.contactId, 'AUTOMATION', `Mensagem enviada via automação:\n"${text}"`);
+                } catch (e) {}
             }
             return { message: `Sent: ${text.slice(0, 50)} ` };
         }
@@ -1046,6 +1050,13 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 mediaUrl: step.data.file_url || step.data.url,
                 mediaType,
             });
+
+            if (ctx.contactId) {
+                try {
+                    await logContactEvent(ctx.companyId, ctx.contactId, 'AUTOMATION', `Mídia enviada via automação (${mediaType})${caption ? `:\n"${caption}"` : ''}`);
+                } catch (e) {}
+            }
+
             return { message: `Media sent: ${mediaType} ` };
         }
 
@@ -1158,6 +1169,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         }
                         
                         await db.update(contacts).set(updateData).where(eq(contacts.id, ctx.contactId));
+                        
+                        await logContactEvent(ctx.companyId, ctx.contactId, 'AUTOMATION', `Dado coletado via automação: ${fieldKey} = ${answer}`);
                     } catch (e) {
                         console.error('[FLOW-ENGINE] Capture CRM save error:', e);
                     }
@@ -1540,6 +1553,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         await db.update(conversations)
                             .set({ assignedTo: userId })
                             .where(eq(conversations.contactId, ctx.contactId));
+                        try { await logContactEvent(ctx.companyId, ctx.contactId, 'ASSIGNMENT', `Atendimento repassado para atendente via automação`, { assignedUserId: userId }); } catch(e){}
                         return { message: `Assign: user ${userId}` };
                     }
                 } else if (assignType === 'team') {
@@ -1548,6 +1562,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         await db.update(conversations)
                             .set({ teamId: teamId })
                             .where(eq(conversations.contactId, ctx.contactId));
+                        try { await logContactEvent(ctx.companyId, ctx.contactId, 'ASSIGNMENT', `Atendimento repassado para equipe via automação`, { teamId }); } catch(e){}
                         return { message: `Assign: team ${teamId}` };
                     }
                 } else if (assignType === 'random_in_team') {
@@ -1573,6 +1588,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 await db.update(conversations)
                                     .set({ assignedTo: selectedUserId, teamId: teamId })
                                     .where(eq(conversations.contactId, ctx.contactId));
+                                try { await logContactEvent(ctx.companyId, ctx.contactId, 'ASSIGNMENT', `Atendimento repassado (aleatório na equipe) via automação`, { assignedUserId: selectedUserId, teamId }); } catch(e){}
                                 return { message: `Assign: random to ${selectedUserId} (team ${teamId})` };
                             }
                         }
@@ -1618,6 +1634,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     if (!ctx.contactTags.includes(tag.name)) {
                         ctx.contactTags.push(tag.name);
                     }
+                    try { await logContactEvent(ctx.companyId, ctx.contactId, 'TAG', `Etiqueta adicionada via automação: ${tag.name}`); } catch(e){}
                     return { message: `Add Tag: ${tag.name}` };
                 }
             } catch (e) {
@@ -1652,6 +1669,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     if (index !== -1) {
                         ctx.contactTags.splice(index, 1);
                     }
+                    try { await logContactEvent(ctx.companyId, ctx.contactId, 'TAG', `Etiqueta removida via automação: ${tag.name}`); } catch(e){}
                     return { message: `Remove Tag: ${tag.name}` };
                 }
             } catch (e) {
@@ -1678,6 +1696,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     
                     if (activeConv) {
                         await db.update(conversations).set({ aiActive: botEnabled }).where(eq(conversations.id, activeConv.id));
+                        try { await logContactEvent(ctx.companyId, ctx.contactId, 'AUTOMATION', botEnabled ? 'IA reativada via automação' : 'IA pausada via automação'); } catch(e){}
                         logger.debug(`[FLOW-ENGINE] 🤖 Bot toggled to ${botEnabled} for conversation ${activeConv.id}`);
                     }
                 } catch (e) {

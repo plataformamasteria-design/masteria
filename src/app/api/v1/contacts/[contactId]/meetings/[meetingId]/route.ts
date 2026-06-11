@@ -8,6 +8,7 @@ import { getUserSession } from '@/app/actions';
 import { googleCalendarService } from '@/services/google-calendar.service';
 import { moveLeadToStage } from '@/lib/kanban/move-lead-to-stage';
 import type { KanbanStage } from '@/lib/types';
+import { logContactEvent } from '@/lib/contact-events';
 
 /**
  * DELETE — Cancel a scheduled meeting
@@ -52,6 +53,10 @@ export async function DELETE(
         await db.update(aiScheduledMeetings)
             .set({ status: 'cancelled' })
             .where(eq(aiScheduledMeetings.id, meetingId));
+
+        try {
+            await logContactEvent(companyId, contactId, 'SYSTEM', `Reunião Cancelada: ${meeting.title}`);
+        } catch(e) {}
 
         // Revert kanban lead if in meeting_scheduled stage
         await revertLeadFromMeetingStage(contactId, companyId);
@@ -170,6 +175,10 @@ export async function PATCH(
             meetLink: eventResult.meetLink,
             status: 'scheduled',
         }).returning();
+
+        try {
+            await logContactEvent(companyId, contactId, 'SYSTEM', `Reunião Reagendada: ${meeting.title}`);
+        } catch(e) {}
 
         return NextResponse.json({
             success: true,

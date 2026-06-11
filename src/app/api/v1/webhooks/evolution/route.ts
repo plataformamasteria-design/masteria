@@ -54,8 +54,17 @@ export async function POST(req: NextRequest) {
 
         const phone = remoteJid.split('@')[0];
 
-        // Obter conteúdo da mensagem
-        const messageObj = data.message || {};
+        // Extrair mensagem real (tratar wrappers do Baileys)
+        let messageObj = data.message || {};
+        if (messageObj.documentWithCaptionMessage?.message) {
+            messageObj = messageObj.documentWithCaptionMessage.message;
+        }
+
+        // Ignorar eventos de background que não devem gerar bolha no chat
+        if (messageObj.reactionMessage || messageObj.protocolMessage || messageObj.pollUpdateMessage) {
+            return NextResponse.json({ success: true, ignored: true, reason: 'Background event (reaction/protocol)' });
+        }
+
         let content = '';
         let messageType = 'TEXT';
 
@@ -107,8 +116,24 @@ export async function POST(req: NextRequest) {
             const count = messageObj.contactsArrayMessage.contacts?.length || 0;
             content = `👤 ${count} Contato(s) compartilhado(s)`;
             messageType = 'TEXT';
+        } else if (messageObj.locationMessage) {
+            content = `📍 Localização\nhttps://maps.google.com/?q=${messageObj.locationMessage.degreesLatitude},${messageObj.locationMessage.degreesLongitude}`;
+            messageType = 'TEXT';
+        } else if (messageObj.liveLocationMessage) {
+            content = `📍 Localização em tempo real (Abra no celular)`;
+            messageType = 'TEXT';
+        } else if (messageObj.pollCreationMessage) {
+            content = `📊 Enquete: ${messageObj.pollCreationMessage.name}\n(Abra no celular para votar)`;
+            messageType = 'TEXT';
+        } else if (messageObj.listMessage) {
+            content = `📋 Lista: ${messageObj.listMessage.title || messageObj.listMessage.description || 'Opções'}`;
+            messageType = 'TEXT';
+        } else if (messageObj.templateMessage || messageObj.buttonsMessage || messageObj.interactiveMessage) {
+            content = '🔲 Mensagem interativa (Botão/Template)';
+            messageType = 'TEXT';
         } else {
             content = 'Mensagem não suportada';
+            console.warn('[EVOLUTION-WEBHOOK] Mensagem não suportada. Chaves:', Object.keys(messageObj));
         }
 
         // 1. Descobrir o Company ID e Connection a partir do instanceName
@@ -157,6 +182,11 @@ export async function POST(req: NextRequest) {
                     avatarUrl,
                     status: 'ACTIVE'
                 }).returning();
+
+                // 🌟 HISTÓRICO: Registro de chegada
+                import('@/lib/contact-events').then(({ logContactEvent }) => {
+                    logContactEvent(companyId, contact.id, 'SYSTEM', 'Chegada na Plataforma (Novo Contato via WhatsApp)', { source: 'evolution_webhook' });
+                }).catch(err => console.warn('Failed to log contact creation', err));
             } else if (!contact.avatarUrl && !contact.profileLastSyncedAt) {
                  // Sincronização preguiçosa de avatar se estiver nulo e nunca foi sincronizado
                  try {

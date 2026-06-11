@@ -86,6 +86,12 @@ export async function moveLeadToStage(
           boardName: lead.board.title || 'Funil' 
         }
       );
+      
+      if (newStage.type === 'WIN') {
+          await logContactEvent(companyId, lead.contactId, 'KANBAN', `Venda Fechada${lead.value ? ` (R$ ${lead.value})` : ''}`, { toStage: newStage.title, value: lead.value });
+      } else if (newStage.type === 'LOSS') {
+          await logContactEvent(companyId, lead.contactId, 'KANBAN', `Venda Perdida`, { toStage: newStage.title });
+      }
     } catch (e) {
       console.warn('[logContactEvent] Failed to log kanban move:', e);
     }

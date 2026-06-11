@@ -110,9 +110,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             eq(messages.companyId, companyId)
         ];
 
-        if (isValidConversation.connectionId) {
-            conditions.push(eq(messages.connectionId, isValidConversation.connectionId));
-        }
+        // Removido o filtro estrito de connectionId para permitir que o frontend 
+        // controle a exibição via toggle 'showAllMessages'
 
         if (before) {
             const beforeDate = new Date(before);

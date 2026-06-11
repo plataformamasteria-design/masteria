@@ -90,6 +90,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         let metaMimeType = mimeType;
         let finalFileName = fileName;
 
+        let isVoiceNote = false;
+
         // Se for áudio e estiver em WebM (gravado pelo Chrome/Edge) ou MP4, transcodifica obrigatoriamente para OGG/Opus
         if (type === 'audio' && (mimeType.includes('webm') || mimeType.includes('mp4'))) {
             try {
@@ -97,12 +99,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 finalBuffer = await convertToOgg(buffer);
                 metaMimeType = 'audio/ogg'; // O arquivo gerado já tem Opus internamente. Não use "; codecs=opus" aqui.
                 finalFileName = fileName.replace(/\.(webm|mp4)$/, '.ogg');
+                isVoiceNote = true; // Gravação de microfone vira Voice Note
             } catch (err) {
                 console.error('Falha ao transcodificar áudio:', err);
                 // Fallback para o buffer original em caso de erro no FFmpeg
             }
         } else if (type === 'audio' && mimeType.includes('ogg')) {
             metaMimeType = 'audio/ogg'; // Mesma regra.
+            isVoiceNote = true; // OGG puro também tratamos como Voice Note
         }
 
         if (['baileys', 'evolution'].includes(connection.connectionType)) {
@@ -126,7 +130,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 mimeType: metaMimeType,
                 filename: finalFileName,
                 caption: undefined, // Remove a legenda
-                isVoice: type === 'audio' // Força o envio como gravação de voz PTT na Meta API
+                isVoice: isVoiceNote // Apenas gravações são Voice Notes. O resto é arquivo de áudio normal.
             });
             providerMessageId = (result as any).messages?.[0]?.id;
         } else {

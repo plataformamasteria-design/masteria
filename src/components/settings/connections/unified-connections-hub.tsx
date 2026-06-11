@@ -10,8 +10,8 @@ import { WebhookInfoCard } from './webhook-info-card';
 import { TokenAlerts } from './token-alerts';
 import { ImportDialog } from './import-dialog';
 import { ConnectionDialog } from './connection-dialog';
-// import { QRCodeModal } from '@/components/whatsapp-baileys/qr-code-modal';
-// import { CreateSessionDialog } from '@/components/whatsapp-baileys/create-session-dialog';
+import { QRCodeModal } from '@/components/whatsapp-baileys/qr-code-modal';
+import { CreateSessionDialog } from '@/components/whatsapp-baileys/create-session-dialog';
 import { getInstagramAuthUrl } from '@/app/actions/instagram-connect';
 import { toast } from '@/hooks/use-toast';
 import { UnifiedConnectionCard, UnifiedConnectionItem, UnifiedPlatform, UnifiedStatus } from './unified-connection-card';
@@ -65,14 +65,14 @@ export function UnifiedConnectionsHub() {
     React.useEffect(() => {
         const handleOpen = () => setIsEditModalOpen(true);
         window.addEventListener('open-official-modal', handleOpen);
-        
+
         const handleOpenQR = (e: CustomEvent) => {
             setSelectedSessionId(e.detail.sessionId);
             setSelectedSessionName(e.detail.sessionName);
             setQrModalOpen(true);
         };
         window.addEventListener('open-qr-modal', handleOpenQR as EventListener);
-        
+
         return () => {
             window.removeEventListener('open-official-modal', handleOpen);
             window.removeEventListener('open-qr-modal', handleOpenQR as EventListener);
@@ -86,7 +86,7 @@ export function UnifiedConnectionsHub() {
         // Mapear Oficiais
         // Filtrar evolution/baileys que possam vir da tabela conexões 
         const onlyOfficial = officialConnections.filter(c => c.connectionType !== 'evolution' && c.connectionType !== 'baileys');
-        
+
         for (const conn of onlyOfficial) {
             let status: UnifiedStatus = 'disconnected';
             if (conn.connectionStatus === 'Conectado') status = 'connected';
@@ -138,13 +138,13 @@ export function UnifiedConnectionsHub() {
     // --- Handlers Unificados ---
     const handleDeleteUnified = async () => {
         if (!itemToDelete) return;
-        
+
         if (itemToDelete.platform === 'evolution') {
             await deleteUnofficialSession(itemToDelete.id);
         } else {
             await deleteOfficialConnection(itemToDelete.id);
         }
-        
+
         setItemToDelete(null);
     };
 
@@ -250,7 +250,7 @@ export function UnifiedConnectionsHub() {
                                 onReconnectBaileys={(id) => reconnectUnofficialSession(id)}
                                 onResumeBaileys={resumeUnofficialSession}
                                 onDisconnectBaileys={(id) => {
-                                   toast({ title: "Aviso", description: "Para desconectar, tente reconectar primeiro ou use o aparelho para remover." })
+                                    toast({ title: "Aviso", description: "Para desconectar, tente reconectar primeiro ou use o aparelho para remover." })
                                 }}
                                 onDelete={(id, platform) => setItemToDelete({ id, platform })}
                             />
@@ -275,19 +275,17 @@ export function UnifiedConnectionsHub() {
                 onSave={handleSaveConnection}
             />
 
-            {/* 
-            <CreateSessionDialog 
-                onCreateSession={createBaileysSession} 
-                onSessionCreated={handleSessionCreated} 
+            <CreateSessionDialog
+                onCreateSession={createBaileysSession}
+                onSessionCreated={handleSessionCreated}
             />
 
-            <QRCodeModal 
+            <QRCodeModal
                 isOpen={qrModalOpen}
                 onClose={() => setQrModalOpen(false)}
                 sessionId={selectedSessionId}
                 sessionName={selectedSessionName}
             />
-            */}
 
             {/* DELETE CONFIRMATION */}
             <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>

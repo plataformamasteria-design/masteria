@@ -32,6 +32,7 @@ export class SessionCache {
    */
   static async getSessions(companyId: string): Promise<CachedSession[] | null> {
     try {
+      if (!redis) return null;
       const cacheKey = `${this.SESSIONS_PREFIX}:${companyId}`;
       const cached = await redis.get(cacheKey);
       
@@ -81,6 +82,7 @@ export class SessionCache {
    */
   static async setSessions<T extends CachedSession>(companyId: string, sessions: T[]): Promise<void> {
     try {
+      if (!redis) return;
       const cacheKey = `${this.SESSIONS_PREFIX}:${companyId}`;
       await redis.setex(cacheKey, this.TTL, JSON.stringify(sessions));
       await CacheMetrics.recordSet('sessions');
@@ -94,6 +96,7 @@ export class SessionCache {
    */
   static async getSession(companyId: string, sessionId: string): Promise<CachedSession | null> {
     try {
+      if (!redis) return null;
       const cacheKey = `${this.SESSION_PREFIX}:${companyId}:${sessionId}`;
       const cached = await redis.get(cacheKey);
       
@@ -115,6 +118,7 @@ export class SessionCache {
    */
   static async setSession(companyId: string, session: CachedSession): Promise<void> {
     try {
+      if (!redis) return;
       const cacheKey = `${this.SESSION_PREFIX}:${companyId}:${session.id}`;
       await redis.setex(cacheKey, this.TTL, JSON.stringify(session));
       await CacheMetrics.recordSet('sessions');
@@ -168,6 +172,7 @@ export class SessionCache {
    */
   static async removeSession(companyId: string, sessionId: string): Promise<void> {
     try {
+      if (!redis) return;
       // Remover sessão individual
       const sessionKey = `${this.SESSION_PREFIX}:${companyId}:${sessionId}`;
       await redis.del(sessionKey);
@@ -188,6 +193,7 @@ export class SessionCache {
    */
   static async invalidate(companyId: string): Promise<void> {
     try {
+      if (!redis) return;
       const sessionsKey = `${this.SESSIONS_PREFIX}:${companyId}`;
       await redis.del(sessionsKey);
 
@@ -208,6 +214,7 @@ export class SessionCache {
    */
   static async invalidateOnChange(companyId: string, sessionId?: string): Promise<void> {
     try {
+      if (!redis) return;
       // Invalidar lista completa
       await this.invalidate(companyId);
 

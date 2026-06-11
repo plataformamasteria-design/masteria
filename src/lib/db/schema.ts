@@ -670,6 +670,7 @@ export const kanbanLeads = pgTable('kanban_leads', {
   contactId: text('contact_id').notNull().references(() => contacts.id, { onDelete: 'cascade' }),
   title: text('title'),
   notes: text('notes'),
+  customFields: jsonb('custom_fields').$type<Record<string, string>>().default({}),
   value: decimal('value', { precision: 10, scale: 2 }).default('0').notNull(),
   currentStage: jsonb('current_stage').$type<KanbanStage>(),
   lastStageChangeAt: timestamp('last_stage_change_at'),

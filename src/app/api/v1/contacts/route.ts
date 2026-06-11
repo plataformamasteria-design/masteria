@@ -300,6 +300,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 throw new Error("Falha ao criar o contato no banco de dados.");
             }
 
+            // 🌟 HISTÓRICO: Registro de chegada (Adicionado manualmente)
+            import('@/lib/contact-events').then(({ logContactEvent }) => {
+                logContactEvent(companyId, createdContact.id, 'SYSTEM', 'Chegada na Plataforma (Adicionado manualmente)');
+            }).catch(err => console.warn('Failed to log contact creation', err));
+
             // Insert tag relationships
             if (tagIds && tagIds.length > 0) {
                 await tx.insert(contactsToTags).values(tagIds.map(tagId => ({
@@ -340,10 +345,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 const phoneFromBody = body?.phone || '';
                 const sanitizedPhone = sanitizePhone(phoneFromBody);
                 const normalizedPhone = sanitizedPhone ? canonicalizeBrazilPhone(sanitizedPhone) : phoneFromBody;
-                const { eq: eqOp, and: andOp } = await import('drizzle-orm');
+                const { getPhoneVariations } = await import('@/lib/utils');
+                const variations = getPhoneVariations(phoneFromBody);
+                if (variations.length === 0) variations.push(normalizedPhone);
+
+                const { inArray: inArrayOp, and: andOp, eq: eqOp } = await import('drizzle-orm');
                 const [existingContact] = await db.select({ id: contacts.id })
                     .from(contacts)
-                    .where(andOp(eqOp(contacts.phone, normalizedPhone), eqOp(contacts.companyId, companyId)))
+                    .where(andOp(
+                        inArrayOp(contacts.phone, variations),
+                        eqOp(contacts.companyId, companyId)
+                    ))
                     .limit(1);
                 return NextResponse.json({
                     error: 'Já existe um contato com este telefone.',

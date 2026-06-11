@@ -17,7 +17,8 @@ import {
     messages,
     voiceAgents,
     contactsToTags,
-    kanbanLeads
+    kanbanLeads,
+    contactEvents
 } from '@/lib/db/schema';
 import { eq, inArray, and, sql, desc } from 'drizzle-orm';
 import { ensureTenantAccess } from '@/lib/db/tenant-guard';
@@ -116,6 +117,16 @@ async function createCampaignConversationAndMessage(
                 contentType: isTemplate ? 'TEMPLATE' : 'TEXT',
                 status: 'SENT',
                 sentAt: new Date(),
+            });
+
+            // 🌟 HISTÓRICO: Registro de campanha enviada
+            const campaignData = await tx.query.campaigns.findFirst({ where: eq(campaigns.id, _campaignId) });
+            await tx.insert(contactEvents).values({
+                companyId,
+                contactId,
+                type: 'SYSTEM',
+                description: `Recebeu mensagem de disparo (Campanha: ${campaignData?.name || 'Campanha'})`,
+                metadata: { campaignId: _campaignId }
             });
         });
     } catch (error) {

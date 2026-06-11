@@ -57,6 +57,11 @@ export function useInboxWebSocket(onInboxUpdate?: InboxEventCallback) {
         handleEvent('inbox:update', payload);
       });
 
+      socketRef.current.on('contact:event', (payload: any) => {
+        console.log('[InboxWS] contact:event received via Socket.IO', payload?.contactId);
+        handleEvent('contact:event', payload);
+      });
+
       // chat:new-message — fast-path (append direto)
       socketRef.current.on('chat:new-message', (payload: any) => {
         console.log('[InboxWS] chat:new-message received via Socket.IO', payload?.conversationId);
@@ -84,6 +89,7 @@ export function useInboxWebSocket(onInboxUpdate?: InboxEventCallback) {
   const disconnectSocket = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.off('inbox:update');
+      socketRef.current.off('contact:event');
       socketRef.current.off('chat:new-message');
       socketRef.current.off('chat:message-updated');
       socketRef.current.disconnect();
@@ -112,6 +118,14 @@ export function useInboxWebSocket(onInboxUpdate?: InboxEventCallback) {
           console.log('[InboxWS] inbox:update received via SSE');
           handleEvent('inbox:update', payload);
         } catch { /* ignorar parse errors */ }
+      });
+
+      es.addEventListener('contact:event', (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data);
+          console.log('[InboxWS] contact:event received via SSE', payload?.contactId);
+          handleEvent('contact:event', payload);
+        } catch { /* ignorar */ }
       });
 
       es.addEventListener('chat:new-message', (e: MessageEvent) => {

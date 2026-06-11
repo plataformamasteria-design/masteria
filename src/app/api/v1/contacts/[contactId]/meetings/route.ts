@@ -6,6 +6,7 @@ import { aiScheduledMeetings, contacts } from '@/lib/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { getUserSession } from '@/app/actions';
 import { googleCalendarService } from '@/services/google-calendar.service';
+import { logContactEvent } from '@/lib/contact-events';
 
 export async function GET(
     request: Request,
@@ -108,6 +109,10 @@ export async function POST(
             meetLink: eventResult.meetLink,
             status: 'scheduled',
         });
+
+        try {
+            await logContactEvent(companyId, contactId, 'SYSTEM', `Reunião Agendada: ${meetingTitle}`);
+        } catch (e) {}
 
         return NextResponse.json({
             success: true,

@@ -39,6 +39,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Conversa não encontrada ou não pertence à sua empresa.' }, { status: 404 });
     }
 
+    if (updatedConversation.contactId) {
+        import('@/lib/contact-events').then(({ logContactEvent }) => {
+            logContactEvent(companyId, updatedConversation.contactId, 'SYSTEM', parsed.data.aiActive ? 'Atendimento da IA reativado manualmente' : 'Atendimento da IA pausado manualmente');
+        }).catch(() => {});
+    }
+
     return NextResponse.json(updatedConversation);
 
   } catch (error) {

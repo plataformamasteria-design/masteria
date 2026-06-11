@@ -14,6 +14,7 @@ const leadUpdateSchema = z.object({
   title: z.string().optional(),
   notes: z.string().optional(),
   status: z.string().optional(),
+  customFields: z.record(z.string()).optional(),
 });
 
 // PUT /api/v1/leads/[leadId]
@@ -81,6 +82,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
         if (parsedData.data.status !== undefined) {
             updateData.status = parsedData.data.status;
+        }
+        if (parsedData.data.customFields !== undefined) {
+            updateData.customFields = parsedData.data.customFields;
         }
 
         if (Object.keys(updateData).length > 0) {

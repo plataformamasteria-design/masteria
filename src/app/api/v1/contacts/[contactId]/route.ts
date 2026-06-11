@@ -247,6 +247,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           .update(contacts)
           .set(contactDataToUpdate)
           .where(and(eq(contacts.id, contactId), eq(contacts.companyId, companyId)));
+          
+        if (contactDataToUpdate.customFields) {
+            const fieldsObj = contactDataToUpdate.customFields as Record<string, string>;
+            const fieldsStr = Object.entries(fieldsObj).map(([k, v]) => `${k}=${v}`).join(', ');
+            try {
+                await logContactEvent(companyId, contactId, 'SYSTEM', `Campos personalizados atualizados: ${fieldsStr}`);
+            } catch (e) {}
+        }
       }
 
       if (listIds !== undefined) {
@@ -261,6 +269,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             companyId
           })));
         }
+        
+        try {
+          if (listIds.length > 0) {
+            const newLists = await tx.select({ name: contactLists.name }).from(contactLists).where(inArray(contactLists.id, listIds));
+            const listNames = newLists.map(l => l.name).join(', ');
+            await logContactEvent(companyId, contactId, 'SYSTEM', `Adicionado às listas: ${listNames}`);
+          } else {
+            await logContactEvent(companyId, contactId, 'SYSTEM', `Removido de todas as listas`);
+          }
+        } catch(e) {}
       }
 
       if (tagIds !== undefined) {

@@ -22,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { NeurolinguisticCard } from '@/components/contacts/neurolinguistic-card';
 import { MultiSelectCreatable } from '../ui/multi-select-creatable';
 import { FileText, Tag as TagIcon, Edit, Kanban, Zap, Clock, CheckCircle2, History } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ContactHistoryTimeline } from '@/components/contacts/contact-history-timeline';
 
 interface EditableSectionProps {
@@ -36,8 +35,10 @@ interface EditableSectionProps {
   onCancel: () => void;
 }
 
+const PREMIUM_CARD_CLASS = "border border-zinc-200 dark:border-white/10 !bg-white dark:!bg-white/[0.02] shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md rounded-2xl";
+
 const EditableCardSection: React.FC<EditableSectionProps> = ({ title, icon: Icon, children, isEditing, isSaving, onEdit, onSave, onCancel }) => (
-  <Card>
+  <Card className={PREMIUM_CARD_CLASS}>
     <CardHeader className="flex flex-row items-center justify-between pb-2">
       <CardTitle className="text-sm flex items-center gap-2">
         <Icon className="h-4 w-4" />
@@ -455,28 +456,24 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                     </Button>
                 )}
                 
-                <div className="flex flex-col items-center text-center">
-                    <Avatar className="h-20 w-20 mb-4 ring-2 ring-primary/20 ring-offset-2 ring-offset-background">
-                        <AvatarImage src={contact.avatarUrl || `https://placehold.co/80x80.png`} alt={contact.name || 'User'} data-ai-hint="avatar user" />
-                        <AvatarFallback>{(contact.name || 'US').substring(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <h3 className="text-lg font-bold">{contact.name}</h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                        <Image src="https://flagsapi.com/BR/flat/16.png" alt="Bandeira do Brasil" width={16} height={12} className="h-4 w-auto" style={{ width: 'auto', height: 'auto' }} />
-                        {contact.phone}
-                    </p>
+                <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.3)] backdrop-blur-md p-6 mb-2">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3" />
+                    <div className="relative z-10 flex flex-col items-center text-center">
+                        <Avatar className="h-20 w-20 mb-4 ring-2 ring-zinc-200 dark:ring-white/10 shadow-md">
+                            <AvatarImage src={contact.avatarUrl || `https://placehold.co/80x80.png`} alt={contact.name || 'User'} data-ai-hint="avatar user" />
+                            <AvatarFallback>{(contact.name || 'US').substring(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">{contact.name}</h3>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mt-1">
+                            <Image src="https://flagsapi.com/BR/flat/16.png" alt="Bandeira do Brasil" width={16} height={12} className="h-4 w-auto" style={{ width: 'auto', height: 'auto' }} />
+                            {contact.phone}
+                        </p>
+                    </div>
                 </div>
 
-                <Tabs defaultValue="geral" className="w-full">
-                    <TabsList className="w-full grid grid-cols-4 mb-4 h-9 p-1 gap-1 bg-muted/50 rounded-lg">
-                        <TabsTrigger value="geral" className="text-[10px] h-7 px-1">Geral</TabsTrigger>
-                        <TabsTrigger value="crm" className="text-[10px] h-7 px-1">CRM</TabsTrigger>
-                        <TabsTrigger value="agenda" className="text-[10px] h-7 px-1">Agenda</TabsTrigger>
-                        <TabsTrigger value="history" className="text-[10px] h-7 px-1">Histórico</TabsTrigger>
-                    </TabsList>
-                    
-                    {/* --- ABA: GERAL --- */}
-                    <TabsContent value="geral" className="space-y-4 mt-0">
+                <div className="flex flex-col gap-5 pb-6">
+                    {/* --- GERAL --- */}
+                    <div className="space-y-5">
                         <NeurolinguisticCard
                             vakProfile={contact.vakProfile}
                             dominantSocialNeed={contact.dominantSocialNeed}
@@ -484,7 +481,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                             variant="compact"
                         />
 
-                        <Card>
+                        <Card className={PREMIUM_CARD_CLASS}>
                             <CardHeader className="pb-2 flex flex-row items-center gap-2 space-y-0">
                                 <TagIcon className="h-4 w-4" />
                                 <CardTitle className="text-sm">Segmentação (Etiquetas)</CardTitle>
@@ -573,7 +570,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                             )}
                         </EditableCardSection>
 
-                        <Card>
+                        <Card className={PREMIUM_CARD_CLASS}>
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm">Notas Internas</CardTitle>
                             </CardHeader>
@@ -590,10 +587,10 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                                 </Button>
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </div>
 
-                    {/* --- ABA: CRM & IA --- */}
-                    <TabsContent value="crm" className="space-y-4 mt-0">
+                    {/* --- CRM & IA --- */}
+                    <div className="space-y-5">
                         {contact.activeConversations && contact.activeConversations.length > 1 && (
                             <Alert className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
                                 <AlertCircle className="h-4 w-4 text-amber-600" />
@@ -606,7 +603,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                             </Alert>
                         )}
 
-                        <Card>
+                        <Card className={PREMIUM_CARD_CLASS}>
                             <CardHeader className="pb-2 flex flex-row items-center gap-2 space-y-0">
                                 <Kanban className="h-4 w-4" />
                                 <CardTitle className="text-sm">Funil de Vendas</CardTitle>
@@ -673,7 +670,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                         </Card>
 
                         {contact.activeConversations && contact.activeConversations.length > 0 && (
-                            <Card>
+                            <Card className={PREMIUM_CARD_CLASS}>
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm flex items-center gap-2">
                                         <MessageSquare className="h-4 w-4" />
@@ -768,7 +765,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                         )}
                         
                         {/* --- SEÇÃO DE AUTOMAÇÕES --- */}
-                        <Card>
+                        <Card className={PREMIUM_CARD_CLASS}>
                             <CardHeader className="pb-2 flex flex-row items-center gap-2 space-y-0">
                                 <Zap className="h-4 w-4" />
                                 <CardTitle className="text-sm">Automações</CardTitle>
@@ -814,10 +811,10 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                                 )}
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </div>
 
-                    {/* --- ABA: AGENDA --- */}
-                    <TabsContent value="agenda" className="space-y-4 mt-0">
+                    {/* --- AGENDA --- */}
+                    <div className="space-y-5">
                         <Button
                             size="sm"
                             className="w-full bg-green-600 hover:bg-green-700 text-white shadow-sm"
@@ -836,7 +833,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                                 </>
                             )}
                         </Button>
-                        <Card>
+                        <Card className={PREMIUM_CARD_CLASS}>
                             <CardHeader className="pb-2 flex flex-row justify-between items-center space-y-0">
                                 <CardTitle className="text-sm flex items-center gap-2">
                                     <Calendar className="h-4 w-4" />
@@ -1020,13 +1017,13 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
                                 })}
                             </CardContent>
                         </Card>
-                    </TabsContent>
+                    </div>
 
-                    {/* --- ABA: HISTÓRICO --- */}
-                    <TabsContent value="history" className="mt-0">
+                    {/* --- HISTÓRICO --- */}
+                    <div className="space-y-5">
                         <ContactHistoryTimeline contactId={contact.id} />
-                    </TabsContent>
-                </Tabs>
+                    </div>
+                </div>
                 
                 <div className="border-t border-border/40 pt-4 mt-2">
                     {(onArchive && onUnarchive) && (

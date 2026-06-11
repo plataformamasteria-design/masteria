@@ -7,8 +7,11 @@ import { Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
+import { cn } from '@/lib/utils';
+
 interface AudioPlayerProps {
   src: string;
+  isMe?: boolean;
 }
 
 const formatTime = (timeInSeconds: number): string => {
@@ -20,7 +23,7 @@ const formatTime = (timeInSeconds: number): string => {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
-export function AudioPlayer({ src }: AudioPlayerProps): React.ReactElement {
+export function AudioPlayer({ src, isMe = true }: AudioPlayerProps): React.ReactElement {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -101,9 +104,9 @@ export function AudioPlayer({ src }: AudioPlayerProps): React.ReactElement {
   };
 
   return (
-    <div className="flex items-center gap-3 w-full bg-emerald-600/20 p-2 rounded-lg">
+    <div className={cn("flex items-center gap-3 w-full p-2 rounded-lg", isMe ? "bg-emerald-600/20" : "bg-black/5 dark:bg-white/5")}>
       <audio ref={audioRef} src={src} preload="metadata" />
-      <Button variant="ghost" size="icon" onClick={togglePlayPause} className="h-10 w-10 shrink-0 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm">
+      <Button variant="ghost" size="icon" onClick={togglePlayPause} className={cn("h-10 w-10 shrink-0 rounded-full text-white shadow-sm", isMe ? "bg-emerald-500 hover:bg-emerald-600" : "bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-900 dark:hover:bg-zinc-600")}>
         {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current pl-0.5" />}
       </Button>
 
@@ -113,7 +116,7 @@ export function AudioPlayer({ src }: AudioPlayerProps): React.ReactElement {
           {Array.from({ length: 30 }).map((_, i) => (
             <div
               key={i}
-              className={`w-1 bg-white/60 rounded-full transition-all duration-300 ${isPlaying ? 'animate-pulse' : ''}`}
+              className={cn("w-1 rounded-full transition-all duration-300", isMe ? "bg-white/60" : "bg-zinc-400 dark:bg-zinc-500", isPlaying && "animate-pulse")}
               style={{
                 height: isPlaying ? `${Math.max(20, Math.random() * 100)}%` : '30%',
                 animationDelay: `${i * 0.05}s`
@@ -131,7 +134,7 @@ export function AudioPlayer({ src }: AudioPlayerProps): React.ReactElement {
         />
       </div>
 
-      <span className="text-xs font-mono text-white whitespace-nowrap min-w-[80px] text-right">
+      <span className={cn("text-xs font-mono whitespace-nowrap min-w-[80px] text-right", isMe ? "text-white" : "text-muted-foreground")}>
         {formatTime(currentTime)} / {formatTime(duration)}
       </span>
     </div>

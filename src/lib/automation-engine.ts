@@ -18,7 +18,9 @@ import {
     automationFlowExecutions,
     automationFlows,
     companies,
-    kanbanLeads
+    kanbanLeads,
+    kanbanBoards,
+    kanbanStagePersonas
 } from './db/schema';
 import { and, eq, gte, gt, ne, or, isNull, sql, desc, inArray } from 'drizzle-orm';
 import { ensureTenantAccess } from './db/tenant-guard';
@@ -2269,19 +2271,7 @@ async function moveLeadToSemanticStage(
 // âœ… NOVA FUNÃ‡ÃƒO: Garantir que contato vire lead no funil padrÃ£o
 async function ensureLeadInDefaultFunnel(contact: Contact, companyId: string, logContext: LogContext, personaId?: string | null, connectionId?: string | null) {
     try {
-        // 1. Verificar se contato jÃ¡ Ã© lead em algum funil ativo dessa empresa
-        const existingLeads = await db.select({ id: kanbanLeads.id })
-            .from(kanbanLeads)
-            .where(and(
-                eq(kanbanLeads.contactId, contact.id),
-                eq(kanbanLeads.companyId, companyId),
-            ))
-            .limit(1);
 
-        if (existingLeads.length > 0) {
-            await logAutomation('INFO', `Contato jÃ¡ Ã© lead(ID: ${existingLeads[0].id}).Pulinho criaÃ§Ã£o automÃ¡tica.`, logContext);
-            return;
-        }
 
         // 2. Buscar funil com prioridade: ConexÃ£o â†’ Persona â†’ Empresa â†’ Primeiro disponÃ­vel
         let targetBoardId: string | null = null;
@@ -2346,6 +2336,21 @@ async function ensureLeadInDefaultFunnel(contact: Contact, companyId: string, lo
         }
 
         const targetBoard = boards[0];
+
+        // 2. Verificar se contato jÃ¡ Ã© lead NESTE funil alvo
+        const existingLeads = await db.select({ id: kanbanLeads.id })
+            .from(kanbanLeads)
+            .where(and(
+                eq(kanbanLeads.contactId, contact.id),
+                eq(kanbanLeads.companyId, companyId),
+                eq(kanbanLeads.boardId, targetBoard.id)
+            ))
+            .limit(1);
+
+        if (existingLeads.length > 0) {
+            await logAutomation('INFO', `Contato jÃ¡ Ã© lead(ID: ${existingLeads[0].id}) no funil ${targetBoard.id}. Pulinho criaÃ§Ã£o automÃ¡tica.`, logContext);
+            return;
+        }
         const stages = targetBoard.stages as KanbanStage[];
 
         if (!stages || stages.length === 0) {
@@ -2929,9 +2934,36 @@ export async function triggerAutomationForWebhook(
             return;
         }
 
-        // Find or create contact from webhook (validando tenant)
+        // Normalizar telefone para evitar duplicatas do 9º dígito
+        const cleanPhone = contactPhone.replace(/\D/g, '');
+        const phoneVariants = [cleanPhone];
+        
+        // Se for número BR, adiciona variante com e sem o 9
+        if (cleanPhone.startsWith('55') && cleanPhone.length >= 12) {
+            const local = cleanPhone.substring(4); // Remove 55 + DDD
+            const ddd = cleanPhone.substring(2, 4);
+            if (local.length === 8 && ['6', '7', '8', '9'].includes(local[0])) {
+                phoneVariants.push(`55${ddd}9${local}`); // Adiciona variante com 9
+            } else if (local.length === 9 && local[0] === '9') {
+                phoneVariants.push(`55${ddd}${local.substring(1)}`); // Adiciona variante sem 9
+            }
+        } else if (cleanPhone.length >= 10 && !cleanPhone.startsWith('55')) {
+            // Assume que é BR sem o 55
+            const local = cleanPhone.substring(2);
+            const ddd = cleanPhone.substring(0, 2);
+            if (local.length === 8 && ['6', '7', '8', '9'].includes(local[0])) {
+                phoneVariants.push(`55${ddd}9${local}`); // Com 55 e com 9
+                phoneVariants.push(`${ddd}9${local}`); // Sem 55 e com 9
+            } else if (local.length === 9 && local[0] === '9') {
+                phoneVariants.push(`55${ddd}${local.substring(1)}`); // Com 55 e sem 9
+                phoneVariants.push(`${ddd}${local.substring(1)}`); // Sem 55 e sem 9
+            }
+            phoneVariants.push(`55${cleanPhone}`); // Com 55
+        }
+
+        // Find or create contact from webhook (validando tenant e variação do 9º dígito)
         const contactResults = await db.select().from(contacts).where(and(
-            eq(contacts.phone, contactPhone),
+            inArray(contacts.phone, phoneVariants),
             eq(contacts.companyId, companyId)
         )).limit(1);
 

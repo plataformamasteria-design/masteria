@@ -518,7 +518,7 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     }
   };
 
-  const handleUpdateLead = async (leadId: string, data: { stageId?: string; title?: string; value?: number | null; notes?: string }) => {
+  const handleUpdateLead = async (leadId: string, data: { stageId?: string; title?: string; value?: number | null; notes?: string; customFields?: Record<string, string> }) => {
     const oldCards = [...cards];
 
     // Optimistic update - convert value to string for KanbanCard type
@@ -526,7 +526,8 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
       ...(data.stageId !== undefined && { stageId: data.stageId }),
       ...(data.title !== undefined && { title: data.title }),
       ...(data.notes !== undefined && { notes: data.notes }),
-      ...(data.value !== undefined && { value: data.value === null ? '' : data.value.toString() })
+      ...(data.value !== undefined && { value: data.value === null ? '' : data.value.toString() }),
+      ...(data.customFields !== undefined && { customFields: data.customFields })
     };
 
     setCards(cards.map(card =>

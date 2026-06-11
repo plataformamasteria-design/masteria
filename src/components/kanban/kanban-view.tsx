@@ -17,7 +17,7 @@ interface KanbanViewProps {
   cards: KanbanCardType[];
   onMoveCard: (result: DropResult) => void;
   onUpdateCards: () => void;
-  onUpdateLead: (leadId: string, data: { stageId?: string; title?: string; value?: number | null; notes?: string }) => Promise<void>;
+  onUpdateLead: (leadId: string, data: { stageId?: string; title?: string; value?: number | null; notes?: string; customFields?: Record<string, string> }) => Promise<void>;
   onDeleteLead: (leadId: string) => Promise<void>;
   onAddCard?: () => void;
   onSearch?: (query: string) => void;

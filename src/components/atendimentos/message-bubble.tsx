@@ -420,7 +420,7 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                 return (
                     <div className="w-full space-y-2">
                         {message.mediaUrl ? (
-                            <AudioPlayer key={message.id} src={message.mediaUrl} />
+                            <AudioPlayer key={message.id} src={message.mediaUrl} isMe={isMe} />
                         ) : <MediaPending type="AUDIO" sentAt={message.sentAt} />}
                         
                         {message.mediaUrl && message.aiTranscription && (
@@ -432,9 +432,18 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                 );
             case 'DOCUMENT':
                 return message.mediaUrl ? (
-                    <a href={message.mediaUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20">
-                        <FileText className="h-6 w-6" />
-                        <span className="truncate">{message.content || 'Documento'}</span>
+                    <a href={message.mediaUrl} target="_blank" rel="noopener noreferrer" className={cn("flex flex-col gap-2 p-3 rounded-lg border transition-all duration-200 min-w-[200px] group relative overflow-hidden", isMe ? "bg-white/10 border-white/20 hover:bg-white/20 text-white" : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 text-foreground")}>
+                        <div className="flex items-center gap-3">
+                            <div className={cn("p-2.5 rounded-md shrink-0 flex items-center justify-center", isMe ? "bg-white/20 text-white" : "bg-primary/10 text-primary")}>
+                                <FileText className="h-6 w-6" />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="font-semibold text-sm truncate">{message.content || 'Documento'}</span>
+                                <span className={cn("text-[10px] uppercase font-bold tracking-wider opacity-70 mt-0.5", isMe ? "text-white/80" : "text-muted-foreground")}>
+                                    AQUIVO
+                                </span>
+                            </div>
+                        </div>
                     </a>
                 ) : <MediaPending type="DOCUMENT" sentAt={message.sentAt} />;
             case 'STICKER':
