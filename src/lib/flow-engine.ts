@@ -184,16 +184,23 @@ async function logNodeExecution(
     }
 }
 
-// Resolve o próximo nó baseado no handle de saída
-function resolveNextNode(step: FlowStep, sourceHandleId?: string): string | undefined {
+// Resolve todos os próximos nós baseados no handle de saída
+function resolveNextNodes(step: FlowStep, sourceHandleId?: string): string[] {
     if (sourceHandleId) {
-        const conn = step.connections?.find(c => c.sourceHandle === sourceHandleId);
-        if (conn) return conn.target;
-        // Se um handle específico foi solicitado e não existe conexão nele, a execução deve parar.
-        // Fazer fallback para a primeira conexão causaria execução de fluxos não intencionais.
-        return undefined;
+        const conns = step.connections?.filter(c => c.sourceHandle === sourceHandleId);
+        if (conns && conns.length > 0) return conns.map(c => c.target);
+        return [];
     }
-    return step.connections?.[0]?.target || step.nextSteps?.[0];
+    
+    if (step.connections && step.connections.length > 0) {
+        return step.connections.map(c => c.target);
+    }
+    
+    if (step.nextSteps && step.nextSteps.length > 0) {
+        return step.nextSteps;
+    }
+    
+    return [];
 }
 
 // Resolve múltiplos handle IDs para múltiplos targets (router, intent)
@@ -936,17 +943,18 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
 
             if (result.action === 'delay') {
                 const delayMs = result.delayMs || 60000;
+                const nextNodes = resolveNextNodes(step);
+                
                 await db.update(automationFlowExecutions)
                     .set({
                         status: 'delayed',
-                        currentStepId: resolveNextNode(step) || step.id,
+                        currentStepId: nextNodes[0] || step.id,
                         variables: { vars: ctx.variables, _resumeAt: Date.now() + delayMs }
                     })
                     .where(eq(automationFlowExecutions.id, executionId));
                 logger.debug(`[FLOW - ENGINE] ⏳ Delayed ${delayMs}ms at ${step.id} `);
-                // Schedule resume via setTimeout (in-process; the cron module handles crash recovery)
                 setTimeout(() => {
-                    processFlowExecution(executionId, logic, resolveNextNode(step));
+                    processFlowExecution(executionId, logic, nextNodes[0]);
                 }, delayMs);
                 return;
             }
@@ -966,9 +974,11 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
                     if (!visited.has(nid)) queue.push(nid);
                 }
             } else {
-                // Single next
-                const next = resolveNextNode(step, result.sourceHandle);
-                if (next && !visited.has(next)) queue.push(next);
+                // Single/Multiple next
+                const nextNodes = resolveNextNodes(step, result.sourceHandle);
+                for (const next of nextNodes) {
+                    if (!visited.has(next)) queue.push(next);
+                }
             }
 
         } catch (error) {
