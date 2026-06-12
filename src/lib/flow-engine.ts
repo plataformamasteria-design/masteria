@@ -540,11 +540,17 @@ export async function evaluateScheduleTriggers() {
     });
 
     const now = new Date();
-    const nowHour = now.getHours().toString().padStart(2, '0');
-    const nowMinute = now.getMinutes().toString().padStart(2, '0');
+    // Use local timezone to match user's expected schedule
+    const nowHour = String(now.getHours()).padStart(2, '0');
+    const nowMinute = String(now.getMinutes()).padStart(2, '0');
     const currentTime = `${nowHour}:${nowMinute}`;
     const dayOfWeek = now.getDay(); // 0=Sunday
     const dayOfMonth = now.getDate();
+    
+    const localYear = now.getFullYear();
+    const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const localDay = String(now.getDate()).padStart(2, '0');
+    const todayDateString = `${localYear}-${localMonth}-${localDay}`;
 
     for (const flow of flows) {
         const logic = flow.executionLogic as any;
@@ -555,30 +561,27 @@ export async function evaluateScheduleTriggers() {
         if (!trigger) continue;
         if (trigger.data?.triggerType !== 'schedule') continue;
 
-        const freq = trigger.data?.schedule_freq || 'every_day';
+        const freq = trigger.data?.schedule_freq || 'daily';
         const scheduleTime = trigger.data?.schedule_time || '09:00';
         let shouldRun = false;
 
         switch (freq) {
-            case 'every_hour':
-                // Run at minute 0 of every hour
-                shouldRun = nowMinute === '00';
-                break;
-            case 'every_day':
+            case 'daily':
                 shouldRun = currentTime === scheduleTime;
                 break;
-            case 'every_week':
-                // Run on Monday at scheduled time
-                shouldRun = dayOfWeek === 1 && currentTime === scheduleTime;
+            case 'weekly':
+                const targetDayOfWeek = parseInt(trigger.data?.schedule_day_of_week || '1');
+                shouldRun = dayOfWeek === targetDayOfWeek && currentTime === scheduleTime;
                 break;
-            case 'every_month':
-                // Run on 1st of month at scheduled time
-                shouldRun = dayOfMonth === 1 && currentTime === scheduleTime;
+            case 'monthly':
+                const targetDayOfMonth = parseInt(trigger.data?.schedule_day_of_month || '1');
+                shouldRun = dayOfMonth === targetDayOfMonth && currentTime === scheduleTime;
                 break;
-            case 'custom_cron':
-                // Basic cron parsing (minute hour day month weekday)
-                // For now, just check time match — full cron requires a library
-                shouldRun = currentTime === scheduleTime;
+            case 'specific_date':
+                const targetDate = trigger.data?.schedule_date;
+                if (targetDate) {
+                    shouldRun = targetDate === todayDateString && currentTime === scheduleTime;
+                }
                 break;
         }
 
@@ -591,6 +594,54 @@ export async function evaluateScheduleTriggers() {
             trigger_type: 'schedule',
             schedule_freq: freq,
             schedule_time: scheduleTime,
+        });
+    }
+}
+
+/**
+ * Evaluates triggers when a lead is moved to a specific Kanban stage.
+ * Called from kanban/move-lead-to-stage.
+ */
+export async function evaluateStageChangedTriggers(companyId: string, contactId: string, boardId: string, stageId: string) {
+    const flows = await db.query.automationFlows.findMany({
+        where: and(
+            eq(automationFlows.isActive, true),
+            eq(automationFlows.companyId, companyId)
+        )
+    });
+
+    for (const flow of flows) {
+        const logic = flow.executionLogic as any;
+        const steps = Array.isArray(logic) ? logic : logic?.steps;
+        if (!steps?.length) continue;
+
+        const trigger = steps.find((s: FlowStep) => s.type === 'trigger');
+        if (!trigger) continue;
+
+        const triggerType = trigger.data?.triggerType;
+        if (triggerType !== 'stage_changed') continue;
+
+        const filterFunnel = trigger.data?.filter_funnel;
+        const filterStage = trigger.data?.filter_stage;
+
+        if (filterFunnel && filterFunnel !== boardId) continue;
+        if (filterStage && filterStage !== stageId) continue;
+
+        // Skip duplicate executions
+        const existingExec = await db.query.automationFlowExecutions.findFirst({
+            where: and(
+                eq(automationFlowExecutions.contactId, contactId),
+                eq(automationFlowExecutions.flowId, flow.id),
+                inArray(automationFlowExecutions.status, ['paused', 'running'])
+            ),
+        });
+        if (existingExec) continue;
+
+        logger.debug(`[FLOW-ENGINE] 🔄 Stage changed trigger: flow ${flow.id}, board=${boardId}, stage=${stageId}, contact ${contactId}`);
+        await triggerFlow(flow.id, companyId, contactId, {
+            trigger_type: 'stage_changed',
+            board_id: boardId,
+            stage_id: stageId,
         });
     }
 }
@@ -730,6 +781,32 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
         realContactTags = contactTagsQuery.map(t => t.tagName);
     }
 
+    // Pre-load dynamic context variables
+    const vars = (execution.variables as any)?.vars || {};
+    
+    if (activeConv) {
+        vars['conversation.ai_active'] = activeConv.aiActive === false ? 'false' : 'true';
+    }
+
+    if (execution.contactId) {
+        try {
+            const kanbanLead = await db.query.kanbanLeads.findFirst({
+                where: eq(kanbanLeads.contactId, execution.contactId)
+            });
+            if (kanbanLead) {
+                const board = await db.query.kanbanBoards.findFirst({ where: eq(kanbanBoards.id, kanbanLead.boardId) });
+                vars['contact.kanban_board'] = board?.name || kanbanLead.boardId;
+                if (board) {
+                    const stages = (board.stages || []) as any[];
+                    const stage = stages.find(s => s.id === kanbanLead.stageId);
+                    vars['contact.kanban_stage'] = stage?.title || stage?.name || kanbanLead.stageId;
+                }
+            }
+        } catch(e) {
+            logger.error('[FLOW-ENGINE] Error fetching kanban context', e);
+        }
+    }
+
     const ctx: ExecutionContext = {
         executionId,
         companyId: execution.companyId,
@@ -739,7 +816,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
         contactEmail: contact?.email || '',
         contactTags: realContactTags,
         contactNotes: (contact as any)?.notes || '',
-        variables: (execution.variables as any)?.vars || {},
+        variables: vars,
         connectionId: connection?.id || 'default',
         provider: derivedProvider,
     };
@@ -1325,15 +1402,17 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 const rawField = await interpolateTemplate(cond.field || '', ctx);
                 const rawValue = await interpolateTemplate(cond.value || '', ctx);
                 const fieldValue = ctx.variables[cond.field] || rawField || '';
+                const fieldStr = String(fieldValue).toLowerCase();
+                const valStr = String(rawValue).toLowerCase();
                 
                 let passed = false;
                 switch (cond.operator) {
-                    case 'equals': passed = fieldValue === rawValue; break;
-                    case 'not_equals': passed = fieldValue !== rawValue; break;
-                    case 'contains': passed = String(fieldValue).includes(rawValue); break;
-                    case 'not_contains': passed = !String(fieldValue).includes(rawValue); break;
-                    case 'starts_with': passed = String(fieldValue).startsWith(rawValue); break;
-                    case 'ends_with': passed = String(fieldValue).endsWith(rawValue); break;
+                    case 'equals': passed = fieldStr === valStr; break;
+                    case 'not_equals': passed = fieldStr !== valStr; break;
+                    case 'contains': passed = fieldStr.includes(valStr); break;
+                    case 'not_contains': passed = !fieldStr.includes(valStr); break;
+                    case 'starts_with': passed = fieldStr.startsWith(valStr); break;
+                    case 'ends_with': passed = fieldStr.endsWith(valStr); break;
                     case 'greater_than': passed = parseFloat(String(fieldValue)) > parseFloat(rawValue); break;
                     case 'less_than': passed = parseFloat(String(fieldValue)) < parseFloat(rawValue); break;
                     case 'is_empty': passed = !fieldValue; break;
@@ -1358,15 +1437,17 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 const rawField = await interpolateTemplate(rule.field || '', ctx);
                 const rawValue = await interpolateTemplate(rule.value || '', ctx);
                 const fieldValue = ctx.variables[rule.field] || rawField || '';
+                const fieldStr = String(fieldValue).toLowerCase();
+                const valStr = String(rawValue).toLowerCase();
                 
                 let matches = false;
                 switch (rule.operator) {
-                    case 'equals': matches = fieldValue === rawValue; break;
-                    case 'not_equals': matches = fieldValue !== rawValue; break;
-                    case 'contains': matches = String(fieldValue).includes(rawValue); break;
-                    case 'not_contains': matches = !String(fieldValue).includes(rawValue); break;
-                    case 'starts_with': matches = String(fieldValue).startsWith(rawValue); break;
-                    case 'ends_with': matches = String(fieldValue).endsWith(rawValue); break;
+                    case 'equals': matches = fieldStr === valStr; break;
+                    case 'not_equals': matches = fieldStr !== valStr; break;
+                    case 'contains': matches = fieldStr.includes(valStr); break;
+                    case 'not_contains': matches = !fieldStr.includes(valStr); break;
+                    case 'starts_with': matches = fieldStr.startsWith(valStr); break;
+                    case 'ends_with': matches = fieldStr.endsWith(valStr); break;
                     case 'greater_than': matches = parseFloat(String(fieldValue)) > parseFloat(rawValue); break;
                     case 'less_than': matches = parseFloat(String(fieldValue)) < parseFloat(rawValue); break;
                     default: matches = false;
@@ -3722,13 +3803,22 @@ export async function resumeFlowForContact(contactId: string, messageText: strin
 
         logger.debug(`[FLOW-ENGINE] 📝 Updating vars: last_response="${messageText.slice(0, 50)}"`);
 
-        // 6. Set status back to running
-        await db.update(automationFlowExecutions)
+        // 6. Set status back to running with Atomic Lock
+        const [lockedExecution] = await db.update(automationFlowExecutions)
             .set({
                 status: 'running',
                 variables: { vars: currentVars },
             })
-            .where(eq(automationFlowExecutions.id, pausedExecution.id));
+            .where(and(
+                eq(automationFlowExecutions.id, pausedExecution.id),
+                eq(automationFlowExecutions.status, 'paused')
+            ))
+            .returning({ id: automationFlowExecutions.id });
+
+        if (!lockedExecution) {
+            logger.debug(`[FLOW-ENGINE] 🛑 Execution ${pausedExecution.id} was already resumed by another process. Avoiding race condition.`);
+            return false;
+        }
 
         // 7. Resume processing the current step
         const resumeStepId = pausedExecution.currentStepId;

@@ -8,7 +8,8 @@ import { randomUUID, randomBytes } from 'crypto';
 import { sendEmailVerificationLink } from '@/lib/email';
 import { getBaseUrl } from '@/utils/get-base-url';
 import { createHash } from 'crypto';
-import { checkAuthRateLimit, getClientIp } from '@/lib/rate-limiter';
+import { getClientIp } from '@/lib/rate-limiter';
+import { withRateLimit } from '@/middleware/rate-limit.middleware';
 
 const createExpirationDate = (hours: number): Date => {
   const date = new Date();
@@ -28,13 +29,8 @@ const registerSchema = z.object({
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function handler(request: NextRequest): Promise<NextResponse> {
     const ip = getClientIp(request.headers);
-    const rateLimit = await checkAuthRateLimit(ip);
-    
-    if (!rateLimit.allowed) {
-        return NextResponse.json({ error: rateLimit.message || 'Muitas tentativas. Tente novamente mais tarde.' }, { status: 429 });
-    }
 
     const requestId = randomUUID().slice(0, 8);
     console.log(`[REGISTER-V1:${requestId}] Iniciando processo de registro. IP: ${ip}`);
@@ -126,3 +122,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: (error as Error).message }, { status: 500 });
     }
 }
+
+export const POST = withRateLimit(handler);

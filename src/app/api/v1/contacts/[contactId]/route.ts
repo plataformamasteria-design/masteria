@@ -282,16 +282,33 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       if (tagIds !== undefined) {
+        // Obter tags antigas para comparar
+        const oldTagsRel = await tx.select({ tagId: contactsToTags.tagId }).from(contactsToTags).where(and(
+          eq(contactsToTags.contactId, contactId),
+          eq(contactsToTags.companyId, companyId)
+        ));
+        const oldTagIds = oldTagsRel.map(r => r.tagId);
+
         await tx.delete(contactsToTags).where(and(
           eq(contactsToTags.contactId, contactId),
           eq(contactsToTags.companyId, companyId)
         ));
+
+        let newlyAddedTagsNames: string[] = [];
+
         if (tagIds.length > 0) {
           await tx.insert(contactsToTags).values(tagIds.map(tagId => ({
             contactId,
             tagId,
             companyId
           })));
+
+          // Identificar tags inéditas (que não estavam na lista antiga)
+          const newlyAddedTagIds = tagIds.filter(id => !oldTagIds.includes(id));
+          if (newlyAddedTagIds.length > 0) {
+            const newlyAddedTags = await tx.select({ name: tags.name }).from(tags).where(inArray(tags.id, newlyAddedTagIds));
+            newlyAddedTagsNames = newlyAddedTags.map(t => t.name);
+          }
         }
 
         // Registrar no Histórico de Eventos do Contato
@@ -300,6 +317,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             const newTags = await tx.select({ name: tags.name }).from(tags).where(inArray(tags.id, tagIds));
             const tagNames = newTags.map(t => t.name).join(', ');
             await logContactEvent(companyId, contactId, 'TAG', `Etiquetas atualizadas: ${tagNames}`);
+
+            // 🌟 DISPARAR GATILHO GLOBAL DE AUTOMAÇÕES (contact_tag_added)
+            if (newlyAddedTagsNames.length > 0) {
+              import('@/lib/flow-engine').then(({ evaluateTagAddedTriggers }) => {
+                newlyAddedTagsNames.forEach(tagName => {
+                  evaluateTagAddedTriggers(companyId, contactId, tagName)
+                    .catch(err => console.warn(`[evaluateTagAddedTriggers] failed for tag ${tagName}:`, err));
+                });
+              }).catch(err => console.warn('[evaluateTagAddedTriggers] import failed:', err));
+            }
           } else {
             await logContactEvent(companyId, contactId, 'TAG', `Todas as etiquetas foram removidas`);
           }

@@ -1,7 +1,7 @@
 import { memo, useState, useEffect } from "react";
 import { Handle, Position, NodeProps } from "@xyflow/react";
 import { Filter, Plus, X, GripVertical } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,21 @@ const OPERATORS = [
 ];
 
 const NO_VALUE_OPERATORS = ["is_empty", "is_not_empty"];
+
+const STANDARD_VARIABLES = [
+  "{{last_response}}",
+  "{{conversation.ai_active}}",
+  "{{contact.tags}}",
+  "{{contact.kanban_board}}",
+  "{{contact.kanban_stage}}",
+  "{{contact.name}}",
+  "{{contact.phone}}",
+  "{{contact.email}}",
+];
+
+function isStandardVar(v: string) {
+  return STANDARD_VARIABLES.includes(v);
+}
 
 function FilterNodeComponent({ id, data }: NodeProps) {
   const config = (data as any)?.config || {};
@@ -122,20 +137,66 @@ function FilterNodeComponent({ id, data }: NodeProps) {
         <div className="space-y-2">
           {((Array.isArray(conditions) ? conditions : []) || []).map((cond, i) => (
             <div key={i} className="space-y-1 rounded-lg border border-slate-200 dark:border-zinc-800/50 bg-muted/20 p-2">
-              {/* Field with drop support */}
-              <div className="flex items-center gap-1">
-                <Input
-                  value={cond.field}
-                  onChange={(e) => updateCondition(i, "field", e.target.value)}
-                  placeholder="Campo ou {{ referência }}"
-                  className="h-7 text-xs nodrag font-mono flex-1"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDrop(i, e)}
-                />
-                {conditions.length > 1 && (
-                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeCondition(i)}>
-                    <X className="h-3 w-3" />
-                  </Button>
+              {/* Field with drop support and Variable Selector */}
+              <div className="flex flex-col gap-1 w-full">
+                <Select
+                  value={isStandardVar(cond.field) ? cond.field : (cond.field ? "custom" : "")}
+                  onValueChange={(v) => {
+                    if (v !== "custom") updateCondition(i, "field", v);
+                    else updateCondition(i, "field", ""); // Clear for custom typing
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs nodrag w-full">
+                    <SelectValue placeholder="Selecione a Variável..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px]">Respostas & Lógica</SelectLabel>
+                      <SelectItem value="{{last_response}}" className="text-xs">Última Mensagem</SelectItem>
+                      <SelectItem value="{{conversation.ai_active}}" className="text-xs">Robô (IA) Ativo?</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px]">CRM e Organização</SelectLabel>
+                      <SelectItem value="{{contact.tags}}" className="text-xs">Etiquetas (Tags)</SelectItem>
+                      <SelectItem value="{{contact.kanban_board}}" className="text-xs">Funil Kanban</SelectItem>
+                      <SelectItem value="{{contact.kanban_stage}}" className="text-xs">Etapa Kanban</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px]">Dados do Contato</SelectLabel>
+                      <SelectItem value="{{contact.name}}" className="text-xs">Nome do Contato</SelectItem>
+                      <SelectItem value="{{contact.phone}}" className="text-xs">Telefone</SelectItem>
+                      <SelectItem value="{{contact.email}}" className="text-xs">E-mail</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px]">Avançado</SelectLabel>
+                      <SelectItem value="custom" className="text-xs font-semibold text-primary">Variável Personalizada...</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
+                {(!isStandardVar(cond.field) || cond.field === "custom") && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Input
+                      value={cond.field}
+                      onChange={(e) => updateCondition(i, "field", e.target.value)}
+                      placeholder="Campo Personalizado ou Webhook..."
+                      className="h-7 text-xs nodrag font-mono flex-1"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => handleDrop(i, e)}
+                    />
+                    {conditions.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeCondition(i)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {isStandardVar(cond.field) && conditions.length > 1 && (
+                   <div className="flex justify-end">
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeCondition(i)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                   </div>
                 )}
               </div>
               {/* Operator + Value */}

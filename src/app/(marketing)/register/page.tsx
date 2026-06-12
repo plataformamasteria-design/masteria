@@ -116,16 +116,32 @@ export default function RegisterPage() {
     const email = formData.get('email') as string;
 
     try {
-        const response = await fetch('/api/auth/register', {
+        const response = await fetch('/api/v1/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password }),
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+        let data: any = {};
+
+        try {
+            if (responseText) {
+                data = JSON.parse(responseText);
+            }
+        } catch (parseError) {
+            console.error('Failed to parse response as JSON:', responseText.substring(0, 100));
+            if (response.ok) {
+                throw new Error('Resposta do servidor inválida.');
+            }
+            throw new Error(`Erro no servidor (${response.status}): ${response.statusText || 'Resposta não formatada.'}`);
+        }
 
         if (!response.ok) {
-            throw new Error(data.error || 'Falha ao criar a conta.');
+            if (response.status === 429) {
+                throw new Error(data.message || 'Muitas tentativas. Por favor, aguarde um pouco.');
+            }
+            throw new Error(data.error || data.message || `Falha ao criar a conta (${response.status}).`);
         }
 
         if (data.warning === 'email_delivery_failed') {

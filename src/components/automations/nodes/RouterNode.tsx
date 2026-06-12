@@ -1,7 +1,7 @@
 import { memo, useState, useEffect } from "react";
 import { Handle, Position, NodeProps } from "@xyflow/react";
 import { Signpost, Plus, X } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,21 @@ const OPERATORS = [
 ];
 
 const NO_VALUE_OPERATORS = ["is_empty", "is_not_empty"];
+
+const STANDARD_VARIABLES = [
+  "{{last_response}}",
+  "{{conversation.ai_active}}",
+  "{{contact.tags}}",
+  "{{contact.kanban_board}}",
+  "{{contact.kanban_stage}}",
+  "{{contact.name}}",
+  "{{contact.phone}}",
+  "{{contact.email}}",
+];
+
+function isStandardVar(v: string) {
+  return STANDARD_VARIABLES.includes(v);
+}
 
 const ROUTE_COLORS = [
   "bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500",
@@ -144,15 +159,54 @@ function RouterNodeComponent({ id, data }: NodeProps) {
                   )}
                 </div>
 
-                {/* Field input with drop */}
-                <Input
-                  value={rule.field}
-                  onChange={(e) => updateRule(i, "field", e.target.value)}
-                  placeholder="Campo ou {{ referência }}"
-                  className="h-7 text-xs nodrag font-mono"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleFieldDrop(i, e)}
-                />
+                {/* Field input with Variable Selector */}
+                <div className="flex flex-col gap-1 w-full">
+                  <Select
+                    value={isStandardVar(rule.field) ? rule.field : (rule.field ? "custom" : "")}
+                    onValueChange={(v) => {
+                      if (v !== "custom") updateRule(i, "field", v);
+                      else updateRule(i, "field", "");
+                    }}
+                  >
+                    <SelectTrigger className="h-7 text-xs nodrag w-full">
+                      <SelectValue placeholder="Selecione a Variável..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px]">Respostas & Lógica</SelectLabel>
+                        <SelectItem value="{{last_response}}" className="text-xs">Última Mensagem</SelectItem>
+                        <SelectItem value="{{conversation.ai_active}}" className="text-xs">Robô (IA) Ativo?</SelectItem>
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px]">CRM e Organização</SelectLabel>
+                        <SelectItem value="{{contact.tags}}" className="text-xs">Etiquetas (Tags)</SelectItem>
+                        <SelectItem value="{{contact.kanban_board}}" className="text-xs">Funil Kanban</SelectItem>
+                        <SelectItem value="{{contact.kanban_stage}}" className="text-xs">Etapa Kanban</SelectItem>
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px]">Dados do Contato</SelectLabel>
+                        <SelectItem value="{{contact.name}}" className="text-xs">Nome do Contato</SelectItem>
+                        <SelectItem value="{{contact.phone}}" className="text-xs">Telefone</SelectItem>
+                        <SelectItem value="{{contact.email}}" className="text-xs">E-mail</SelectItem>
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px]">Avançado</SelectLabel>
+                        <SelectItem value="custom" className="text-xs font-semibold text-primary">Variável Personalizada...</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+
+                  {(!isStandardVar(rule.field) || rule.field === "custom") && (
+                    <Input
+                      value={rule.field}
+                      onChange={(e) => updateRule(i, "field", e.target.value)}
+                      placeholder="Campo Personalizado ou Webhook..."
+                      className="h-7 text-xs nodrag font-mono mt-1"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => handleFieldDrop(i, e)}
+                    />
+                  )}
+                </div>
 
                 {/* Operator + Value */}
                 <div className="flex items-center gap-1">

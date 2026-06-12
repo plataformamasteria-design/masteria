@@ -74,6 +74,12 @@ export async function moveLeadToStage(
       }).catch(err => console.warn('[Stage Entry Automation] import failed:', err));
     }
 
+    // 🌟 DISPARAR GATILHO GLOBAL DE AUTOMAÇÕES (stage_changed)
+    import('@/lib/flow-engine').then(({ evaluateStageChangedTriggers }) => {
+      evaluateStageChangedTriggers(companyId, lead.contactId, lead.boardId, newStageId)
+        .catch(err => console.warn('[evaluateStageChangedTriggers] failed:', err));
+    }).catch(err => console.warn('[evaluateStageChangedTriggers] import failed:', err));
+
     try {
       await logContactEvent(
         companyId,

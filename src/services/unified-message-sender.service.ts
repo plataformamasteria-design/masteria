@@ -54,6 +54,25 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
       return { success: false, error: `Conexão ${connectionId} não encontrada` };
     }
 
+    // ✅ FIX: Universal Media Fetcher
+    // Download media if a URL is provided and buffer is absent.
+    // Solves Meta API 503 errors with private S3/Supabase buckets and makes Evolution API robust.
+    if (mediaUrl && mediaUrl.startsWith('http') && !mediaBuffer && mediaType) {
+      try {
+          console.log(`[UNIFIED-SENDER] 📥 Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
+          const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
+          if (resp.ok) {
+              const arrBuf = await resp.arrayBuffer();
+              mediaBuffer = Buffer.from(arrBuf);
+              console.log(`[UNIFIED-SENDER] ✅ Fetched media buffer (${mediaBuffer.length} bytes)`);
+          } else {
+              console.warn(`[UNIFIED-SENDER] ⚠️ Failed to fetch mediaUrl (${resp.status}). Will pass URL directly.`);
+          }
+      } catch (fetchErr) {
+          console.warn('[UNIFIED-SENDER] ⚠️ Could not fetch mediaUrl as buffer, passing URL directly:', fetchErr);
+      }
+    }
+
     if (provider === 'apicloud') {
       // ✅ Detect if this is an Instagram recipient
       const isInstagram = to.startsWith('ig:') || connection.connectionType === 'instagram';
@@ -249,25 +268,6 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
                 console.log(`[UNIFIED-SENDER] ✅ [Evolution] Conversion complete. Size: ${finalBuffer.length}`);
               } catch (err) {
                 console.error('[UNIFIED-SENDER] ⚠️ [Evolution] Audio conversion failed:', err);
-              }
-          }
-
-          // ✅ FIX Bug #2: Se mediaUrl é URL HTTP e não temos buffer, fazer fetch
-          // A Evolution API não consegue acessar buckets S3 privados diretamente.
-          // O servidor MasterIA busca o arquivo e converte para base64.
-          if (mediaUrl && mediaUrl.startsWith('http') && !finalBuffer) {
-              try {
-                  console.log(`[UNIFIED-SENDER] 📥 [Evolution] Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
-                  const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
-                  if (resp.ok) {
-                      const arrBuf = await resp.arrayBuffer();
-                      finalBuffer = Buffer.from(arrBuf);
-                      console.log(`[UNIFIED-SENDER] ✅ [Evolution] Fetched media buffer (${finalBuffer.length} bytes)`);
-                  } else {
-                      console.warn(`[UNIFIED-SENDER] ⚠️ [Evolution] Failed to fetch mediaUrl (${resp.status}). Will pass URL directly.`);
-                  }
-              } catch (fetchErr) {
-                  console.warn('[UNIFIED-SENDER] ⚠️ [Evolution] Could not fetch mediaUrl as buffer, passing URL directly:', fetchErr);
               }
           }
 

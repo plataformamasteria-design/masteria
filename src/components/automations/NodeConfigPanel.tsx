@@ -25,6 +25,7 @@ import {
     FolderOpen
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { AgentMediaLibrary, type AgentLibraryFile } from './AgentMediaLibrary';
 
 // ==============================
@@ -274,6 +275,131 @@ function TextFieldWithVars({ value, onChange, placeholder, multiline, monoFont }
     );
 }
 
+function SystemVariableDropdown({ value, onChange, customFields = [] }: { value: string; onChange: (v: string) => void; customFields?: any[] }) {
+    const STANDARD_VARS = [
+        "{{last_response}}", "{{conversation.ai_active}}",
+        "{{contact.tags}}", "{{contact.kanban_board}}", "{{contact.kanban_stage}}",
+        "{{contact.name}}", "{{contact.phone}}", "{{contact.email}}"
+    ];
+    const isStandard = STANDARD_VARS.includes(value);
+    const isCustomField = customFields.some(cf => `{{${cf.field_key}}}` === value);
+    const isKnown = isStandard || isCustomField;
+    
+    return (
+        <div className="flex flex-col gap-1 w-full">
+            <Select
+                value={isKnown ? value : (value ? "custom" : "")}
+                onValueChange={(v) => {
+                    if (v !== "custom") onChange(v);
+                    else onChange("");
+                }}
+            >
+                <SelectTrigger className="h-9 w-full bg-muted/50 border border-border text-xs">
+                    <SelectValue placeholder="Selecione a Variável..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectGroup>
+                        <SelectLabel className="text-[10px]">Respostas & Lógica</SelectLabel>
+                        <SelectItem value="{{last_response}}" className="text-xs">Última Mensagem (last_response)</SelectItem>
+                        <SelectItem value="{{conversation.ai_active}}" className="text-xs">Robô (IA) Ativo?</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                        <SelectLabel className="text-[10px]">CRM e Organização</SelectLabel>
+                        <SelectItem value="{{contact.tags}}" className="text-xs">Etiquetas (Tags)</SelectItem>
+                        <SelectItem value="{{contact.kanban_board}}" className="text-xs">Funil Kanban</SelectItem>
+                        <SelectItem value="{{contact.kanban_stage}}" className="text-xs">Etapa Kanban</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                        <SelectLabel className="text-[10px]">Dados do Contato</SelectLabel>
+                        <SelectItem value="{{contact.name}}" className="text-xs">Nome do Contato</SelectItem>
+                        <SelectItem value="{{contact.phone}}" className="text-xs">Telefone</SelectItem>
+                        <SelectItem value="{{contact.email}}" className="text-xs">E-mail</SelectItem>
+                    </SelectGroup>
+                    {customFields.length > 0 && (
+                        <SelectGroup>
+                            <SelectLabel className="text-[10px]">Campos Personalizados</SelectLabel>
+                            {customFields.map((cf) => (
+                                <SelectItem key={cf.field_key} value={`{{${cf.field_key}}}`} className="text-xs">
+                                    {cf.field_label}
+                                </SelectItem>
+                            ))}
+                        </SelectGroup>
+                    )}
+                    <SelectGroup>
+                        <SelectLabel className="text-[10px]">Avançado</SelectLabel>
+                        <SelectItem value="custom" className="text-xs font-semibold text-indigo-600">Variável Personalizada / Webhook...</SelectItem>
+                    </SelectGroup>
+                </SelectContent>
+            </Select>
+
+            {(!isKnown || value === "custom") && (
+                <Input
+                    value={value || ''}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder="Ex: {{meu_campo_personalizado}}"
+                    className="rounded-lg h-9 bg-muted/50 border-border text-xs font-mono mt-1"
+                />
+            )}
+        </div>
+    );
+}
+
+function DynamicValueInput({ field, value, onChange, kanbanBoards = [], companyTags = [] }: { field: string; value: string; onChange: (v: string) => void; kanbanBoards?: any[]; companyTags?: any[] }) {
+    if (field === "{{conversation.ai_active}}") {
+        return (
+            <SelectField 
+                value={value} 
+                onChange={onChange} 
+                options={[{ value: 'true', label: 'Sim (Ativo)' }, { value: 'false', label: 'Não (Pausado)' }]} 
+                placeholder="Selecione..." 
+            />
+        );
+    }
+    if (field === "{{contact.kanban_board}}") {
+        return (
+            <SelectField 
+                value={value} 
+                onChange={onChange} 
+                options={kanbanBoards.map(b => ({ value: b.name || b.id, label: b.name }))} 
+                placeholder="Selecione o Funil..." 
+            />
+        );
+    }
+    if (field === "{{contact.kanban_stage}}") {
+        const allStages = kanbanBoards.flatMap(b => (b.stages || []).map((s: any) => ({ 
+            value: s.title || s.name || s.id, 
+            label: `${b.name} > ${s.title || s.name}` 
+        })));
+        return (
+            <SelectField 
+                value={value} 
+                onChange={onChange} 
+                options={allStages} 
+                placeholder="Selecione a Etapa..." 
+            />
+        );
+    }
+    if (field === "{{contact.tags}}") {
+        return (
+            <SelectField 
+                value={value} 
+                onChange={onChange} 
+                options={companyTags} 
+                placeholder="Selecione a Etiqueta..." 
+            />
+        );
+    }
+    
+    return (
+        <Input 
+            value={value || ''} 
+            onChange={(e) => onChange(e.target.value)} 
+            placeholder="Valor" 
+            className="rounded-lg h-9 bg-muted/50 border-border text-xs" 
+        />
+    );
+}
+
 function SelectField({ value, onChange, options, placeholder }: {
     value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder?: string;
 }) {
@@ -474,6 +600,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
     }, [node.id, onUpdateData]);
 
     const params = useParams();
+    const { currentOrganization } = useOrganization();
     const [isSavingMemory, setIsSavingMemory] = useState(false);
 
     const handleSaveMemory = useCallback(async (notes: string, prompt: string) => {
@@ -529,6 +656,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
     const [allConnections, setAllConnections] = useState<any[]>([]);
     const [companyUsers, setCompanyUsers] = useState<any[]>([]);
     const [companyTeams, setCompanyTeams] = useState<any[]>([]);
+    const [companyCustomFields, setCompanyCustomFields] = useState<any[]>([]);
 
     // Derived: stages from the currently selected board in crm_move
     const selectedBoardStages = React.useMemo(() => {
@@ -544,11 +672,12 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
 
     useEffect(() => {
         const needsTemplates = node.type === 'send_template';
-        const needsConnections = node.type === 'send_template' || node.type === 'ai_agent' || node.type === 'ai';
+        const needsConnections = ['send_template', 'ai_agent', 'ai', 'send_message', 'send_image', 'send_audio', 'send_video', 'send_document', 'ask_question', 'send_ai_response'].includes(node.type || '');
         // Nodes that need tags data
         const needsTags = ['trigger', 'condition', 'action', 'crm_move', 'filter', 'router', 'add_tag'].includes(node.type || '');
         // Nodes that need kanban boards
-        const needsKanbans = ['crm_move', 'trigger'].includes(node.type || '');
+        const needsKanbans = ['crm_move', 'trigger', 'filter', 'router'].includes(node.type || '');
+        const needsCustomFields = ['filter', 'router'].includes(node.type || '');
         // Nodes that need all connections
         const needsAllConns = ['message', 'send_message', 'interactive_message', 'marketing', 'send_template', 'ai_agent', 'ai', 'trigger'].includes(node.type || '');
         // Nodes that need users and teams
@@ -559,6 +688,17 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
         if (needsUsersTeams) {
             getCompanyUsers().then(setCompanyUsers).catch(console.error);
             getTeams().then(setCompanyTeams).catch(console.error);
+        }
+        
+        if (needsCustomFields && currentOrganization?.id) {
+            supabase
+                .from('chat_custom_fields')
+                .select('id, field_key, field_label, field_type, is_system')
+                .eq('organization_id', currentOrganization.id)
+                .order('field_label')
+                .then(({ data }) => {
+                    if (data) setCompanyCustomFields(data);
+                });
         }
 
         if (needsTemplates) {
@@ -642,15 +782,12 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
 
                 const TRIGGER_TYPE_OPTIONS = [
                     { value: '', label: 'Selecione um gatilho...' },
-                    { value: 'message_received', label: '📩 Qualquer Mensagem Recebida' },
-                    { value: 'keyword', label: '🔑 Palavra-chave Específica' },
+                    { value: 'message_received', label: '📩 Mensagem Recebida' },
                     { value: 'webhook', label: '🌐 Webhook Externo (HTTP)' },
-                    { value: 'webhook_pix', label: '💰 PIX Recebido' },
-                    { value: 'webhook_sale', label: '🛒 Venda Realizada (Hotmart/Kiwify)' },
-                    { value: 'contact_created', label: '👤 Novo Contato Criado' },
-                    { value: 'contact_tag_added', label: '🏷️ Tag Adicionada ao Contato' },
-                    { value: 'manual', label: '⚡ Ativação Manual (API)' },
-                    { value: 'schedule', label: '⏰ Agendamento (Schedule)' },
+                    { value: 'contact_created', label: '👤 Novo Lead (Contato ou Kanban)' },
+                    { value: 'stage_changed', label: '🔄 Movido para Kanban' },
+                    { value: 'contact_tag_added', label: '🏷️ Tag Adicionada' },
+                    { value: 'schedule', label: '⏰ Agendado' },
                 ];
 
                 const MATCH_MODE_OPTIONS = [
@@ -661,11 +798,10 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 ];
 
                 const SCHEDULE_FREQ_OPTIONS = [
-                    { value: 'every_hour', label: 'A cada hora' },
-                    { value: 'every_day', label: 'Todo dia' },
-                    { value: 'every_week', label: 'Toda semana' },
-                    { value: 'every_month', label: 'Todo mês' },
-                    { value: 'custom_cron', label: 'Cron personalizado' },
+                    { value: 'daily', label: 'Todo dia' },
+                    { value: 'weekly', label: 'Toda semana' },
+                    { value: 'monthly', label: 'Todo mês' },
+                    { value: 'specific_date', label: 'Data Específica' },
                 ];
 
                 return (
@@ -794,27 +930,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             </>
                         )}
 
-                        {triggerType === 'keyword' && (
-                            <>
-                                <ConfigSection label="Palavra-chave" hint="Texto que deve estar presente na mensagem">
-                                    <TextFieldWithVars
-                                        value={d.keyword || ''}
-                                        onChange={(v) => update('keyword', v)}
-                                        placeholder="Ex: comprar, preço, ajuda"
-                                    />
-                                </ConfigSection>
-                                <ConfigSection label="Modo de Correspondência">
-                                    <SelectField
-                                        value={d.match_mode || 'contains'}
-                                        onChange={(v) => update('match_mode', v)}
-                                        options={MATCH_MODE_OPTIONS}
-                                    />
-                                </ConfigSection>
-                                {d.match_mode === 'regex' && (
-                                    <InfoBanner text="Use expressão regular JavaScript. Ex: ^(oi|olá)\b para início de frase." color="amber" />
-                                )}
-                            </>
-                        )}
+
 
                         {triggerType === 'webhook' && (
                             <>
@@ -882,60 +998,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             </>
                         )}
 
-                        {triggerType === 'webhook_pix' && (
-                            <>
-                                <ConfigSection label="Evento PIX">
-                                    <SelectField
-                                        value={d.pix_event || 'pix_created'}
-                                        onChange={(v) => update('pix_event', v)}
-                                        options={[
-                                            { value: 'pix_created', label: 'PIX Criado' },
-                                            { value: 'pix_approved', label: 'PIX Aprovado' },
-                                            { value: 'pix_refunded', label: 'PIX Estornado' },
-                                        ]}
-                                    />
-                                </ConfigSection>
-                                <InfoBanner text="Configure o webhook da sua plataforma de pagamento para enviar para a URL." color="green" />
-                                <div className="bg-gray-50 rounded-xl border border-gray-200 p-3">
-                                    <p className="text-[10px] font-mono text-muted-foreground break-all">{webhookUrl}</p>
-                                </div>
-                            </>
-                        )}
 
-                        {triggerType === 'webhook_sale' && (
-                            <>
-                                <ConfigSection label="Plataforma">
-                                    <SelectField
-                                        value={d.sale_platform || 'hotmart'}
-                                        onChange={(v) => update('sale_platform', v)}
-                                        options={[
-                                            { value: 'hotmart', label: 'Hotmart' },
-                                            { value: 'kiwify', label: 'Kiwify' },
-                                            { value: 'eduzz', label: 'Eduzz' },
-                                            { value: 'monetizze', label: 'Monetizze' },
-                                            { value: 'stripe', label: 'Stripe' },
-                                            { value: 'other', label: 'Outra' },
-                                        ]}
-                                    />
-                                </ConfigSection>
-                                <ConfigSection label="Evento">
-                                    <SelectField
-                                        value={d.sale_event || 'purchase_approved'}
-                                        onChange={(v) => update('sale_event', v)}
-                                        options={[
-                                            { value: 'purchase_approved', label: 'Compra Aprovada' },
-                                            { value: 'purchase_refused', label: 'Compra Recusada' },
-                                            { value: 'purchase_refunded', label: 'Reembolso' },
-                                            { value: 'subscription_cancellation', label: 'Cancelamento de Assinatura' },
-                                        ]}
-                                    />
-                                </ConfigSection>
-                                <InfoBanner text="Configure o postback/webhook na plataforma apontando para a URL gerada." color="purple" />
-                                <div className="bg-gray-50 rounded-xl border border-gray-200 p-3">
-                                    <p className="text-[10px] font-mono text-muted-foreground break-all">{webhookUrl}</p>
-                                </div>
-                            </>
-                        )}
 
                         {triggerType === 'contact_created' && (
                             <>
@@ -965,55 +1028,94 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             </>
                         )}
 
-                        {triggerType === 'manual' && (
-                            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
-                                <p className="text-xs font-semibold text-muted-foreground">🔗 Endpoint da API:</p>
-                                <div className="flex gap-2">
-                                    <input
-                                        readOnly
-                                        value={webhookUrl}
-                                        className="flex-1 text-xs font-mono bg-white border border-gray-200 rounded-lg px-3 py-2 text-muted-foreground select-all focus:outline-none"
-                                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                        {triggerType === 'stage_changed' && (
+                            <>
+                                <ConfigSection label="Kanban (Funil)">
+                                    <SelectField
+                                        value={d.filter_funnel || ''}
+                                        onChange={(v) => {
+                                            updateMulti({ filter_funnel: v, filter_stage: '' });
+                                        }}
+                                        placeholder="Selecione o Kanban..."
+                                        options={kanbanBoards.map(b => ({ value: b.id, label: b.name }))}
                                     />
-                                    <button
-                                        onClick={() => navigator.clipboard.writeText(webhookUrl)}
-                                        className="px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors shrink-0"
-                                    >
-                                        Copiar
-                                    </button>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground">Chame este endpoint via POST para disparar.</p>
-                            </div>
+                                </ConfigSection>
+                                {d.filter_funnel && (
+                                    <ConfigSection label="Etapa (Stage) de Destino">
+                                        <SelectField
+                                            value={d.filter_stage || ''}
+                                            onChange={(v) => update('filter_stage', v)}
+                                            placeholder="Selecione a etapa..."
+                                            options={kanbanBoards.find(b => b.id === d.filter_funnel)?.stages?.map((s: any) => ({ value: s.id, label: s.title || s.name })) || []}
+                                        />
+                                    </ConfigSection>
+                                )}
+                                <InfoBanner text="A automação será iniciada automaticamente quando um lead for movido para esta etapa do Kanban." color="blue" />
+                            </>
                         )}
 
                         {triggerType === 'schedule' && (
                             <>
                                 <ConfigSection label="Frequência">
                                     <SelectField
-                                        value={d.schedule_freq || 'every_day'}
+                                        value={d.schedule_freq || 'daily'}
                                         onChange={(v) => update('schedule_freq', v)}
                                         options={SCHEDULE_FREQ_OPTIONS}
                                     />
                                 </ConfigSection>
-                                {d.schedule_freq === 'custom_cron' ? (
-                                    <ConfigSection label="Expressão Cron" hint="Formato: minuto hora dia mês dia-da-semana">
-                                        <TextFieldWithVars
-                                            value={d.cron_expression || ''}
-                                            onChange={(v) => update('cron_expression', v)}
-                                            placeholder="0 9 * * 1-5"
-                                            monoFont
-                                        />
-                                    </ConfigSection>
-                                ) : (
-                                    <ConfigSection label="Horário">
-                                        <TextFieldWithVars
-                                            value={d.schedule_time || '09:00'}
-                                            onChange={(v) => update('schedule_time', v)}
-                                            placeholder="09:00"
+
+                                {d.schedule_freq === 'weekly' && (
+                                    <ConfigSection label="Dia da Semana">
+                                        <SelectField
+                                            value={d.schedule_day_of_week || '1'}
+                                            onChange={(v) => update('schedule_day_of_week', v)}
+                                            options={[
+                                                { value: '0', label: 'Domingo' },
+                                                { value: '1', label: 'Segunda-feira' },
+                                                { value: '2', label: 'Terça-feira' },
+                                                { value: '3', label: 'Quarta-feira' },
+                                                { value: '4', label: 'Quinta-feira' },
+                                                { value: '5', label: 'Sexta-feira' },
+                                                { value: '6', label: 'Sábado' },
+                                            ]}
                                         />
                                     </ConfigSection>
                                 )}
-                                <InfoBanner text="O agendamento será executado no horário configurado." color="rose" />
+
+                                {d.schedule_freq === 'monthly' && (
+                                    <ConfigSection label="Dia do Mês">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="31"
+                                            value={d.schedule_day_of_month || '1'}
+                                            onChange={(e) => update('schedule_day_of_month', e.target.value)}
+                                            className="w-full h-10 rounded-xl bg-muted/50 border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                                        />
+                                    </ConfigSection>
+                                )}
+
+                                {d.schedule_freq === 'specific_date' && (
+                                    <ConfigSection label="Data Específica">
+                                        <input
+                                            type="date"
+                                            value={d.schedule_date || ''}
+                                            onChange={(e) => update('schedule_date', e.target.value)}
+                                            className="w-full h-10 rounded-xl bg-muted/50 border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                                        />
+                                    </ConfigSection>
+                                )}
+
+                                <ConfigSection label="Horário de Execução">
+                                    <input
+                                        type="time"
+                                        value={d.schedule_time || '09:00'}
+                                        onChange={(e) => update('schedule_time', e.target.value)}
+                                        className="w-full h-10 rounded-xl bg-muted/50 border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                                    />
+                                </ConfigSection>
+
+                                <InfoBanner text="A automação será disparada de forma global e executará para todos os contatos associados ou como uma rotina interna. Se não houver lead no contexto da automação, lembre-se de usar nós como 'Ação' ou requisições API." color="blue" />
                             </>
                         )}
                     </div>
@@ -1360,10 +1462,10 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 addLabel="Adicionar Condição"
                                 renderRow={(item, i, onUpdate) => (
                                     <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-gray-200">
-                                        <Input value={item.field || ''} onChange={(e) => onUpdate('field', e.target.value)} placeholder="Campo (ex: last_response)" className="rounded-lg h-9 bg-muted/50 border-border text-xs font-mono" />
+                                        <SystemVariableDropdown value={item.field || ''} onChange={(v) => onUpdate('field', v)} customFields={companyCustomFields} />
                                         <SelectField value={item.operator || 'equals'} onChange={(v) => onUpdate('operator', v)} options={OPERATOR_OPTIONS} />
                                         {!['is_empty', 'is_not_empty'].includes(item.operator) && (
-                                            <Input value={item.value || ''} onChange={(e) => onUpdate('value', e.target.value)} placeholder="Valor" className="rounded-lg h-9 bg-muted/50 border-border text-xs" />
+                                            <DynamicValueInput field={item.field || ''} value={item.value || ''} onChange={(v) => onUpdate('value', v)} kanbanBoards={kanbanBoards} companyTags={companyTags} />
                                         )}
                                     </div>
                                 )}
@@ -1390,9 +1492,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 renderRow={(item, i, onUpdate) => (
                                     <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-gray-200">
                                         <Input value={item.outputName || ''} onChange={(e) => onUpdate('outputName', e.target.value)} placeholder={`Nome da Rota ${i + 1}`} className="rounded-lg h-9 bg-muted/50 border-border text-xs font-bold" />
-                                        <Input value={item.field || ''} onChange={(e) => onUpdate('field', e.target.value)} placeholder="Campo" className="rounded-lg h-9 bg-muted/50 border-border text-xs font-mono" />
+                                        <SystemVariableDropdown value={item.field || ''} onChange={(v) => onUpdate('field', v)} customFields={companyCustomFields} />
                                         <SelectField value={item.operator || 'equals'} onChange={(v) => onUpdate('operator', v)} options={OPERATOR_OPTIONS} />
-                                        <Input value={item.value || ''} onChange={(e) => onUpdate('value', e.target.value)} placeholder="Valor" className="rounded-lg h-9 bg-muted/50 border-border text-xs" />
+                                        <DynamicValueInput field={item.field || ''} value={item.value || ''} onChange={(v) => onUpdate('value', v)} kanbanBoards={kanbanBoards} companyTags={companyTags} />
                                     </div>
                                 )}
                             />
@@ -2138,6 +2240,20 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 return (
                     <div className="space-y-5">
                         <InfoBanner text="Envia a resposta gerada pelo último nó de IA para o contato via WhatsApp." color="green" />
+                        <ConfigSection label="Conexão de Saída" hint="Escolha por qual conexão a mensagem será enviada">
+                            <select
+                                value={d.connection_id || ''}
+                                onChange={(e) => update('connection_id', e.target.value)}
+                                className="w-full h-10 rounded-xl bg-muted/50 border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                            >
+                                <option value="">Mesma conexão recebida (Padrão)</option>
+                                {metaConnections.map((conn: any) => (
+                                    <option key={conn.id} value={conn.id}>
+                                        {conn.configName || conn.config_name || conn.name || conn.id.slice(0, 8)} — {conn.phoneNumberId || conn.phone_number_id || conn.phoneNumber || 'API'}
+                                    </option>
+                                ))}
+                            </select>
+                        </ConfigSection>
                         <ToggleSwitch label="Dividir mensagem em partes" checked={d.split_enabled !== false} onChange={(v) => update('split_enabled', v)} color="green" />
                         {d.split_enabled !== false && (
                             <ConfigSection label="Delay entre partes (segundos)" hint="Simula digitação humana">
@@ -2389,6 +2505,36 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 />
                             </ConfigSection>
                         )}
+                    </div>
+                );
+
+            // ==============================
+            // SEND MESSAGE AND MEDIA
+            // ==============================
+
+            case 'send_message':
+            case 'send_image':
+            case 'send_audio':
+            case 'send_document':
+            case 'send_video':
+            case 'ask_question':
+                return (
+                    <div className="space-y-5">
+                        <ConfigSection label="Conexão de Saída" hint="Escolha por qual conexão a mensagem será enviada">
+                            <select
+                                value={d.connection_id || ''}
+                                onChange={(e) => update('connection_id', e.target.value)}
+                                className="w-full h-10 rounded-xl bg-muted/50 border border-border px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                            >
+                                <option value="">Mesma conexão recebida (Padrão)</option>
+                                {metaConnections.map((conn: any) => (
+                                    <option key={conn.id} value={conn.id}>
+                                        {conn.configName || conn.config_name || conn.name || conn.id.slice(0, 8)} — {conn.phoneNumberId || conn.phone_number_id || conn.phoneNumber || 'API'}
+                                    </option>
+                                ))}
+                            </select>
+                        </ConfigSection>
+                        <InfoBanner text="Deixe a opção padrão para que o sistema responda automaticamente no mesmo WhatsApp onde o lead enviou a mensagem." color="blue" />
                     </div>
                 );
 

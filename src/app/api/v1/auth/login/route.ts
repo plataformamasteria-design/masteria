@@ -136,5 +136,4 @@ async function handler(request: NextRequest) {
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
-// export const POST = withRateLimit(handler);
-export const POST = handler;
+export const POST = withRateLimit(handler);

@@ -306,11 +306,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             }).catch(err => console.warn('Failed to log contact creation', err));
 
             // Insert tag relationships
+            let tagNames: string[] = [];
             if (tagIds && tagIds.length > 0) {
                 await tx.insert(contactsToTags).values(tagIds.map(tagId => ({
                     contactId: createdContact.id,
                     tagId
                 })));
+                
+                // Fetch tag names for trigger evaluation
+                const { tags } = await import('@/lib/db/schema');
+                const { inArray } = await import('drizzle-orm');
+                const fetchedTags = await tx.select({ name: tags.name }).from(tags).where(inArray(tags.id, tagIds));
+                tagNames = fetchedTags.map(t => t.name);
             }
 
             // Insert list relationships
@@ -320,6 +327,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                     listId
                 })));
             }
+
+            // 🌟 DISPARAR GATILHO GLOBAL DE AUTOMAÇÕES (contact_created)
+            import('@/lib/flow-engine').then(({ evaluateContactCreatedTriggers }) => {
+                evaluateContactCreatedTriggers(companyId, createdContact.id, tagNames)
+                    .catch(err => console.warn('[evaluateContactCreatedTriggers] failed:', err));
+            }).catch(err => console.warn('[evaluateContactCreatedTriggers] import failed:', err));
 
             return createdContact;
         });

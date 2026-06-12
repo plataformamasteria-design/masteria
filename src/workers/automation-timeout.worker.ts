@@ -58,24 +58,27 @@ async function processTimeouts(): Promise<void> {
     let processedCount = 0;
 
     for (const exec of pausedExecutions) {
-      const vars = (exec.variables as any)?.vars || {};
+      const execVarsRoot = (exec.variables as any) || {};
+      const vars = execVarsRoot.vars || {};
       
       const aiTimeout = vars._ai_timeout_at ? parseInt(vars._ai_timeout_at) : null;
       const waitTimeout = vars._wait_timeout_at ? parseInt(vars._wait_timeout_at) : null;
+      const resumeAt = execVarsRoot._resumeAt ? parseInt(execVarsRoot._resumeAt) : null;
 
       const hasAiTimeout = aiTimeout && aiTimeout < now;
       const hasWaitTimeout = waitTimeout && waitTimeout < now;
+      const hasDelayTimeout = resumeAt && resumeAt < now;
 
-      if (hasAiTimeout || hasWaitTimeout) {
+      if (hasAiTimeout || hasWaitTimeout || hasDelayTimeout) {
         processedCount++;
         
         // Define which step triggered the timeout
-        const stepId = (hasAiTimeout ? vars._ai_step_id : vars._wait_step_id) || exec.currentStepId;
+        const stepId = (hasAiTimeout ? vars._ai_step_id : (hasWaitTimeout ? vars._wait_step_id : exec.currentStepId)) || exec.currentStepId;
         
         console.log(`[AutomationTimeoutWorker] ⏰ Timeout reached for execution ${exec.id} at step ${stepId}`);
 
         // 🚨 NOVO: VERIFICAR SE O ROBO FOI DESATIVADO NA CONVERSA
-        const conversationId = vars._conversation_id || vars.conversationId || (exec as any).conversationId;
+        const conversationId = vars._conversation_id || vars.conversationId || execVarsRoot.conversationId;
         if (conversationId) {
             const conv = await db.query.conversations.findFirst({
                where: eq(conversations.id, conversationId)
@@ -99,10 +102,13 @@ async function processTimeouts(): Promise<void> {
           delete vars._wait_timeout_at;
           delete vars._wait_step_id;
         }
+        if (hasDelayTimeout) {
+          delete execVarsRoot._resumeAt;
+        }
 
         // Set back to running
         await db.update(automationFlowExecutions)
-          .set({ status: 'running', variables: { vars } })
+          .set({ status: 'running', variables: { ...execVarsRoot, vars } })
           .where(eq(automationFlowExecutions.id, exec.id));
 
         // Get the flow logic
