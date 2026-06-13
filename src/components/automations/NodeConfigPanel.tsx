@@ -1178,14 +1178,45 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         update('buttons', btns);
                                     }}
                                     addLabel="Adicionar Botão"
-                                    renderRow={(item, i, onUpdate) => (
-                                        <Input
-                                            value={typeof item === 'string' ? item : (item.text || item.title || '')}
-                                            onChange={(e) => onUpdate('text', e.target.value)}
-                                            placeholder={`Botão ${i + 1}`}
-                                            className="rounded-xl h-10 bg-muted/50 border-border text-sm"
-                                        />
-                                    )}
+                                    renderRow={(item, i, onUpdate) => {
+                                        const btnType = item.type || 'reply';
+                                        return (
+                                            <div className="space-y-2 w-full bg-white p-2.5 rounded-xl border border-slate-200">
+                                                <div className="flex gap-2">
+                                                    <div className="w-[120px] shrink-0">
+                                                        <SelectField
+                                                            value={btnType}
+                                                            onChange={(v) => onUpdate('type', v)}
+                                                            options={[
+                                                                { value: 'reply', label: 'Resposta' },
+                                                                { value: 'url', label: 'Link (URL)' }
+                                                            ]}
+                                                        />
+                                                    </div>
+                                                    <Input
+                                                        value={typeof item === 'string' ? item : (item.text || item.title || '')}
+                                                        onChange={(e) => onUpdate('text', e.target.value)}
+                                                        placeholder={btnType === 'url' ? "Texto do Link" : `Botão ${i + 1}`}
+                                                        className="rounded-xl h-10 bg-slate-50 border-slate-200 text-sm flex-1"
+                                                    />
+                                                </div>
+                                                {btnType === 'url' && (
+                                                    <Input
+                                                        value={item.url || ''}
+                                                        onChange={(e) => onUpdate('url', e.target.value)}
+                                                        placeholder="https://seu-site.com"
+                                                        className="rounded-xl h-10 bg-slate-50 border-slate-200 text-sm w-full"
+                                                    />
+                                                )}
+                                                {btnType === 'url' && (d.buttons?.filter((b:any)=>b.type==='url').length > 1) && (
+                                                    <p className="text-[10px] text-amber-600 font-semibold px-1 mt-1">⚠️ A API Oficial permite apenas 1 botão de Link por mensagem.</p>
+                                                )}
+                                                {btnType === 'url' && (d.buttons?.filter((b:any)=>b.type!=='url').length > 0) && (
+                                                    <p className="text-[10px] text-amber-600 font-semibold px-1 mt-1">⚠️ Ao usar um botão Link, os outros botões serão enviados como texto.</p>
+                                                )}
+                                            </div>
+                                        );
+                                    }}
                                 />
                             </ConfigSection>
                         )}

@@ -1076,7 +1076,9 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             if (step.type === 'interactive_message' && step.data.buttons && Array.isArray(step.data.buttons)) {
                 buttons = step.data.buttons.map((b: any, i: number) => ({
                     id: typeof b === 'string' ? `btn_${i}` : (b.id || `btn_${i}`),
-                    title: typeof b === 'string' ? b : (b.text || b.label || `Opção ${i+1}`)
+                    title: typeof b === 'string' ? b : (b.text || b.label || `Opção ${i+1}`),
+                    type: typeof b === 'object' && b.type ? b.type : 'reply',
+                    url: typeof b === 'object' && b.url ? b.url : undefined
                 }));
             }
 

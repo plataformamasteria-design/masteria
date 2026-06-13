@@ -245,7 +245,7 @@ interface SendInteractiveArgs {
     connectionId: string;
     to: string;
     text: string;
-    buttons: { id: string, title: string }[];
+    buttons: { id: string, title: string, type?: 'reply' | 'url', url?: string }[];
 }
 
 export async function sendWhatsappInteractiveMessage({ connectionId, to, text, buttons }: SendInteractiveArgs): Promise<Record<string, unknown>> {
@@ -272,16 +272,36 @@ export async function sendWhatsappInteractiveMessage({ connectionId, to, text, b
     const url = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${connection.phoneNumberId}/messages`;
 
     return executeWithPhoneFallback(to, async (phoneToTry) => {
-        const payload = {
-            messaging_product: 'whatsapp',
-            recipient_type: 'individual',
-            to: phoneToTry.replace(/\D/g, ''),
-            type: 'interactive',
-            interactive: {
+        const urlButton = buttons.find(b => b.type === 'url' && b.url);
+        const replyButtons = buttons.filter(b => b.type !== 'url').slice(0, 3);
+        
+        let interactiveConfig: any = {};
+        
+        if (urlButton && urlButton.url) {
+            // Se tiver URL, a Meta exige que o tipo da mensagem interativa seja 'cta_url' e SÓ pode ter esse botão
+            interactiveConfig = {
+                type: 'cta_url',
+                body: { text: text || 'Acesse o link abaixo:' },
+                action: {
+                    name: 'cta_url',
+                    parameters: {
+                        display_text: String(urlButton.title).slice(0, 20),
+                        url: urlButton.url
+                    }
+                }
+            };
+            
+            // Fallback: se tiverem botões de reply junto com link, adiciona no texto da mensagem para não perder
+            if (replyButtons.length > 0) {
+                interactiveConfig.body.text += '\n\nOutras opções:\n' + replyButtons.map((b, i) => `- ${b.title}`).join('\n');
+            }
+        } else {
+            // Comportamento padrão: botões de resposta rápida
+            interactiveConfig = {
                 type: 'button',
                 body: { text: text || 'Selecione uma opção' },
                 action: {
-                    buttons: buttons.slice(0, 3).map((btn) => ({
+                    buttons: replyButtons.map((btn) => ({
                         type: 'reply',
                         reply: {
                             id: String(btn.id).slice(0, 256),
@@ -289,7 +309,15 @@ export async function sendWhatsappInteractiveMessage({ connectionId, to, text, b
                         }
                     }))
                 }
-            }
+            };
+        }
+
+        const payload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: phoneToTry.replace(/\D/g, ''),
+            type: 'interactive',
+            interactive: interactiveConfig
         };
 
         if (process.env.NODE_ENV !== 'production') console.debug('[Facebook API - Interactive] Enviando payload:', JSON.stringify(payload, null, 2));
