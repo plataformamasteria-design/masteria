@@ -2446,6 +2446,12 @@ async function ensureLeadInDefaultFunnel(contact: Contact, companyId: string, lo
 // ðŸ”’ LOCK: Mapa de locks por conversa para evitar processamento concorrente (Meta + Baileys)
 const activeConversationLocks = new Map<string, number>();
 
+// Global map for debounce across module imports
+const debounceMap = global as unknown as { __messageDebounceMap: Map<string, NodeJS.Timeout> };
+if (!debounceMap.__messageDebounceMap) {
+    debounceMap.__messageDebounceMap = new Map();
+}
+
 export async function processIncomingMessageTrigger(
     conversationId: string,
     messageId: string,
@@ -2692,12 +2698,6 @@ export async function processIncomingMessageTrigger(
             }
         }
 
-// Global map for debounce across module imports
-const debounceMap = global as unknown as { __messageDebounceMap: Map<string, NodeJS.Timeout> };
-if (!debounceMap.__messageDebounceMap) {
-    debounceMap.__messageDebounceMap = new Map();
-}
-
         // ==========================================
         // 🚦 DEBOUNCE & AI PROCESSING LOGIC
         // ==========================================
@@ -2721,7 +2721,9 @@ if (!debounceMap.__messageDebounceMap) {
             }
 
         // VERIFICAÇÃO #1: Regras de Automação (AGORA PRIORIDADE 1 - ANTES DA IA)
-        // Executa regras de palavras-chave primeiro. Se houver resposta automÃ¡tica, bloqueia a IA.
+        // Executa regras de palavras-chave primeiro. Se houver resposta automática, bloqueia a IA.
+        // ✅ P3 FIX: Pular regras se Fluxo já respondeu (evita mensagem dupla)
+        if (!messageSentByRule) {
         const rules = await db.select().from(automationRules).where(and(
             eq(automationRules.companyId, convoResult.companyId),
             eq(automationRules.triggerEvent, 'new_message_received'),
@@ -2789,6 +2791,8 @@ if (!debounceMap.__messageDebounceMap) {
         } else {
             await logAutomation('INFO', 'Nenhuma regra de automaÃ§Ã£o ativa encontrada para esta mensagem.', logContextBase);
         }
+
+        } // ✅ P3 FIX: Fim do guard !messageSentByRule para regras
 
         // VERIFICAÃ‡ÃƒO #2: Roteamento para IA (AGORA PRIORIDADE 2)
         // SÃ³ executa se NENHUMA regra enviou mensagem (messageSentByRule === false)

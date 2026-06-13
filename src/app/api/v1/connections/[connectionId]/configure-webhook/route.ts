@@ -66,9 +66,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         // 3. Obter o App Access Token
         const appAccessToken = await getAppAccessToken(appId, appSecret);
 
-        const protocol = request.headers.get('x-forwarded-proto') || 'https';
-        const host = request.headers.get('host');
-        let baseUrl = `${protocol}://${host}`;
+        // ✅ P6 FIX: Usar variável de ambiente como URL primária (mais confiável que headers HTTP atrás de proxy)
+        let baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+        if (!baseUrl) {
+            // Fallback: construir a partir dos headers (menos confiável em Railway/Vercel)
+            const protocol = request.headers.get('x-forwarded-proto') || 'https';
+            const host = request.headers.get('host');
+            baseUrl = `${protocol}://${host}`;
+            console.warn(`[Webhook Config] ⚠️ APP_URL não configurada. Usando header: ${baseUrl}`);
+        }
 
         if (!baseUrl.startsWith('https://') && !baseUrl.includes('localhost')) {
             baseUrl = baseUrl.replace('http://', 'https://');

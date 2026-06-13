@@ -12,7 +12,6 @@ import crypto from 'crypto';
 import { decrypt } from '@/lib/crypto';
 import { getMediaUrl, getInstagramUserProfile } from '@/lib/facebookApiService';
 import { processIncomingMessageTrigger } from '@/lib/automation-engine';
-import { resumeFlowForContact } from '@/lib/flow-engine';
 import { webhookDispatcher } from '@/services/webhook-dispatcher.service';
 import { UserNotificationsService } from '@/lib/notifications/user-notifications.service';
 import { emitToCompany } from '@/lib/socket';
@@ -808,13 +807,9 @@ async function processIncomingMessage(
         }
 
         if (!triggerIsEcho) {
+            // ✅ P4 FIX: Removido resumeFlowForContact daqui — já é chamado dentro do processIncomingMessageTrigger
+            // Isso evita que o fluxo seja retomado duas vezes para o mesmo contato.
             setTimeout(async () => {
-                if (triggerContactId && triggerAiActive !== false) {
-                    try {
-                        const resumed = await resumeFlowForContact(triggerContactId, triggerMessageText || '', triggerCompanyId);
-                        if (resumed) return;
-                    } catch (err) {}
-                }
                 processIncomingMessageTrigger(triggerConversationId!, triggerMessageId!).catch(err => {});
             }, 500);
         }

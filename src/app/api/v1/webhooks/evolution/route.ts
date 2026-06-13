@@ -319,19 +319,16 @@ export async function POST(req: NextRequest) {
         if (!fromMe) {
             console.log(`[EVOLUTION-WEBHOOK] 🤖 Triggering automation for message ${savedMessageId}`);
 
+            // ✅ P4 FIX: Removido resumeFlowForContact daqui — já é chamado dentro do processIncomingMessageTrigger
+            // Isso evita que o fluxo seja retomado duas vezes para o mesmo contato.
             setTimeout(async () => {
                 try {
                     if (txResult.aiActive === false) {
                         console.log(`[EVOLUTION-WEBHOOK] 🛑 AI disabled for conversation ${conversationId}, skipping automation.`);
                     } else {
-                        const resumed = await resumeFlowForContact(contactId, content, companyId);
-                        if (resumed) {
-                            console.log(`[EVOLUTION-WEBHOOK] 🔄 Resumed paused flow for contact ${contactId}`);
-                        } else {
-                            console.log(`[EVOLUTION-WEBHOOK] ⏳ Executing processIncomingMessageTrigger for ${savedMessageId}...`);
-                            await processIncomingMessageTrigger(conversationId, savedMessageId);
-                            console.log(`[EVOLUTION-WEBHOOK] ✅ processIncomingMessageTrigger finished.`);
-                        }
+                        console.log(`[EVOLUTION-WEBHOOK] ⏳ Executing processIncomingMessageTrigger for ${savedMessageId}...`);
+                        await processIncomingMessageTrigger(conversationId, savedMessageId);
+                        console.log(`[EVOLUTION-WEBHOOK] ✅ processIncomingMessageTrigger finished.`);
                     }
                 } catch (err) {
                     console.error('[EVOLUTION-WEBHOOK] Erro na execução da automação:', err);
