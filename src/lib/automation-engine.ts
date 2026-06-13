@@ -2829,6 +2829,13 @@ export async function processIncomingMessageTrigger(
                     return; // Se a IA respondeu, o fluxo termina aqui.
                 } else {
                     await logAutomation('ERROR', 'Agente IA nÃ£o respondeu (retornou false)', logContextBase);
+                    // ✅ FIX: Marcar como processada MESMO em falha para impedir loop infinito
+                    // do PendingMessagesResponder que re-dispara a cada 60s quando IA não responde.
+                    // Sem isso, uma falha 429 causa reprocessamento eterno da mesma mensagem.
+                    await logAutomation('WARN', 'Mensagem marcada como processada (falha IA) para evitar retry infinito', {
+                        ...logContextBase,
+                        details: { processedMessageId: messageId, aiFailure: true }
+                    });
                 }
             } else {
                 await logAutomation('INFO', 'Sem agente IA configurado para esta conversa.', logContextBase);
