@@ -79,7 +79,7 @@ export async function getMetaAuthUrl(returnTo?: string) {
 
         // Detect current domain dynamically from request headers
         const headersList = await headers();
-        const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'masteria.app';
+        const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'masteria-temporario.up.railway.app';
         const proto = headersList.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
         const baseUrl = `${proto}://${host}`;
 

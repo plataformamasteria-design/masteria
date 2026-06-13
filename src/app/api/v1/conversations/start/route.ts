@@ -43,7 +43,7 @@ async function getMediaData(assetId: string, connectionId: string, wabaId: strin
         return { handle: existingHandle.handle, asset: asset as MediaAssetType };
     }
 
-    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:9002' : 'https://masteria.app');
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:9002' : 'https://masteria-temporario.up.railway.app');
     if (process.env.RAILWAY_PUBLIC_DOMAIN) {
         baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
     }

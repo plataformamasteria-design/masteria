@@ -238,7 +238,7 @@ async function handleWorkerInit(request: NextRequest) {
     'replit.dev',
     'replit.app',
     'repl.co',
-    'masteria.app',
+    'masteria-temporario.up.railway.app',
     'railway.app',
     '127.0.0.1',
     '0.0.0.0',

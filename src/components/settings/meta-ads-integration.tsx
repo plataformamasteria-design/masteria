@@ -193,11 +193,11 @@ export function MetaAdsIntegration() {
                                     <div className="flex gap-2">
                                         <Input 
                                             readOnly 
-                                            value={`https://masteria.app/api/webhooks/meta/${session?.userData?.company?.webhookSlug || ''}`}
+                                            value={`https://masteria-temporario.up.railway.app/api/webhooks/meta/${session?.userData?.company?.webhookSlug || ''}`}
                                             className="h-7 text-[10px] font-mono bg-white" 
                                         />
                                         <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => {
-                                            navigator.clipboard.writeText(`https://masteria.app/api/webhooks/meta/${session?.userData?.company?.webhookSlug || ''}`);
+                                            navigator.clipboard.writeText(`https://masteria-temporario.up.railway.app/api/webhooks/meta/${session?.userData?.company?.webhookSlug || ''}`);
                                             toast({ title: "Copiado", description: "URL de webhook copiada!" });
                                         }}>Copiar</Button>
                                     </div>

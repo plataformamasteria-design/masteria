@@ -8,7 +8,7 @@
  * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#upload-media
  */
 
-const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v24.0';
+const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v21.0';
 
 interface UploadMediaResult {
     id: string;

@@ -22,7 +22,7 @@ export function WebhookInfoCard() {
     const webhookSlug = session?.userData?.company?.webhookSlug || '...';
 
     // Fallback logic
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'https://masteria.app');
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_BASE_URL || 'https://masteria-temporario.up.railway.app');
     const webhookUrl = `${baseUrl}/api/webhooks/meta/${webhookSlug}`;
 
     const { toast } = useToast();

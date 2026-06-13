@@ -8,7 +8,7 @@
  */
 export async function initializeServerServices() {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://masteria.app';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://masteria-temporario.up.railway.app';
     const response = await fetch(`${baseUrl}/api/internal/init-worker`, {
       method: 'GET',
       headers: {

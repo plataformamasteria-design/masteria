@@ -30,7 +30,7 @@ function getBaseUrl(request: NextRequest): string {
     
     let finalUrl = url.replace(/\/+$/, '');
     if (finalUrl.includes('up.railway.app')) {
-        finalUrl = 'https://masteria.app';
+        finalUrl = 'https://masteria-temporario.up.railway.app';
     }
     return finalUrl;
 }

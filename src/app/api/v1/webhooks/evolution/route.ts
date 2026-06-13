@@ -47,9 +47,12 @@ export async function POST(req: NextRequest) {
         const pushName = data.pushName || 'Contato';
         
         const isGroup = remoteJid.endsWith('@g.us');
-        if (isGroup) {
-            // Ignorando grupos temporariamente conforme regras do projeto (se aplicável)
-            return NextResponse.json({ success: true, ignored: true, reason: 'Groups not supported yet' });
+        const isStatus = remoteJid === 'status@broadcast';
+        const isNewsletter = remoteJid.endsWith('@newsletter');
+
+        if (isGroup || isStatus || isNewsletter) {
+            // Ignorando grupos, status (Stories) e newsletters (Canais) temporariamente
+            return NextResponse.json({ success: true, ignored: true, reason: 'Group, status or newsletter ignored' });
         }
 
         const phone = remoteJid.split('@')[0];

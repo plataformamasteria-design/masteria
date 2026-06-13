@@ -7,7 +7,7 @@ import { eq, and } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { decrypt } from '@/lib/crypto';
 
-const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v24.0';
+const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v21.0';
 
 // Webhook Fields Definitions
 const WA_WEBHOOK_FIELDS = 'messages,message_template_status_update,account_update';

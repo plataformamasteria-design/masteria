@@ -7,7 +7,7 @@ import { eq, and } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { decrypt } from '@/lib/crypto';
 
-const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v24.0';
+const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v21.0';
 
 async function getAppAccessToken(appId: string, appSecret: string): Promise<string> {
     const url = `https://graph.facebook.com/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&grant_type=client_credentials`;

@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
     } catch (e: any) {
         console.error("Meta Callback Master Error:", e);
         // Opcional: Se der erro, devolve pra mesma view pra dar o feedback
-        const backupBaseUrl = originalBaseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://masteria.app';
+        const backupBaseUrl = originalBaseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://masteria-temporario.up.railway.app';
         const errorReturn = state ? JSON.parse(Buffer.from(state || '', 'base64').toString('utf-8')).returnTo || '/automacoes' : '/automacoes';
         return NextResponse.redirect(`${backupBaseUrl}${errorReturn}?meta_error=${encodeURIComponent(e.message)}`);
     }

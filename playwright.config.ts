@@ -5,7 +5,7 @@ const REPLIT_DEV_URL = 'https://62863c59-d08b-44f5-a414-d7529041de1a-00-16zuyl87
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || REPLIT_DEV_URL;
 
 // ✅ VALIDAÇÃO: Garantir que não está usando produção em desenvolvimento
-if (!process.env.CI && BASE_URL.includes('masteria.app')) {
+if (!process.env.CI && BASE_URL.includes('masteria-temporario.up.railway.app')) {
   console.warn('⚠️  AVISO: Usando URL de produção! Use PLAYWRIGHT_BASE_URL para desenvolvimento.');
 }
 

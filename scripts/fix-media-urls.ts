@@ -4,7 +4,7 @@ import { like } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
 async function run() {
-    console.log("🚀 Iniciando correção de URLs de mídia (localhost -> masteria.app)...");
+    console.log("🚀 Iniciando correção de URLs de mídia (localhost -> masteria-temporario.up.railway.app)...");
     
     try {
         // Encontra quantas mensagens têm localhost na URL
@@ -19,7 +19,7 @@ async function run() {
             // Executa o update usando SQL replace nativo do Postgres para ser rápido
             const result = await db.execute(sql`
                 UPDATE messages 
-                SET "media_url" = REPLACE("media_url", 'http://localhost:3000', 'https://masteria.app')
+                SET "media_url" = REPLACE("media_url", 'http://localhost:3000', 'https://masteria-temporario.up.railway.app')
                 WHERE "media_url" LIKE '%localhost%';
             `);
             

@@ -31,7 +31,7 @@ export class MetaTokenManager {
         appId: string,
         appSecret: string
     ): Promise<LongLivedTokenResponse> {
-        const url = new URL('https://graph.facebook.com/v24.0/oauth/access_token');
+        const url = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
         url.searchParams.set('grant_type', 'fb_exchange_token');
         url.searchParams.set('client_id', appId);
         url.searchParams.set('client_secret', appSecret);
@@ -69,7 +69,7 @@ export class MetaTokenManager {
         appSecret: string
     ): Promise<TokenDebugInfo> {
         // Get app access token first
-        const appTokenUrl = new URL('https://graph.facebook.com/v24.0/oauth/access_token');
+        const appTokenUrl = new URL('https://graph.facebook.com/v21.0/oauth/access_token');
         appTokenUrl.searchParams.set('client_id', appId);
         appTokenUrl.searchParams.set('client_secret', appSecret);
         appTokenUrl.searchParams.set('grant_type', 'client_credentials');
@@ -82,7 +82,7 @@ export class MetaTokenManager {
         }
 
         // Debug the user token
-        const debugUrl = new URL('https://graph.facebook.com/v24.0/debug_token');
+        const debugUrl = new URL('https://graph.facebook.com/v21.0/debug_token');
         debugUrl.searchParams.set('input_token', token);
         debugUrl.searchParams.set('access_token', appTokenData.access_token);
 
@@ -124,7 +124,7 @@ export class MetaTokenManager {
      */
     async validateToken(token: string): Promise<boolean> {
         try {
-            const url = `https://graph.facebook.com/v24.0/me?access_token=${token}`;
+            const url = `https://graph.facebook.com/v21.0/me?access_token=${token}`;
             const response = await fetch(url);
             const data = await response.json();
 

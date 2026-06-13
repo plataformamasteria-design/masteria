@@ -579,7 +579,7 @@ async function processIncomingMessage(
 
     // Deduplication moved inside transaction to scope it by conversation
 
-    const isEcho = messageData.from === metadata.display_phone_number;
+    const isEcho = sanitizePhone(messageData.from) === sanitizePhone(metadata.display_phone_number);
     console.log(`📨 [Meta Webhook] ${isEcho ? '[ECHO] ' : ''}Nova mensagem de ${contactData.profile?.name || phone} (${phone}): "${messagePreview}"`);
 
     // Store IDs from transaction for AI trigger AFTER commit

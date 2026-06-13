@@ -169,7 +169,7 @@ export class SessionService {
         await evolutionApiService.createInstance(newSession.id);
 
         // Configurar webhook
-        const appUrl = 'https://masteria.app';
+        const appUrl = 'https://masteria-temporario.up.railway.app';
         const webhookUrl = `${appUrl}/api/v1/webhooks/evolution`;
         await evolutionApiService.setWebhook(newSession.id, webhookUrl);
 
@@ -259,7 +259,7 @@ export class SessionService {
       await evolutionApiService.logoutInstance(sessionId);
 
       // Reconfigura o webhook e os eventos como padrão para garantir integridade
-      const appUrl = 'https://masteria.app';
+      const appUrl = 'https://masteria-temporario.up.railway.app';
       const webhookUrl = `${appUrl}/api/v1/webhooks/evolution`;
       await evolutionApiService.setWebhook(sessionId, webhookUrl).catch(e => {
         console.warn('[SessionService] Could not reset webhook on reconnect:', e);

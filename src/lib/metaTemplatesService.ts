@@ -3,7 +3,7 @@ import { connections, messageTemplates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { decrypt } from './crypto';
 
-const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v24.0';
+const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v21.0';
 
 interface MetaTemplateComponent {
   type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';

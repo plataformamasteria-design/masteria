@@ -50,7 +50,7 @@ export function initializeSocketIO(server: HTTPServer): SocketIOServer {
     '*', // TEMPORARY: Allow all origins to fix Replit connection issues
     process.env.NEXT_PUBLIC_BASE_URL || '',
     process.env.NEXT_PUBLIC_CUSTOM_DOMAIN ? `https://${process.env.NEXT_PUBLIC_CUSTOM_DOMAIN}` : '',
-    'https://masteria.app',
+    'https://masteria-temporario.up.railway.app',
     ...(process.env.REPLIT_DEV_DOMAIN ? [`https://${process.env.REPLIT_DEV_DOMAIN}`] : []),
     ...(process.env.REPL_SLUG && process.env.REPL_OWNER ? [`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`] : []),
     /\.replit\.dev$/,

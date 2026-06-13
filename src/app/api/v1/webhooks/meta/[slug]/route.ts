@@ -262,6 +262,7 @@ async function processIncomingMessage(
     let triggerMessageText: string | null = null;
     let triggerCompanyId: string = companyId;
     let triggerAiActive: boolean | null = null;
+    let triggerIsEcho: boolean = false;
     // Store extra fields for chat:new-message realtime event
     let triggerContentType: string | null = null;
     let triggerContactName: string | null = null;
@@ -294,6 +295,9 @@ async function processIncomingMessage(
                 console.error(`[META-WEBHOOK] Número de telefone inválido: ${contactData.wa_id}`);
                 return;
             }
+
+            const isEcho = sanitizePhone(messageData.from) === sanitizePhone(metadata.display_phone_number);
+            triggerIsEcho = isEcho;
 
             if (messageData.type === 'reaction') {
                 const targetMessageId = messageData.reaction.message_id;
@@ -439,8 +443,8 @@ async function processIncomingMessage(
                 connectionId: connection.id,
                 providerMessageId: messageData.id,
                 repliedToMessageId: repliedToInternalId,
-                senderType: 'CONTACT',
-                senderId: contact.id,
+                senderType: triggerIsEcho ? 'AGENT' : 'CONTACT',
+                senderId: triggerIsEcho ? null : contact.id,
                 content: getMessageContent(messageData),
                 contentType: messageData.type.toUpperCase(),
                 mediaUrl: null, // Updated after S3 upload completes
@@ -512,8 +516,8 @@ async function processIncomingMessage(
             messageId: msgId,
             content: msgText,
             contentType: triggerContentType || 'TEXT',
-            isFromMe: false, // Mensagem de contato incoming
-            senderType: 'CONTACT',
+            isFromMe: triggerIsEcho, // Mensagem de contato incoming ou echo outbound
+            senderType: triggerIsEcho ? 'AGENT' : 'CONTACT',
             mediaUrl: null, // Mídia ainda em upload async — será atualizada via chat:message-updated
             timestamp: new Date().toISOString(),
             contactName: triggerContactName,
@@ -523,27 +527,29 @@ async function processIncomingMessage(
         // Slow-path backup: força re-render da lista completa
         emitToCompany(coId, 'inbox:update', { timestamp: Date.now() });
 
-        setTimeout(async () => {
-            // 1. Primeiro: tentar retomar execução pausada (diálogo IA)
-            if (cId && aiActive !== false) {
-                try {
-                    const resumed = await resumeFlowForContact(cId, msgText, coId);
-                    if (resumed) {
-                        console.log(`[META-WEBHOOK] 🔄 Resumed paused flow for contact ${cId}`);
-                        return; // Não disparar nova automação se retomou uma pausada
+        if (!triggerIsEcho) {
+            setTimeout(async () => {
+                // 1. Primeiro: tentar retomar execução pausada (diálogo IA)
+                if (cId && aiActive !== false) {
+                    try {
+                        const resumed = await resumeFlowForContact(cId, msgText, coId);
+                        if (resumed) {
+                            console.log(`[META-WEBHOOK] 🔄 Resumed paused flow for contact ${cId}`);
+                            return; // Não disparar nova automação se retomou uma pausada
+                        }
+                    } catch (err) {
+                        console.error(`[META-WEBHOOK] ❌ Error resuming flow for contact ${cId}:`, err);
                     }
-                } catch (err) {
-                    console.error(`[META-WEBHOOK] ❌ Error resuming flow for contact ${cId}:`, err);
+                } else if (aiActive === false) {
+                    console.log(`[META-WEBHOOK] 🛑 IA desativada para a conversa ${convId}. Fluxos pausados não serão retomados.`);
                 }
-            } else if (aiActive === false) {
-                console.log(`[META-WEBHOOK] 🛑 IA desativada para a conversa ${convId}. Fluxos pausados não serão retomados.`);
-            }
 
-            // 2. Segundo: disparar nova automação se não havia execução pausada
-            processIncomingMessageTrigger(convId, msgId).catch(err => {
-                console.error(`[META-WEBHOOK] Erro ao disparar automação para msg ${msgId}:`, err);
-            });
-        }, 500);
+                // 2. Segundo: disparar nova automação se não havia execução pausada
+                processIncomingMessageTrigger(convId, msgId).catch(err => {
+                    console.error(`[META-WEBHOOK] Erro ao disparar automação para msg ${msgId}:`, err);
+                });
+            }, 500);
+        }
     }
 }
 

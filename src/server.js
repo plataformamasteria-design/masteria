@@ -406,13 +406,13 @@ const continueInitialization = () => {
         ? [
           process.env.NEXT_PUBLIC_BASE_URL || '',
           process.env.NEXT_PUBLIC_CUSTOM_DOMAIN ? `https://${process.env.NEXT_PUBLIC_CUSTOM_DOMAIN}` : '',
-          'https://masteria.app', // ✅ Adicionar domínio de produção
+          'https://masteria-temporario.up.railway.app', // ✅ Adicionar domínio de produção
         ].filter(Boolean) // Remove strings vazias
         : [
           'http://localhost:5000',
           'http://localhost:3000',
           'http://0.0.0.0:5000',
-          'https://masteria.app', // ✅ Permitir também em desenvolvimento para testes
+          'https://masteria-temporario.up.railway.app', // ✅ Permitir também em desenvolvimento para testes
           ...(process.env.REPLIT_DEV_DOMAIN ? [`https://${process.env.REPLIT_DEV_DOMAIN}`] : []), // ✅ Permitir domínio do Replit
           ...(process.env.REPL_SLUG && process.env.REPL_OWNER ? [`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`] : []), // ✅ Permitir domínio padrão do Replit
         ].filter(Boolean);

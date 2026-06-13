@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 import { decrypt } from './crypto';
 import * as CircuitBreaker from './circuit-breaker';
 
-const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v24.0';
+const FACEBOOK_API_VERSION = process.env.FACEBOOK_API_VERSION || 'v21.0';
 
 interface SendTemplateArgs {
     connectionId?: string;

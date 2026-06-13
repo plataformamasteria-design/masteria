@@ -4,7 +4,7 @@ export function getBaseUrl(): string {
     return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
   }
 
-  // Prioriza domínio customizado (masteria.app)
+  // Prioriza domínio customizado (masteria-temporario.up.railway.app)
   if (process.env.NEXT_PUBLIC_CUSTOM_DOMAIN && !process.env.NEXT_PUBLIC_CUSTOM_DOMAIN.includes('localhost')) {
     return `https://${process.env.NEXT_PUBLIC_CUSTOM_DOMAIN}`;
   }
@@ -26,5 +26,5 @@ export function getBaseUrl(): string {
     return process.env.NEXT_PUBLIC_BASE_URL;
   }
   
-  return 'https://masteria.app';
+  return 'https://masteria-temporario.up.railway.app';
 }

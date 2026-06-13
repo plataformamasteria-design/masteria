@@ -209,7 +209,7 @@ class NeonStorageAdapter implements StorageAdapter {
     }
 
     getFileUrl(key: string): string {
-        let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://masteria.app';
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://masteria-temporario.up.railway.app';
         
         // CORREÇÃO: Forçar uso do domínio público se as envs apontarem erroneamente para localhost dentro da produção Railway
         if (baseUrl.includes('localhost') && process.env.RAILWAY_PUBLIC_DOMAIN) {

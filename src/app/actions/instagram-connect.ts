@@ -10,7 +10,7 @@ export async function getInstagramAuthUrl() {
         // Detect current domain from host header or env
         const host = typeof window !== 'undefined' 
             ? window.location.origin 
-            : process.env.NEXT_PUBLIC_APP_URL || 'https://masteria.app';
+            : process.env.NEXT_PUBLIC_APP_URL || 'https://masteria-temporario.up.railway.app';
             
         const baseUrl = host.endsWith('/') ? host.slice(0, -1) : host;
         const redirectUri = `${baseUrl}/api/instagram-callback`;
