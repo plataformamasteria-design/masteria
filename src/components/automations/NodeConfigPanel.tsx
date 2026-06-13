@@ -1147,22 +1147,31 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 options={allConnections.map(c => ({ value: c.id, label: c.config_name || c.configName || c.name || c.sessionName || c.id }))}
                             />
                         </ConfigSection>
-                        {(d.message || d.content || d.text) && (
+                        {(d.message || d.content || d.text || (d.buttons && d.buttons.length > 0)) && (
                             <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                                 <span className="text-[10px] font-bold text-green-500 uppercase mb-1 block">Preview</span>
-                                <p className="text-sm text-green-800 whitespace-pre-wrap">{d.message || d.content || d.text}</p>
+                                <p className="text-sm text-green-800 whitespace-pre-wrap mb-2">{(d.message || d.content || d.text) || 'Sem texto'}</p>
+                                {node.type === 'interactive_message' && d.buttons && d.buttons.length > 0 && (
+                                    <div className="flex flex-col gap-1.5 mt-2">
+                                        {d.buttons.map((b: any, idx: number) => (
+                                            <div key={idx} className="bg-white border border-green-200 text-green-700 text-center py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm">
+                                                {typeof b === 'string' ? b : (b.text || `Botão ${idx+1}`)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                         {node.type === 'interactive_message' && (
                             <ConfigSection label="Botões de Resposta" hint="As opções para o usuário clicar">
                                 <DynamicListBuilder
                                     items={d.buttons || d.options || []}
-                                    onAdd={() => update('buttons', [...(d.buttons || d.options || []), { text: '' }])}
+                                    onAdd={() => update('buttons', [...(d.buttons || d.options || []), { id: `btn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, text: '' }])}
                                     onRemove={(i) => update('buttons', (d.buttons || d.options || []).filter((_: any, idx: number) => idx !== i))}
                                     onUpdate={(i, _, val) => {
                                         const btns = [...(d.buttons || d.options || [])];
                                         if (typeof btns[i] === 'string') {
-                                            btns[i] = val;
+                                            btns[i] = { id: `btn_${Date.now()}`, text: val };
                                         } else {
                                             btns[i] = { ...btns[i], text: val };
                                         }
