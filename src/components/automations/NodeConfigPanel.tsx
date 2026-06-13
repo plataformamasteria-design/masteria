@@ -1168,12 +1168,12 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     items={d.buttons || d.options || []}
                                     onAdd={() => update('buttons', [...(d.buttons || d.options || []), { id: `btn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, text: '' }])}
                                     onRemove={(i) => update('buttons', (d.buttons || d.options || []).filter((_: any, idx: number) => idx !== i))}
-                                    onUpdate={(i, _, val) => {
+                                    onUpdate={(i, field, val) => {
                                         const btns = [...(d.buttons || d.options || [])];
                                         if (typeof btns[i] === 'string') {
-                                            btns[i] = { id: `btn_${Date.now()}`, text: val };
+                                            btns[i] = { id: `btn_${Date.now()}`, text: btns[i], [field]: val };
                                         } else {
-                                            btns[i] = { ...btns[i], text: val };
+                                            btns[i] = { ...btns[i], [field]: val };
                                         }
                                         update('buttons', btns);
                                     }}

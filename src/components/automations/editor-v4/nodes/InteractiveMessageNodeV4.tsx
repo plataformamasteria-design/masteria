@@ -7,7 +7,7 @@ import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
 export const InteractiveMessageNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
-    const message = data.message || data.content || '';
+    const message = data.message || data.content || data.text || '';
     const preview = message.length > 80 ? message.slice(0, 80) + '...' : message;
     
     // Normaliza botões: pode vir como array de strings ou array de objetos {id, text, type}

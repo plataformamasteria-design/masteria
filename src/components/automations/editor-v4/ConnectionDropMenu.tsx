@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    MessageSquare, Image as ImageIcon, Mic, FileText, Video, MessageSquareShare,
+    MessageSquare, Image as ImageIcon, Mic, FileText, Video, MessageSquareShare, MessageSquareDashed,
     GitBranch, Clock, MessageCircle, Signpost, Filter,
     Brain, Target, MessageSquareHeart, Send,
     Columns3, Hash, Bot, UserPlus, UserSearch, StickyNote, Database,
@@ -22,6 +22,7 @@ interface NodeEntry {
 const ALL_NODES: NodeEntry[] = [
     // Mensagens
     { type: 'send_message',  label: 'WhatsApp',        icon: MessageSquare,      color: 'text-green-600',   category: 'Mensagens',          defaultData: { message: '' } },
+    { type: 'interactive_message', label: 'Mensagem Interativa', icon: MessageSquareDashed, color: 'text-blue-600', category: 'Mensagens', defaultData: { text: '', buttons: [] } },
     { type: 'send_template', label: 'Template',         icon: MessageSquareShare, color: 'text-green-700',   category: 'Mensagens',          defaultData: { template_name: '' } },
     { type: 'send_image',    label: 'Imagem',           icon: ImageIcon,          color: 'text-blue-600',    category: 'Mensagens',          defaultData: { file_url: '' } },
     { type: 'send_audio',    label: 'Áudio',            icon: Mic,                color: 'text-rose-600',    category: 'Mensagens',          defaultData: { file_url: '' } },
