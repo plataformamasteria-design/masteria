@@ -241,6 +241,95 @@ export async function sendWhatsappTextMessage({ connectionId, to, text }: SendTe
     });
 }
 
+interface SendInteractiveArgs {
+    connectionId: string;
+    to: string;
+    text: string;
+    buttons: { id: string, title: string }[];
+}
+
+export async function sendWhatsappInteractiveMessage({ connectionId, to, text, buttons }: SendInteractiveArgs): Promise<Record<string, unknown>> {
+    // Verifica circuit breaker para Meta API
+    if (CircuitBreaker.isOpen('meta')) {
+        const stats = CircuitBreaker.getStats('meta');
+        const resetIn = stats.openUntil ? Math.ceil((stats.openUntil - Date.now()) / 1000) : 0;
+        throw new Error(`Meta API circuit breaker está ABERTO. Tente novamente em ${resetIn}s.`);
+    }
+
+    const [connection] = await db.select().from(connections).where(eq(connections.id, connectionId));
+    if (!connection) {
+        throw new Error(`Conexão com ID ${connectionId} não encontrada.`);
+    }
+
+    if (!connection.accessToken) {
+        throw new Error(`Token de acesso não configurado para a conexão ${connection.config_name}`);
+    }
+    const accessToken = decrypt(connection.accessToken);
+    if (!accessToken) {
+        throw new Error(`Falha ao desencriptar o token de acesso para a conexão ${connection.config_name}`);
+    }
+
+    const url = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${connection.phoneNumberId}/messages`;
+
+    return executeWithPhoneFallback(to, async (phoneToTry) => {
+        const payload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: phoneToTry.replace(/\D/g, ''),
+            type: 'interactive',
+            interactive: {
+                type: 'button',
+                body: { text: text || 'Selecione uma opção' },
+                action: {
+                    buttons: buttons.slice(0, 3).map((btn) => ({
+                        type: 'reply',
+                        reply: {
+                            id: String(btn.id).slice(0, 256),
+                            title: String(btn.title).slice(0, 20)
+                        }
+                    }))
+                }
+            }
+        };
+
+        if (process.env.NODE_ENV !== 'production') console.debug('[Facebook API - Interactive] Enviando payload:', JSON.stringify(payload, null, 2));
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(15000),
+        });
+
+        const responseData = await response.json() as { error?: { message: string, code?: number, error_subcode?: number } };
+
+        if (!response.ok) {
+            console.error(`[Facebook API - Interactive] Erro para ${phoneToTry}:`, JSON.stringify(responseData, null, 2));
+
+            if (response.status >= 500 || response.status === 429) {
+                CircuitBreaker.recordFailure('meta');
+            }
+
+            const metaError = responseData.error;
+            const error = new Error(metaError?.message || 'Falha ao enviar mensagem interativa via WhatsApp.');
+            Object.assign(error, {
+                code: response.status,
+                metaCode: metaError?.code,
+                metaSubcode: metaError?.error_subcode,
+                response: { status: response.status }
+            });
+            throw error;
+        }
+
+        CircuitBreaker.recordSuccess('meta');
+        console.log(`[Facebook API - Interactive] Sucesso para ${phoneToTry}.`);
+        return responseData;
+    });
+}
+
 interface SendMediaArgs {
     connectionId: string;
     to: string;

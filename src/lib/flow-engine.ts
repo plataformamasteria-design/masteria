@@ -1070,11 +1070,22 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
         case 'message': {
             const text = await interpolateTemplate(step.data.message || step.data.content || step.data.text || '', ctx);
             const overrideConnectionId = step.data.connection_id || ctx.connectionId;
+            
+            // Extrai botões para mensagem interativa
+            let buttons;
+            if (step.type === 'interactive_message' && step.data.buttons && Array.isArray(step.data.buttons)) {
+                buttons = step.data.buttons.map((b: any, i: number) => ({
+                    id: typeof b === 'string' ? `btn_${i}` : (b.id || `btn_${i}`),
+                    title: typeof b === 'string' ? b : (b.text || b.label || `Opção ${i+1}`)
+                }));
+            }
+
             const sendResult = await sendUnifiedMessage({
                 provider: ctx.provider as any,
                 connectionId: overrideConnectionId,
                 to: ctx.contactPhone || ctx.contactId,
                 message: text,
+                buttons
             });
             
             if (ctx.contactId) {

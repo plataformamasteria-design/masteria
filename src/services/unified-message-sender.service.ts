@@ -3,7 +3,7 @@
 import { db } from '@/lib/db';
 import { connections, messageTemplates } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { sendWhatsappTextMessage, sendWhatsappTemplateMessage, sendInstagramMessage, sendWhatsappMediaMessage } from '@/lib/facebookApiService';
+import { sendWhatsappTextMessage, sendWhatsappTemplateMessage, sendInstagramMessage, sendWhatsappMediaMessage, sendWhatsappInteractiveMessage } from '@/lib/facebookApiService';
 import { evolutionApiService } from '@/services/evolution-api.service';
 import { convertMp3ToOgg, getAudioDurationInSeconds } from '@/services/audio-converter.service';
 import { formatJid } from '@/lib/utils/whatsapp';
@@ -20,6 +20,7 @@ export interface UnifiedSendOptions {
   mediaBuffer?: Buffer; // ✅ New: Support for direct buffer sending
   mediaType?: 'audio' | 'image' | 'video' | 'document';
   isVoice?: boolean;
+  buttons?: { id: string, title: string }[];
 }
 
 interface SendResult {
@@ -103,6 +104,24 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
         // ========================================
         // WHATSAPP MESSAGE SENDING
         // ========================================
+
+        // ✅ Handle Interactive Message for APICloud (Meta API)
+        if (options.buttons && options.buttons.length > 0) {
+          try {
+            console.log(`[UNIFIED-SENDER] Sending interactive message via APICloud to ${to}`);
+            const result = await sendWhatsappInteractiveMessage({
+              connectionId,
+              to,
+              text: message,
+              buttons: options.buttons
+            });
+            console.log(`[UNIFIED-SENDER] ✅ Interactive message sent via APICloud to ${to}`, result);
+            return { success: true, messageId: (result as any)?.messages?.[0]?.id };
+          } catch (error) {
+            console.error(`[UNIFIED-SENDER] ❌ Failed to send interactive message via APICloud:`, error);
+            return { success: false, error: (error as Error).message };
+          }
+        }
 
         // ✅ Handle Media Message for APICloud (Meta API)
         if ((mediaUrl || mediaBuffer) && mediaType) {
