@@ -744,14 +744,16 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
     // ✅ FIX: Previously picked ANY active connection — could return Meta API when
     // the message came via Baileys, causing silent send failures.
     let connection: typeof connections.$inferSelect | undefined = undefined;
+    // ✅ FIX: Declare activeConv in outer scope so it's accessible for context variables below
+    let activeConv: Awaited<ReturnType<typeof db.query.conversations.findFirst>> | undefined = undefined;
     if (execution.contactId) {
-        const activeConv = await db.query.conversations.findFirst({
+        activeConv = await db.query.conversations.findFirst({
             where: and(
                 eq(conversations.contactId, execution.contactId),
                 eq(conversations.companyId, execution.companyId),
             ),
             orderBy: desc(conversations.lastMessageAt),
-        });
+        }) ?? undefined;
         if (activeConv?.connectionId) {
             connection = await db.query.connections.findFirst({
                 where: eq(connections.id, activeConv.connectionId)
