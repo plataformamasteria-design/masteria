@@ -58,8 +58,10 @@ function getBrasiliaTime(): string {
   });
 }
 
-async function isOrphanedSendingCampaign(campaignId: string, channel: string): Promise<boolean> {
+async function isOrphanedSendingCampaign(campaign: typeof campaigns.$inferSelect): Promise<boolean> {
   const now = Date.now();
+  const channel = campaign.channel || 'WHATSAPP';
+  const campaignId = campaign.id;
   
   if (channel === 'WHATSAPP') {
     const lastReport = await db
@@ -70,7 +72,8 @@ async function isOrphanedSendingCampaign(campaignId: string, channel: string): P
       .limit(1);
     
     if (lastReport.length === 0) {
-      return true;
+      const startedSendingAt = campaign.sentAt?.getTime() || campaign.createdAt.getTime();
+      return now - startedSendingAt > ORPHAN_THRESHOLD_MS;
     }
     
     const lastSentAt = lastReport[0]?.sentAt;
@@ -86,7 +89,8 @@ async function isOrphanedSendingCampaign(campaignId: string, channel: string): P
       .limit(1);
     
     if (lastReport.length === 0) {
-      return true;
+      const startedSendingAt = campaign.sentAt?.getTime() || campaign.createdAt.getTime();
+      return now - startedSendingAt > ORPHAN_THRESHOLD_MS;
     }
     
     const lastSentAt = lastReport[0]?.sentAt;
@@ -169,7 +173,7 @@ export async function processPendingCampaigns(): Promise<CampaignProcessingResul
 
     // Para campanhas em SENDING, verificar se estão órfãs
     if (campaign.status === 'SENDING') {
-      const isOrphaned = await isOrphanedSendingCampaign(campaign.id, campaign.channel || 'WHATSAPP');
+      const isOrphaned = await isOrphanedSendingCampaign(campaign);
       if (!isOrphaned) {
         console.log(
           `[CampaignProcessor] Campanha ${campaign.id} processando ativamente. Pulando.`
@@ -184,7 +188,7 @@ export async function processPendingCampaigns(): Promise<CampaignProcessingResul
       // Adquirir lock via CAS (Compare-And-Swap)
       const updateResult = await db
         .update(campaigns)
-        .set({ status: 'SENDING' })
+        .set({ status: 'SENDING', sentAt: now })
         .where(
           and(
             eq(campaigns.id, campaign.id),

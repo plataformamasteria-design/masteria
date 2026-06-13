@@ -74,7 +74,7 @@ export function MultiSelectCreatable({
 
   const fetchOptions = React.useCallback(async () => {
     try {
-        const response = await fetch(`/api/v1/${createEndpoint}`);
+        const response = await fetch(`/api/v1/${createEndpoint}?limit=1000`, { cache: 'no-store' });
         if (!response.ok) throw new Error(`Falha ao carregar ${createEndpoint}.`);
         const data = await response.json();
         
