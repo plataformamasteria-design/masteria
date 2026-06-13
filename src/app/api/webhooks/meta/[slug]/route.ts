@@ -648,12 +648,18 @@ async function processIncomingMessage(
                 companyId: companyId,
                 name: profileName || canonicalPhone,
                 whatsappName: profileName,
-                phone: canonicalPhone
+                phone: initialPhone // Usa o wa_id exato fornecido pela Meta para evitar 131026
             }).returning();
         } else {
             const isGenericName = /^\\d+$/.test(contact.name.replace(/\\D/g, ''));
             const updatePayload: any = { whatsappName: profileName, profileLastSyncedAt: new Date() };
             if (isGenericName && profileName) updatePayload.name = profileName;
+
+            // Se o contato já existe, forçamos a atualização para o wa_id exato da Meta
+            // Isso previne que números importados incorretamente fiquem travados
+            if (contact.phone !== initialPhone) {
+                updatePayload.phone = initialPhone;
+            }
 
             const [updatedContact] = await tx.update(contacts)
                 .set(updatePayload)

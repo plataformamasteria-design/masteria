@@ -18,6 +18,55 @@ interface SendTemplateArgs {
     components: Record<string, unknown>[];
 }
 
+// Helper para lidar com erros de entrega relacionados ao 9º dígito
+async function executeWithPhoneFallback<T>(
+    originalPhone: string,
+    operation: (phoneToTry: string) => Promise<T>
+): Promise<T> {
+    try {
+        return await operation(originalPhone);
+    } catch (error: any) {
+        const isDeliveryError = error.metaCode === 131026 || error.metaCode === 131009 || error.code === 400 || error.code === 404;
+        
+        if (isDeliveryError) {
+            const { getPhoneVariations } = await import('@/lib/utils');
+            const variations = getPhoneVariations(originalPhone);
+            const digitsOnlyOriginal = originalPhone.replace(/\D/g, '');
+            
+            // Busca a variação que é diferente do número atual testado
+            const fallbackPhone = variations.find(v => v.replace(/\D/g, '') !== digitsOnlyOriginal);
+            
+            if (fallbackPhone) {
+                console.log(`[Facebook API] Fallback ativo: Tentando variação do número ${fallbackPhone} (Original falhou: ${originalPhone})`);
+                try {
+                    const result = await operation(fallbackPhone);
+                    console.log(`[Facebook API] ✅ Fallback com sucesso para ${fallbackPhone}. Auto-corrigindo banco de dados...`);
+                    
+                    // Auto-corrige o banco de forma assíncrona
+                    import('@/lib/db').then(({ db }) => {
+                        import('./db/schema').then(({ contacts }) => {
+                            import('drizzle-orm').then(({ eq }) => {
+                                db.update(contacts)
+                                  .set({ phone: fallbackPhone })
+                                  .where(eq(contacts.phone, originalPhone))
+                                  .execute()
+                                  .catch(e => console.error("[Facebook API] Erro ao auto-corrigir telefone no fallback:", e));
+                            });
+                        });
+                    });
+                    
+                    return result;
+                } catch (fallbackError: any) {
+                    console.error(`[Facebook API] Fallback também falhou para ${fallbackPhone}. Retornando erro original.`);
+                    throw error; // Retorna o erro original
+                }
+            }
+        }
+        throw error;
+    }
+}
+
+
 export async function sendWhatsappTemplateMessage({
     connectionId,
     connection: providedConnection,
@@ -58,53 +107,59 @@ export async function sendWhatsappTemplateMessage({
 
     const url = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${connection.phoneNumberId}/messages`;
 
-    const payload = {
-        messaging_product: 'whatsapp',
-        to: to.replace(/\D/g, ''), // Remove tudo que não for dígito (incluindo +)
-        type: 'template',
-        template: {
-            name: templateName,
-            language: {
-                code: languageCode,
+    return executeWithPhoneFallback(to, async (phoneToTry) => {
+        const payload = {
+            messaging_product: 'whatsapp',
+            to: phoneToTry.replace(/\D/g, ''), // Remove tudo que não for dígito
+            type: 'template',
+            template: {
+                name: templateName,
+                language: {
+                    code: languageCode,
+                },
+                components,
             },
-            components,
-        },
-    };
+        };
 
-    if (process.env.NODE_ENV !== 'production') console.debug(`[Facebook API] Enviando payload para ${to}:`, JSON.stringify(payload, null, 2));
+        if (process.env.NODE_ENV !== 'production') console.debug(`[Facebook API] Enviando payload para ${phoneToTry}:`, JSON.stringify(payload, null, 2));
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(15000), // Timeout de 15s
-    });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(15000), // Timeout de 15s
+        });
 
-    const responseData = await response.json() as { error?: { message: string } };
+        const responseData = await response.json() as { error?: { message: string, code?: number, error_subcode?: number } };
 
-    if (!response.ok) {
-        console.error(`[Facebook API] Erro para ${to}:`, JSON.stringify(responseData, null, 2));
+        if (!response.ok) {
+            console.error(`[Facebook API] Erro para ${phoneToTry}:`, JSON.stringify(responseData, null, 2));
 
-        // Só registra falha no circuit breaker para erros de servidor (5xx) ou rate limit (429)
-        // Erros 4xx (janela expirada, template inválido, token inválido) são problemas do usuário, não da Meta
-        if (response.status >= 500 || response.status === 429) {
-            CircuitBreaker.recordFailure('meta');
+            // Só registra falha no circuit breaker para erros de servidor (5xx) ou rate limit (429)
+            if (response.status >= 500 || response.status === 429) {
+                CircuitBreaker.recordFailure('meta');
+            }
+
+            const metaError = responseData.error;
+            const error = new Error(metaError?.message || 'Falha ao enviar mensagem de modelo via WhatsApp.');
+            Object.assign(error, { 
+                code: response.status, 
+                metaCode: metaError?.code,
+                metaSubcode: metaError?.error_subcode,
+                response: { status: response.status } 
+            });
+            throw error;
         }
 
-        const error = new Error(responseData.error?.message || 'Falha ao enviar mensagem de modelo via WhatsApp.');
-        // Propaga status HTTP para permitir retry logic detectar erros transientes (5xx, 429)
-        Object.assign(error, { code: response.status, response: { status: response.status } });
-        throw error;
-    }
+        // Registra sucesso no circuit breaker
+        CircuitBreaker.recordSuccess('meta');
 
-    // Registra sucesso no circuit breaker
-    CircuitBreaker.recordSuccess('meta');
-
-    if (process.env.NODE_ENV !== 'production') console.debug(`[Facebook API] Sucesso para ${to}. Resposta:`, JSON.stringify(responseData, null, 2));
-    return responseData;
+        if (process.env.NODE_ENV !== 'production') console.debug(`[Facebook API] Sucesso para ${phoneToTry}. Resposta:`, JSON.stringify(responseData, null, 2));
+        return responseData;
+    });
 }
 
 
@@ -137,56 +192,53 @@ export async function sendWhatsappTextMessage({ connectionId, to, text }: SendTe
 
     const url = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${connection.phoneNumberId}/messages`;
 
-    // CORREÇÃO: A API espera um objeto 'text' com uma propriedade 'body'
-    const payload = {
-        messaging_product: 'whatsapp',
-        to: to.replace(/\D/g, ''), // Remove tudo que não for dígito (incluindo +)
-        type: 'text',
-        text: {
-            body: text,
-            preview_url: true,
-        },
-    };
+    return executeWithPhoneFallback(to, async (phoneToTry) => {
+        const payload = {
+            messaging_product: 'whatsapp',
+            to: phoneToTry.replace(/\D/g, ''),
+            type: 'text',
+            text: {
+                body: text,
+                preview_url: true,
+            },
+        };
 
-    if (process.env.NODE_ENV !== 'production') console.debug('[Facebook API - Text] Enviando payload:', JSON.stringify(payload, null, 2));
+        if (process.env.NODE_ENV !== 'production') console.debug('[Facebook API - Text] Enviando payload:', JSON.stringify(payload, null, 2));
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(15000), // Timeout de 15s
-    });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(15000),
+        });
 
-    const responseData = await response.json() as { error?: { message: string, code?: number, error_subcode?: number } };
+        const responseData = await response.json() as { error?: { message: string, code?: number, error_subcode?: number } };
 
-    if (!response.ok) {
-        console.error(`[Facebook API - Text] Erro para ${to}:`, JSON.stringify(responseData, null, 2));
+        if (!response.ok) {
+            console.error(`[Facebook API - Text] Erro para ${phoneToTry}:`, JSON.stringify(responseData, null, 2));
 
-        // Só registra falha no circuit breaker para erros de servidor (5xx) ou rate limit (429)
-        if (response.status >= 500 || response.status === 429) {
-            CircuitBreaker.recordFailure('meta');
+            if (response.status >= 500 || response.status === 429) {
+                CircuitBreaker.recordFailure('meta');
+            }
+
+            const metaError = responseData.error;
+            const error = new Error(metaError?.message || 'Falha ao enviar mensagem de texto via WhatsApp.');
+            Object.assign(error, {
+                code: response.status,
+                metaCode: metaError?.code,
+                metaSubcode: metaError?.error_subcode,
+                response: { status: response.status }
+            });
+            throw error;
         }
 
-        const metaError = responseData.error;
-        const error = new Error(metaError?.message || 'Falha ao enviar mensagem de texto via WhatsApp.');
-        // Propaga status HTTP e códigos específicos da Meta
-        Object.assign(error, {
-            code: response.status,
-            metaCode: metaError?.code,
-            metaSubcode: metaError?.error_subcode,
-            response: { status: response.status }
-        });
-        throw error;
-    }
-
-    // Registra sucesso no circuit breaker
-    CircuitBreaker.recordSuccess('meta');
-
-    console.log(`[Facebook API - Text] Sucesso para ${to}.`);
-    return responseData;
+        CircuitBreaker.recordSuccess('meta');
+        console.log(`[Facebook API - Text] Sucesso para ${phoneToTry}.`);
+        return responseData;
+    });
 }
 
 interface SendMediaArgs {
@@ -265,47 +317,49 @@ export async function sendWhatsappMediaMessage({ connectionId, to, type, url, me
         mediaObject.voice = true;
     }
 
-    const payload = {
-        messaging_product: 'whatsapp',
-        to: to.replace(/\D/g, ''),
-        type: type,
-        [type]: mediaObject,
-    };
+    return executeWithPhoneFallback(to, async (phoneToTry) => {
+        const payload = {
+            messaging_product: 'whatsapp',
+            to: phoneToTry.replace(/\D/g, ''),
+            type: type,
+            [type]: mediaObject,
+        };
 
-    if (process.env.NODE_ENV !== 'production') console.debug(`[Facebook API - ${type}] Enviando payload:`, JSON.stringify(payload, null, 2));
+        if (process.env.NODE_ENV !== 'production') console.debug(`[Facebook API - ${type}] Enviando payload:`, JSON.stringify(payload, null, 2));
 
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(30000), // Maior timeout para mídia
-    });
-
-    const responseData = await response.json() as { error?: { message: string, code?: number, error_subcode?: number } };
-
-    if (!response.ok) {
-        console.error(`[Facebook API - ${type}] Erro para ${to}:`, JSON.stringify(responseData, null, 2));
-        // Só registra falha no circuit breaker para erros de servidor (5xx) ou rate limit (429)
-        if (response.status >= 500 || response.status === 429) {
-            CircuitBreaker.recordFailure('meta');
-        }
-        const metaError = responseData.error;
-        const error = new Error(metaError?.message || `Falha ao enviar mensagem de ${type} via WhatsApp.`);
-        Object.assign(error, {
-            code: response.status,
-            metaCode: metaError?.code,
-            metaSubcode: metaError?.error_subcode,
-            response: { status: response.status }
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(30000), // Maior timeout para mídia
         });
-        throw error;
-    }
 
-    CircuitBreaker.recordSuccess('meta');
-    console.log(`[Facebook API - ${type}] Sucesso para ${to}.`);
-    return responseData;
+        const responseData = await response.json() as { error?: { message: string, code?: number, error_subcode?: number } };
+
+        if (!response.ok) {
+            console.error(`[Facebook API - ${type}] Erro para ${phoneToTry}:`, JSON.stringify(responseData, null, 2));
+            // Só registra falha no circuit breaker para erros de servidor (5xx) ou rate limit (429)
+            if (response.status >= 500 || response.status === 429) {
+                CircuitBreaker.recordFailure('meta');
+            }
+            const metaError = responseData.error;
+            const error = new Error(metaError?.message || `Falha ao enviar mensagem de ${type} via WhatsApp.`);
+            Object.assign(error, {
+                code: response.status,
+                metaCode: metaError?.code,
+                metaSubcode: metaError?.error_subcode,
+                response: { status: response.status }
+            });
+            throw error;
+        }
+
+        CircuitBreaker.recordSuccess('meta');
+        console.log(`[Facebook API - ${type}] Sucesso para ${phoneToTry}.`);
+        return responseData;
+    });
 }
 
 

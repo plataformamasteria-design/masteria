@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
                     companyId,
                     name: pushName,
                     whatsappName: pushName,
-                    phone: canonicalPhone,
+                    phone: phone, // Usa o número exato do provedor para evitar falhas no envio
                     avatarUrl,
                     status: 'ACTIVE'
                 }).returning();
@@ -190,22 +190,37 @@ export async function POST(req: NextRequest) {
                 import('@/lib/contact-events').then(({ logContactEvent }) => {
                     logContactEvent(companyId, contact.id, 'SYSTEM', 'Chegada na Plataforma (Novo Contato via WhatsApp)', { source: 'evolution_webhook' });
                 }).catch(err => console.warn('Failed to log contact creation', err));
-            } else if (!contact.avatarUrl && !contact.profileLastSyncedAt) {
-                 // Sincronização preguiçosa de avatar se estiver nulo e nunca foi sincronizado
-                 try {
-                     const avatarUrl = await evolutionApiService.fetchProfilePictureUrl(instanceName, remoteJid);
-                     if (avatarUrl) {
-                         [contact] = await tx.update(contacts)
-                            .set({ avatarUrl, profileLastSyncedAt: new Date() })
-                            .where(eq(contacts.id, contact.id))
-                            .returning();
-                     } else {
-                         // Marcar que tentou sincronizar para não ficar tentando em toda msg
-                         await tx.update(contacts).set({ profileLastSyncedAt: new Date() }).where(eq(contacts.id, contact.id));
-                     }
-                 } catch (e) {
-                     console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar pendente para ${phone}`);
-                 }
+            } else {
+                let updatePayload: any = {};
+                
+                // Forçar atualização do telefone para o formato exato da Evolution (se for diferente)
+                if (contact.phone !== phone) {
+                    updatePayload.phone = phone;
+                }
+
+                if (!contact.avatarUrl && !contact.profileLastSyncedAt) {
+                    // Sincronização preguiçosa de avatar se estiver nulo e nunca foi sincronizado
+                    try {
+                        const avatarUrl = await evolutionApiService.fetchProfilePictureUrl(instanceName, remoteJid);
+                        if (avatarUrl) {
+                            updatePayload.avatarUrl = avatarUrl;
+                            updatePayload.profileLastSyncedAt = new Date();
+                        } else {
+                            // Marcar que tentou sincronizar para não ficar tentando em toda msg
+                            updatePayload.profileLastSyncedAt = new Date();
+                        }
+                    } catch (e) {
+                        console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar pendente para ${phone}`);
+                    }
+                }
+                
+                if (Object.keys(updatePayload).length > 0) {
+                    const [updatedContact] = await tx.update(contacts)
+                        .set(updatePayload)
+                        .where(eq(contacts.id, contact.id))
+                        .returning();
+                    if (updatedContact) contact = updatedContact;
+                }
             }
 
             let [conversation] = await tx.select().from(conversations).where(and(
