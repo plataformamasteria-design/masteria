@@ -48,6 +48,7 @@ export async function GET(
 
           let pollingAttempts = 0;
           const maxAttempts = 100; // 5 minutes (3s * 100)
+          let hasFetchedQr = false;
 
           while (pollingAttempts < maxAttempts) {
             if (request.signal.aborted) break;
@@ -62,11 +63,13 @@ export async function GET(
                 break;
               }
 
-              // 2. Fetch QR Code
-              const connData = await evolutionApiService.getConnectionData(id);
-              
-              if (connData?.qrcode || connData?.base64) {
-                 sendEvent({ qr: connData.qrcode || connData.base64 });
+              // 2. Fetch QR Code only if we haven't fetched it or if the session was closed
+              if (!hasFetchedQr || state === 'close') {
+                  const connData = await evolutionApiService.getConnectionData(id);
+                  if (connData?.qrcode || connData?.base64) {
+                     sendEvent({ qr: connData.qrcode || connData.base64 });
+                     hasFetchedQr = true;
+                  }
               }
             } catch (err) {
               console.warn('[QR Stream] Warning polling Evolution API:', err);

@@ -1089,6 +1089,10 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 message: text,
                 buttons
             });
+
+            if (!sendResult.success) {
+                throw new Error(sendResult.error || 'Falha ao enviar mensagem');
+            }
             
             if (ctx.contactId) {
                 try {
@@ -1109,7 +1113,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     }
                     
                     if (activeConv) {
-                        await db.insert(messages).values({
+                        const [savedMessage] = await db.insert(messages).values({
                             companyId: ctx.companyId,
                             conversationId: activeConv.id,
                             connectionId: overrideConnectionId || activeConv.connectionId,
@@ -1119,7 +1123,24 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             contentType: 'TEXT',
                             providerMessageId: sendResult.messageId || `auto-${Date.now()}`,
                             status: sendResult.success ? 'SENT' : 'FAILED',
-                        });
+                        }).returning();
+
+                        if (savedMessage) {
+                            emitToCompany(ctx.companyId, 'chat:new-message', {
+                                conversationId: activeConv.id,
+                                messageId: savedMessage.id,
+                                connectionId: overrideConnectionId || activeConv.connectionId,
+                                contactPhone: ctx.contactPhone || '',
+                                contactName: ctx.contactName || '',
+                                content: savedMessage.content,
+                                contentType: savedMessage.contentType,
+                                mediaUrl: savedMessage.mediaUrl,
+                                isFromMe: true,
+                                senderType: 'AGENT',
+                                timestamp: new Date().toISOString(),
+                            });
+                            emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                        }
                     }
                 } catch (saveErr: any) {
                     console.error('[FLOW-ENGINE] Failed to save send_message message:', saveErr.message);
@@ -1144,7 +1165,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         : step.type === 'send_document' ? 'document'
                             : step.data.mediaType || 'image';
             const overrideConnectionId = step.data.connection_id || ctx.connectionId;
-            await sendUnifiedMessage({
+            const sendResult = await sendUnifiedMessage({
                 provider: ctx.provider as any,
                 connectionId: overrideConnectionId,
                 to: ctx.contactPhone || ctx.contactId,
@@ -1153,7 +1174,62 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 mediaType,
             });
 
+            if (!sendResult.success) {
+                throw new Error(sendResult.error || `Falha ao enviar mídia (${mediaType})`);
+            }
+
             if (ctx.contactId) {
+                try {
+                    const { eq, and, desc } = await import('drizzle-orm');
+                    let activeConv = await db.query.conversations.findFirst({
+                        where: and(eq(conversations.contactId, ctx.contactId), eq(conversations.companyId, ctx.companyId)),
+                        orderBy: desc(conversations.lastMessageAt)
+                    });
+                    
+                    if (!activeConv && overrideConnectionId) {
+                        const [newConv] = await db.insert(conversations).values({
+                            companyId: ctx.companyId,
+                            contactId: ctx.contactId,
+                            connectionId: overrideConnectionId,
+                            status: 'IN_PROGRESS',
+                        }).returning();
+                        activeConv = newConv;
+                    }
+                    
+                    if (activeConv) {
+                        const [savedMessage] = await db.insert(messages).values({
+                            companyId: ctx.companyId,
+                            conversationId: activeConv.id,
+                            connectionId: overrideConnectionId || activeConv.connectionId,
+                            senderType: 'AI',
+                            senderId: 'automation_node',
+                            content: caption || `[Mídia enviada: ${mediaType}]`,
+                            contentType: mediaType.toUpperCase(),
+                            providerMessageId: sendResult.messageId || `auto-${Date.now()}`,
+                            status: sendResult.success ? 'SENT' : 'FAILED',
+                        }).returning();
+
+                        if (savedMessage) {
+                            emitToCompany(ctx.companyId, 'chat:new-message', {
+                                conversationId: activeConv.id,
+                                messageId: savedMessage.id,
+                                connectionId: overrideConnectionId || activeConv.connectionId,
+                                contactPhone: ctx.contactPhone || '',
+                                contactName: ctx.contactName || '',
+                                content: savedMessage.content,
+                                contentType: savedMessage.contentType,
+                                mediaUrl: savedMessage.mediaUrl,
+                                isFromMe: true,
+                                senderType: 'AGENT',
+                                timestamp: new Date().toISOString(),
+                            });
+                            emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                        }
+                    }
+                } catch (saveErr: any) {
+                    console.error('[FLOW-ENGINE] Failed to save media message:', saveErr.message);
+                }
+
                 try {
                     await logContactEvent(ctx.companyId, ctx.contactId, 'AUTOMATION', `Mídia enviada via automação (${mediaType})${caption ? `:\n"${caption}"` : ''}`);
                 } catch (e) {}
@@ -1203,13 +1279,69 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             }
 
             const overrideConnectionId = step.data.connection_id || ctx.connectionId;
-            await sendUnifiedMessage({
+            const sendResult = await sendUnifiedMessage({
                 provider: ctx.provider as any,
                 connectionId: overrideConnectionId,
                 to: ctx.contactPhone || ctx.contactId,
                 message: fullMessage,
             });
 
+            if (!sendResult.success) {
+                throw new Error(sendResult.error || 'Falha ao enviar pergunta');
+            }
+
+            if (ctx.contactId) {
+                try {
+                    const { eq, and, desc } = await import('drizzle-orm');
+                    let activeConv = await db.query.conversations.findFirst({
+                        where: and(eq(conversations.contactId, ctx.contactId), eq(conversations.companyId, ctx.companyId)),
+                        orderBy: desc(conversations.lastMessageAt)
+                    });
+                    
+                    if (!activeConv && overrideConnectionId) {
+                        const [newConv] = await db.insert(conversations).values({
+                            companyId: ctx.companyId,
+                            contactId: ctx.contactId,
+                            connectionId: overrideConnectionId,
+                            status: 'IN_PROGRESS',
+                        }).returning();
+                        activeConv = newConv;
+                    }
+                    
+                    if (activeConv) {
+                        const [savedMessage] = await db.insert(messages).values({
+                            companyId: ctx.companyId,
+                            conversationId: activeConv.id,
+                            connectionId: overrideConnectionId || activeConv.connectionId,
+                            senderType: 'AI',
+                            senderId: 'automation_node',
+                            content: fullMessage,
+                            contentType: 'TEXT',
+                            providerMessageId: sendResult.messageId || `auto-${Date.now()}`,
+                            status: sendResult.success ? 'SENT' : 'FAILED',
+                        }).returning();
+
+                        if (savedMessage) {
+                            emitToCompany(ctx.companyId, 'chat:new-message', {
+                                conversationId: activeConv.id,
+                                messageId: savedMessage.id,
+                                connectionId: overrideConnectionId || activeConv.connectionId,
+                                contactPhone: ctx.contactPhone || '',
+                                contactName: ctx.contactName || '',
+                                content: savedMessage.content,
+                                contentType: savedMessage.contentType,
+                                mediaUrl: savedMessage.mediaUrl,
+                                isFromMe: true,
+                                senderType: 'AGENT',
+                                timestamp: new Date().toISOString(),
+                            });
+                            emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                        }
+                    }
+                } catch (saveErr: any) {
+                    console.error('[FLOW-ENGINE] Failed to save ask_question message:', saveErr.message);
+                }
+            }
             // Store save_to_var and options metadata so the resume handler can use them
             const questionVars: Record<string, any> = {
                 _ask_step_id: step.id,
@@ -1287,12 +1419,70 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
             const prompt = await interpolateTemplate(step.data.prompt_message || step.data.question || '', ctx);
             if (prompt) {
-                await sendUnifiedMessage({
+                const overrideConnectionId = step.data.connection_id || ctx.connectionId;
+                const sendResult = await sendUnifiedMessage({
                     provider: ctx.provider as any,
-                    connectionId: ctx.connectionId,
+                    connectionId: overrideConnectionId,
                     to: ctx.contactPhone || ctx.contactId,
                     message: prompt,
                 });
+
+                if (!sendResult.success) {
+                    throw new Error(sendResult.error || 'Falha ao enviar captura de info');
+                }
+
+                if (ctx.contactId) {
+                    try {
+                        const { eq, and, desc } = await import('drizzle-orm');
+                        let activeConv = await db.query.conversations.findFirst({
+                            where: and(eq(conversations.contactId, ctx.contactId), eq(conversations.companyId, ctx.companyId)),
+                            orderBy: desc(conversations.lastMessageAt)
+                        });
+                        
+                        if (!activeConv && overrideConnectionId) {
+                            const [newConv] = await db.insert(conversations).values({
+                                companyId: ctx.companyId,
+                                contactId: ctx.contactId,
+                                connectionId: overrideConnectionId,
+                                status: 'IN_PROGRESS',
+                            }).returning();
+                            activeConv = newConv;
+                        }
+                        
+                        if (activeConv) {
+                            const [savedMessage] = await db.insert(messages).values({
+                                companyId: ctx.companyId,
+                                conversationId: activeConv.id,
+                                connectionId: overrideConnectionId || activeConv.connectionId,
+                                senderType: 'AI',
+                                senderId: 'automation_node',
+                                content: prompt,
+                                contentType: 'TEXT',
+                                providerMessageId: sendResult.messageId || `auto-${Date.now()}`,
+                                status: sendResult.success ? 'SENT' : 'FAILED',
+                            }).returning();
+
+                            if (savedMessage) {
+                                emitToCompany(ctx.companyId, 'chat:new-message', {
+                                    conversationId: activeConv.id,
+                                    messageId: savedMessage.id,
+                                    connectionId: overrideConnectionId || activeConv.connectionId,
+                                    contactPhone: ctx.contactPhone || '',
+                                    contactName: ctx.contactName || '',
+                                    content: savedMessage.content,
+                                    contentType: savedMessage.contentType,
+                                    mediaUrl: savedMessage.mediaUrl,
+                                    isFromMe: true,
+                                    senderType: 'AGENT',
+                                    timestamp: new Date().toISOString(),
+                                });
+                                emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                            }
+                        }
+                    } catch (saveErr: any) {
+                        console.error('[FLOW-ENGINE] Failed to save capture_info message:', saveErr.message);
+                    }
+                }
             }
 
             // Store field_key and validation config for the resume handler
