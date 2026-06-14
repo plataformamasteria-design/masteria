@@ -1205,6 +1205,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             senderId: 'automation_node',
                             content: caption || `[Mídia enviada: ${mediaType}]`,
                             contentType: mediaType.toUpperCase(),
+                            mediaUrl: step.data.file_url || step.data.url,
                             providerMessageId: sendResult.messageId || `auto-${Date.now()}`,
                             status: sendResult.success ? 'SENT' : 'FAILED',
                         }).returning();
