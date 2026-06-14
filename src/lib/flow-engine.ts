@@ -12,7 +12,7 @@ import { createSystemMessage } from '@/services/system-message.service';
 import { resolveAIKeys } from './ai-keys-resolver';
 import { logContactEvent } from './contact-events';
 import { logger } from '@/lib/logger';
-
+import { emitToCompany } from '@/lib/socket';
 
 // =====================================================
 // FLOW ENGINE V3 — BFS Graph Traversal + Context
@@ -2508,7 +2508,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                         }
 
                                         if (aiConversation) {
-                                            await db.insert(messages).values({
+                                            const [savedMessage] = await db.insert(messages).values({
                                                 companyId: ctx.companyId,
                                                 conversationId: aiConversation.id,
                                                 connectionId: aiConnectionId || null,
@@ -2519,7 +2519,24 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                                 status: 'SENT',
                                                 sentAt: new Date(),
                                                 isAiGenerated: true,
-                                            });
+                                            }).returning();
+
+                                            if (savedMessage) {
+                                                emitToCompany(ctx.companyId, 'chat:new-message', {
+                                                    conversationId: aiConversation.id,
+                                                    messageId: savedMessage.id,
+                                                    connectionId: aiConnectionId || null,
+                                                    contactPhone: ctx.contactPhone || '',
+                                                    contactName: ctx.contactName || '',
+                                                    content: savedMessage.content,
+                                                    contentType: savedMessage.contentType,
+                                                    mediaUrl: savedMessage.mediaUrl,
+                                                    isFromMe: true,
+                                                    senderType: 'AI',
+                                                    timestamp: new Date().toISOString(),
+                                                });
+                                                emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                                            }
                                         }
 
                                         toolResult = { success: true, message: `O arquivo ${fileName} foi enviado no WhatsApp do cliente com sucesso. Agora responda confirmando que enviou.` };
@@ -2776,7 +2793,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         // Salvar no DB (mesmo padrão do auto-approach: company_id + SENT)
                         if (aiConversation) {
                             try {
-                                await db.insert(messages).values({
+                                const [savedMessage] = await db.insert(messages).values({
                                     companyId: ctx.companyId,
                                     conversationId: aiConversation.id,
                                     connectionId: aiConnectionId || null,
@@ -2789,10 +2806,28 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                     status: 'SENT',
                                     sentAt: new Date(),
                                     isAiGenerated: true,
-                                });
+                                }).returning();
+                                
                                 await db.update(conversations)
                                     .set({ lastMessageAt: new Date() })
                                     .where(eq(conversations.id, aiConversation.id));
+
+                                if (savedMessage) {
+                                    emitToCompany(ctx.companyId, 'chat:new-message', {
+                                        conversationId: aiConversation.id,
+                                        messageId: savedMessage.id,
+                                        connectionId: aiConnectionId || null,
+                                        contactPhone: ctx.contactPhone || '',
+                                        contactName: ctx.contactName || '',
+                                        content: savedMessage.content,
+                                        contentType: savedMessage.contentType,
+                                        mediaUrl: attachedFile ? attachedFile.fileUrl : null,
+                                        isFromMe: true,
+                                        senderType: 'AI',
+                                        timestamp: new Date().toISOString(),
+                                    });
+                                    emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                                }
                             } catch (dbErr) {
                                 console.warn('[FLOW-ENGINE] DB save failed:', dbErr);
                             }
