@@ -29,6 +29,7 @@ const whatsappCampaignSchema = z.object({
   schedule: z.string().datetime({ offset: true }).nullable().optional(),
   mediaAssetId: z.string().uuid('Asset de mídia inválido').optional().nullable(),
   mediaHandleId: z.string().optional().nullable(),
+  automationFlowId: z.string().uuid('Automação inválida').optional().nullable(),
   minDelaySeconds: z.number().min(0).max(600).optional().default(2),
   maxDelaySeconds: z.number().min(0).max(900).optional().default(5),
 }).refine(data => {
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             excludeTagIds,
             funnelIds,
             funnelStageIds,
+            automationFlowId: campaignData.automationFlowId,
         }).returning();
 
         if (!newCampaign) {

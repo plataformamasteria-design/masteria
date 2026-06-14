@@ -46,6 +46,7 @@ const NODE_CATALOG: NodeCategory[] = [
             { type: 'condition',     label: 'Condição',         icon: GitBranch,          color: 'text-amber-600',   defaultData: { conditions: [] } },
             { type: 'delay',         label: 'Atraso',           icon: Clock,              color: 'text-amber-500',   defaultData: { amount: 1, unit: 'minutes' } },
             { type: 'wait_response', label: 'Aguardar Resp.',   icon: MessageCircle,      color: 'text-teal-600',    defaultData: { maxWaitTime: 10 } },
+            { type: 'campaign_wait_response', label: 'Resp. Campanha', icon: Send,        color: 'text-emerald-600', defaultData: { maxWaitTime: 24, unit: 'hours' } },
             { type: 'router',        label: 'Roteador',         icon: Signpost,           color: 'text-indigo-600',  defaultData: { routes: [] } },
             { type: 'filter',        label: 'Filtro',           icon: Filter,             color: 'text-violet-600',  defaultData: { conditions: [] } },
         ],

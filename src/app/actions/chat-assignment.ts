@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { createSystemMessage } from '@/services/system-message.service';
 import { logContactEvent } from '@/lib/contact-events';
 import { emitInboxUpdate } from '@/lib/socket';
+import { evaluateLeadAssignedTriggers } from '@/lib/flow-engine';
 
 export async function getOrganizationUsers() {
     try {
@@ -63,6 +64,11 @@ export async function assignChatToUser(conversationId: string, userId: string) {
         const [conv] = await db.select({ contactId: conversations.contactId }).from(conversations).where(eq(conversations.id, conversationId));
         if (conv?.contactId) {
             await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Atendimento assumido por ${userName}`, { assignedUserId: userId });
+            
+            // Trigger flow engine for lead_assigned
+            await evaluateLeadAssignedTriggers(companyId, conv.contactId, 'user', userId).catch(e => {
+                console.error('[FlowEngine] Erro ao processar gatilho lead_assigned (user):', e);
+            });
         }
 
         emitInboxUpdate(companyId);
@@ -89,6 +95,11 @@ export async function assignChatToTeam(conversationId: string, teamId: string) {
         const [conv] = await db.select({ contactId: conversations.contactId }).from(conversations).where(eq(conversations.id, conversationId));
         if (conv?.contactId) {
             await logContactEvent(companyId, conv.contactId, 'ASSIGNMENT', `Transferido para equipe ${teamName}`, { teamId: teamId });
+            
+            // Trigger flow engine for lead_assigned
+            await evaluateLeadAssignedTriggers(companyId, conv.contactId, 'team', teamId).catch(e => {
+                console.error('[FlowEngine] Erro ao processar gatilho lead_assigned (team):', e);
+            });
         }
 
         emitInboxUpdate(companyId);

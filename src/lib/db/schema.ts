@@ -795,6 +795,7 @@ export const campaigns = pgTable('campaigns', {
   completedAt: timestamp('completed_at'),
   connectionId: text('connection_id').references(() => connections.id, { onDelete: 'set null' }),
   templateId: text('template_id').references(() => messageTemplates.id, { onDelete: 'set null' }),
+  automationFlowId: text('automation_flow_id'), // Referência solta para evitar erros circulares de importação na schema
   variableMappings: jsonb('variable_mappings'),
   mediaAssetId: text('media_asset_id').references(() => mediaAssets.id, { onDelete: 'set null' }),
   smsGatewayId: text('sms_gateway_id').references(() => smsGateways.id),

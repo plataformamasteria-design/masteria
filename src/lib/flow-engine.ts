@@ -673,6 +673,54 @@ export async function evaluateStageChangedTriggers(companyId: string, contactId:
     }
 }
 
+/**
+ * Evaluates triggers when a lead is assigned to a user or team.
+ * Called from chat-assignment actions.
+ */
+export async function evaluateLeadAssignedTriggers(companyId: string, contactId: string, assigneeType: 'user' | 'team', assigneeId: string) {
+    const flows = await db.query.automationFlows.findMany({
+        where: and(
+            eq(automationFlows.isActive, true),
+            eq(automationFlows.companyId, companyId)
+        )
+    });
+
+    for (const flow of flows) {
+        const logic = flow.executionLogic as any;
+        const steps = Array.isArray(logic) ? logic : logic?.steps;
+        if (!steps?.length) continue;
+
+        const trigger = steps.find((s: FlowStep) => s.type === 'trigger');
+        if (!trigger) continue;
+
+        const triggerType = trigger.data?.triggerType;
+        if (triggerType !== 'lead_assigned') continue;
+
+        const filterAssigneeType = trigger.data?.assignee_type;
+        const filterAssigneeId = trigger.data?.assignee_id;
+
+        if (filterAssigneeType && filterAssigneeType !== assigneeType) continue;
+        if (filterAssigneeId && filterAssigneeId !== assigneeId) continue;
+
+        // Skip duplicate executions
+        const existingExec = await db.query.automationFlowExecutions.findFirst({
+            where: and(
+                eq(automationFlowExecutions.contactId, contactId),
+                eq(automationFlowExecutions.flowId, flow.id),
+                inArray(automationFlowExecutions.status, ['paused', 'running'])
+            ),
+        });
+        if (existingExec) continue;
+
+        logger.debug(`[FLOW-ENGINE] 👤 Lead assigned trigger: flow ${flow.id}, assigneeType=${assigneeType}, assigneeId=${assigneeId}, contact ${contactId}`);
+        await triggerFlow(flow.id, companyId, contactId, {
+            trigger_type: 'lead_assigned',
+            assignee_type: assigneeType,
+            assignee_id: assigneeId,
+        });
+    }
+}
+
 // ==============================
 // Flow trigger (creates execution)
 // ==============================
@@ -1081,8 +1129,30 @@ interface NodeResult {
 async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: FlowStep[]): Promise<NodeResult> {
     switch (step.type) {
         // ---- System ----
-        case 'trigger':
+        // ---- System ----
+        case 'trigger': {
+            if (step.data?.triggerType === 'campaign_dispatched') {
+                if (ctx.variables.last_response && ctx.variables._ask_step_id === step.id) {
+                    const answer = ctx.variables.last_response;
+                    delete ctx.variables._ask_step_id;
+                    return {
+                        action: 'continue',
+                        sourceHandle: 'respondeu',
+                        message: `Respondeu: ${answer}`
+                    };
+                }
+
+                const questionVars: Record<string, any> = {
+                    _ask_step_id: step.id,
+                };
+                
+                const timeoutMinutes = parseInt(step.data?.timeout_minutes) || 60;
+                questionVars._resumeAt = Date.now() + (timeoutMinutes * 60 * 1000);
+
+                return { action: 'pause', newVars: questionVars, message: 'Paused waiting for reply to campaign' };
+            }
             return { message: 'Trigger activated' };
+        }
 
         // ---- Messages ----
         case 'interactive_message':
@@ -1522,6 +1592,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             };
         }
 
+        case 'campaign_wait_response':
         case 'wait_response':
         case 'interaction': {
             if (ctx.variables.last_response && ctx.variables._wait_step_id === step.id) {
@@ -1536,9 +1607,9 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 };
             }
 
-            if (step.data?.interactionType === 'wait_response' || step.type === 'wait_response') {
-                const timeoutAmount = parseInt(step.data?.timeout_amount || step.data?.timeout_minutes || '0');
-                const timeoutUnit = step.data?.timeout_unit || 'minutes';
+            if (step.data?.interactionType === 'wait_response' || step.type === 'wait_response' || step.type === 'campaign_wait_response') {
+                const timeoutAmount = parseInt(step.data?.maxWaitTime || step.data?.timeout_amount || step.data?.timeout_minutes || '0');
+                const timeoutUnit = step.data?.unit || step.data?.timeout_unit || 'minutes';
 
                 if (timeoutAmount > 0) {
                     const multipliers: Record<string, number> = {

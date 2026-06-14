@@ -787,6 +787,8 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                     { value: 'contact_created', label: '👤 Novo Lead (Contato ou Kanban)' },
                     { value: 'stage_changed', label: '🔄 Movido para Kanban' },
                     { value: 'contact_tag_added', label: '🏷️ Tag Adicionada' },
+                    { value: 'lead_assigned', label: '👤 Lead Atribuído' },
+                    { value: 'campaign_dispatched', label: '🚀 Campanha Disparada' },
                     { value: 'schedule', label: '⏰ Agendado' },
                 ];
 
@@ -995,6 +997,51 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 </div>
 
                                 <InfoBanner text="Todos os campos do JSON body ficam disponíveis como variáveis: {{customer_name}}, {{amount}}, etc." color="teal" />
+                            </>
+                        )}
+
+                        {triggerType === 'lead_assigned' && (
+                            <>
+                                <ConfigSection label="Tipo de Atribuição">
+                                    <SelectField
+                                        value={d.assignee_type || 'user'}
+                                        onChange={(v) => update('assignee_type', v)}
+                                        options={[
+                                            { value: 'user', label: 'Usuário Específico' },
+                                            { value: 'team', label: 'Grupo/Equipe' }
+                                        ]}
+                                    />
+                                </ConfigSection>
+                                <ConfigSection label={d.assignee_type === 'team' ? 'Equipe' : 'Usuário'}>
+                                    <SelectField
+                                        value={d.assignee_id || ''}
+                                        onChange={(v) => update('assignee_id', v)}
+                                        placeholder={`Qualquer ${d.assignee_type === 'team' ? 'grupo' : 'usuário'}...`}
+                                        options={d.assignee_type === 'team' 
+                                            ? companyTeams.map(t => ({ value: t.id, label: t.name }))
+                                            : companyUsers.map(u => ({ value: u.id, label: u.name }))
+                                        }
+                                    />
+                                </ConfigSection>
+                                <InfoBanner text="Dispara automaticamente quando uma conversa é atribuída a um agente ou equipe no painel de atendimento." color="blue" />
+                            </>
+                        )}
+
+                        {triggerType === 'campaign_dispatched' && (
+                            <>
+                                <InfoBanner text="Esta automação apenas será ativada quando for selecionada explicitamente durante o disparo de uma Campanha (WhatsApp ou SMS)." color="amber" />
+                                <ConfigSection label="Tempo Limite de Resposta (Timeout)" hint="Quanto tempo aguardar por uma resposta do lead antes de seguir pelo caminho Timeout.">
+                                    <div className="flex gap-2">
+                                        <NumberField
+                                            value={d.timeout_minutes || 60}
+                                            onChange={(v) => update('timeout_minutes', parseInt(v))}
+                                            min={1}
+                                        />
+                                        <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-3 border rounded-xl">
+                                            minutos
+                                        </div>
+                                    </div>
+                                </ConfigSection>
                             </>
                         )}
 

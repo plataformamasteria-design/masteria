@@ -32,6 +32,7 @@ import { UserNotificationsService } from './notifications/user-notifications.ser
 import { webhookDispatcher } from '@/services/webhook-dispatcher.service';
 import * as CircuitBreaker from '@/lib/circuit-breaker';
 import { normalizeBrazilianSMS } from './utils/phone';
+import { triggerFlow } from '@/lib/flow-engine';
 
 const DEBUG = process.env.DEBUG === 'true';
 
@@ -875,6 +876,13 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                                 disableBotOnSend,
                                 isTemplate
                             );
+
+                            if (campaign.automationFlowId) {
+                                await triggerFlow(campaign.automationFlowId, campaign.companyId!, contact.id, {
+                                    source: 'campaign_dispatch',
+                                    campaign_id: campaign.id
+                                }).catch(err => console.error('[Campaign] Error triggering flow:', err));
+                            }
                         }
                     } catch (dbError) {
                         console.error(`[Campaign-Baileys] ❌ Erro ao salvar report/mensagem:`, dbError);
@@ -941,6 +949,13 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                                 disableBotOnSend,
                                 isTemplate
                             );
+
+                            if (campaign.automationFlowId) {
+                                await triggerFlow(campaign.automationFlowId, campaign.companyId!, report.contactId, {
+                                    source: 'campaign_dispatch',
+                                    campaign_id: campaign.id
+                                }).catch(err => console.error('[Campaign] Error triggering flow:', err));
+                            }
                         }
                     }
                 }

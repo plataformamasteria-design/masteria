@@ -42,6 +42,8 @@ import Image from 'next/image';
 import { TemplatePreview } from './TemplatePreview';
 import { MultiListSelector, SelectedListsSummary } from './multi-list-selector';
 import { AdvancedAudienceSelector } from './advanced-audience-selector';
+import { useSession } from '@/contexts/session-context';
+import { listFlows } from '@/lib/automations';
 
 const contactFields = [
     { value: 'name', label: 'Nome' },
@@ -107,6 +109,10 @@ export function CreateWhatsappCampaignDialog({
 
     const [selectedConnectionId, setSelectedConnectionId] = useState<string>('');
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+
+    const [availableAutomations, setAvailableAutomations] = useState<any[]>([]);
+    const [selectedAutomationId, setSelectedAutomationId] = useState<string>('none');
+    const { session } = useSession();
 
     const wabaId = useMemo(() => {
         return connections.find(c => c.id === selectedConnectionId)?.wabaId;
@@ -200,8 +206,19 @@ export function CreateWhatsappCampaignDialog({
                     notify.error('Erro', error.message);
                     setAvailableLists([]);
                 });
+                
+            if (session?.empresaId) {
+                listFlows(session.empresaId)
+                    .then(flows => {
+                        const filtered = (flows || []).filter(f => f.isActive);
+                        setAvailableAutomations(filtered);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar automações:', error);
+                    });
+            }
         }
-    }, [isOpen, notify]);
+    }, [isOpen, notify, session?.empresaId]);
     
     useEffect(() => {
         if(connections.length > 0 && !selectedConnectionId) {
@@ -267,6 +284,7 @@ export function CreateWhatsappCampaignDialog({
         setSelectedMedia(null);
         setMediaHandleId(null);
         setDelayOption('normal');
+        setSelectedAutomationId('none');
     }, [connections]);
 
     const handleOpenChangeWithReset = (open: boolean) => {
@@ -332,6 +350,7 @@ export function CreateWhatsappCampaignDialog({
                 maxDelaySeconds: selectedDelay?.max || 0,
                 mediaAssetId: selectedMedia?.id || undefined,
                 mediaHandleId: mediaHandleId || undefined,
+                automationFlowId: selectedAutomationId !== 'none' ? selectedAutomationId : undefined,
             };
 
             const response = await fetch('/api/v1/campaigns/whatsapp', {
@@ -411,6 +430,17 @@ export function CreateWhatsappCampaignDialog({
                                 <SelectTrigger disabled={!wabaId} className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30 disabled:opacity-50"><SelectValue placeholder="Selecione um modelo"/></SelectTrigger>
                                 <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">{availableTemplates.map(t => <SelectItem key={t.id} value={t.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{t.name}</SelectItem>)}</SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="automation-select" className="text-zinc-700 dark:text-zinc-300">Automação Associada (Opcional)</Label>
+                            <Select value={selectedAutomationId} onValueChange={setSelectedAutomationId}>
+                                <SelectTrigger className="bg-white dark:bg-white/[0.03] border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white focus:ring-emerald-500/30"><SelectValue placeholder="Selecione uma automação para iniciar após o envio"/></SelectTrigger>
+                                <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white">
+                                    <SelectItem value="none" className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">Nenhuma (Apenas Envio)</SelectItem>
+                                    {availableAutomations.map(a => <SelectItem key={a.id} value={a.id} className="focus:bg-emerald-500/10 focus:text-emerald-400 cursor-pointer">{a.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-[11px] text-zinc-500 mt-1">O contato entrará neste fluxo caso responda a mensagem ou de acordo com as regras da automação.</p>
                         </div>
                     </div>
                 )

@@ -5,7 +5,7 @@ import { NodePropsV4 } from './types';
 import { Position } from '@xyflow/react';
 import {
     Zap, MessageSquare, Globe, CreditCard, ShoppingBag,
-    UserPlus, Tag, Terminal, Clock,
+    UserPlus, Tag, Terminal, Clock, Send,
 } from 'lucide-react';
 import { BaseNode, type NodeColorKey } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
@@ -24,6 +24,8 @@ const TRIGGER_MAP: Record<string, {
     webhook_sale:     { icon: ShoppingBag,   label: 'Venda Realizada',       color: 'violet', badge: 'Sale'     },
     contact_created:  { icon: UserPlus,      label: 'Novo Contato',          color: 'cyan',   badge: 'CRM'      },
     contact_tag_added:{ icon: Tag,           label: 'Tag Adicionada',        color: 'amber',  badge: 'CRM'      },
+    lead_assigned:    { icon: UserPlus,      label: 'Lead Atribuído',        color: 'cyan',   badge: 'CRM'      },
+    campaign_dispatched:{ icon: Send,        label: 'Disparo de Campanha',   color: 'emerald',badge: 'Campaign' },
     manual:           { icon: Terminal,      label: 'Ativação Manual (API)', color: 'zinc',   badge: 'API'      },
     schedule:         { icon: Clock,         label: 'Agendamento',           color: 'rose',   badge: 'Cron'     },
 };
@@ -64,13 +66,26 @@ export const TriggerNodeV4 = memo(({ data, selected }: NodePropsV4) => {
     );
 
     const footer = (
-        <div className="flex justify-center py-3 relative">
-            <span className="text-[9px] text-zinc-400 font-semibold tracking-widest uppercase">Início do Fluxo</span>
-            <NodeHandle
-                type="source"
-                position={Position.Bottom}
-                accentColor={cfg.color}
-            />
+        <div className={`flex justify-center py-3 relative ${triggerType === 'campaign_dispatched' ? 'w-full h-10 border-t border-zinc-100 dark:border-zinc-800/80 mt-2' : ''}`}>
+            {triggerType === 'campaign_dispatched' ? (
+                <>
+                    <div className="absolute inset-0 flex justify-around items-center pt-2 w-full">
+                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold tracking-widest uppercase">Respondeu</span>
+                        <span className="text-[9px] text-orange-500 font-semibold tracking-widest uppercase">Timeout</span>
+                    </div>
+                    <NodeHandle type="source" position={Position.Bottom} id="respondeu" semantic colIndex={0} colTotal={2} />
+                    <NodeHandle type="source" position={Position.Bottom} id="timeout" semantic colIndex={1} colTotal={2} />
+                </>
+            ) : (
+                <>
+                    <span className="text-[9px] text-zinc-400 font-semibold tracking-widest uppercase mt-1">Início do Fluxo</span>
+                    <NodeHandle
+                        type="source"
+                        position={Position.Bottom}
+                        accentColor={cfg.color}
+                    />
+                </>
+            )}
         </div>
     );
 

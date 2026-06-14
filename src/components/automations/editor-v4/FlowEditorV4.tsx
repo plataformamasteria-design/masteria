@@ -39,6 +39,7 @@ import { SendTemplateNodeV4 } from './nodes/SendTemplateNodeV4';
 import { ConditionNodeV4 } from './nodes/ConditionNodeV4';
 import { DelayNodeV4 } from './nodes/DelayNodeV4';
 import { WaitResponseNodeV4 } from './nodes/WaitResponseNodeV4';
+import { CampaignWaitResponseNodeV4 } from './nodes/CampaignWaitResponseNodeV4';
 import { RouterNodeV4 } from './nodes/RouterNodeV4';
 import { FilterNodeV4 } from './nodes/FilterNodeV4';
 import { InteractiveMessageNodeV4 } from './nodes/InteractiveMessageNodeV4';
@@ -99,6 +100,7 @@ const NODE_TYPES: NodeTypes = {
     condition:        ConditionNodeV4,
     delay:            DelayNodeV4,
     wait_response:    WaitResponseNodeV4,
+    campaign_wait_response: CampaignWaitResponseNodeV4,
     router:           RouterNodeV4,
     filter:           FilterNodeV4,
     ai_agent:         AiAgentNodeV4,
