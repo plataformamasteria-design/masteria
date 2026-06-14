@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from './db';
-import { automationFlows, automationFlowExecutions, automationExecutionLogs, contacts, connections, messages, conversations, messageTemplates, mediaAssets, kanbanBoards, kanbanLeads, contactsToTags, tags, agentMediaLibrary } from './db/schema';
+import { automationFlows, automationFlowExecutions, automationExecutionLogs, contacts, connections, messages, conversations, messageTemplates, mediaAssets, kanbanBoards, kanbanLeads, contactsToTags, tags, agentMediaLibrary, tasks } from './db/schema';
 import { eq, and, or, desc, sql, isNull, inArray } from 'drizzle-orm';
 import { sendUnifiedMessage } from '@/services/unified-message-sender.service';
 import { sendWhatsappTemplateMessage, sendWhatsappTextMessage } from '@/lib/facebookApiService';
@@ -193,6 +193,10 @@ function resolveNextNodes(step: FlowStep, sourceHandleId?: string): string[] {
         else if (sourceHandleId === 'default') normalizedHandleIds.push('fallback');
         else if (sourceHandleId.startsWith('route-')) normalizedHandleIds.push(sourceHandleId.replace('-', '_'));
         else if (sourceHandleId.startsWith('route_')) normalizedHandleIds.push(sourceHandleId.replace('_', '-'));
+        
+        // Handle UI vs Engine discrepancies for filter node
+        if (sourceHandleId === 'block') normalizedHandleIds.push('fail');
+        else if (sourceHandleId === 'fail') normalizedHandleIds.push('block');
 
         const conns = step.connections?.filter(c => normalizedHandleIds.includes(c.sourceHandle as string));
         if (conns && conns.length > 0) return conns.map(c => c.target);
@@ -218,6 +222,10 @@ function resolveMultipleHandles(step: FlowStep, handleIds: string[]): string[] {
         else if (sourceHandleId === 'default') normalizedHandleIds.push('fallback');
         else if (sourceHandleId.startsWith('route-')) normalizedHandleIds.push(sourceHandleId.replace('-', '_'));
         else if (sourceHandleId.startsWith('route_')) normalizedHandleIds.push(sourceHandleId.replace('_', '-'));
+        
+        // Handle UI vs Engine discrepancies for filter node
+        if (sourceHandleId === 'block') normalizedHandleIds.push('fail');
+        else if (sourceHandleId === 'fail') normalizedHandleIds.push('block');
 
         const conn = step.connections?.find(c => normalizedHandleIds.includes(c.sourceHandle as string));
         if (conn) targets.push(conn.target);
@@ -3975,6 +3983,55 @@ REGRAS RÍGIDAS:
             ctx.contactNotes = updatedNotes;
 
             return { message: `Nota salva: ${noteText.slice(0, 50)} ` };
+        }
+
+        // ---- Internal Message ----
+        case 'internal_message': {
+            const msgContent = await interpolateTemplate(step.data.message || step.data.note || '', ctx);
+            if (!msgContent.trim()) {
+                return { message: 'Mensagem interna vazia, ignorada' };
+            }
+            
+            // Need a conversationId to insert internal message
+            if (ctx.executionId && ctx.contactId) {
+                const activeConv = await db.query.conversations.findFirst({
+                    where: and(
+                        eq(conversations.contactId, ctx.contactId),
+                        eq(conversations.companyId, ctx.companyId),
+                    ),
+                    orderBy: desc(conversations.lastMessageAt),
+                });
+                
+                if (activeConv) {
+                    await db.insert(messages).values({
+                        companyId: ctx.companyId,
+                        conversationId: activeConv.id,
+                        senderType: 'system',
+                        content: msgContent,
+                        contentType: 'INTERNAL',
+                        status: 'sent',
+                    });
+                    return { message: `Internal message sent: ${msgContent.slice(0, 30)}...` };
+                }
+            }
+            return { message: 'Mensagem interna falhou: sem conversação ativa' };
+        }
+
+        // ---- Add Task ----
+        case 'add_task': {
+            const taskText = await interpolateTemplate(step.data.task_text || step.data.text || '', ctx);
+            if (!taskText.trim()) {
+                return { message: 'Tarefa vazia, ignorada' };
+            }
+            
+            await db.insert(tasks).values({
+                companyId: ctx.companyId,
+                title: taskText,
+                description: 'Tarefa criada automaticamente pela Automação',
+                contactId: ctx.contactId,
+                priority: 'Média',
+            });
+            return { message: `Task created: ${taskText.slice(0, 30)}...` };
         }
 
         default:
