@@ -323,7 +323,8 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
               }
               return 'application/octet-stream';
           };
-          const mediaBase64 = finalBuffer ? `data:${getMimeType(mediaType, mediaUrl)};base64,${finalBuffer.toString('base64')}` : mediaUrl!;
+          // Evolution API requires strict base64 WITHOUT the 'data:mimetype;base64,' prefix
+          const mediaBase64 = finalBuffer ? finalBuffer.toString('base64') : mediaUrl!;
 
           // Derivar nome real do arquivo da URL (sem query string)
           const rawFileName = (mediaUrl || '').split('?')[0].split('/').pop() || '';
@@ -335,7 +336,8 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
              mediaType,
              mediaBase64,
              message || '',
-             resolvedFileName
+             resolvedFileName,
+             getMimeType(mediaType, mediaUrl)
           );
 
           if (!result?.key?.id) {
