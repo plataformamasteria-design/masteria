@@ -215,6 +215,9 @@ export function UnifiedConnectionCard({
                  <DropdownMenuItem onClick={() => onReconnectBaileys && onReconnectBaileys(item.id, item.name)} className="hover:bg-zinc-100 dark:hover:bg-white/5 cursor-pointer">
                     <Power className="mr-2 h-4 w-4 text-emerald-400" /> Conectar / Atualizar
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSyncWebhook && onSyncWebhook(item.id)} className="hover:bg-zinc-100 dark:hover:bg-white/5 cursor-pointer">
+                  <RefreshCw className="mr-2 h-4 w-4 text-blue-400" /> Sincronizar Webhook
+                </DropdownMenuItem>
                 {item.status !== 'disconnected' && item.status !== 'error' && (
                   <DropdownMenuItem onClick={() => onDisconnectBaileys && onDisconnectBaileys(item.id)} className="hover:bg-zinc-100 dark:hover:bg-white/5 cursor-pointer">
                     <Unplug className="mr-2 h-4 w-4 text-amber-500" /> Desconectar Sessão

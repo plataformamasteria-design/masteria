@@ -3,7 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { conversations, messages, contacts, templates, connections, messageReactions } from '@/lib/db/schema';
-import { eq, and, desc, inArray, lt, or } from 'drizzle-orm';
+import { eq, and, desc, inArray, lt, or, isNull } from 'drizzle-orm';
 import { getCompanyIdFromSession, getUserIdFromSession } from '@/app/actions';
 import { requireAuthWithUserOr401 } from '@/lib/api-auth-helper';
 import { sendWhatsappTemplateMessage, sendWhatsappTextMessage } from '@/lib/facebookApiService';
@@ -115,7 +115,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         const connectionIdFilter = searchParams.get('connectionId');
         if (connectionIdFilter) {
-            conditions.push(eq(messages.connectionId, connectionIdFilter));
+            // ✅ FIX: Incluir mensagens com connectionId NULL (IA, Sistema, Automações)
+            // Essas mensagens pertencem à conversa mas são geradas internamente sem connectionId
+            conditions.push(
+                or(
+                    eq(messages.connectionId, connectionIdFilter),
+                    isNull(messages.connectionId)
+                )!
+            );
         }
 
         // Removido o filtro estrito de connectionId para permitir que o frontend 

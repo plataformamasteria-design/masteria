@@ -31,8 +31,8 @@ interface SendResult {
 }
 
 export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<SendResult> {
-  const { connectionId, to, message, templateId, templateName: providedTemplateName, templateParams: _templateParams, mediaUrl, mediaType, isVoice } = options;
-  let { mediaBuffer } = options;
+  const { connectionId, to, message, templateId, templateName: providedTemplateName, templateParams: _templateParams, mediaType, isVoice } = options;
+  let { mediaUrl, mediaBuffer } = options;
 
   // Normalize provider: ensure it's exactly 'apicloud' or 'evolution'
   let provider = options.provider;
@@ -59,11 +59,18 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
     // ✅ FIX: Universal Media Fetcher
     // Download media if a URL is provided and buffer is absent.
     // Solves Meta API 503 errors with private S3/Supabase buckets.
-    // We avoid fetching huge buffers for Evolution API unless it's audio (which needs conversion).
-    const needsBuffer = provider === 'apicloud' || mediaType === 'audio';
+    // We avoid fetching huge buffers for Evolution API unless it's audio (which needs conversion)
+    // OR if the file is stored in our own backend (localhost or api/storage), as external APIs might not reach it.
+    const needsBuffer = provider === 'apicloud' || mediaType === 'audio' || (mediaUrl && (mediaUrl.includes('localhost') || mediaUrl.includes('api/storage')));
 
     if (mediaUrl && mediaUrl.startsWith('http') && !mediaBuffer && mediaType && needsBuffer) {
       try {
+          // ✅ FIX: Se o arquivo foi feito upload em localhost (ex: dev) mas agora roda em prod,
+          // o fetch interno deve apontar para o app real ou usar o domínio configurado.
+          if (mediaUrl.includes('localhost') && process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+              mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_APP_URL);
+          }
+
           console.log(`[UNIFIED-SENDER] 📥 Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
           const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
           if (resp.ok) {

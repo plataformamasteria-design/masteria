@@ -22,6 +22,46 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Payload inválido' }, { status: 400 });
         }
 
+        if (eventType === 'connection.update' || eventType === 'connection_update') {
+            const state = rawData.state; // 'open', 'connecting', 'close'
+            const connection = await db.query.connections.findFirst({
+                where: eq(connections.id, instanceName)
+            });
+            
+            if (connection) {
+                let runtimeStatus = 'disconnected';
+                let dbStatus = 'Falha na Conexão';
+                
+                if (state === 'open') {
+                    runtimeStatus = 'connected';
+                    dbStatus = 'Conectado';
+                } else if (state === 'connecting') {
+                    runtimeStatus = 'connecting';
+                    dbStatus = 'Não Verificado';
+                } else if (state === 'close') {
+                    runtimeStatus = 'disconnected';
+                    dbStatus = 'Falha na Conexão';
+                }
+
+                // Atualizar no banco
+                await db.update(connections)
+                    .set({ connectionStatus: dbStatus })
+                    .where(eq(connections.id, instanceName));
+
+                // Emitir WebSocket
+                try {
+                    emitToCompany(connection.companyId, 'whatsapp:session:status', {
+                        sessionId: instanceName,
+                        status: runtimeStatus,
+                        timestamp: new Date().toISOString()
+                    });
+                } catch(e) {
+                    console.error('[EVOLUTION-WEBHOOK] Erro ao emitir status de conexao', e);
+                }
+            }
+            return NextResponse.json({ success: true, event: eventType, state });
+        }
+
         if (eventType !== 'messages.upsert' && eventType !== 'messages_upsert') {
             return NextResponse.json({ success: true, ignored: true, reason: 'Event not supported' });
         }

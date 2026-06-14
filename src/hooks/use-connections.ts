@@ -329,7 +329,7 @@ export function useConnections() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Falha desconhecida ao configurar o webhook.');
 
-            notify.success('Webhook Sincronizado!', 'A configuração do webhook foi enviada para a Meta com sucesso.');
+            notify.success('Webhook Sincronizado!', data.message || 'A configuração do webhook foi sincronizada com sucesso.');
             await checkWebhookStatus(connectionId);
         } catch (error) {
             notify.error('Erro na Sincronização', (error as Error).message);

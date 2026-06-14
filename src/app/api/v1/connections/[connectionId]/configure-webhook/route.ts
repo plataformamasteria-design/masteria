@@ -52,6 +52,39 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json({ error: 'Configuração da empresa incompleta (slug do webhook ausente).' }, { status: 500 });
         }
 
+        // =================================================================
+        // BRANCH EVOLUTION API / BAILEYS
+        // =================================================================
+        if (connection.connectionType === 'evolution' || connection.connectionType === 'baileys') {
+            let baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+            if (!baseUrl) {
+                const protocol = request.headers.get('x-forwarded-proto') || 'https';
+                const host = request.headers.get('host');
+                baseUrl = `${protocol}://${host}`;
+            }
+
+            if (!baseUrl.startsWith('https://') && !baseUrl.includes('localhost')) {
+                baseUrl = baseUrl.replace('http://', 'https://');
+            }
+
+            const webhookUrl = `${baseUrl}/api/v1/webhooks/evolution`;
+            
+            try {
+                const { evolutionApiService } = require('@/services/evolution-api.service');
+                await evolutionApiService.setWebhook(connection.id, webhookUrl);
+                return NextResponse.json({ 
+                    success: true, 
+                    message: `Webhook (Evolution API) atualizado com sucesso! Domínio atual: ${webhookUrl}`,
+                    webhookUrl
+                });
+            } catch (err: any) {
+                return NextResponse.json({ error: `Falha ao configurar webhook Evolution: ${err.message}` }, { status: 500 });
+            }
+        }
+
+        // =================================================================
+        // BRANCH META API
+        // =================================================================
         // 2. Desencriptar as credenciais
         const appId = connection.appId;
         if (!connection.appSecret) {

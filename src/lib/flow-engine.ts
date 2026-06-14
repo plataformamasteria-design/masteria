@@ -2511,6 +2511,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                             await db.insert(messages).values({
                                                 companyId: ctx.companyId,
                                                 conversationId: aiConversation.id,
+                                                connectionId: aiConnectionId || null,
                                                 senderType: 'AI',
                                                 content: `[Arquivo enviado: ${attachedFile.fileName}]`,
                                                 contentType: attachedFile.fileType?.toUpperCase() || 'DOCUMENT',
@@ -2778,6 +2779,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 await db.insert(messages).values({
                                     companyId: ctx.companyId,
                                     conversationId: aiConversation.id,
+                                    connectionId: aiConnectionId || null,
                                     providerMessageId: sendResult.messageId || null,
                                     senderType: 'AI',
                                     // 🔧 BUG FIX: Nunca persistir tokens no content — causava contaminação no histórico
@@ -3027,6 +3029,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         await db.insert(messages).values({
                             companyId: ctx.companyId,
                             conversationId: aiConversation.id,
+                            connectionId: aiConnectionId || null,
                             providerMessageId: sendResult.messageId || null,
                             senderType: 'AI',
                             content: parts[i],
