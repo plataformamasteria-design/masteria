@@ -58,8 +58,11 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
 
     // ✅ FIX: Universal Media Fetcher
     // Download media if a URL is provided and buffer is absent.
-    // Solves Meta API 503 errors with private S3/Supabase buckets and makes Evolution API robust.
-    if (mediaUrl && mediaUrl.startsWith('http') && !mediaBuffer && mediaType) {
+    // Solves Meta API 503 errors with private S3/Supabase buckets.
+    // We avoid fetching huge buffers for Evolution API unless it's audio (which needs conversion).
+    const needsBuffer = provider === 'apicloud' || mediaType === 'audio';
+
+    if (mediaUrl && mediaUrl.startsWith('http') && !mediaBuffer && mediaType && needsBuffer) {
       try {
           console.log(`[UNIFIED-SENDER] 📥 Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
           const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
