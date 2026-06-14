@@ -221,9 +221,14 @@ export async function POST(req: NextRequest) {
                     console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar para ${phone}`);
                 }
 
+                let safePushName = pushName;
+                if (connection.config_name && pushName.trim().toLowerCase() === connection.config_name.trim().toLowerCase()) {
+                    safePushName = 'Contato';
+                }
+
                 const canonicalPhone = canonicalizeBrazilPhone(phone);
-                const actualName = fromMe ? canonicalPhone : (pushName !== 'Contato' ? pushName : canonicalPhone);
-                const actualWhatsappName = fromMe ? null : (pushName !== 'Contato' ? pushName : null);
+                const actualName = fromMe ? canonicalPhone : (safePushName !== 'Contato' ? safePushName : canonicalPhone);
+                const actualWhatsappName = fromMe ? null : (safePushName !== 'Contato' ? safePushName : null);
 
                 [contact] = await tx.insert(contacts).values({
                     companyId,
@@ -246,13 +251,18 @@ export async function POST(req: NextRequest) {
                     updatePayload.phone = phone;
                 }
 
-                if (!fromMe && pushName && pushName !== 'Contato') {
-                    if (!contact.whatsappName || contact.whatsappName !== pushName) {
-                        updatePayload.whatsappName = pushName;
+                let safePushName = pushName;
+                if (connection.config_name && pushName.trim().toLowerCase() === connection.config_name.trim().toLowerCase()) {
+                    safePushName = 'Contato';
+                }
+
+                if (!fromMe && safePushName && safePushName !== 'Contato') {
+                    if (!contact.whatsappName || contact.whatsappName !== safePushName) {
+                        updatePayload.whatsappName = safePushName;
                     }
                     const isGenericName = /^[\d\+\-\s\(\)]+$/.test(contact.name);
                     if (isGenericName || contact.name === 'Contato') {
-                        updatePayload.name = pushName;
+                        updatePayload.name = safePushName;
                     }
                 }
 

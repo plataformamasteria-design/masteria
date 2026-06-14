@@ -1147,7 +1147,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 };
                 
                 const timeoutMinutes = parseInt(step.data?.timeout_minutes) || 60;
-                questionVars._resumeAt = Date.now() + (timeoutMinutes * 60 * 1000);
+                questionVars._wait_timeout_at = Date.now() + (timeoutMinutes * 60 * 1000);
+                questionVars._wait_step_id = step.id;
 
                 return { action: 'pause', newVars: questionVars, message: 'Paused waiting for reply to campaign' };
             }
