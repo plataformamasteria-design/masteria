@@ -187,7 +187,14 @@ async function logNodeExecution(
 // Resolve todos os próximos nós baseados no handle de saída
 function resolveNextNodes(step: FlowStep, sourceHandleId?: string): string[] {
     if (sourceHandleId) {
-        const conns = step.connections?.filter(c => c.sourceHandle === sourceHandleId);
+        const normalizedHandleIds = [sourceHandleId];
+        // Handle UI vs Engine discrepancies for router node
+        if (sourceHandleId === 'fallback') normalizedHandleIds.push('default');
+        else if (sourceHandleId === 'default') normalizedHandleIds.push('fallback');
+        else if (sourceHandleId.startsWith('route-')) normalizedHandleIds.push(sourceHandleId.replace('-', '_'));
+        else if (sourceHandleId.startsWith('route_')) normalizedHandleIds.push(sourceHandleId.replace('_', '-'));
+
+        const conns = step.connections?.filter(c => normalizedHandleIds.includes(c.sourceHandle as string));
         if (conns && conns.length > 0) return conns.map(c => c.target);
         return [];
     }
@@ -203,11 +210,16 @@ function resolveNextNodes(step: FlowStep, sourceHandleId?: string): string[] {
     return [];
 }
 
-// Resolve múltiplos handle IDs para múltiplos targets (router, intent)
 function resolveMultipleHandles(step: FlowStep, handleIds: string[]): string[] {
     const targets: string[] = [];
-    for (const handleId of handleIds) {
-        const conn = step.connections?.find(c => c.sourceHandle === handleId);
+    for (const sourceHandleId of handleIds) {
+        const normalizedHandleIds = [sourceHandleId];
+        if (sourceHandleId === 'fallback') normalizedHandleIds.push('default');
+        else if (sourceHandleId === 'default') normalizedHandleIds.push('fallback');
+        else if (sourceHandleId.startsWith('route-')) normalizedHandleIds.push(sourceHandleId.replace('-', '_'));
+        else if (sourceHandleId.startsWith('route_')) normalizedHandleIds.push(sourceHandleId.replace('_', '-'));
+
+        const conn = step.connections?.find(c => normalizedHandleIds.includes(c.sourceHandle as string));
         if (conn) targets.push(conn.target);
     }
     return targets;
