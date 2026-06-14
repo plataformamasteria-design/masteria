@@ -53,23 +53,31 @@ import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 async function DataLoader() {
-  const session = await getUserSession();
-  
-  if (session.error || !session.user?.companyId) {
-    redirect('/login?error=token_invalido');
+  try {
+    const session = await getUserSession();
+    
+    if (session.error || !session.user?.companyId) {
+      redirect('/login?error=token_invalido');
+    }
+
+    const [conversations, templates] = await Promise.all([
+      fetchInitialConversations(),
+      fetchTemplates()
+    ]);
+
+    return (
+      <AtendimentosClient
+        initialConversations={conversations}
+        initialTemplates={templates}
+      />
+    );
+  } catch (error: any) {
+    return <div style={{ padding: 20, color: 'red', wordWrap: 'break-word' }}>
+      <h1>Error in DataLoader</h1>
+      <pre>{error.message}</pre>
+      <pre>{error.stack}</pre>
+    </div>;
   }
-
-  const [conversations, templates] = await Promise.all([
-    fetchInitialConversations(),
-    fetchTemplates()
-  ]);
-
-  return (
-    <AtendimentosClient
-      initialConversations={conversations}
-      initialTemplates={templates}
-    />
-  );
 }
 
 export default function AtendimentosPage() {

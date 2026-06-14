@@ -1,162 +1,129 @@
-import { config } from 'dotenv';
-config({ path: '.env.local' });
+import 'dotenv/config';
+import { db } from '../src/lib/db';
+import { contacts, conversations, messages } from '../src/lib/db/schema';
+import { eq, inArray, and, isNotNull } from 'drizzle-orm';
+import { getPhoneVariations, canonicalizeBrazilPhone } from '../src/lib/utils';
 
-import { db } from '../src/lib/db/index.js';
-import { contacts, conversations, messages, whatsappDeliveryReports, kanbanLeads, contactsToTags } from '../src/lib/db/schema.js';
-import { eq, and, sql, desc, inArray } from 'drizzle-orm';
+async function runDeduplication() {
+  console.log('Iniciando script de desduplicação de contatos...');
 
-/**
- * Script para unificar contatos que foram duplicados devido à adição do 9º dígito.
- * O script varre todos os contatos agrupando por variação de telefone.
- * Mantém o contato que possui a última mensagem ou a conversa mais ativa, e migra os dados dos demais para ele.
- */
+  try {
+    const allContacts = await db.select().from(contacts);
+    console.log(`Encontrados ${allContacts.length} contatos totais no banco de dados.`);
 
-async function deduplicateContacts() {
-    console.log("🔍 Iniciando análise de contatos duplicados...");
-
-    // Pega todos os contatos que possuem números no formato brasileiro celular (com ou sem 9)
-    // Agrupa pelos 8 ultimos digitos (descartando o 9) + DDD
-    const allContacts = await db.select({
-        id: contacts.id,
-        phone: contacts.phone,
-        companyId: contacts.companyId,
-    }).from(contacts);
-
-    const groups = new Map<string, typeof allContacts>();
+    const companyToPhoneGroups: Record<string, Record<string, typeof allContacts>> = {};
 
     for (const contact of allContacts) {
-        if (!contact.phone) continue;
-        
-        let normalized = contact.phone.replace(/\D/g, '');
-        if (normalized.startsWith('55') && normalized.length >= 12) {
-            const ddd = normalized.substring(2, 4);
-            const body = normalized.substring(4);
-            let coreNumber = body;
-            if (body.length === 9 && body.startsWith('9')) {
-                coreNumber = body.substring(1);
-            }
-            
-            const groupKey = `${contact.companyId}-55${ddd}${coreNumber}`;
-            if (!groups.has(groupKey)) {
-                groups.set(groupKey, []);
-            }
-            groups.get(groupKey)!.push(contact);
-        }
+      if (!contact.phone) continue;
+      
+      const canonical = canonicalizeBrazilPhone(contact.phone);
+      if (!canonical) continue;
+
+      if (!companyToPhoneGroups[contact.companyId]) {
+        companyToPhoneGroups[contact.companyId] = {};
+      }
+
+      if (!companyToPhoneGroups[contact.companyId][canonical]) {
+        companyToPhoneGroups[contact.companyId][canonical] = [];
+      }
+
+      companyToPhoneGroups[contact.companyId][canonical].push(contact);
     }
 
     let mergedCount = 0;
+    let deletedCount = 0;
 
-    for (const [key, group] of Array.from(groups.entries())) {
+    for (const [companyId, phoneGroups] of Object.entries(companyToPhoneGroups)) {
+      for (const [canonicalPhone, group] of Object.entries(phoneGroups)) {
         if (group.length > 1) {
-            console.log(`\n⚠️ Encontrada duplicação para chave ${key}: ${group.map(c => c.phone).join(', ')}`);
+          console.log(`\n[Company ${companyId}] Encontrado grupo duplicado para ${canonicalPhone}: ${group.map(c => c.id).join(', ')}`);
+
+          // Determinar o "Master Contact" (preferência para aquele que já possui conexões/mensagens, ou o mais antigo)
+          const sortedGroup = group.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const masterContact = sortedGroup[0];
+          const duplicateContacts = sortedGroup.slice(1);
+          const duplicateIds = duplicateContacts.map(c => c.id);
+
+          console.log(`- Master: ${masterContact.id} (${masterContact.phone})`);
+          console.log(`- Duplicatas a mesclar: ${duplicateIds.join(', ')}`);
+
+          // 1. Encontrar todas as conversas das duplicatas
+          const duplicateConversations = await db.select().from(conversations).where(inArray(conversations.contactId, duplicateIds));
+          
+          if (duplicateConversations.length > 0) {
+            console.log(`  - Encontradas ${duplicateConversations.length} conversas nas duplicatas para reatribuir.`);
             
-            // Decidir qual contato manter. Prioridade: 
-            // 1. Tem conversas com mais mensagens
-            // 2. Foi atualizado mais recentemente
-            
-            const contactScores = await Promise.all(group.map(async (c) => {
-                const convos = await db.select({ id: conversations.id, lastAt: conversations.lastMessageAt })
-                                      .from(conversations)
-                                      .where(eq(conversations.contactId, c.id));
-                const totalConvos = convos.length;
-                let lastActivity = new Date(0);
+            // Para cada conversa duplicada, checar se já existe uma conversa do Master Contact para a mesma connectionId
+            for (const dupConv of duplicateConversations) {
+              const [masterConv] = await db.select().from(conversations).where(and(
+                eq(conversations.contactId, masterContact.id),
+                eq(conversations.connectionId, dupConv.connectionId)
+              ));
+
+              if (masterConv) {
+                // Já existe uma conversa para esta conexão no Master Contact.
+                // Mover todas as mensagens da dupConv para a masterConv
+                const movedMessages = await db.update(messages)
+                  .set({ conversationId: masterConv.id })
+                  .where(eq(messages.conversationId, dupConv.id))
+                  .returning({ id: messages.id });
                 
-                for (const conv of convos) {
-                    if (conv.lastAt && conv.lastAt > lastActivity) {
-                        lastActivity = conv.lastAt;
-                    }
-                }
-                
-                return { contact: c, totalConvos, lastActivity: lastActivity.getTime() };
-            }));
+                console.log(`    - Movidas ${movedMessages.length} mensagens para a conversa master existente ${masterConv.id}`);
 
-            // Ordena decrescente por atividade
-            contactScores.sort((a, b) => b.lastActivity - a.lastActivity || b.totalConvos - a.totalConvos);
-            
-            const keepContact = contactScores[0].contact;
-            const duplicateContacts = contactScores.slice(1).map(c => c.contact);
-
-            console.log(`✅ Mantendo contato: ${keepContact.phone} (ID: ${keepContact.id})`);
-
-            for (const dup of duplicateContacts) {
-                console.log(`🔄 Migrando dados de: ${dup.phone} (ID: ${dup.id}) para ${keepContact.id}`);
-
-                await db.transaction(async (tx) => {
-                    // 1. Migrar conversas
-                    // Atenção: Se ambos tiverem conversa com a mesma conexão, precisamos mesclar as mensagens!
-                    const dupConvos = await tx.select().from(conversations).where(eq(conversations.contactId, dup.id));
-                    
-                    for (const dupConvo of dupConvos) {
-                        if (!dupConvo.connectionId) continue;
-                        
-                        const [existingConvo] = await tx.select().from(conversations).where(and(
-                            eq(conversations.contactId, keepContact.id),
-                            eq(conversations.connectionId, dupConvo.connectionId)
-                        ));
-
-                        if (existingConvo) {
-                            // Mesclar mensagens para a conversa existente
-                            await tx.update(messages)
-                                .set({ conversationId: existingConvo.id })
-                                .where(eq(messages.conversationId, dupConvo.id));
-                                
-                            // Apagar conversa duplicada vazia
-                            await tx.delete(conversations).where(eq(conversations.id, dupConvo.id));
-                            
-                            // Atualizar lastMessageAt se necessário
-                            if (dupConvo.lastMessageAt && (!existingConvo.lastMessageAt || dupConvo.lastMessageAt > existingConvo.lastMessageAt)) {
-                                await tx.update(conversations).set({ lastMessageAt: dupConvo.lastMessageAt }).where(eq(conversations.id, existingConvo.id));
-                            }
-                        } else {
-                            // Apenas reatribuir o contato da conversa
-                            await tx.update(conversations)
-                                .set({ contactId: keepContact.id })
-                                .where(eq(conversations.id, dupConvo.id));
-                        }
-                    }
-
-                    // 2. Migrar relatórios de entrega
-                    await tx.update(whatsappDeliveryReports)
-                        .set({ contactId: keepContact.id })
-                        .where(eq(whatsappDeliveryReports.contactId, dup.id));
-
-                    // 3. Migrar kanban (ignorar duplicados violando restrições únicas)
-                    const dupKanbans = await tx.select().from(kanbanLeads).where(eq(kanbanLeads.contactId, dup.id));
-                    for (const kb of dupKanbans) {
-                        try {
-                            await tx.update(kanbanLeads).set({ contactId: keepContact.id }).where(eq(kanbanLeads.id, kb.id));
-                        } catch (e) {
-                            // Se já existir no kanban, apaga o do contato duplicado
-                            await tx.delete(kanbanLeads).where(eq(kanbanLeads.id, kb.id));
-                        }
-                    }
-
-                    // 4. Migrar tags (ignorar se já existir)
-                    const dupTags = await tx.select().from(contactsToTags).where(eq(contactsToTags.contactId, dup.id));
-                    for (const dt of dupTags) {
-                        try {
-                            await tx.update(contactsToTags).set({ contactId: keepContact.id }).where(and(
-                                eq(contactsToTags.contactId, dup.id),
-                                eq(contactsToTags.tagId, dt.tagId)
-                            ));
-                        } catch (e) {
-                            await tx.delete(contactsToTags).where(and(
-                                eq(contactsToTags.contactId, dup.id),
-                                eq(contactsToTags.tagId, dt.tagId)
-                            ));
-                        }
-                    }
-
-                    // 5. Apagar contato duplicado
-                    await tx.delete(contacts).where(eq(contacts.id, dup.id));
-                });
-                
-                mergedCount++;
+                // Deletar a conversa duplicada
+                await db.delete(conversations).where(eq(conversations.id, dupConv.id));
+              } else {
+                // Não existe conversa master para esta conexão, podemos simplesmente apontar a conversa duplicada para o Master Contact
+                await db.update(conversations)
+                  .set({ contactId: masterContact.id })
+                  .where(eq(conversations.id, dupConv.id));
+                console.log(`    - Conversa ${dupConv.id} reatribuída ao master contact ${masterContact.id}`);
+              }
             }
+          }
+
+          // Atualizar mensagens com contactId = null se houver lógica no banco
+          // Mas na nossa estrutura, messages apontam para conversationId. 
+          
+          // Melhorar informações do Master Contact se faltar algo (ex: avatar, nome)
+          const updatePayload: any = {};
+          if (!masterContact.avatarUrl && duplicateContacts.some(c => c.avatarUrl)) {
+            updatePayload.avatarUrl = duplicateContacts.find(c => c.avatarUrl)!.avatarUrl;
+          }
+          const genericMasterName = /^\d+$/.test(masterContact.name.replace(/\D/g, ''));
+          if (genericMasterName || masterContact.name === 'Contato') {
+            const betterContact = duplicateContacts.find(c => {
+               const isGeneric = /^\d+$/.test(c.name.replace(/\D/g, ''));
+               return !isGeneric && c.name !== 'Contato';
+            });
+            if (betterContact) {
+               updatePayload.name = betterContact.name;
+            }
+          }
+          if (Object.keys(updatePayload).length > 0) {
+              await db.update(contacts).set(updatePayload).where(eq(contacts.id, masterContact.id));
+              console.log(`  - Master contact info atualizado:`, updatePayload);
+          }
+
+          // 2. Apagar os contatos duplicados
+          const deleteResult = await db.delete(contacts).where(inArray(contacts.id, duplicateIds)).returning({ id: contacts.id });
+          console.log(`  - Deletados ${deleteResult.length} contatos duplicados.`);
+
+          mergedCount++;
+          deletedCount += duplicateIds.length;
         }
+      }
     }
 
-    console.log(`\n🎉 Processo concluído! ${mergedCount} contatos duplicados foram mesclados e removidos.`);
+    console.log(`\nDesduplicação concluída!`);
+    console.log(`Grupos mesclados: ${mergedCount}`);
+    console.log(`Contatos deletados: ${deletedCount}`);
+
+  } catch (error) {
+    console.error('Erro ao desduplicar contatos:', error);
+  } finally {
+    process.exit(0);
+  }
 }
 
-deduplicateContacts().catch(console.error).then(() => process.exit(0));
+runDeduplication();

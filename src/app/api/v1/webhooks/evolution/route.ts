@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { connections, conversations, messages, contacts } from '@/lib/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, or, isNull } from 'drizzle-orm';
 import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 import { resumeFlowForContact } from '@/lib/flow-engine';
 import { canonicalizeBrazilPhone, getPhoneVariations } from '@/lib/utils';
@@ -105,7 +105,12 @@ export async function POST(req: NextRequest) {
 
         // Ignorar eventos de background que não devem gerar bolha no chat
         if (messageObj.reactionMessage || messageObj.protocolMessage || messageObj.pollUpdateMessage) {
+            if (fromMe) console.log(`[EVOLUTION-WEBHOOK] Ignorando evento de background fromMe:`, Object.keys(messageObj));
             return NextResponse.json({ success: true, ignored: true, reason: 'Background event (reaction/protocol)' });
+        }
+
+        if (fromMe) {
+            console.log(`[EVOLUTION-WEBHOOK] Outbound (fromMe) message detected to ${phone}. Keys:`, Object.keys(messageObj));
         }
 
         let content = '';
@@ -217,10 +222,13 @@ export async function POST(req: NextRequest) {
                 }
 
                 const canonicalPhone = canonicalizeBrazilPhone(phone);
+                const actualName = fromMe ? canonicalPhone : (pushName !== 'Contato' ? pushName : canonicalPhone);
+                const actualWhatsappName = fromMe ? null : (pushName !== 'Contato' ? pushName : null);
+
                 [contact] = await tx.insert(contacts).values({
                     companyId,
-                    name: pushName,
-                    whatsappName: pushName,
+                    name: actualName,
+                    whatsappName: actualWhatsappName,
                     phone: phone, // Usa o número exato do provedor para evitar falhas no envio
                     avatarUrl,
                     status: 'ACTIVE'
@@ -236,6 +244,16 @@ export async function POST(req: NextRequest) {
                 // Forçar atualização do telefone para o formato exato da Evolution (se for diferente)
                 if (contact.phone !== phone) {
                     updatePayload.phone = phone;
+                }
+
+                if (!fromMe && pushName && pushName !== 'Contato') {
+                    if (!contact.whatsappName || contact.whatsappName !== pushName) {
+                        updatePayload.whatsappName = pushName;
+                    }
+                    const isGenericName = /^[\d\+\-\s\(\)]+$/.test(contact.name);
+                    if (isGenericName || contact.name === 'Contato') {
+                        updatePayload.name = pushName;
+                    }
                 }
 
                 if (!contact.avatarUrl && !contact.profileLastSyncedAt) {
@@ -266,7 +284,10 @@ export async function POST(req: NextRequest) {
             let [conversation] = await tx.select().from(conversations).where(and(
                 eq(conversations.companyId, companyId),
                 eq(conversations.contactId, contact.id),
-                eq(conversations.connectionId, connection.id)
+                or(
+                    eq(conversations.connectionId, connection.id),
+                    isNull(conversations.connectionId)
+                )
             ));
 
             if (!conversation) {
@@ -278,9 +299,20 @@ export async function POST(req: NextRequest) {
                     status: 'NEW',
                 }).returning();
             } else {
-                // Atualiza a conversa existente DESTA conexão
+                // Atualiza a conversa existente
+                const updateData: any = {
+                    status: (conversation.status === 'ARCHIVED' || conversation.status === 'CLOSED') ? 'IN_PROGRESS' : conversation.status,
+                    lastMessageAt: new Date(),
+                    lastMessageSenderType: fromMe ? 'AGENT' : 'CONTACT',
+                };
+                
+                // Se a conversa era órfã, adota ela
+                if (!conversation.connectionId) {
+                    updateData.connectionId = connection.id;
+                }
+
                 [conversation] = await tx.update(conversations)
-                    .set({ lastMessageAt: new Date() })
+                    .set(updateData)
                     .where(eq(conversations.id, conversation.id))
                     .returning();
             }
