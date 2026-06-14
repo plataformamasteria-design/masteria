@@ -2493,14 +2493,19 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
                                         const resolvedType = resolveMediaCategory(attachedFile.fileType, attachedFile.fileName);
                                         
-                                        await sendUnifiedMessage({
+                                        const sendResult = await sendUnifiedMessage({
                                             provider: aiProvider as any,
                                             connectionId: aiConnectionId,
                                             to: ctx.contactPhone || '',
                                             message: '', 
                                             mediaUrl: attachedFile.fileUrl,
                                             mediaType: resolvedType,
+                                            mediaFileName: attachedFile.fileName,
                                         });
+
+                                        if (!sendResult.success) {
+                                            throw new Error(sendResult.error || 'Erro desconhecido ao enviar mídia.');
+                                        }
 
                                         if (aiConversation) {
                                             await db.insert(messages).values({
@@ -2509,6 +2514,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                                 senderType: 'AI',
                                                 content: `[Arquivo enviado: ${attachedFile.fileName}]`,
                                                 contentType: attachedFile.fileType?.toUpperCase() || 'DOCUMENT',
+                                                mediaUrl: attachedFile.fileUrl,
                                                 status: 'SENT',
                                                 sentAt: new Date(),
                                                 isAiGenerated: true,

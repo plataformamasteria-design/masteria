@@ -19,6 +19,7 @@ export interface UnifiedSendOptions {
   mediaUrl?: string;
   mediaBuffer?: Buffer; // ✅ New: Support for direct buffer sending
   mediaType?: 'audio' | 'image' | 'video' | 'document';
+  mediaFileName?: string; // ✅ New: Pass the correct filename for documents
   isVoice?: boolean;
   buttons?: { id: string, title: string }[];
 }
@@ -166,7 +167,7 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
               mediaBuffer: mediaBuffer, // ✅ NEW: Direct upload to Meta
               mimeType: mimeType,        // ✅ NEW: For Meta upload
               caption: message,
-              filename: mediaType === 'document' ? mediaUrl?.split('/').pop() : undefined,
+              filename: options.mediaFileName || (mediaType === 'document' ? mediaUrl?.split('?')[0].split('/').pop() : undefined),
               isVoice: shouldSendAsVoice
             });
             console.log(`[UNIFIED-SENDER] ✅ Media message sent via APICloud to ${to}`, result);
@@ -316,7 +317,7 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
 
           // Derivar nome real do arquivo da URL (sem query string)
           const rawFileName = (mediaUrl || '').split('?')[0].split('/').pop() || '';
-          const resolvedFileName = mediaType === 'document' ? (rawFileName || 'document.pdf') : undefined;
+          const resolvedFileName = options.mediaFileName || (mediaType === 'document' ? (rawFileName || 'document.pdf') : undefined);
 
           const result = await evolutionApiService.sendMedia(
              connection.sessionName || connection.id,
