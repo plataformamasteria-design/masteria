@@ -206,6 +206,7 @@ export async function fetchInitialConversations() {
             isGroup: contacts.isGroup,
             connectionName: connections.config_name,
             connectionType: connections.connectionType,
+            connectionId: conversations.connectionId,
             source: conversations.source,
             assignedTo: conversations.assignedTo,
             teamId: conversations.teamId,

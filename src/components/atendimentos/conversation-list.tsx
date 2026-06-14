@@ -169,6 +169,8 @@ const ConversationListItem = memo(({ conversation, isSelected, onSelect }: { con
            prev.conversation.id === next.conversation.id && 
            prev.conversation.lastMessageAt === next.conversation.lastMessageAt && 
            prev.conversation.lastMessageStatus === next.conversation.lastMessageStatus && 
+           prev.conversation.lastMessage === next.conversation.lastMessage &&
+           prev.conversation.lastMessageSenderType === next.conversation.lastMessageSenderType &&
            prev.conversation.assignedTo === next.conversation.assignedTo &&
            prev.conversation.aiActive === next.conversation.aiActive &&
            prev.conversation.contactAvatar === next.conversation.contactAvatar;

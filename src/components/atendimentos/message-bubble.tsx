@@ -440,7 +440,7 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                             <div className="flex flex-col flex-1 min-w-0">
                                 <span className="font-semibold text-sm truncate">{message.content || 'Documento'}</span>
                                 <span className={cn("text-[10px] uppercase font-bold tracking-wider opacity-70 mt-0.5", isMe ? "text-white/80" : "text-muted-foreground")}>
-                                    AQUIVO
+                                    ARQUIVO
                                 </span>
                             </div>
                         </div>

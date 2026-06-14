@@ -96,10 +96,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             }
         }
 
-        if (!isValidConversation) {
-            return NextResponse.json({ error: 'Conversa não encontrada ou sem permissão.' }, { status: 404 });
-        }
-
         const { searchParams } = new URL(request.url);
 
         const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);

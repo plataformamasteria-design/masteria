@@ -74,7 +74,7 @@ export function MessageInput({
       e.preventDefault();
       if (!isSending && !disabled && messageText.trim()) {
         onSubmit(e as any, isInternalNote);
-        setIsInternalNote(false); // Reset after send
+        setIsInternalNote?.(false); // Reset after send
       }
     }
   };
@@ -83,7 +83,7 @@ export function MessageInput({
     e.preventDefault();
     if (!isSending && !disabled && messageText.trim()) {
       onSubmit(e, isInternalNote);
-      setIsInternalNote(false); // Reset after send
+      setIsInternalNote?.(false); // Reset after send
     }
   };
 

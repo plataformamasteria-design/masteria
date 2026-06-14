@@ -68,7 +68,7 @@ interface ActiveChatProps {
   loadingMessages: boolean;
   templates: Template[];
   onSendMessage: (text: string, isInternalNote?: boolean, overrideConnectionId?: string) => Promise<void>;
-  onSendMedia?: (file: File) => Promise<void>;
+  onSendMedia?: (file: File, caption?: string) => Promise<void>;
   onBack: () => void;
   onToggleAi: (conversationId: string, aiActive: boolean) => Promise<void>;
   onLoadMoreMessages?: () => Promise<void>;

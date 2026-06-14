@@ -85,7 +85,7 @@ export function useInboxController({
             notify.error('Erro', (error as Error).message);
             return [];
         }
-    }, [notify, advancedFilters]);
+    }, [notify, advancedFilters, activeFilter]);
 
     const loadMoreConversations = useCallback(async () => {
         if (isLoadingMoreConversations || !hasMoreConversations) return;
@@ -169,7 +169,27 @@ export function useInboxController({
     }, [notify]);
 
     const handleSelectConversation = useCallback(async (conversationId: string) => {
-        const conversation = conversations.find(c => c.id === conversationId);
+        let conversation = conversations.find(c => c.id === conversationId);
+
+        // Se a conversa não está na lista local (ex: chegou via WebSocket mas ainda não foi inserida),
+        // buscar do servidor antes de desistir.
+        if (!conversation) {
+            try {
+                const freshList = await conversationService.list(0, 50, '', 'all', undefined, true);
+                const freshConvo = freshList.find(c => c.id === conversationId);
+                if (freshConvo) {
+                    conversation = freshConvo;
+                    // Inserir na lista local para evitar buscas repetidas
+                    setConversations(prev => {
+                        if (prev.some(c => c.id === conversationId)) return prev;
+                        return [freshConvo, ...prev];
+                    });
+                }
+            } catch (e) {
+                console.error('[handleSelectConversation] Erro ao buscar conversa do servidor:', e);
+            }
+        }
+
         if (!conversation) return;
 
         setSelectedConversation(conversation);
