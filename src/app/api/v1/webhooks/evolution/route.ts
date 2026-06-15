@@ -208,6 +208,7 @@ export async function POST(req: NextRequest) {
         } | null = null;
 
         // 2. Transação: Criar Contato, Conversa e Mensagem atomicamente
+        let isNewContact = false;
         const txResult = await db.transaction(async (tx) => {
             const phoneVariations = getPhoneVariations(phone);
             
@@ -239,10 +240,8 @@ export async function POST(req: NextRequest) {
                     status: 'ACTIVE'
                 }).returning();
 
-                // 🌟 HISTÓRICO: Registro de chegada
-                import('@/lib/contact-events').then(({ logContactEvent }) => {
-                    logContactEvent(companyId, contact.id, 'SYSTEM', 'Chegada na Plataforma (Novo Contato via WhatsApp)', { source: 'evolution_webhook' });
-                }).catch(err => console.warn('Failed to log contact creation', err));
+                // A flag isNewContact marca para registrar o log APÓS o commit
+                isNewContact = true;
             } else {
                 let updatePayload: any = {};
                 
@@ -364,7 +363,16 @@ export async function POST(req: NextRequest) {
                 contentType: messageType,
                 mediaUrl: null, // Set by background job
                 status: fromMe ? 'SENT' : 'RECEIVED'
-            }).returning();
+            }).onConflictDoNothing({ target: messages.providerMessageId }).returning();
+
+            if (!newMsg) {
+                // If it conflicted, newMsg is undefined
+                console.log(`[EVOLUTION-WEBHOOK] Mensagem duplicada ignorada (providerMessageId: ${messageId})`);
+                return {
+                    ignored: true,
+                    reason: 'Duplicate message id'
+                };
+            }
 
             if (mediaUploadInfo) mediaUploadInfo.messageId = newMsg.id;
 
@@ -373,13 +381,21 @@ export async function POST(req: NextRequest) {
                 messageId: newMsg.id,
                 conversationId: conversation.id,
                 contactId: contact.id,
-                aiActive: conversation.aiActive
+                aiActive: conversation.aiActive,
+                contactPhone: contact.phone
             };
         });
 
         if (txResult.ignored) {
-            console.log(`[EVOLUTION-WEBHOOK] 🛑 Mensagem duplicada ignorada (ID: ${messageId})`);
-            return NextResponse.json({ success: true, message: 'Processado com sucesso (Duplicada ignorada)' }, { status: 200 });
+            console.log(`[EVOLUTION-WEBHOOK] 🛑 Mensagem ignorada (Motivo: ${txResult.reason})`);
+            return NextResponse.json({ success: true, message: txResult.reason }, { status: 200 });
+        }
+
+        // 🌟 HISTÓRICO: Registro de chegada (executado COM SEGURANÇA após o commit da transação)
+        if (isNewContact) {
+            import('@/lib/contact-events').then(({ logContactEvent }) => {
+                logContactEvent(companyId, txResult.contactId, 'SYSTEM', 'Chegada na Plataforma (Novo Contato via WhatsApp)', { source: 'evolution_webhook' });
+            }).catch(err => console.warn('Failed to log contact creation', err));
         }
 
         const savedMessageId = txResult.messageId;
