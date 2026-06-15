@@ -4,7 +4,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { companies, webhookLogs, connections, whatsappDeliveryReports, contacts, conversations, messages, campaigns, messageReactions } from '@/lib/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, desc } from 'drizzle-orm';
 import { getPhoneVariations, canonicalizeBrazilPhone, sanitizePhone } from '@/lib/utils';
 import crypto from 'crypto';
 import { decrypt } from '@/lib/crypto';
@@ -378,21 +378,29 @@ async function processIncomingMessage(
                     eq(conversations.contactId, contact.id),
                     eq(conversations.companyId, companyId)
                 )
-            );
+            ).orderBy(desc(conversations.updatedAt)).limit(1);
 
             if (!conversation) {
                 const [newConversation] = await tx.insert(conversations).values({
                     companyId: companyId,
                     contactId: contact.id,
-                    connectionId: connection.id,
+                    connectionId: connection.id, // Define a conexão inicial (sticky)
+                    status: 'NEW',
                 }).returning();
                 if (newConversation) conversation = newConversation;
             } else {
-                // MULTI-CONEXÃO: atualiza apenas lastMessageAt e status.
-                // NÃO sobrescreve connectionId para preservar a conexão original da conversa.
-                // Mensagens de qualquer conexão (Meta ou não) são salvas na mesma thread do lead.
+                // OMNICHANNEL: Atualiza lastMessageAt, status E adota a conexão mais recente (Sticky Connection)
+                const updateData: any = { 
+                    lastMessageAt: new Date(), 
+                    status: (conversation.status === 'ARCHIVED' || conversation.status === 'CLOSED') ? 'IN_PROGRESS' : conversation.status 
+                };
+                
+                if (conversation.connectionId !== connection.id) {
+                    updateData.connectionId = connection.id;
+                }
+
                 const [updatedConversation] = await tx.update(conversations)
-                    .set({ lastMessageAt: new Date(), status: 'IN_PROGRESS' })
+                    .set(updateData)
                     .where(eq(conversations.id, conversation.id))
                     .returning();
                 if (updatedConversation) conversation = updatedConversation;

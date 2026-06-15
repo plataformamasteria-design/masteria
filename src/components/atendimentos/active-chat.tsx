@@ -262,7 +262,11 @@ export function ActiveChat({
 
   React.useEffect(() => {
     if (scrollAreaRef.current && isInitialLoadRef.current && messages.length > 0 && !loadingMessages) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'auto' });
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'auto' });
+        }
+      }, 50);
       lastMessageIdRef.current = messages[messages.length - 1].id;
       isInitialLoadRef.current = false;
     }
@@ -792,6 +796,7 @@ export function ActiveChat({
            }}
            placeholder={isArchived ? "Esta conversa está arquivada." : (!canSendFreeform && is24hRestricted && !isInternalNote ? "Janela 24h fechada." : "Digite sua mensagem...")}
            onSendMedia={onSendMedia}
+           onPasteImage={(file) => setPreviewFile(file)}
            actionMenuSlot={
               <div className="flex items-center gap-1">
                 {onSendMedia && (

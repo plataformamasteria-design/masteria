@@ -588,16 +588,20 @@ export async function startOutboundConversationAction(contactId: string, kanbanC
         await db.transaction(async (tx) => {
             const [existing] = await tx.select().from(conversations).where(and(
                 eq(conversations.contactId, contact.id),
-                eq(conversations.connectionId, connectionId),
-                not(eq(conversations.status, 'archived'))
-            )).limit(1);
+                eq(conversations.companyId, companyId)
+            )).orderBy(desc(conversations.updatedAt)).limit(1);
             
             if (existing) {
                 savedConvId = existing.id;
-                // Atualiza o assignedTo e o timestamp da conversa desta conexão
-                await tx.update(conversations).set({ assignedTo: userId, lastMessageAt: new Date() }).where(eq(conversations.id, savedConvId));
+                // OMNICHANNEL: Atualiza o assignedTo, lastMessageAt e força a NOVA conexão (Sticky Connection)
+                await tx.update(conversations).set({ 
+                    assignedTo: userId, 
+                    lastMessageAt: new Date(),
+                    connectionId: connectionId,
+                    status: (existing.status === 'ARCHIVED' || existing.status === 'CLOSED') ? 'IN_PROGRESS' : existing.status
+                }).where(eq(conversations.id, savedConvId));
             } else {
-                // Cria nova conversa isolada para esta conexão
+                // Cria nova conversa única (Omnichannel)
                 const [newConv] = await tx.insert(conversations).values({
                     companyId,
                     contactId: contact.id,

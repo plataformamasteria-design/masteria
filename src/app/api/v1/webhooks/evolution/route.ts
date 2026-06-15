@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { connections, conversations, messages, contacts } from '@/lib/db/schema';
-import { eq, and, inArray, or, isNull } from 'drizzle-orm';
+import { eq, and, inArray, or, isNull, desc } from 'drizzle-orm';
 import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 import { resumeFlowForContact } from '@/lib/flow-engine';
 import { canonicalizeBrazilPhone, getPhoneVariations } from '@/lib/utils';
@@ -292,19 +292,15 @@ export async function POST(req: NextRequest) {
 
             let [conversation] = await tx.select().from(conversations).where(and(
                 eq(conversations.companyId, companyId),
-                eq(conversations.contactId, contact.id),
-                or(
-                    eq(conversations.connectionId, connection.id),
-                    isNull(conversations.connectionId)
-                )
-            ));
+                eq(conversations.contactId, contact.id)
+            )).orderBy(desc(conversations.updatedAt)).limit(1);
 
             if (!conversation) {
-                // Primeira mensagem deste contato NESTA CONEXÃO: cria conversa isolada
+                // Primeira mensagem deste contato: cria conversa única (Omnichannel)
                 [conversation] = await tx.insert(conversations).values({
                     companyId,
                     contactId: contact.id,
-                    connectionId: connection.id,
+                    connectionId: connection.id, // Define a conexão inicial (sticky)
                     status: 'NEW',
                 }).returning();
             } else {
@@ -315,11 +311,11 @@ export async function POST(req: NextRequest) {
                     lastMessageSenderType: fromMe ? 'AGENT' : 'CONTACT',
                 };
                 
-                // Se a conversa era órfã, adota ela
-                if (!conversation.connectionId) {
+                // OMNICHANNEL: Sempre adota a conexão mais recente (Sticky Connection)
+                if (conversation.connectionId !== connection.id) {
                     updateData.connectionId = connection.id;
                 }
-
+                
                 [conversation] = await tx.update(conversations)
                     .set(updateData)
                     .where(eq(conversations.id, conversation.id))

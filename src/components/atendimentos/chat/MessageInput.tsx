@@ -24,6 +24,7 @@ interface MessageInputProps {
   isInternalNote?: boolean;
   setIsInternalNote?: (val: boolean) => void;
   isTeamAssignedOnly?: boolean;
+  onPasteImage?: (file: File) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -50,7 +51,8 @@ export function MessageInput({
   onSendMedia,
   isInternalNote = false,
   setIsInternalNote,
-  isTeamAssignedOnly = false
+  isTeamAssignedOnly = false,
+  onPasteImage
 }: MessageInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recorder = useAudioRecorder();
@@ -84,6 +86,23 @@ export function MessageInput({
     if (!isSending && !disabled && messageText.trim()) {
       onSubmit(e, isInternalNote);
       setIsInternalNote?.(false); // Reset after send
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!onPasteImage) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          onPasteImage(file);
+          break; // Only handle the first image
+        }
+      }
     }
   };
 
@@ -196,6 +215,7 @@ export function MessageInput({
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 disabled={isSending || disabled}
                 className="w-full min-h-[46px] max-h-[120px] resize-none border-0 bg-transparent py-3 pl-4 pr-12 text-[14px] leading-relaxed placeholder:text-muted-foreground/50 focus:ring-0 focus-visible:ring-0"
                 rows={1}

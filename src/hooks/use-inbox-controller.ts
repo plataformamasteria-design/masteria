@@ -251,6 +251,10 @@ export function useInboxController({
                     // Após enviar na nova conexão, seleciona a nova conversa imediatamente!
                     handleSelectConversation(result.conversationId);
                     return; // Termina o fluxo porque o switch de conversa vai resetar o estado e puxar do DB
+                } else if (result.success && isCrossConnection) {
+                    // OMNICHANNEL: Atualiza o estado local para refletir a nova conexão "Sticky"
+                    setSelectedConversation(prev => prev ? { ...prev, connectionId: overrideConnectionId } as Conversation : null);
+                    setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, connectionId: overrideConnectionId } as Conversation : c));
                 }
             } else {
                 result = await sendMessageAction(selectedConversation.id, text, isInternalNote);
