@@ -1969,9 +1969,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                         </ConfigSection>
 
                         <ConfigSection label="Salvar Resposta em Variável (Opcional)">
-                            <InputField
+                            <Input
                                 value={d.output_variable || 'copilot_response'}
-                                onChange={v => onChange({ output_variable: v })}
+                                onChange={e => onChange({ output_variable: e.target.value })}
                                 placeholder="copilot_response"
                             />
                             <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">
