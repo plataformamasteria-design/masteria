@@ -1957,11 +1957,11 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 return (
                     <div className="space-y-5">
                         <ConfigSection label="Comando / Prompt">
-                            <TextareaField
+                            <TextFieldWithVars
+                                multiline={true}
                                 value={d.prompt || ''}
                                 onChange={v => onChange({ prompt: v })}
                                 placeholder="Ex: Analise a última mensagem do lead {{message.body}} e crie um resumo."
-                                rows={6}
                             />
                             <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">
                                 Escreva a instrução que o assistente interno deve executar. Ele tem acesso completo às ferramentas do sistema para puxar métricas e modificar o banco.
