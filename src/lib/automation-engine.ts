@@ -2429,14 +2429,14 @@ async function ensureLeadInDefaultFunnel(contact: Contact, companyId: string, lo
                 leadId: newLead.id,
                 contactId: contact.id,
                 boardId: targetBoard.id,
-                stageName: firstStage.title,
+                stageName: entryStage.title,
                 value: 0
             });
         } catch (webhookError) {
             console.error('[Automation] Erro ao disparar webhook lead_created:', webhookError);
         }
 
-        await logAutomation('INFO', `âœ… Lead criado automaticamente no funil "${targetBoard.title}" -> EstÃ¡gio "${firstStage.title}"`, logContext);
+        await logAutomation('INFO', `✅ Lead criado automaticamente no funil "${targetBoard.title}" -> Estágio "${entryStage.title}"`, logContext);
 
     } catch (error: any) {
         await logAutomation('ERROR', `Falha ao criar lead automÃ¡tico: ${error.message} `, logContext);
