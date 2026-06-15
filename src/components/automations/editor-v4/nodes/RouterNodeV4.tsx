@@ -7,13 +7,12 @@ import { BaseNode } from './base/BaseNode';
 import { NodeHandle } from './base/NodeHandle';
 
 export const RouterNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
-    // Normaliza rotas: aceita string[] OU {id, label, condition}[]
-    const rawRoutes: Array<string | { id?: string; label?: string }> = data.routes || [];
-    const routes = rawRoutes.map((item, i) =>
-        typeof item === 'string'
-            ? { id: `route_${i}`, label: item || `Rota ${i + 1}` }
-            : { id: item.id || `route_${i}`, label: item.label || `Rota ${i + 1}` }
-    );
+    // Normaliza rotas lendo de data.rules (que é onde o NodeConfigPanel salva)
+    const rawRoutes: Array<any> = data.rules || [];
+    const routes = rawRoutes.map((item, i) => ({
+        id: `route-${i}`,
+        label: item.outputName || `Rota ${i + 1}`
+    }));
     const hasRoutes = routes.length > 0;
     // +1 para rota Padrão
     const colTotal = hasRoutes ? routes.length + 1 : 1;
@@ -56,7 +55,7 @@ export const RouterNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
             <NodeHandle
                 type="source"
                 position={Position.Bottom}
-                id="default"
+                id="fallback"
                 accentColor="zinc"
                 colIndex={colTotal - 1}
                 colTotal={colTotal}
