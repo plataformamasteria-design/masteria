@@ -111,7 +111,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     // Don't preventDefault if it breaks natural interactions, but needed for custom drag-scroll
     e.preventDefault(); 
     const x = e.clientX;
-    const walk = (x - startX) * 1.5;
+    const walk = (x - startX) * 2; // Velocidade de arraste aumentada para 2
     scrollRef.current.scrollLeft = scrollLeft - walk;
   };
 
@@ -260,7 +260,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
       <div 
         ref={scrollRef}
         onScroll={handleBottomScroll}
-        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden premium-scrollbar ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
