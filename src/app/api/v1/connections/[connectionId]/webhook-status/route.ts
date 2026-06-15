@@ -88,10 +88,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const replitUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/webhooks/meta/${company.webhookSlug}` : null;
         const customUrl = process.env.NEXT_PUBLIC_CUSTOM_DOMAIN ? `https://${process.env.NEXT_PUBLIC_CUSTOM_DOMAIN}/api/webhooks/meta/${company.webhookSlug}` : null;
 
-        // Check if the configured URL matches ANY of our valid domains
-        const isValid = subscription.callback_url === expectedUrl ||
-            (replitUrl && subscription.callback_url === replitUrl) ||
-            (customUrl && subscription.callback_url === customUrl);
+        // Check if the configured URL matches the correct path, regardless of domain (useful for Railway temporary domains)
+        let isValid = false;
+        try {
+            const parsedSubUrl = new URL(subscription.callback_url);
+            isValid = parsedSubUrl.pathname === `/api/webhooks/meta/${company.webhookSlug}`;
+        } catch (e) {
+            isValid = subscription.callback_url === expectedUrl ||
+                (replitUrl && subscription.callback_url === replitUrl) ||
+                (customUrl && subscription.callback_url === customUrl);
+        }
 
         if (!isValid) {
             return NextResponse.json({
