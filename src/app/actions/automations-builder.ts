@@ -143,7 +143,7 @@ export async function getFunnelsForDropdown() {
 export async function getAutomationFlowsForDropdown() {
     const auth = await requireAuthOr401();
     if ('status' in auth) throw new Error("Unauthorized");
-    return db.select({ id: automationFlows.id, name: automationFlows.name }).from(automationFlows).where(eq(automationFlows.companyId, auth.companyId));
+    return db.select({ id: automationFlows.id, name: automationFlows.name, triggerType: automationFlows.triggerType }).from(automationFlows).where(eq(automationFlows.companyId, auth.companyId));
 }
 
 /**

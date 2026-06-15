@@ -679,7 +679,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
         const needsKanbans = ['crm_move', 'trigger', 'filter', 'router'].includes(node.type || '');
         const needsCustomFields = ['filter', 'router'].includes(node.type || '');
         // Nodes that need all connections
-        const needsAllConns = ['message', 'send_message', 'interactive_message', 'marketing', 'send_template', 'ai_agent', 'ai', 'trigger'].includes(node.type || '');
+        const needsAllConns = ['message', 'send_message', 'interactive_message', 'marketing', 'send_template', 'ai_agent', 'ai', 'trigger', 'assign_connection'].includes(node.type || '');
         // Nodes that need users and teams
         const needsUsersTeams = ['assign_user', 'trigger'].includes(node.type || '');
 
@@ -723,7 +723,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
         }
         // Load company tags
         if (needsTags) {
-            fetch('/api/v1/tags')
+            fetch('/api/v1/tags?limit=1000')
                 .then(res => res.json())
                 .then(response => {
                     const data = response.data || response;
@@ -790,6 +790,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                     { value: 'lead_assigned', label: '👤 Lead Atribuído' },
                     { value: 'campaign_dispatched', label: '🚀 Campanha Disparada' },
                     { value: 'schedule', label: '⏰ Agendado' },
+                    { value: 'manual', label: '▶️ Ativação Manual' },
                 ];
 
                 const MATCH_MODE_OPTIONS = [
@@ -1950,6 +1951,38 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
             }
 
             // ==============================
+            // AI COPILOT (Assistente Interno)
+            // ==============================
+            case 'ai_copilot': {
+                return (
+                    <div className="space-y-5">
+                        <ConfigSection label="Comando / Prompt">
+                            <TextareaField
+                                value={d.prompt || ''}
+                                onChange={v => onChange({ prompt: v })}
+                                placeholder="Ex: Analise a última mensagem do lead {{message.body}} e crie um resumo."
+                                rows={6}
+                            />
+                            <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">
+                                Escreva a instrução que o assistente interno deve executar. Ele tem acesso completo às ferramentas do sistema para puxar métricas e modificar o banco.
+                            </p>
+                        </ConfigSection>
+
+                        <ConfigSection label="Salvar Resposta em Variável (Opcional)">
+                            <InputField
+                                value={d.output_variable || 'copilot_response'}
+                                onChange={v => onChange({ output_variable: v })}
+                                placeholder="copilot_response"
+                            />
+                            <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">
+                                O resultado do assistente será armazenado nesta variável para que você possa utilizá-la em blocos seguintes, como "Enviar Mensagem Interna".
+                            </p>
+                        </ConfigSection>
+                    </div>
+                );
+            }
+
+            // ==============================
             // AI AGENT V2
             // ==============================
 
@@ -2747,6 +2780,24 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                         )}
                     </div>
                 );
+            // ---- Assign Connection ----
+            case 'assign_connection': {
+                return (
+                    <div className="space-y-5">
+                        <ConfigSection label="Atribuir a Conexão">
+                            <SelectField
+                                value={d.connection_id || ''}
+                                onChange={(val) => {
+                                    const connName = allConnections.find(c => c.id === val)?.config_name || '';
+                                    onChange({ connection_id: val, connection_name: connName });
+                                }}
+                                options={allConnections.map(c => ({ value: c.id, label: c.config_name || c.name || c.sessionName || c.id }))}
+                                placeholder="Selecione a Conexão..."
+                            />
+                        </ConfigSection>
+                    </div>
+                );
+            }
             // ---- Assign User ----
             case 'assign_user': {
                 const assignType = d.assign_type || 'user';

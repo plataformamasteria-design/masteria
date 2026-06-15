@@ -953,7 +953,8 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
                             if (campaign.automationFlowId) {
                                 await triggerFlow(campaign.automationFlowId, campaign.companyId!, report.contactId, {
                                     source: 'campaign_dispatch',
-                                    campaign_id: campaign.id
+                                    campaign_id: campaign.id,
+                                    connectionId: campaign.connectionId
                                 }).catch(err => console.error('[Campaign] Error triggering flow:', err));
                             }
                         }

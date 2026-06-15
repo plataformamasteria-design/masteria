@@ -13,6 +13,7 @@ import { resolveAIKeys } from './ai-keys-resolver';
 import { logContactEvent } from './contact-events';
 import { logger } from '@/lib/logger';
 import { emitToCompany } from '@/lib/socket';
+import { executeCopilotCommand } from './copilot-engine';
 
 // =====================================================
 // FLOW ENGINE V3 — BFS Graph Traversal + Context
@@ -812,9 +813,18 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
     // ✅ FIX: Previously picked ANY active connection — could return Meta API when
     // the message came via Baileys, causing silent send failures.
     let connection: typeof connections.$inferSelect | undefined = undefined;
-    // ✅ FIX: Declare activeConv in outer scope so it's accessible for context variables below
     let activeConv: Awaited<ReturnType<typeof db.query.conversations.findFirst>> | undefined = undefined;
-    if (execution.contactId) {
+    
+    // ✅ FIX: Prioritize explicitly bound connectionId from execution variables (e.g., from Campaign Dispatch)
+    const boundConnectionId = (execution.variables as any)?.connectionId;
+    if (boundConnectionId) {
+        connection = await db.query.connections.findFirst({
+            where: eq(connections.id, boundConnectionId)
+        }) ?? undefined;
+        logger.debug(`[FLOW-ENGINE] 🔗 Resolved connection from bound execution variables: ${boundConnectionId} (type: ${connection?.connectionType})`);
+    }
+
+    if (!connection && execution.contactId) {
         activeConv = await db.query.conversations.findFirst({
             where: and(
                 eq(conversations.contactId, execution.contactId),
@@ -950,7 +960,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
                     .where(eq(automationFlowExecutions.id, executionId));
                 
                 // Strictly look for timeout or not_responded handles, avoiding fallback
-                const timeoutConn = step.connections?.find(c => c.sourceHandle === 'timeout' || c.sourceHandle === 'not_responded');
+                const timeoutConn = step.connections?.find(c => c.sourceHandle === 'timeout' || c.sourceHandle === 'not_responded' || c.sourceHandle === 'no_response');
                 const timeoutNextId = timeoutConn ? timeoutConn.target : undefined;
                 
                 if (timeoutNextId && !visited.has(timeoutNextId)) queue.push(timeoutNextId);
@@ -1155,8 +1165,144 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             return { message: 'Trigger activated' };
         }
 
+        // ---- Interactive Message (Buttons) ----
+        case 'interactive_message': {
+            if (isResuming && ctx.variables.last_response && ctx.variables._wait_step_id === step.id) {
+                const answer = String(ctx.variables.last_response).trim();
+                delete ctx.variables._wait_step_id;
+                delete ctx.variables._wait_timeout_at;
+                
+                let buttons = [];
+                if (step.data.buttons && Array.isArray(step.data.buttons)) {
+                    buttons = step.data.buttons.map((b: any, i: number) => ({
+                        id: typeof b === 'string' ? `btn_${i}` : (b.id || `btn_${i}`),
+                        title: typeof b === 'string' ? b : (b.text || b.label || `Opção ${i+1}`)
+                    }));
+                }
+
+                let sourceHandle = 'other_response';
+                for (const btn of buttons) {
+                    if (btn.title.toLowerCase().trim() === answer.toLowerCase() ||
+                        btn.id.toLowerCase() === answer.toLowerCase()) {
+                        sourceHandle = btn.id;
+                        break;
+                    }
+                }
+
+                return {
+                    action: 'continue',
+                    sourceHandle,
+                    message: `User clicked/replied: ${answer}`
+                };
+            }
+
+            const text = await interpolateTemplate(step.data.message || step.data.content || step.data.text || '', ctx);
+            const overrideConnectionId = step.data.connection_id || ctx.connectionId;
+            
+            let buttons;
+            if (step.data.buttons && Array.isArray(step.data.buttons)) {
+                buttons = step.data.buttons.map((b: any, i: number) => ({
+                    id: typeof b === 'string' ? `btn_${i}` : (b.id || `btn_${i}`),
+                    title: typeof b === 'string' ? b : (b.text || b.label || `Opção ${i+1}`),
+                    type: typeof b === 'object' && b.type ? b.type : 'reply',
+                    url: typeof b === 'object' && b.url ? b.url : undefined
+                }));
+            }
+
+            const sendResult = await sendUnifiedMessage({
+                provider: ctx.provider as any,
+                connectionId: overrideConnectionId,
+                to: ctx.contactPhone || ctx.contactId,
+                message: text,
+                buttons
+            });
+
+            if (!sendResult.success) {
+                return {
+                    action: 'continue',
+                    sourceHandle: 'error',
+                    message: `Falha ao enviar mensagem: ${sendResult.error}`
+                };
+            }
+            
+            if (ctx.contactId) {
+                try {
+                    const { eq, and, desc } = await import('drizzle-orm');
+                    let activeConv = await db.query.conversations.findFirst({
+                        where: and(eq(conversations.contactId, ctx.contactId), eq(conversations.companyId, ctx.companyId)),
+                        orderBy: desc(conversations.lastMessageAt)
+                    });
+                    
+                    if (!activeConv && overrideConnectionId) {
+                        const [newConv] = await db.insert(conversations).values({
+                            companyId: ctx.companyId,
+                            contactId: ctx.contactId,
+                            connectionId: overrideConnectionId,
+                            status: 'IN_PROGRESS',
+                        }).returning();
+                        activeConv = newConv;
+                    }
+                    
+                    if (activeConv) {
+                        const [savedMessage] = await db.insert(messages).values({
+                            companyId: ctx.companyId,
+                            conversationId: activeConv.id,
+                            connectionId: overrideConnectionId || activeConv.connectionId,
+                            senderType: 'AI',
+                            senderId: 'automation_node',
+                            content: text,
+                            contentType: 'TEXT',
+                            providerMessageId: sendResult.messageId || `auto-${Date.now()}`,
+                            status: sendResult.success ? 'SENT' : 'FAILED',
+                        }).returning();
+
+                        if (savedMessage) {
+                            emitToCompany(ctx.companyId, 'chat:new-message', {
+                                conversationId: activeConv.id,
+                                messageId: savedMessage.id,
+                                connectionId: overrideConnectionId || activeConv.connectionId,
+                                contactPhone: ctx.contactPhone || '',
+                                contactName: ctx.contactName || '',
+                                content: savedMessage.content,
+                                contentType: savedMessage.contentType,
+                                mediaUrl: savedMessage.mediaUrl,
+                                isFromMe: true,
+                                senderType: 'AGENT',
+                                timestamp: new Date().toISOString(),
+                            });
+                            emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                        }
+                    }
+                } catch (saveErr: any) {
+                    console.error('[FLOW-ENGINE] Failed to save interactive_message:', saveErr.message);
+                }
+                
+                try {
+                    await logContactEvent(ctx.companyId, ctx.contactId, 'AUTOMATION', `Mensagem interativa enviada via automação:\n"${text}"`);
+                } catch (e) {}
+            }
+
+            const timeoutAmount = parseInt(step.data.timeout_amount || '60');
+            const timeoutUnit = step.data.timeout_unit || 'minutes';
+            const multipliers: Record<string, number> = {
+                seconds: 1000,
+                minutes: 60 * 1000,
+                hours: 60 * 60 * 1000,
+                days: 24 * 60 * 60 * 1000,
+            };
+            const timeoutMs = timeoutAmount * (multipliers[timeoutUnit] || 60000);
+
+            return {
+                action: 'pause',
+                newVars: {
+                    _wait_step_id: step.id,
+                    _wait_timeout_at: Date.now() + timeoutMs,
+                },
+                message: `Sent interactive message: ${text.slice(0, 50)}. Paused for reply.`
+            };
+        }
+
         // ---- Messages ----
-        case 'interactive_message':
         case 'send_message':
         case 'message': {
             const text = await interpolateTemplate(step.data.message || step.data.content || step.data.text || '', ctx);
@@ -1914,6 +2060,42 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             return { message: `CRM: moved to ${stageName || '(none)'}` };
         }
 
+        // ---- Assign Connection ----
+        case 'assign_connection': {
+            if (!ctx.contactId) return { message: 'Assign Connection: no contact to assign' };
+
+            const connectionId = step.data.connection_id;
+            if (!connectionId) return { message: 'Assign Connection: no connection selected' };
+
+            try {
+                // Ensure the contact has at least one conversation to hold the assignment
+                let conv = await db.query.conversations.findFirst({
+                    where: and(eq(conversations.contactId, ctx.contactId), eq(conversations.companyId, ctx.companyId))
+                });
+
+                if (!conv) {
+                    const [inserted] = await db.insert(conversations).values({
+                        companyId: ctx.companyId,
+                        contactId: ctx.contactId,
+                        status: 'NEW',
+                        connectionId: connectionId,
+                        aiActive: false
+                    }).returning();
+                    conv = inserted;
+                } else {
+                    await db.update(conversations)
+                        .set({ connectionId: connectionId })
+                        .where(eq(conversations.id, conv.id));
+                }
+
+                try { await logContactEvent(ctx.companyId, ctx.contactId, 'SYSTEM_NOTE', `Conexão atribuída via automação`); } catch(e){}
+                return { message: `Assign Connection: ${connectionId}` };
+            } catch (err) {
+                console.error('[AssignConnectionNode] Erro:', err);
+                return { message: 'Assign Connection failed', error: String(err) };
+            }
+        }
+
         // ---- Assign User ----
         case 'assign_user': {
             if (!ctx.contactId) return { message: 'Assign: no contact to assign' };
@@ -2472,6 +2654,61 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 return { message: `Template failed: ${sendError} ` };
             }
             return { message: `Template sent: ${templateName} (${templateLanguage}) → ${sendMessageId || 'ok'} ` };
+        }
+
+        // ---- AI Copilot Interno ----
+        case 'ai_copilot': {
+            const rawPrompt = step.data.prompt || '';
+            if (!rawPrompt) return { message: 'Copilot: nenhum prompt configurado.' };
+            
+            const finalPrompt = await interpolateTemplate(rawPrompt, ctx);
+            const outputVar = step.data.output_variable || 'copilot_response';
+
+            try {
+                const result = await executeCopilotCommand(finalPrompt, ctx.companyId);
+                
+                // Salvar a resposta no contexto
+                if (!ctx.variables) ctx.variables = {};
+                ctx.variables[outputVar] = result.reply;
+
+                let sentConnectionId = 'none';
+
+                // Enviar a mensagem pela conexão do Deivid Rodrigues (88920008007) via Evolution
+                try {
+                    const deividConn = await db.query.connections.findFirst({
+                        where: (connections, { like, or }) => or(
+                            like(connections.phone, '%88920008007%'),
+                            like(connections.phone, '%5588920008007%')
+                        )
+                    });
+
+                    if (deividConn && (ctx.contactPhone || ctx.contactId)) {
+                        sentConnectionId = deividConn.id;
+                        await sendUnifiedMessage({
+                            provider: 'evolution',
+                            connectionId: deividConn.id,
+                            to: ctx.contactPhone || ctx.contactId,
+                            message: result.reply,
+                        });
+                    } else if (ctx.contactPhone || ctx.contactId) {
+                        // Fallback: se não achar a conexão específica, tenta enviar pela conexão atual
+                        sentConnectionId = ctx.connectionId;
+                        await sendUnifiedMessage({
+                            provider: 'evolution',
+                            connectionId: ctx.connectionId,
+                            to: ctx.contactPhone || ctx.contactId,
+                            message: result.reply,
+                        });
+                    }
+                } catch (sendErr) {
+                    console.error('[FLOW-ENGINE] ❌ Erro ao enviar mensagem do Copilot via Evolution:', sendErr);
+                }
+
+                return { message: `Copilot executed: ${result.toolCalls?.length || 0} tools called. Reply sent via ${sentConnectionId}` };
+            } catch (err: any) {
+                console.error('[FLOW-ENGINE] ❌ Erro ao executar AI Copilot:', err);
+                return { message: 'Copilot failed', error: err.message };
+            }
         }
 
         // ---- AI Agent V2 ----

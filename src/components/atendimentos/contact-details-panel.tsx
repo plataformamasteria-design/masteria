@@ -185,7 +185,7 @@ export const ContactDetailsPanel = ({ contactId, isArchived, onArchive, onUnarch
 
             // Buscar Tags disponíveis para Segmentação
             try {
-                const tagsRes = await fetch('/api/v1/tags');
+                const tagsRes = await fetch('/api/v1/tags?limit=1000');
                 if (tagsRes.ok) {
                     const tagsData = await tagsRes.json();
                     setAvailableTags(tagsData.data || []);

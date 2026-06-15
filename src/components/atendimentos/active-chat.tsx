@@ -48,6 +48,7 @@ import { SendTemplateDialog } from './send-template-dialog';
 import { Switch } from '../ui/switch';
 import { cn } from '@/lib/utils';
 import { ChatAssignmentDropdown } from './chat-assignment';
+import { ManualTriggerModal } from '../automations/manual-trigger-modal';
 import { MessageInput } from './chat/MessageInput';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
@@ -128,7 +129,7 @@ export function ActiveChat({
 
   const [optimisticAssignment, setOptimisticAssignment] = React.useState<{ assignedTo: string | null; teamId: string | null } | null>(null);
 
-  // Estados do Modal de Preview de Mídia
+  const [isManualTriggerOpen, setIsManualTriggerOpen] = React.useState(false);
   const [previewFile, setPreviewFile] = React.useState<File | null>(null);
   const [previewCaption, setPreviewCaption] = React.useState('');
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -411,6 +412,18 @@ export function ActiveChat({
                onRefreshConversations?.();
             }}
           />
+
+          {/* Manual Trigger Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsManualTriggerOpen(true)}
+            className="shrink-0 h-8 gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15 focus:ring-2 focus:ring-emerald-500/30 transition-all duration-200"
+            title="Disparar Automação Manual"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline text-[11px] font-semibold">Disparar</span>
+          </Button>
 
           {/* Connection Toggle */}
           {finalAvailableConnections.length > 0 && onSwitchConnection && (
@@ -911,6 +924,13 @@ export function ActiveChat({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ManualTriggerModal
+        isOpen={isManualTriggerOpen}
+        onClose={() => setIsManualTriggerOpen(false)}
+        contactId={contact.id}
+        contactName={contact.name || 'Lead'}
+      />
     </div>
   );
 }

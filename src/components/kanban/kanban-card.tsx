@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Draggable } from '@hello-pangea/dnd';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { MoreHorizontal, Phone, Eye, Pencil, Trash2, MessageCircle, MoveRight, Clock, Video } from 'lucide-react';
+import { MoreHorizontal, Phone, Eye, Pencil, Trash2, MessageCircle, MoveRight, Clock, Video, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '../ui/dropdown-menu';
 import type { KanbanCard as KanbanCardType, KanbanStage } from '@/lib/types';
@@ -26,8 +26,12 @@ interface KanbanCardProps {
   boardSettings?: any;
 }
 
+import { ManualTriggerModal } from '../automations/manual-trigger-modal';
+
 export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhatsApp, onUpdateCards, companyUsers = [], onOpenCard, onOpenMeetingTime, onOpenDelete, boardSettings }: KanbanCardProps) {
   const router = useRouter();
+  const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
+
   const handleMoveStage = async (stageId: string) => {
     await onUpdate(card.id, { stageId });
   };
@@ -143,6 +147,9 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuItem onClick={() => onOpenCard(card, 'overview')}>
                           <Pencil className="mr-2 h-4 w-4" /> Editar / Detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setIsTriggerModalOpen(true)}>
+                          <Zap className="mr-2 h-4 w-4 text-emerald-500" /> Disparar Automação
                         </DropdownMenuItem>
                         {isCallStage && (
                           <DropdownMenuItem onClick={() => onOpenMeetingTime(card)}>
@@ -308,6 +315,13 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
           </div>
         )}
       </Draggable>
+
+      <ManualTriggerModal 
+        isOpen={isTriggerModalOpen}
+        onClose={() => setIsTriggerModalOpen(false)}
+        contactId={card.contactId || (card.contact as any)?.id}
+        contactName={contact?.name || 'Lead'}
+      />
     </>
   );
 }

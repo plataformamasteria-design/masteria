@@ -95,7 +95,7 @@ export default function EditFunnelPage({ params }: { params: Promise<{ funnelId:
           fetch('/api/v1/connections'),
           fetch('/api/v1/team'),
           fetch('/api/v1/automations'),
-          fetch('/api/v1/tags'),
+          fetch('/api/v1/tags?limit=1000'),
           fetch(`/api/v1/leads?boardId=${funnelId}`),
           fetch('/api/v1/webhooks/incoming?limit=100'),
           fetch('/api/v1/automations/fields-map').catch(() => null)

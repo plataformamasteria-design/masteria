@@ -54,10 +54,12 @@ import { BotToggleNodeV4 } from './nodes/BotToggleNodeV4';
 import { UpdateContactNodeV4 } from './nodes/UpdateContactNodeV4';
 import { LookupLeadNodeV4 } from './nodes/LookupLeadNodeV4';
 import { AssignUserNodeV4 } from './nodes/AssignUserNodeV4';
+import { AssignConnectionNodeV4 } from './nodes/AssignConnectionNodeV4';
 import { AddNoteNodeV4 } from './nodes/AddNoteNodeV4';
 import { HttpRequestNodeV4 } from './nodes/HttpRequestNodeV4';
 import { CodeNodeV4 } from './nodes/CodeNodeV4';
 import { EditFieldsNodeV4 } from './nodes/EditFieldsNodeV4';
+import { AiCopilotNodeV4 } from './nodes/AiCopilotNodeV4';
 
 // Legado para compatibilidade com fluxos salvos
 import { MessageNode, SendMessageNode } from '../nodes/message-node';
@@ -110,10 +112,12 @@ const NODE_TYPES: NodeTypes = {
     bot_toggle:       BotToggleNodeV4,
     lookup_lead:      LookupLeadNodeV4,
     assign_user:      AssignUserNodeV4,
+    assign_connection:AssignConnectionNodeV4,
     add_note:         AddNoteNodeV4,
     http_request:     HttpRequestNodeV4,
     code:             CodeNodeV4,
     edit_fields:      EditFieldsNodeV4,
+    ai_copilot:       AiCopilotNodeV4,
     update_contact:   UpdateContactNodeV4,
     add_task:         AddTaskNodeV4,
     internal_message: InternalMessageNodeV4,

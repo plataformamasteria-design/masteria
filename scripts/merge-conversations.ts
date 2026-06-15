@@ -9,7 +9,9 @@ async function mergeConversations() {
   try {
     const allConversations = await db.select().from(conversations);
     
-    // Group by contactId
+    // Group by contactId + connectionId
+    // We will group by contactId, then by connectionId. 
+    // All null connectionIds for a contact will be placed in a special 'null' bucket to be merged into the first available valid connection bucket.
     const contactConvs: Record<string, typeof allConversations> = {};
     for (const conv of allConversations) {
       if (!contactConvs[conv.contactId]) {
@@ -22,16 +24,35 @@ async function mergeConversations() {
     let deletedConvs = 0;
 
     for (const [contactId, convs] of Object.entries(contactConvs)) {
-      if (convs.length > 1) {
-        console.log(`\n[Contato ${contactId}] Encontrado grupo de ${convs.length} conversas.`);
-        
-        // Determinar a "Master Conversation"
-        // Prioridades:
-        // 1. connectionId NÃO null
-        // 2. Status ativo (IN_PROGRESS > OPEN > NEW > CLOSED > ARCHIVED)
-        // 3. Mais recente
-        const sortedConvs = convs.sort((a, b) => {
-           const aHasConn = a.connectionId !== null ? 1 : 0;
+      // Group by connectionId within the contact
+      const connectionGroups: Record<string, typeof allConversations> = {};
+      const nullConvs: typeof allConversations = [];
+
+      for (const conv of convs) {
+          if (conv.connectionId === null) {
+              nullConvs.push(conv);
+          } else {
+              if (!connectionGroups[conv.connectionId]) connectionGroups[conv.connectionId] = [];
+              connectionGroups[conv.connectionId].push(conv);
+          }
+      }
+
+      // Se não houver nenhum connectionId válido, agrupa todos os null juntos
+      if (Object.keys(connectionGroups).length === 0 && nullConvs.length > 0) {
+          connectionGroups['null_fallback'] = nullConvs;
+      } else if (nullConvs.length > 0) {
+          // Se houver connectionIds válidos, pega o primeiro e joga os nulls lá para serem mesclados
+          const firstValidConn = Object.keys(connectionGroups)[0];
+          connectionGroups[firstValidConn].push(...nullConvs);
+      }
+
+      for (const [connId, groupConvs] of Object.entries(connectionGroups)) {
+          if (groupConvs.length > 1) {
+            console.log(`\n[Contato ${contactId} | Conn ${connId}] Encontrado grupo de ${groupConvs.length} conversas.`);
+            
+            // Determinar a "Master Conversation"
+            const sortedConvs = groupConvs.sort((a, b) => {
+               const aHasConn = a.connectionId !== null ? 1 : 0;
            const bHasConn = b.connectionId !== null ? 1 : 0;
            if (aHasConn !== bHasConn) return bHasConn - aHasConn;
            
@@ -81,6 +102,7 @@ async function mergeConversations() {
 
         mergedGroups++;
         deletedConvs += duplicateIds.length;
+          }
       }
     }
 

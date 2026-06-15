@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import {
     MessageSquare, Image as ImageIcon, Mic, FileText, Video, MessageSquareShare, MessageSquareDashed,
     GitBranch, Clock, MessageCircle, Signpost, Filter,
-    Brain, Target, MessageSquareHeart, Send,
+    Brain, Target, MessageSquareHeart, Send, BrainCircuit,
     Columns3, Hash, Bot, UserPlus, UserSearch, StickyNote, Database,
-    Globe, Code2, PenLine, ChevronLeft, ChevronRight, Zap, CalendarCheck, MessageSquareWarning, UserCog
+    Globe, Code2, PenLine, ChevronLeft, ChevronRight, Zap, CalendarCheck, MessageSquareWarning, UserCog, Wifi
 } from 'lucide-react';
 
 // ─── Definição do catálogo de nodes ─────────────────────────────────────────
@@ -57,7 +57,8 @@ const NODE_CATALOG: NodeCategory[] = [
         nodes: [
             { type: 'lookup_lead',   label: 'Buscar Lead',      icon: UserSearch,         color: 'text-cyan-600',    defaultData: { identifier_type: 'phone' } },
             { type: 'update_contact',label: 'Campos Personalizados',icon: Database,           color: 'text-blue-600',    defaultData: { fields: [] } },
-            { type: 'assign_user',   label: 'Atribuir',         icon: UserPlus,           color: 'text-fuchsia-600', defaultData: { assign_type: 'user' } },
+            { type: 'assign_user',   label: 'Atribuir Lead',    icon: UserPlus,           color: 'text-fuchsia-600', defaultData: { assign_type: 'user' } },
+            { type: 'assign_connection', label: 'Atribuir Conexão', icon: Wifi,           color: 'text-indigo-600',  defaultData: { connection_id: '' } },
             { type: 'add_note',      label: 'Adicionar Nota',   icon: StickyNote,         color: 'text-amber-600',   defaultData: { note: '' } },
             { type: 'add_tag',       label: 'Adicionar Tag',    icon: Hash,               color: 'text-rose-600',    defaultData: { tagId: '' } },
             { type: 'crm_move',      label: 'Mover Kanban',     icon: Columns3,           color: 'text-orange-600',  defaultData: { boardId: '', pipelineId: '' } },
@@ -78,6 +79,7 @@ const NODE_CATALOG: NodeCategory[] = [
         label: 'Inteligência IA',
         nodes: [
             { type: 'ai_agent',       label: 'Agente IA',       icon: Brain,              color: 'text-violet-600',  defaultData: { provider: 'gemini', model: 'gemini-2.0-flash' } },
+            { type: 'ai_copilot',     label: 'Assistente Interno', icon: BrainCircuit,       color: 'text-indigo-600',  defaultData: { prompt: '', output_variable: 'copilot_response' } },
             { type: 'intent_router',  label: 'Classificador',   icon: Target,             color: 'text-purple-600',  defaultData: { intents: [] } },
             { type: 'follow_up_ai',   label: 'Follow-Up IA',    icon: MessageSquareHeart, color: 'text-orange-500',  defaultData: {} },
             { type: 'send_ai_response',label: 'Resposta IA',    icon: Send,               color: 'text-emerald-600', defaultData: {} },

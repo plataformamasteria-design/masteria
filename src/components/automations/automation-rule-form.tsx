@@ -269,7 +269,7 @@ export function AutomationRuleForm({ open, onOpenChange, ruleToEdit, onSaveSucce
                 setLoading(true);
                 try {
                     const [tagsRes, listsRes, usersRes, connsRes] = await Promise.all([
-                        fetch('/api/v1/tags'),
+                        fetch('/api/v1/tags?limit=1000'),
                         fetch('/api/v1/lists'),
                         fetch('/api/v1/team/users'),
                         fetch('/api/v1/connections'),

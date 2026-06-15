@@ -49,6 +49,7 @@ const NODE_TYPE_LABELS: Record<string, string> = {
     stop_bot: 'Parar Robô',
     loop_restart: 'Reiniciar Loop',
     ai_agent: 'Agente IA',
+    ai_copilot: 'Assistente Interno',
     intent_router: 'Classificador IA',
     follow_up_ai: 'Follow-Up IA',
     send_ai_response: 'Resposta IA',
@@ -60,6 +61,7 @@ const NODE_TYPE_LABELS: Record<string, string> = {
     internal_message: 'Mensagem Interna',
     add_task: 'Adicionar Tarefa',
     assign_user: 'Atribuir Lead',
+    assign_connection: 'Atribuir Conexão',
     add_tag: 'Adicionar Tag',
     update_contact: 'Atualizar Contato',
 };
