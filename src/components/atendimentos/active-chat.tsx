@@ -27,6 +27,7 @@ import {
   Check,
   Link as LinkIcon,
   Unlink,
+  Zap,
 } from 'lucide-react';
 import { format, isToday, isYesterday, differenceInDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
