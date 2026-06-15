@@ -5,6 +5,9 @@ import { Droppable } from '@hello-pangea/dnd';
 import { Badge } from '../ui/badge';
 import type { KanbanStage, KanbanCard as KanbanCardType } from '@/lib/types';
 import { KanbanCard } from './kanban-card';
+import { useState, useEffect } from 'react';
+import { Button } from '../ui/button';
+import { ChevronDown } from 'lucide-react';
 
 interface KanbanColumnProps {
   stage: KanbanStage;
@@ -22,8 +25,26 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead, onUpdateCards, companyUsers = [], onOpenCard, onOpenMeetingTime, onOpenDelete, boardSettings }: KanbanColumnProps): JSX.Element {
+  const [limitCards, setLimitCards] = useState(false);
+  const [displayCount, setDisplayCount] = useState(8);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('masteriaPrefs');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        setLimitCards(prefs.limitKanbanCards === true);
+      }
+    } catch (e) {}
+  }, []);
+
   const stageCards = cards.filter(card => card.stageId === stage.id);
   const totalValue = stageCards.reduce((sum, card) => sum + (Number(card.value) || 0), 0);
+  
+  const displayedCards = limitCards ? stageCards.slice(0, displayCount) : stageCards;
+  const hasMore = limitCards && displayCount < stageCards.length;
+
+  const handleLoadMore = () => setDisplayCount(prev => prev + 8);
   
   const getHeaderStyle = (type: string, idx: number) => {
     let glow = '';
@@ -87,7 +108,7 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
                     Sem leads
                   </div>
                 )}
-                {stageCards.map((card, cardIndex) => (
+                {displayedCards.map((card, cardIndex) => (
                   <KanbanCard 
                     key={card.id} 
                     card={card} 
@@ -104,6 +125,19 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
                   />
                 ))}
                 {provided.placeholder}
+                {hasMore && !snapshot.isDraggingOver && (
+                  <div className="pt-2 pb-4 flex justify-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleLoadMore}
+                      className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full px-4 h-7"
+                    >
+                      <ChevronDown className="h-3 w-3 mr-1.5 opacity-70" />
+                      Mostrar mais ({stageCards.length - displayCount})
+                    </Button>
+                  </div>
+                )}
               </div>
           </div>
         )}

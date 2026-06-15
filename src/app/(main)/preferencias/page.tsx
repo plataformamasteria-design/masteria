@@ -27,12 +27,15 @@ interface Prefs {
   messageNotif: boolean;
   campaignNotif: boolean;
   aiNotif: boolean;
+  customScrollbar: boolean;
+  limitKanbanCards: boolean;
 }
 
 const DEFAULT_PREFS: Prefs = {
   language: 'pt-br', compactMode: false, animations: true, sidebar: 'auto',
   emailNotif: true, pushNotif: true, soundEnabled: true, soundVolume: 70,
   newLeadNotif: true, messageNotif: true, campaignNotif: false, aiNotif: true,
+  customScrollbar: true, limitKanbanCards: false,
 };
 
 function loadPrefs(): Prefs {
@@ -87,6 +90,7 @@ export default function PreferenciasPage() {
     document.documentElement.setAttribute('data-compact', String(p.compactMode));
     document.documentElement.setAttribute('data-animations', String(p.animations));
     document.documentElement.setAttribute('data-sidebar', p.sidebar);
+    document.documentElement.setAttribute('data-custom-scrollbar', String(p.customScrollbar !== false));
   }
 
   const set = <K extends keyof Prefs>(key: K, val: Prefs[K]) => setPrefs(p => ({ ...p, [key]: val }));
@@ -141,6 +145,8 @@ export default function PreferenciasPage() {
 
         <ToggleRow label="Modo Compacto" desc="Reduz espaçamentos para ver mais conteúdo" checked={prefs.compactMode} onChange={v => set('compactMode', v)} />
         <ToggleRow label="Animações" desc="Transições e micro-interações" checked={prefs.animations} onChange={v => set('animations', v)} />
+        <ToggleRow label="Scrollbar Personalizada" desc="Desative para exibir a barra de rolagem nativa do sistema" checked={prefs.customScrollbar !== false} onChange={v => set('customScrollbar', v)} />
+        <ToggleRow label="Limitar Cards no Kanban" desc="Exibe apenas 8 cards por coluna e adiciona um botão 'Carregar Mais'" checked={prefs.limitKanbanCards === true} onChange={v => set('limitKanbanCards', v)} />
 
         <div className="space-y-1.5">
           <Label className="text-xs text-zinc-400">Comportamento da Sidebar</Label>

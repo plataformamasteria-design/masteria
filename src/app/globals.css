@@ -124,20 +124,20 @@
 /* ========================================
    Premium Scrollbar
    ======================================== */
-.premium-scrollbar::-webkit-scrollbar {
+html[data-custom-scrollbar="true"] .premium-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
 
-.premium-scrollbar::-webkit-scrollbar-track {
+html[data-custom-scrollbar="true"] .premium-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.premium-scrollbar::-webkit-scrollbar-thumb {
+html[data-custom-scrollbar="true"] .premium-scrollbar::-webkit-scrollbar-thumb {
   background: hsl(var(--border) / 0.5);
   border-radius: 100px;
 }
 
-.premium-scrollbar::-webkit-scrollbar-thumb:hover {
+html[data-custom-scrollbar="true"] .premium-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--border) / 0.8);
 }
 
@@ -218,20 +218,20 @@
 }
 
 /* Custom scrollbar for config panel */
-.custom-scrollbar::-webkit-scrollbar {
+html[data-custom-scrollbar="true"] .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
+html[data-custom-scrollbar="true"] .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
+html[data-custom-scrollbar="true"] .custom-scrollbar::-webkit-scrollbar-thumb {
   background: hsl(var(--border) / 0.5);
   border-radius: 100px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+html[data-custom-scrollbar="true"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--border) / 0.8);
 }
 

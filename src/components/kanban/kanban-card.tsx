@@ -97,6 +97,20 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
     ? companyUsers.find((u: any) => u.id === assignedUserId)
     : null;
 
+  // Formatar telefone
+  const formatPhone = (p: string) => {
+    if(!p) return '';
+    const num = p.replace(/\D/g, '');
+    if (num.startsWith('55') && num.length >= 12) {
+      const ddd = num.substring(2, 4);
+      const part1 = num.substring(4, num.length - 4);
+      const part2 = num.substring(num.length - 4);
+      return `+55 (${ddd}) ${part1}-${part2}`;
+    }
+    return p; // fallback
+  };
+  const formattedPhone = contact?.phone ? formatPhone(contact.phone) : '';
+
   return (
     <>
       <Draggable draggableId={card.id} index={index}>
@@ -129,19 +143,34 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
                     <span className="text-[10px] text-muted-foreground hidden md:block">{createdAtFormatted}</span>
+                    
+                    {/* Botão Rápido de Disparo */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 gap-1 p-1 px-1.5 rounded bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all opacity-0 group-hover:opacity-100"
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); setIsTriggerModalOpen(true); }}
+                      onPointerDown={(e) => { e.stopPropagation(); }}
+                      onPointerUp={(e) => { e.stopPropagation(); }}
+                      title="Disparar Automação"
+                    >
+                      <Zap className="h-3 w-3" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider hidden xl:inline">Disparar</span>
+                    </Button>
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
                           onPointerDown={(e) => { e.stopPropagation(); }}
                           onPointerUp={(e) => { e.stopPropagation(); }}
                         >
-                          <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
@@ -182,9 +211,15 @@ export function KanbanCard({ card, index, stages, onUpdate, onDelete, onOpenWhat
                   </div>
                 </div>
 
-                {/* Linha 2: Título da Oportunidade */}
-                <div className="flex items-center min-w-0">
-                  <span className="text-[11px] font-medium tracking-wide text-muted-foreground/80 uppercase truncate">
+                {/* Linha 2: Telefone e Título da Oportunidade */}
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  {formattedPhone && (
+                    <span className="text-[11px] font-medium tracking-wide text-foreground/70 flex items-center gap-1.5">
+                      <Phone className="h-3 w-3 opacity-70" />
+                      {formattedPhone}
+                    </span>
+                  )}
+                  <span className="text-[11px] font-medium tracking-wide text-muted-foreground/80 uppercase truncate mt-0.5">
                     {card.title || 'Oportunidade'}
                   </span>
                 </div>
