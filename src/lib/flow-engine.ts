@@ -1167,7 +1167,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
         // ---- Interactive Message (Buttons) ----
         case 'interactive_message': {
-            if (isResuming && ctx.variables.last_response && ctx.variables._wait_step_id === step.id) {
+            if (ctx.variables.last_response && ctx.variables._wait_step_id === step.id) {
                 const answer = String(ctx.variables.last_response).trim();
                 delete ctx.variables._wait_step_id;
                 delete ctx.variables._wait_timeout_at;

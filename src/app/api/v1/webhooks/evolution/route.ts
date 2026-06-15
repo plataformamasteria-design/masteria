@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
                 // Atualizar no banco
                 await db.update(connections)
-                    .set({ connectionStatus: dbStatus })
+                    .set({ status: dbStatus })
                     .where(eq(connections.id, instanceName));
 
                 // Emitir WebSocket
