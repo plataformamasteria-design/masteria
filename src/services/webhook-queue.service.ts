@@ -630,10 +630,10 @@ export class WebhookQueueService {
    * Start metrics reporting
    */
   private startMetricsReporter() {
-    // Report metrics every minute
+    // Report metrics every hour instead of every minute to reduce log spam
     this.metricsInterval = setInterval(async () => {
       await this.reportMetrics();
-    }, 60000);
+    }, 3600000);
 
     // Also report immediately after 5 seconds
     setTimeout(() => this.reportMetrics(), 5000);
@@ -651,6 +651,10 @@ export class WebhookQueueService {
     try {
       const metrics = await this.getQueueMetrics();
       const queueType = this.useBullMQ ? 'BullMQ' : 'InMemory';
+
+      if (metrics.total === 0 && metrics.completed === 0 && metrics.failed === 0) {
+        return; // Don't spam logs when queue is completely idle
+      }
 
       console.log(`📊 [WebhookQueue] ${queueType} Metrics Report:`);
       console.log(`  - Waiting: ${metrics.waiting}`);

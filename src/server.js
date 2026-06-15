@@ -180,7 +180,7 @@ setInterval(() => {
     heapPercentage: ((mem.heapUsed / mem.heapTotal) * 100).toFixed(2)
   };
 
-  console.log(`📊 [Memory Stats] RSS: ${stats.rss}MB | Heap: ${stats.heapUsed}/${stats.heapTotal}MB (${stats.heapPercentage}%) | External: ${stats.external}MB`);
+  // console.log(`📊 [Memory Stats] RSS: ${stats.rss}MB | Heap: ${stats.heapUsed}/${stats.heapTotal}MB (${stats.heapPercentage}%) | External: ${stats.external}MB`);
 }, 120000); // Every 2 minutes
 
 // Smart dev mode detection:
@@ -478,7 +478,7 @@ const continueInitialization = () => {
     setInterval(async () => {
       try {
         if (process.env.DB_DEBUG === 'true') {
-          console.log('🔍 [DB Monitor] Pool monitoring active...');
+          // console.log('🔍 [DB Monitor] Pool monitoring active...');
         }
       } catch (error) {
         console.warn(`⚠️ [DB Monitor] Connection check failed: ${error.message}`);

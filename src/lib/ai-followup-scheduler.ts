@@ -198,7 +198,13 @@ export async function processFollowUpQueue(batchSize: number = 50): Promise<numb
                     .limit(1);
 
                 if (!connection) {
-                    logger.warn('No active connection for follow-up', { followupId: followup.id });
+                    logger.warn('No active connection for follow-up, marking as failed to prevent loop', { followupId: followup.id });
+                    await db.update(aiFollowupQueue)
+                        .set({
+                            status: 'failed',
+                            cancelledAt: new Date()
+                        })
+                        .where(eq(aiFollowupQueue.id, followup.id));
                     continue;
                 }
 

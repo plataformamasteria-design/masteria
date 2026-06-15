@@ -40,7 +40,6 @@ async function processJob(): Promise<void> {
   }
 
   isProcessing = true;
-  console.log(`[CampaignTriggerWorker] 🔄 Executando job de processamento de campanhas...`);
   const startTime = Date.now();
 
   try {
@@ -51,8 +50,6 @@ async function processJob(): Promise<void> {
       console.log(
         `[CampaignTriggerWorker] ✅ Job concluído em ${duration}ms: ${result.successful} enviadas, ${result.failed} falhas, ${result.skipped} puladas`
       );
-    } else {
-      console.log(`[CampaignTriggerWorker] ⏳ Nenhuma campanha pendente (${duration}ms)`);
     }
   } catch (error) {
     console.error('[CampaignTriggerWorker] ❌ Erro no job:', error);
