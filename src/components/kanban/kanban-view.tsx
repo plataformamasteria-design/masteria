@@ -65,8 +65,21 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     
     const updateWidth = () => {
       if (innerContentRef.current) {
-        // scrollWidth do innerContent garante a largura real de todas as colunas somadas
-        setContentWidth(innerContentRef.current.scrollWidth);
+        let totalWidth = 0;
+        const children = Array.from(innerContentRef.current.children);
+        children.forEach(child => {
+           totalWidth += (child as HTMLElement).offsetWidth;
+        });
+        // Adiciona os gaps (gap-4 = 16px)
+        if (children.length > 1) {
+           totalWidth += (children.length - 1) * 16;
+        }
+        // Adiciona padding horizontal do container (px-4 = 16px * 2 = 32px)
+        totalWidth += 32;
+        
+        // Usa o maior valor entre o cálculo matemático e o scrollWidth nativo
+        const finalWidth = Math.max(totalWidth, innerContentRef.current.scrollWidth);
+        setContentWidth(finalWidth);
       }
     };
 
