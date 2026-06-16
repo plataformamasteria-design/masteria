@@ -2,7 +2,7 @@ import { generateText, tool } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { db } from './db';
-import { contacts, conversations, kanbanBoards, kanbanPipelines, kanbanCards, companies, aiChats, campaigns, connections, users } from './db/schema';
+import { contacts, conversations, kanbanBoards, kanbanLeads, companies, aiChats, campaigns, connections, users } from './db/schema';
 import { eq, and, sql, desc, count, isNull, isNotNull } from 'drizzle-orm';
 import { resolveAIKeys } from './ai-keys-resolver';
 
@@ -22,15 +22,14 @@ function createCopilotTools(companyId: string) {
 
                     let query = db.select({
                         boardName: kanbanBoards.name,
-                        pipelineName: kanbanPipelines.name,
-                        cardCount: count(kanbanCards.id),
-                        totalValue: sql<number>`SUM(${kanbanCards.value}::numeric)`
+                        stageName: sql<string>`${kanbanLeads.currentStage}->>'title'`,
+                        cardCount: count(kanbanLeads.id),
+                        totalValue: sql<number>`SUM(COALESCE(${kanbanLeads.value}, 0)::numeric)`
                     })
-                    .from(kanbanCards)
-                    .innerJoin(kanbanPipelines, eq(kanbanCards.pipelineId, kanbanPipelines.id))
-                    .innerJoin(kanbanBoards, eq(kanbanPipelines.boardId, kanbanBoards.id))
+                    .from(kanbanLeads)
+                    .innerJoin(kanbanBoards, eq(kanbanLeads.boardId, kanbanBoards.id))
                     .where(and(...conditions))
-                    .groupBy(kanbanBoards.name, kanbanPipelines.name);
+                    .groupBy(kanbanBoards.name, sql`${kanbanLeads.currentStage}->>'title'`);
 
                     const results = await query;
                     return { success: true, data: results };

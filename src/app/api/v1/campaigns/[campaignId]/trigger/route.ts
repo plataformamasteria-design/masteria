@@ -3,7 +3,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { campaigns } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { sendWhatsappCampaign, sendSmsCampaign } from '@/lib/campaign-sender';
 
@@ -30,12 +30,31 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json({ error: `A campanha não está num estado que permita o reenvio. Status atual: ${campaign.status}` }, { status: 400 });
         }
 
+        // Tenta adquirir o lock da campanha via CAS (Compare-And-Swap)
+        // Isso evita duplicatas caso o usuário dê duplo clique ou o Worker tente iniciar ao mesmo tempo.
+        const updateResult = await db
+            .update(campaigns)
+            .set({ status: 'SENDING', sentAt: new Date() })
+            .where(
+                and(
+                    eq(campaigns.id, campaignId),
+                    eq(campaigns.companyId, companyId),
+                    inArray(campaigns.status, ['SCHEDULED', 'PENDING', 'QUEUED'])
+                )
+            )
+            .returning({ id: campaigns.id });
+
+        if (!updateResult || updateResult.length === 0) {
+            return NextResponse.json({ error: 'A campanha já está sendo processada ou houve um clique duplicado.' }, { status: 400 });
+        }
+
         console.log(`[Campaign Trigger] 🚀 Disparando campanha manualmente: ${campaign.name} (${campaignId})`);
 
         // Dispara diretamente sem usar Redis (bypass para quando Redis está com limite)
         const channelUpper = campaign.channel?.toUpperCase();
         
         if (channelUpper === 'WHATSAPP') {
+            campaign.status = 'SENDING';
             // Dispara em background para responder imediatamente
             sendWhatsappCampaign(campaign).catch(err => {
                 console.error(`[Campaign Trigger] ❌ Erro ao enviar campanha WhatsApp ${campaignId}:`, err);
@@ -48,6 +67,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 channel: 'WHATSAPP'
             });
         } else if (channelUpper === 'SMS') {
+            campaign.status = 'SENDING';
             sendSmsCampaign(campaign).catch(err => {
                 console.error(`[Campaign Trigger] ❌ Erro ao enviar campanha SMS ${campaignId}:`, err);
             });

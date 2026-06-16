@@ -7,3 +7,4 @@ build/
 *.log
 SyncGit.exe
 accounts.txt
+GITHUB_TOKEN.txt

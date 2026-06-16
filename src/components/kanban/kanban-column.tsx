@@ -76,7 +76,7 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
   };
 
   return (
-    <div className="flex flex-col h-full max-h-full overflow-hidden w-full shrink-0 md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] bg-zinc-50 dark:bg-white/[0.01] backdrop-blur-md rounded-2xl md:min-h-[400px] transition-colors border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.3)]">
+    <div className="flex flex-col h-full max-h-full overflow-hidden shrink-0 w-[280px] min-w-[280px] max-w-[280px] md:w-[300px] md:min-w-[300px] md:max-w-[300px] lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] bg-zinc-50 dark:bg-white/[0.01] backdrop-blur-md rounded-2xl md:min-h-[400px] transition-colors border border-zinc-200 dark:border-white/5 shadow-sm dark:shadow-[0_0_20px_rgba(0,0,0,0.3)]">
       <div className={`p-3 m-2 rounded-lg flex-shrink-0 flex flex-col gap-1 ${getHeaderStyle(stage.type, index)}`}>
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-[13px] uppercase tracking-wide truncate">

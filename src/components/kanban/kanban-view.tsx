@@ -288,7 +288,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         onPointerMove={handlePointerMove}
       >
         <DragDropContext onDragEnd={onMoveCard}>
-          <div ref={innerContentRef} className="flex gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-8 min-w-max after:content-[''] after:w-4 after:flex-shrink-0">
+          <div ref={innerContentRef} className="inline-flex gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-8 w-max">
             {visibleStages.map((stage: KanbanStage, index: number) => (
                 <KanbanColumn
                   key={stage.id}
