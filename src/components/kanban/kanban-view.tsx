@@ -61,48 +61,41 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
   }, []);
 
   useEffect(() => {
-    if (!innerContentRef.current || !scrollRef.current) return;
+    if (!scrollRef.current) return;
     
     const updateWidth = () => {
-      if (innerContentRef.current) {
-        let totalWidth = 0;
-        const children = Array.from(innerContentRef.current.children);
-        children.forEach(child => {
-           totalWidth += (child as HTMLElement).offsetWidth;
-        });
-        // Adiciona os gaps (gap-4 = 16px)
-        if (children.length > 1) {
-           totalWidth += (children.length - 1) * 16;
-        }
-        // Adiciona padding horizontal do container (px-4 = 16px * 2 = 32px)
-        totalWidth += 32;
-        
-        // Usa o maior valor entre o cálculo matemático e o scrollWidth nativo
-        const finalWidth = Math.max(totalWidth, innerContentRef.current.scrollWidth);
-        setContentWidth(finalWidth);
+      if (scrollRef.current) {
+        setContentWidth(scrollRef.current.scrollWidth);
       }
     };
 
-    const observer = new ResizeObserver(() => {
+    const resizeObserver = new ResizeObserver(() => {
       updateWidth();
     });
     
-    observer.observe(innerContentRef.current);
-    if (scrollRef.current) observer.observe(scrollRef.current);
+    resizeObserver.observe(scrollRef.current);
+    if (innerContentRef.current) {
+      resizeObserver.observe(innerContentRef.current);
+    }
+
+    const mutationObserver = new MutationObserver(() => {
+      updateWidth();
+    });
+
+    if (innerContentRef.current) {
+      mutationObserver.observe(innerContentRef.current, { childList: true, subtree: true, characterData: true });
+    }
     
-    // Atualização agressiva inicial para garantir que o layout final com as colunas (WIN, LOSS) seja lido
+    // Atualização agressiva inicial
     updateWidth();
-    const t1 = setTimeout(updateWidth, 100);
-    const t2 = setTimeout(updateWidth, 500);
-    const t3 = setTimeout(updateWidth, 1000);
+    const timeouts = [100, 500, 1000, 2000, 3000, 5000].map(time => setTimeout(updateWidth, time));
 
     return () => {
-      observer.disconnect();
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      timeouts.forEach(clearTimeout);
     };
-  }, [funnel?.stages, showLossStages]);
+  }, [funnel?.stages, showLossStages, cards?.length]);
 
   let isSyncingLeft = false;
   let isSyncingRight = false;
@@ -294,7 +287,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
       <div 
         ref={topScrollRef} 
         onScroll={handleTopScroll}
-        className="w-full overflow-x-auto custom-scrollbar border-b border-border/10 bg-muted/10 h-4"
+        className="w-full overflow-x-auto overflow-y-hidden custom-scrollbar border-b border-border/10 bg-muted/10 h-4"
       >
         <div style={{ width: contentWidth ? `${contentWidth}px` : '200%' }} className="h-1" />
       </div>
@@ -302,7 +295,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
       <div 
         ref={scrollRef}
         onScroll={handleBottomScroll}
-        className={`flex-1 min-h-0 overflow-x-hidden overflow-y-hidden ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}

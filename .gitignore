@@ -8,3 +8,4 @@ build/
 SyncGit.exe
 accounts.txt
 GITHUB_TOKEN.txt
+db_backup.json
