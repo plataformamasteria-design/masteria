@@ -64,9 +64,9 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     if (!innerContentRef.current || !scrollRef.current) return;
     
     const updateWidth = () => {
-      if (scrollRef.current) {
-        // scrollWidth gives the exact total width including padding
-        setContentWidth(scrollRef.current.scrollWidth);
+      if (innerContentRef.current) {
+        // scrollWidth do innerContent garante a largura real de todas as colunas somadas
+        setContentWidth(innerContentRef.current.scrollWidth);
       }
     };
 
@@ -75,12 +75,20 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     });
     
     observer.observe(innerContentRef.current);
-    observer.observe(scrollRef.current);
+    if (scrollRef.current) observer.observe(scrollRef.current);
     
-    // Initial update
-    setTimeout(updateWidth, 50);
+    // Atualização agressiva inicial para garantir que o layout final com as colunas (WIN, LOSS) seja lido
+    updateWidth();
+    const t1 = setTimeout(updateWidth, 100);
+    const t2 = setTimeout(updateWidth, 500);
+    const t3 = setTimeout(updateWidth, 1000);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [funnel?.stages, showLossStages]);
 
   let isSyncingLeft = false;
@@ -288,7 +296,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         onPointerMove={handlePointerMove}
       >
         <DragDropContext onDragEnd={onMoveCard}>
-          <div ref={innerContentRef} className="inline-flex gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-4 w-max">
+          <div ref={innerContentRef} className="flex flex-nowrap gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-4 min-w-max w-max">
             {visibleStages.map((stage: KanbanStage, index: number) => (
                 <KanbanColumn
                   key={stage.id}
