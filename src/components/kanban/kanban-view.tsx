@@ -61,11 +61,25 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
   }, []);
 
   useEffect(() => {
-    if (!innerContentRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      setContentWidth(entries[0].contentRect.width);
+    if (!innerContentRef.current || !scrollRef.current) return;
+    
+    const updateWidth = () => {
+      if (scrollRef.current) {
+        // scrollWidth gives the exact total width including padding
+        setContentWidth(scrollRef.current.scrollWidth);
+      }
+    };
+
+    const observer = new ResizeObserver(() => {
+      updateWidth();
     });
+    
     observer.observe(innerContentRef.current);
+    observer.observe(scrollRef.current);
+    
+    // Initial update
+    setTimeout(updateWidth, 50);
+
     return () => observer.disconnect();
   }, [funnel?.stages, showLossStages]);
 
