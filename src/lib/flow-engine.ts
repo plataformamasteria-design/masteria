@@ -1156,8 +1156,14 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     _ask_step_id: step.id,
                 };
                 
-                const timeoutMinutes = parseInt(step.data?.timeout_minutes) || 60;
-                questionVars._wait_timeout_at = Date.now() + (timeoutMinutes * 60 * 1000);
+                let timeoutMinutes = parseInt(step.data?.timeout_minutes);
+                if (isNaN(timeoutMinutes)) {
+                    timeoutMinutes = 60; // legacy default
+                }
+                
+                if (timeoutMinutes > 0) {
+                    questionVars._wait_timeout_at = Date.now() + (timeoutMinutes * 60 * 1000);
+                }
                 questionVars._wait_step_id = step.id;
 
                 return { action: 'pause', newVars: questionVars, message: 'Paused waiting for reply to campaign' };
