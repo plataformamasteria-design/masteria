@@ -83,20 +83,27 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     return () => observer.disconnect();
   }, [funnel?.stages, showLossStages]);
 
+  let isSyncingLeft = false;
+  let isSyncingRight = false;
+
   const handleTopScroll = () => {
-    if (scrollRef.current && topScrollRef.current) {
-      if (scrollRef.current.scrollLeft !== topScrollRef.current.scrollLeft) {
-        scrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-      }
+    if (!scrollRef.current || !topScrollRef.current) return;
+    if (isSyncingRight) {
+      isSyncingRight = false;
+      return;
     }
+    isSyncingLeft = true;
+    scrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
   };
 
   const handleBottomScroll = () => {
-    if (scrollRef.current && topScrollRef.current) {
-      if (topScrollRef.current.scrollLeft !== scrollRef.current.scrollLeft) {
-        topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
-      }
+    if (!scrollRef.current || !topScrollRef.current) return;
+    if (isSyncingLeft) {
+      isSyncingLeft = false;
+      return;
     }
+    isSyncingRight = true;
+    topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -280,10 +287,9 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         onPointerCancel={handlePointerUp}
         onPointerMove={handlePointerMove}
       >
-        <div className="h-full inline-block min-w-full">
-          <DragDropContext onDragEnd={onMoveCard}>
-            <div ref={innerContentRef} className="flex gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-8" style={{ width: 'max-content' }}>
-              {visibleStages.map((stage: KanbanStage, index: number) => (
+        <DragDropContext onDragEnd={onMoveCard}>
+          <div ref={innerContentRef} className="flex gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-8 min-w-max after:content-[''] after:w-4 after:flex-shrink-0">
+            {visibleStages.map((stage: KanbanStage, index: number) => (
                 <KanbanColumn
                   key={stage.id}
                   stage={stage}
@@ -319,9 +325,8 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
                   </Button>
                 </div>
               )}
-            </div>
-          </DragDropContext>
-        </div>
+          </div>
+        </DragDropContext>
       </div>
       {selectedCard && (
         <LeadExpansiveDrawer
