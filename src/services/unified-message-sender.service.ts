@@ -8,6 +8,28 @@ import { evolutionApiService } from '@/services/evolution-api.service';
 import { convertMp3ToOgg, getAudioDurationInSeconds } from '@/services/audio-converter.service';
 import { formatJid } from '@/lib/utils/whatsapp';
 
+// Helper to determine exact MIME type for media uploads
+const getFileMimeType = (type: string, filenameOrUrl?: string) => {
+    const ext = (filenameOrUrl || '').split('?')?.[0]?.split('.')?.pop()?.toLowerCase() || '';
+    if (type === 'audio') return (ext === 'wav') ? 'audio/wav' : 'audio/ogg; codecs=opus';
+    if (type === 'image') {
+        if (ext === 'png') return 'image/png';
+        if (ext === 'gif') return 'image/gif';
+        if (ext === 'webp') return 'image/webp';
+        return 'image/jpeg';
+    }
+    if (type === 'video') return 'video/mp4';
+    if (type === 'document') {
+        if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        if (ext === 'xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        if (ext === 'pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        if (ext === 'txt') return 'text/plain';
+        if (ext === 'csv') return 'text/csv';
+        return 'application/pdf';
+    }
+    return 'application/octet-stream';
+};
+
 export interface UnifiedSendOptions {
   provider: 'apicloud' | 'evolution';
   connectionId: string;
@@ -142,30 +164,28 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
             // Auto-detect voice note intent for audio type
             const shouldSendAsVoice = isVoice || (mediaType === 'audio' && (!mediaUrl || !mediaUrl.endsWith('.mp3'))); // Assume non-mp3 audios (like ogg/wav) might be voice notes if not specified
 
-            // ✅ FIX: Determine MIME type for buffer upload
+            // ✅ FIX: Determine MIME type for buffer upload using exact extension
             let mimeType: string | undefined;
             if (mediaBuffer) {
+              const fileRef = options.mediaFileName || mediaUrl || '';
+              mimeType = getFileMimeType(mediaType, fileRef);
+              
               if (mediaType === 'audio') {
-                mimeType = 'audio/ogg; codecs=opus'; // Default for voice messages
-
-                // ✅ FIX: Static Noise Issue (Chiado)
-                // If providing a buffer (likely MP3 from TTS) for a Voice Note, verify/convert to OGG Opus
-                try {
-                  console.log('[UNIFIED-SENDER] 🎵 Converting audio buffer to OGG Opus for compatibility...');
-                  // Always convert to ensure correct codec for WhatsApp PTT
-                  // This handles MP3 -> OGG Opus conversion
-                  mediaBuffer = await convertMp3ToOgg(mediaBuffer);
-                  console.log(`[UNIFIED-SENDER] ✅ Conversion complete. New size: ${mediaBuffer.length} bytes`);
-                } catch (convErr) {
-                  console.error('[UNIFIED-SENDER] ⚠️ Failed to convert audio to OGG. Sending original buffer (might cause static).', convErr);
+                // Se já for um arquivo .ogg, não precisa converter
+                const isAlreadyOgg = fileRef.toLowerCase().endsWith('.ogg');
+                
+                if (!isAlreadyOgg) {
+                  // ✅ FIX: Static Noise Issue (Chiado)
+                  try {
+                    console.log('[UNIFIED-SENDER] 🎵 Converting audio buffer to OGG Opus for compatibility...');
+                    mediaBuffer = await convertMp3ToOgg(mediaBuffer);
+                    console.log(`[UNIFIED-SENDER] ✅ Conversion complete. New size: ${mediaBuffer.length} bytes`);
+                  } catch (convErr) {
+                    console.error('[UNIFIED-SENDER] ⚠️ Failed to convert audio to OGG. Sending original buffer (might cause static).', convErr);
+                  }
+                } else {
+                  console.log('[UNIFIED-SENDER] 🎵 Audio is already OGG, skipping conversion.');
                 }
-
-              } else if (mediaType === 'image') {
-                mimeType = 'image/jpeg';
-              } else if (mediaType === 'video') {
-                mimeType = 'video/mp4';
-              } else if (mediaType === 'document') {
-                mimeType = 'application/pdf';
               }
             }
 
@@ -177,7 +197,7 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
               mediaBuffer: mediaBuffer, // ✅ NEW: Direct upload to Meta
               mimeType: mimeType,        // ✅ NEW: For Meta upload
               caption: message,
-              filename: options.mediaFileName || (mediaType === 'document' ? mediaUrl?.split('?')[0].split('/').pop() : undefined),
+              filename: options.mediaFileName || (mediaType === 'document' ? mediaUrl?.split('?')?.[0]?.split('/')?.pop() : undefined),
               isVoice: shouldSendAsVoice
             });
             console.log(`[UNIFIED-SENDER] ✅ Media message sent via APICloud to ${to}`, result);
@@ -302,32 +322,12 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
           }
 
           // Evolution API requires a URL or base64 string
-          // ✅ FIX Bug #3: MIME type detectado pela extensão real do arquivo
-          const getMimeType = (type: string, url?: string) => {
-              const ext = (url || '').split('?')[0].split('.').pop()?.toLowerCase() || '';
-              if (type === 'audio') return url?.endsWith('.wav') ? 'audio/wav' : 'audio/ogg; codecs=opus';
-              if (type === 'image') {
-                  if (ext === 'png') return 'image/png';
-                  if (ext === 'gif') return 'image/gif';
-                  if (ext === 'webp') return 'image/webp';
-                  return 'image/jpeg';
-              }
-              if (type === 'video') return 'video/mp4';
-              if (type === 'document') {
-                  if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-                  if (ext === 'xlsx') return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-                  if (ext === 'pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-                  if (ext === 'txt') return 'text/plain';
-                  if (ext === 'csv') return 'text/csv';
-                  return 'application/pdf'; // default para pdf e outros
-              }
-              return 'application/octet-stream';
-          };
+          const getMimeType = (type: string, url?: string) => getFileMimeType(type, options.mediaFileName || url);
           // Evolution API requires strict base64 WITHOUT the 'data:mimetype;base64,' prefix
           const mediaBase64 = finalBuffer ? finalBuffer.toString('base64') : mediaUrl!;
 
           // Derivar nome real do arquivo da URL (sem query string)
-          const rawFileName = (mediaUrl || '').split('?')[0].split('/').pop() || '';
+          const rawFileName = (mediaUrl || '').split('?')?.[0]?.split('/')?.pop() || '';
           const resolvedFileName = options.mediaFileName || (mediaType === 'document' ? (rawFileName || 'document.pdf') : undefined);
 
           const result = await evolutionApiService.sendMedia(

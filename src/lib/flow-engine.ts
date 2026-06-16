@@ -3121,6 +3121,14 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     }
 
                     responseText = completion.choices[0]?.message?.content?.trim() || '';
+                    
+                    // ✅ FIX: Exhaustion Fallback
+                    // Se o loop terminou por atingir max_iterations e a IA não gerou uma resposta textual (ainda está em tool_calls),
+                    // injeta uma resposta amigável de espera para não deixar o cliente no vácuo.
+                    if (!responseText && completion.choices[0]?.finish_reason === 'tool_calls') {
+                        logger.warn('[FLOW-ENGINE] ⚠️ AI Agent reached max tool iterations with empty response. Injecting fallback.');
+                        responseText = 'Estou verificando os dados no sistema, só um momento por favor...';
+                    }
                     if (completion.usage) {
                         tokenInfo = {
                             promptTokens: completion.usage.prompt_tokens,
@@ -3188,6 +3196,12 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     } catch (e) {
                         console.warn('[FLOW-ENGINE] Failed to fetch chat history:', e);
                     }
+                }
+
+                // ✅ FIX: Single-Shot Calendar Warning
+                // O modo Single-Shot não suporta funções (tools) do Calendar. Se estiver ativado, a IA tentaria inventar horários.
+                if (step.data.google_calendar_enabled) {
+                    inputParts.push(`[AVISO DO SISTEMA]: Você está configurado no modo 'Resposta Única' (sem funções de sistema). Portanto, VOCÊ NÃO PODE agendar horários ou consultar o Google Calendar no momento. Se o cliente pedir um agendamento, informe que não é possível fazer isso agora de forma automática.`);
                 }
 
                 const userInput = inputParts.join('\n\n') || 'Sem input disponível';
