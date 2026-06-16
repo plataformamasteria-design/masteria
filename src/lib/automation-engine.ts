@@ -821,7 +821,7 @@ async function callExternalAIAgent(
         if (persona.credentialId) {
             try {
                 const [cred] = await db.select().from(aiCredentials).where(eq(aiCredentials.id, persona.credentialId)).limit(1);
-                if (cred && cred.apiKey) {
+                if (cred && cred.apiKey && !cred.apiKey.startsWith('AIzaSy')) {
                     lazyTranscriptionApiKey = cred.apiKey;
                 }
             } catch(e) {}
@@ -1432,6 +1432,14 @@ async function callExternalAIAgent(
                             keySuffix: key ? key.slice(-4) : 'null'
                         };
                         await logAutomation('WARN', `Falha no Google Gemini (${modelName}): ${gErr.message}`, { ...logContextBase, details: errorDetails });
+                        
+                        const isQuotaError = gErr?.status === 429 || gErr?.message?.includes('quota') || gErr?.message?.includes('insufficient') || gErr?.message?.includes('Too Many Requests');
+                        if (isQuotaError) {
+                            aiResponse = 'Peço desculpas, mas estou enfrentando uma leve instabilidade no sistema. Por favor, aguarde um instante enquanto direcionamos para um especialista.';
+                            googleSuccess = true;
+                            await logAutomation('INFO', `✅ Fallback gracefully activated due to Gemini Quota Exceeded (429)`, logContextBase);
+                            break;
+                        }
                     }
                 }
 
