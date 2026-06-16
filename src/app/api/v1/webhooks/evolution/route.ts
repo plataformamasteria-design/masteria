@@ -212,7 +212,8 @@ export async function POST(req: NextRequest) {
         const txResult = await db.transaction(async (tx) => {
             const phoneVariations = getPhoneVariations(phone);
             
-            let [contact] = await tx.select().from(contacts).where(and(eq(contacts.companyId, companyId), inArray(contacts.phone, phoneVariations)));
+            const foundContacts = await tx.select().from(contacts).where(and(eq(contacts.companyId, companyId), inArray(contacts.phone, phoneVariations)));
+            let contact = foundContacts.find(c => c.phone === phone) || foundContacts[0];
             
             if (!contact) {
                 let avatarUrl: string | null = null;

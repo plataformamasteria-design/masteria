@@ -273,7 +273,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
       <div 
         ref={topScrollRef} 
         onScroll={handleTopScroll}
-        className="w-full overflow-x-auto custom-scrollbar border-b border-border/10 bg-muted/10 h-3"
+        className="w-full overflow-x-auto custom-scrollbar border-b border-border/10 bg-muted/10 h-4"
       >
         <div style={{ width: contentWidth ? `${contentWidth}px` : '200%' }} className="h-1" />
       </div>
@@ -281,14 +281,14 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
       <div 
         ref={scrollRef}
         onScroll={handleBottomScroll}
-        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        className={`flex-1 min-h-0 overflow-x-hidden overflow-y-hidden ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onPointerMove={handlePointerMove}
       >
         <DragDropContext onDragEnd={onMoveCard}>
-          <div ref={innerContentRef} className="inline-flex gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-8 w-max">
+          <div ref={innerContentRef} className="inline-flex gap-4 h-full px-3 sm:px-4 py-3 sm:py-4 pb-4 w-max">
             {visibleStages.map((stage: KanbanStage, index: number) => (
                 <KanbanColumn
                   key={stage.id}

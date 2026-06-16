@@ -126,6 +126,7 @@
    ======================================== */
 html[data-custom-scrollbar="true"] .premium-scrollbar::-webkit-scrollbar {
   width: 4px;
+  height: 6px;
 }
 
 html[data-custom-scrollbar="true"] .premium-scrollbar::-webkit-scrollbar-track {
@@ -220,6 +221,7 @@ html[data-custom-scrollbar="true"] .premium-scrollbar::-webkit-scrollbar-thumb:h
 /* Custom scrollbar for config panel */
 html[data-custom-scrollbar="true"] .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
+  height: 6px;
 }
 
 html[data-custom-scrollbar="true"] .custom-scrollbar::-webkit-scrollbar-track {
