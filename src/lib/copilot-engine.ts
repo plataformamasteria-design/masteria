@@ -431,10 +431,21 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
         }
     }
 
+    let finalSystemMessage = "Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta.";
+    let finalUserMessage = prompt;
+
+    // Se estivermos em um fluxo de automação (temos histórico), o 'prompt' enviado 
+    // é na verdade o "Comando Mestre" do nó. A real mensagem do usuário já está no contextMessages.
+    if (conversationId && contextMessages.length > 0) {
+        finalSystemMessage = `${finalSystemMessage}\n\n[INSTRUÇÕES MESTRES (SYSTEM PROMPT)]:\n${prompt}`;
+        // O usuário já falou no contextMessages, então o último "user" prompt força o modelo a agir
+        finalUserMessage = "Com base nas Instruções Mestres acima e no histórico da conversa, execute as ferramentas necessárias (se houver) e responda.";
+    }
+
     const messages: any[] = [
-        { role: "system", content: "Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta." },
+        { role: "system", content: finalSystemMessage },
         ...contextMessages,
-        { role: "user", content: prompt }
+        { role: "user", content: finalUserMessage }
     ];
 
     let toolCallsCount = 0;

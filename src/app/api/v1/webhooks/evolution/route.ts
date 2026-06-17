@@ -232,17 +232,24 @@ export async function POST(req: NextRequest) {
                 const actualName = fromMe ? canonicalPhone : (safePushName !== 'Contato' ? safePushName : canonicalPhone);
                 const actualWhatsappName = fromMe ? null : (safePushName !== 'Contato' ? safePushName : null);
 
-                [contact] = await tx.insert(contacts).values({
+                const inserted = await tx.insert(contacts).values({
                     companyId,
                     name: actualName,
                     whatsappName: actualWhatsappName,
                     phone: phone, // Usa o número exato do provedor para evitar falhas no envio
                     avatarUrl,
                     status: 'ACTIVE'
-                }).returning();
+                }).onConflictDoNothing().returning();
 
-                // A flag isNewContact marca para registrar o log APÓS o commit
-                isNewContact = true;
+                if (inserted.length > 0) {
+                    contact = inserted[0];
+                    // A flag isNewContact marca para registrar o log APÓS o commit
+                    isNewContact = true;
+                } else {
+                    // Se conflitou com chave duplicada (race condition), busca o contato recém-criado
+                    const retry = await tx.select().from(contacts).where(and(eq(contacts.companyId, companyId), eq(contacts.phone, phone)));
+                    contact = retry[0];
+                }
             } else {
                 let updatePayload: any = {};
                 
