@@ -1,5 +1,5 @@
 import { generateText, tool } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { z } from 'zod';
 import { db } from './db';
 import { contacts, conversations, kanbanBoards, kanbanLeads, companies, aiChats, campaigns, connections, users } from './db/schema';
@@ -13,7 +13,7 @@ function createCopilotTools(companyId: string) {
         getKanbanSummary: tool({
             description: 'Recupera um resumo completo do status do Kanban (funis e etapas) para a empresa atual, mostrando onde os leads estão parados.',
             parameters: z.object({
-                boardId: z.string().describe('ID de um quadro específico. Envie string vazia ("") para trazer o resumo geral de todos os quadros.'),
+                boardId: z.string(),
             }),
             execute: async ({ boardId }: any) => {
                 try {
@@ -42,7 +42,7 @@ function createCopilotTools(companyId: string) {
         getAgentWorkload: tool({
             description: 'Verifica a carga de trabalho dos atendentes, mostrando quantos leads estão atribuídos a cada agente atualmente.',
             parameters: z.object({
-                dummy: z.string().describe('Campo ignorado. Envie string vazia ("").')
+                dummy: z.string()
             }),
             execute: async (args: any) => {
                 try {
@@ -91,7 +91,7 @@ function createCopilotTools(companyId: string) {
         getActiveCampaigns: tool({
             description: 'Consulta o status de todas as campanhas de disparo em massa da empresa, incluindo quantas mensagens já foram enviadas.',
             parameters: z.object({
-                dummy: z.string().describe('Campo ignorado. Envie string vazia ("").')
+                dummy: z.string()
             }),
             execute: async (args: any) => {
                 try {
@@ -126,22 +126,115 @@ export async function executeCopilotCommand(prompt: string, companyId: string) {
         throw new Error('Nenhuma chave da OpenAI configurada na empresa ou no ambiente para rodar o Copilot.');
     }
 
-    const openaiClient = createOpenAI({ apiKey: OPENAI_KEY });
-    const model = openaiClient('gpt-4o');
+    const openai = new OpenAI({ apiKey: OPENAI_KEY });
+    
+    const tools = [
+        {
+            type: "function" as const,
+            function: {
+                name: "getKanbanSummary",
+                description: "Recupera um resumo completo do status do Kanban (funis e etapas) para a empresa atual, mostrando onde os leads estão parados.",
+                parameters: {
+                    type: "object",
+                    properties: { boardId: { type: "string" } },
+                    required: ["boardId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getAgentWorkload",
+                description: "Verifica a carga de trabalho dos atendentes, mostrando quantos leads estão atribuídos a cada agente atualmente.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: ["dummy"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "toggleLeadBot",
+                description: "Ativa ou desativa a inteligência artificial (robô) para a conversa de um lead específico.",
+                parameters: {
+                    type: "object",
+                    properties: { conversationId: { type: "string" }, action: { type: "string", enum: ["enable", "disable"] } },
+                    required: ["conversationId", "action"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getActiveCampaigns",
+                description: "Consulta o status de todas as campanhas de disparo em massa da empresa, incluindo quantas mensagens já foram enviadas.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: ["dummy"],
+                    additionalProperties: false
+                }
+            }
+        }
+    ];
 
-    // 2. Invocar o modelo com acesso às ferramentas
-    const result = await generateText({
-        model: model,
-        system: `Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário. 
-Sua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).
-Seja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.
-Se for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta.`,
-        prompt: prompt,
-        tools: createCopilotTools(companyId),
-    });
+    const messages: any[] = [
+        { role: "system", content: "Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta." },
+        { role: "user", content: prompt }
+    ];
+
+    let toolCallsCount = 0;
+    const toolsObj: any = createCopilotTools(companyId);
+
+    for (let step = 0; step < 5; step++) {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: messages,
+            tools: tools
+        });
+
+        const msg = response.choices[0].message;
+        messages.push(msg);
+
+        if (msg.tool_calls && msg.tool_calls.length > 0) {
+            toolCallsCount += msg.tool_calls.length;
+            for (const tc of msg.tool_calls) {
+                let args = JSON.parse(tc.function.arguments || "{}");
+                try {
+                    let toolRes = null;
+                    if (tc.function.name === 'getKanbanSummary') toolRes = await toolsObj.getKanbanSummary.execute(args, undefined as any);
+                    else if (tc.function.name === 'getAgentWorkload') toolRes = await toolsObj.getAgentWorkload.execute(args, undefined as any);
+                    else if (tc.function.name === 'toggleLeadBot') toolRes = await toolsObj.toggleLeadBot.execute(args, undefined as any);
+                    else if (tc.function.name === 'getActiveCampaigns') toolRes = await toolsObj.getActiveCampaigns.execute(args, undefined as any);
+                    
+                    messages.push({
+                        role: "tool",
+                        tool_call_id: tc.id,
+                        content: JSON.stringify(toolRes)
+                    });
+                } catch (e: any) {
+                    messages.push({
+                        role: "tool",
+                        tool_call_id: tc.id,
+                        content: JSON.stringify({ success: false, error: e.message })
+                    });
+                }
+            }
+        } else {
+            return {
+                reply: msg.content || '',
+                toolCalls: new Array(toolCallsCount)
+            };
+        }
+    }
 
     return {
-        reply: result.text,
-        toolCalls: result.toolCalls
+        reply: messages[messages.length - 1]?.content || "Processamento concluído após coletar os dados.",
+        toolCalls: new Array(toolCallsCount)
     };
 }
