@@ -22,16 +22,32 @@ function createCopilotTools(companyId: string) {
 
                     let query = db.select({
                         boardName: kanbanBoards.name,
-                        stageName: sql<string>`${kanbanLeads.currentStage}->>'title'`,
+                        stages: kanbanBoards.stages,
+                        stageId: kanbanLeads.stageId,
                         cardCount: count(kanbanLeads.id),
                         totalValue: sql<number>`SUM(COALESCE(${kanbanLeads.value}, 0)::numeric)`
                     })
                     .from(kanbanLeads)
                     .innerJoin(kanbanBoards, eq(kanbanLeads.boardId, kanbanBoards.id))
                     .where(and(...conditions))
-                    .groupBy(kanbanBoards.name, sql`${kanbanLeads.currentStage}->>'title'`);
+                    .groupBy(kanbanBoards.name, kanbanBoards.stages, kanbanLeads.stageId);
 
-                    const results = await query;
+                    const resultsRaw = await query;
+                    
+                    const results = resultsRaw.map(r => {
+                        let sName = "Desconhecido";
+                        if (r.stages && Array.isArray(r.stages)) {
+                            const found = (r.stages as any[]).find(s => s.id === r.stageId);
+                            if (found) sName = found.title;
+                        }
+                        return {
+                            boardName: r.boardName,
+                            stageName: sName,
+                            cardCount: r.cardCount,
+                            totalValue: r.totalValue
+                        };
+                    });
+
                     return { success: true, data: results };
                 } catch (error: any) {
                     return { success: false, error: error.message };
@@ -211,11 +227,11 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "setPaidTrafficCampaignStatus",
-                description: "Pausa ou ativa uma campanha de tráfego pago (Meta Ads) usando o ID numérico da campanha. OBRIGATÓRIO: Use apenas o ID numérico exato. Se você tiver apenas o nome da campanha, você DEVE buscar os IDs usando getPaidTrafficCampaigns antes de chamar esta função.",
+                description: "Pausa ou ativa uma campanha de tráfego pago (Meta Ads) usando o ID numérico da campanha. OBRIGATÓRIO: Use apenas o ID numérico exato (ex: 12023939393). NUNCA envie o nome. Se você tiver apenas o nome da campanha, você DEVE buscar os IDs usando getPaidTrafficCampaigns antes de chamar esta função.",
                 parameters: {
                     type: "object",
                     properties: {
-                        campaignId: { type: "string", description: "O ID numérico exato da campanha no Meta Ads (ex: 12023939393)" },
+                        campaignId: { type: "string", description: "O ID numérico exato da campanha no Meta Ads. APENAS NÚMEROS." },
                         status: { type: "string", enum: ["ACTIVE", "PAUSED"], description: "O novo status da campanha" }
                     },
                     required: ["campaignId", "status"],
@@ -337,8 +353,8 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                 description: "Puxa as últimas 50 mensagens do lead atual para que você (a IA) possa ler e resumir a conversa.",
                 parameters: {
                     type: "object",
-                    properties: { conversationId: { type: "string", description: "Se vazio, usa a conversa atual do contexto." } },
-                    required: [],
+                    properties: { conversationId: { type: "string", description: "OBRIGATÓRIO: Use o ID DA CONVERSA (conversationId) retornado pelo searchContact. Não confunda com o ID do contato. Se você não tem o conversationId, pesquise o contato primeiro." } },
+                    required: ["conversationId"],
                     additionalProperties: false
                 }
             }
@@ -520,7 +536,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                 parameters: {
                     type: "object",
                     properties: {
-                        campaignId: { type: "string", description: "O ID da campanha." },
+                        campaignId: { type: "string", description: "O ID numérico da campanha. APENAS NÚMEROS. NUNCA envie nomes ou colchetes." },
                         breakdown: { type: "string", enum: ["age", "gender", "age,gender", "country", "region", "impression_device", "publisher_platform"], description: "Qual quebra demográfica analisar." },
                         datePreset: { type: "string", description: "Período. Padrão: last_30d" }
                     },
@@ -559,16 +575,17 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
     // Se estivermos em um fluxo de automação (temos histórico), o 'prompt' enviado 
     // é na verdade o "Comando Mestre" do nó. A real mensagem do usuário já está no contextMessages.
     if (conversationId && contextMessages.length > 0) {
-        finalSystemMessage = `${finalSystemMessage}\n\n[INSTRUÇÕES MESTRES (SYSTEM PROMPT)]:\n${prompt}`;
-        // O usuário já falou no contextMessages, então o último "user" prompt força o modelo a agir
-        finalUserMessage = `IMPORTANTE: A sua diretriz EXECUTIVA PRINCIPAL agora é: "${prompt}".\nUse o histórico da conversa apenas como contexto (por exemplo, para saber de qual lead estamos falando), mas cumpra rigorosamente a diretriz principal. Execute as ferramentas necessárias se for o caso.`;
+        finalSystemMessage = `${finalSystemMessage}\n\n[DIRETRIZ EXECUTIVA PRINCIPAL DA AUTOMAÇÃO]:\n"${prompt}"\n\nATENÇÃO: A sua prioridade máxima é cumprir essa diretriz executiva, usando as ferramentas necessárias. Use o histórico da conversa com o usuário apenas como contexto para entender a situação ou responder à pergunta dele, mas não deixe de cumprir a Diretriz!`;
+        finalUserMessage = ""; // A mensagem do usuário já está em contextMessages
     }
 
     const messages: any[] = [
         { role: "system", content: finalSystemMessage },
-        ...contextMessages,
-        { role: "user", content: finalUserMessage }
+        ...contextMessages
     ];
+    if (finalUserMessage) {
+        messages.push({ role: "user", content: finalUserMessage });
+    }
 
     let toolCallsCount = 0;
     const toolsObj: any = createCopilotTools(companyId);
@@ -884,17 +901,32 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     }
                     else if (tc.function.name === 'getKanbanLeads') {
                         try {
-                            let results = await db.query.kanbanLeads.findMany({
+                            const board = await db.query.kanbanBoards.findFirst({
+                                where: and(eq(kanbanBoards.id, args.boardId), eq(kanbanBoards.companyId, companyId))
+                            });
+                            if (!board) throw new Error("Board não encontrado.");
+
+                            const leadsQuery = await db.query.kanbanLeads.findMany({
                                 where: and(eq(kanbanLeads.companyId, companyId), eq(kanbanLeads.boardId, args.boardId)),
                                 columns: {
                                     id: true,
                                     title: true,
                                     value: true,
-                                    currentStage: true
+                                    stageId: true
                                 }
                             });
+                            
+                            let results = leadsQuery.map(l => {
+                                let sName = "Desconhecido";
+                                if (board.stages && Array.isArray(board.stages)) {
+                                    const found = (board.stages as any[]).find(s => s.id === l.stageId);
+                                    if (found) sName = found.title;
+                                }
+                                return { ...l, stageName: sName };
+                            });
+
                             if (args.stageName) {
-                                results = results.filter(r => r.currentStage && (r.currentStage as any).title?.toLowerCase() === args.stageName.toLowerCase());
+                                results = results.filter(r => r.stageName.toLowerCase() === args.stageName.toLowerCase());
                             }
                             toolRes = { success: true, count: results.length, data: results };
                         } catch (e: any) {
