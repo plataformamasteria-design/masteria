@@ -2671,7 +2671,14 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             const outputVar = step.data.output_variable || 'copilot_response';
 
             try {
-                const result = await executeCopilotCommand(finalPrompt, ctx.companyId);
+                // Obter a conversa atual para contexto e salvamento
+                const conv = await db.query.conversations.findFirst({
+                    where: (conversations, { eq }) => eq(conversations.contactId, ctx.contactId || '')
+                });
+
+                const historyLimit = step.data.history_limit !== undefined ? Number(step.data.history_limit) : 5;
+
+                const result = await executeCopilotCommand(finalPrompt, ctx.companyId, conv?.id, historyLimit);
                 
                 // Salvar a resposta no contexto
                 if (!ctx.variables) ctx.variables = {};
@@ -2682,16 +2689,37 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 // Enviar a mensagem pela conexão original (podendo ser Evolution ou Oficial)
                 try {
                     sentConnectionId = ctx.connectionId;
+                    let sendSuccess = false;
+                    
                     if (ctx.contactPhone || ctx.contactId) {
-                        await sendUnifiedMessage({
+                        const sendRes = await sendUnifiedMessage({
                             provider: (ctx.provider as any) || 'evolution',
                             connectionId: ctx.connectionId,
                             to: ctx.contactPhone || ctx.contactId,
                             message: result.reply,
                         });
+                        sendSuccess = sendRes.success;
                     }
+
+                    // Registrar a resposta do Copilot no chat (Visibilidade)
+                    if (conv && sendSuccess) {
+                        try {
+                            await db.insert(messages).values({
+                                id: crypto.randomUUID(),
+                                conversationId: conv.id,
+                                content: result.reply,
+                                messageType: 'text',
+                                isFromMe: true,
+                                status: 'SENT',
+                            });
+                            logger.debug(`[FLOW-ENGINE] ✅ Copilot message saved to conversation ${conv.id}`);
+                        } catch (saveErr) {
+                            console.error('[FLOW-ENGINE] ⚠️ Erro ao salvar mensagem do Copilot no banco:', saveErr);
+                        }
+                    }
+
                 } catch (sendErr) {
-                    console.error('[FLOW-ENGINE] ❌ Erro ao enviar mensagem do Copilot via Evolution:', sendErr);
+                    console.error('[FLOW-ENGINE] ❌ Erro ao enviar mensagem do Copilot:', sendErr);
                 }
 
                 return { message: `Copilot executed: ${result.toolCalls?.length || 0} tools called. Reply sent via ${sentConnectionId}` };

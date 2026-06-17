@@ -118,7 +118,7 @@ function createCopilotTools(companyId: string) {
 /**
  * Motor central de execução do Assistente Copilot
  */
-export async function executeCopilotCommand(prompt: string, companyId: string) {
+export async function executeCopilotCommand(prompt: string, companyId: string, conversationId?: string, historyLimit: number = 5) {
     const resolvedKeys = await resolveAIKeys(companyId);
     const OPENAI_KEY = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
 
@@ -183,8 +183,31 @@ export async function executeCopilotCommand(prompt: string, companyId: string) {
         }
     ];
 
+    let contextMessages: any[] = [];
+    if (conversationId && historyLimit > 0) {
+        try {
+            const { messages } = await import('./db/schema');
+            const recentMessages = await db.query.messages.findMany({
+                where: (msg, { eq }) => eq(msg.conversationId, conversationId),
+                orderBy: (msg, { desc }) => [desc(msg.createdAt)],
+                limit: historyLimit
+            });
+            
+            // Reverter para manter ordem cronológica (mais antigas primeiro)
+            recentMessages.reverse();
+            
+            contextMessages = recentMessages.map(m => ({
+                role: m.isFromMe ? "assistant" : "user",
+                content: m.content || "(Mídia/Sistema)"
+            }));
+        } catch (e) {
+            console.warn('[COPILOT-ENGINE] Failed to fetch history context:', e);
+        }
+    }
+
     const messages: any[] = [
         { role: "system", content: "Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta." },
+        ...contextMessages,
         { role: "user", content: prompt }
     ];
 

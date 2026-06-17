@@ -1978,6 +1978,15 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 O resultado do assistente será armazenado nesta variável para que você possa utilizá-la em blocos seguintes, como "Enviar Mensagem Interna".
                             </p>
                         </ConfigSection>
+
+                        <ConfigSection label="Memória de Contexto (Histórico)" hint="Número de mensagens recentes que a IA deve lembrar para entender o contexto.">
+                            <NumberField
+                                value={d.history_limit || 5}
+                                onChange={(v) => update('history_limit', parseInt(v) || 5)}
+                                min={0}
+                                max={50}
+                            />
+                        </ConfigSection>
                     </div>
                 );
             }
