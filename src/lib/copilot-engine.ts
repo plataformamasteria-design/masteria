@@ -189,7 +189,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             const { messages } = await import('./db/schema');
             const recentMessages = await db.query.messages.findMany({
                 where: (msg, { eq }) => eq(msg.conversationId, conversationId),
-                orderBy: (msg, { desc }) => [desc(msg.createdAt)],
+                orderBy: (msg, { desc }) => [desc(msg.sentAt)],
                 limit: historyLimit
             });
             
@@ -197,7 +197,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             recentMessages.reverse();
             
             contextMessages = recentMessages.map(m => ({
-                role: m.isFromMe ? "assistant" : "user",
+                role: m.senderType === 'contact' ? "user" : "assistant",
                 content: m.content || "(Mídia/Sistema)"
             }));
         } catch (e) {

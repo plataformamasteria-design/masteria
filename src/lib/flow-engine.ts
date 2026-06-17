@@ -2708,8 +2708,9 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 id: crypto.randomUUID(),
                                 conversationId: conv.id,
                                 content: result.reply,
-                                messageType: 'text',
-                                isFromMe: true,
+                                contentType: 'TEXT',
+                                senderType: 'bot',
+                                isAiGenerated: true,
                                 status: 'SENT',
                             });
                             logger.debug(`[FLOW-ENGINE] ✅ Copilot message saved to conversation ${conv.id}`);
