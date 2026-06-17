@@ -288,10 +288,13 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "getKanbanLeads",
-                description: "Lista os leads atuais presentes em um Kanban/Funil específico.",
+                description: "Lista os leads atuais presentes em um Kanban/Funil específico. Permite filtrar opcionalmente por nome da etapa.",
                 parameters: {
                     type: "object",
-                    properties: { boardId: { type: "string", description: "ID do funil/board." } },
+                    properties: { 
+                        boardId: { type: "string", description: "ID do funil/board." },
+                        stageName: { type: "string", description: "Nome exato da etapa para filtrar (opcional)." }
+                    },
                     required: ["boardId"],
                     additionalProperties: false
                 }
@@ -403,6 +406,60 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                         daysAgo: { type: "number", description: "Afetar apenas leads que interagiram nos últimos X dias (ex: 7)" }
                     },
                     required: ["action", "daysAgo"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "searchContact",
+                description: "Pesquisa contatos no CRM pelo nome, email ou telefone. Retorna o ID do contato e o ID da conversa mais recente, vitais para executar outras ações (como etiquetar ou resumir conversa).",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        query: { type: "string", description: "Nome, telefone ou email a pesquisar." }
+                    },
+                    required: ["query"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getContactLists",
+                description: "Consulta e retorna todas as listas de transmissão/contatos disponíveis na empresa (IDs e nomes).",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getKanbanBoards",
+                description: "Consulta e retorna todos os funis (boards) do Kanban e suas respectivas etapas disponíveis.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getWhatsAppTemplates",
+                description: "Consulta os templates de mensagem de WhatsApp da empresa e seus status de aprovação na Meta.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: [],
                     additionalProperties: false
                 }
             }
@@ -598,7 +655,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     }
                     else if (tc.function.name === 'getKanbanLeads') {
                         try {
-                            const results = await db.query.kanbanLeads.findMany({
+                            let results = await db.query.kanbanLeads.findMany({
                                 where: and(eq(kanbanLeads.companyId, companyId), eq(kanbanLeads.boardId, args.boardId)),
                                 columns: {
                                     id: true,
@@ -607,6 +664,9 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                     currentStage: true
                                 }
                             });
+                            if (args.stageName) {
+                                results = results.filter(r => r.currentStage && (r.currentStage as any).title?.toLowerCase() === args.stageName.toLowerCase());
+                            }
                             toolRes = { success: true, count: results.length, data: results };
                         } catch (e: any) {
                             toolRes = { error: e.message };
@@ -753,6 +813,80 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             } else {
                                 toolRes = { success: false, error: submissionResult.error };
                             }
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'searchContact') {
+                        try {
+                            const { ilike, or } = await import('drizzle-orm');
+                            const q = `%${args.query}%`;
+                            const cleanPhone = args.query.replace(/[^0-9]/g, '');
+                            
+                            const conditions = [
+                                ilike(contacts.name, q),
+                                ilike(contacts.email, q)
+                            ];
+                            if (cleanPhone.length > 5) {
+                                conditions.push(ilike(contacts.phone, `%${cleanPhone}%`));
+                            }
+                            
+                            const foundContacts = await db.query.contacts.findMany({
+                                where: and(eq(contacts.companyId, companyId), or(...conditions)),
+                                columns: { id: true, name: true, phone: true, email: true },
+                                limit: 5
+                            });
+                            
+                            if (foundContacts.length === 0) {
+                                toolRes = { success: false, message: "Nenhum contato encontrado com essa pesquisa." };
+                            } else {
+                                const enriched = await Promise.all(foundContacts.map(async (c) => {
+                                    const conv = await db.query.conversations.findFirst({
+                                        where: eq(conversations.contactId, c.id),
+                                        orderBy: [desc(conversations.lastMessageAt)],
+                                        columns: { id: true }
+                                    });
+                                    return { ...c, conversationId: conv?.id || null };
+                                }));
+                                toolRes = { success: true, data: enriched };
+                            }
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getContactLists') {
+                        try {
+                            const { contactLists } = await import('./db/schema');
+                            const lists = await db.query.contactLists.findMany({
+                                where: eq(contactLists.companyId, companyId),
+                                columns: { id: true, name: true, description: true }
+                            });
+                            toolRes = { success: true, data: lists };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getKanbanBoards') {
+                        try {
+                            const boards = await db.query.kanbanBoards.findMany({
+                                where: eq(kanbanBoards.companyId, companyId),
+                                columns: { id: true, name: true, stages: true }
+                            });
+                            toolRes = { success: true, data: boards };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getWhatsAppTemplates') {
+                        try {
+                            const { messageTemplates } = await import('./db/schema');
+                            const templates = await db.query.messageTemplates.findMany({
+                                where: eq(messageTemplates.companyId, companyId),
+                                columns: { id: true, name: true, category: true, status: true, language: true },
+                                orderBy: [desc(messageTemplates.createdAt)],
+                                limit: 20
+                            });
+                            toolRes = { success: true, data: templates };
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
