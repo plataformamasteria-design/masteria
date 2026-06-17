@@ -40,7 +40,6 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
   
   // Drag-to-Scroll refs and states
   const scrollRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
   const innerContentRef = useRef<HTMLDivElement>(null);
   
   const [isDragging, setIsDragging] = useState(false);
@@ -97,28 +96,7 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
     };
   }, [funnel?.stages, showLossStages, cards?.length]);
 
-  let isSyncingLeft = false;
-  let isSyncingRight = false;
 
-  const handleTopScroll = () => {
-    if (!scrollRef.current || !topScrollRef.current) return;
-    if (isSyncingRight) {
-      isSyncingRight = false;
-      return;
-    }
-    isSyncingLeft = true;
-    scrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-  };
-
-  const handleBottomScroll = () => {
-    if (!scrollRef.current || !topScrollRef.current) return;
-    if (isSyncingLeft) {
-      isSyncingLeft = false;
-      return;
-    }
-    isSyncingRight = true;
-    topScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
-  };
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // Only intercept if we are clicking on the background (the scroll area)
@@ -283,19 +261,9 @@ export function KanbanView({ funnel, cards, onMoveCard, onUpdateCards, onUpdateL
         </div>
       )}
       
-      {/* Top Scroll Bar */}
-      <div 
-        ref={topScrollRef} 
-        onScroll={handleTopScroll}
-        className="w-full overflow-x-auto overflow-y-hidden custom-scrollbar border-b border-border/10 bg-muted/10 h-4"
-      >
-        <div style={{ width: contentWidth ? `${contentWidth}px` : '200%' }} className="h-1" />
-      </div>
-
       <div 
         ref={scrollRef}
-        onScroll={handleBottomScroll}
-        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden custom-scrollbar ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}

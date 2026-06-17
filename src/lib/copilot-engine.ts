@@ -479,7 +479,8 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
-{
+        },
+        {
             type: "function" as const,
             function: {
                 name: "getPaidTrafficAccountInsights",
