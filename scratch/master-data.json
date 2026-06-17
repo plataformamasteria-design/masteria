@@ -1,0 +1,220 @@
+[
+  {
+    "company": {
+      "id": "current-company",
+      "name": "Master Automation System",
+      "avatarUrl": null,
+      "website": null,
+      "addressStreet": null,
+      "addressCity": null,
+      "addressState": null,
+      "addressZipCode": null,
+      "country": null,
+      "webhookSlug": "42aa1f68-56b8-4169-bf6a-3f4b4567c089",
+      "mksmsApiToken": null,
+      "aiKnowledgeBase": null,
+      "aiModel": null,
+      "defaultKanbanBoardId": null,
+      "trialEndsAt": null,
+      "lifetime": false,
+      "isStarred": false,
+      "createdAt": "2026-03-17T17:32:39.842Z",
+      "updatedAt": "2026-03-17T17:32:39.842Z",
+      "deletedAt": null,
+      "utmRoutingRules": []
+    },
+    "users": [],
+    "connections": [],
+    "boards": [],
+    "campaigns": 0,
+    "contacts": 0,
+    "conversations": 0
+  },
+  {
+    "company": {
+      "id": "7cb4773e-1fab-4699-b35d-c70d9f8d9149",
+      "name": "Empresa de Desenvolvimento Master",
+      "avatarUrl": null,
+      "website": null,
+      "addressStreet": null,
+      "addressCity": null,
+      "addressState": null,
+      "addressZipCode": null,
+      "country": null,
+      "webhookSlug": "f28e5adf-ce84-436b-94c5-cd3941f254b7",
+      "mksmsApiToken": null,
+      "aiKnowledgeBase": null,
+      "aiModel": null,
+      "defaultKanbanBoardId": null,
+      "trialEndsAt": null,
+      "lifetime": false,
+      "isStarred": true,
+      "createdAt": "2026-01-16T22:17:55.849Z",
+      "updatedAt": "2026-06-03T01:25:41.702Z",
+      "deletedAt": null,
+      "utmRoutingRules": [
+        {
+          "id": "rule-gcr",
+          "label": "GCR — Evento GCR",
+          "isRegex": true,
+          "pattern": "EVENTO-GCR|EVENTO GCR|\\bGCR\\b",
+          "isActive": true,
+          "targetBoardId": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+          "targetBoardName": "FUNIL EVENTO GCR"
+        },
+        {
+          "id": "rule-edn",
+          "label": "EDN — Encontro de Negócios",
+          "isRegex": false,
+          "pattern": "ENCONTRO DE NEG",
+          "isActive": true,
+          "targetBoardId": "b8856169-d5ee-40ea-a876-20c8b46234cf",
+          "targetBoardName": "FUNIL EDN [ATUAL]"
+        },
+        {
+          "id": "rule-mentoria",
+          "label": "MENTORIA",
+          "isRegex": false,
+          "pattern": "MENTORIA",
+          "isActive": true,
+          "targetBoardId": "6bccc06c-4eb2-41e1-9c9d-5a133c267418",
+          "targetBoardName": "FUNIL MENTORIA"
+        },
+        {
+          "id": "rule-casais",
+          "label": "Encontro de Casais / Casal de Negócios",
+          "isRegex": false,
+          "pattern": "CASAL DE NEG|EVENTO-CASAL|ENCONTRO DE CASAIS",
+          "isActive": true,
+          "targetBoardId": "72e90627-1f9c-493e-a243-71ef668c021a",
+          "targetBoardName": "FUNIL ENCONTRO DE CASAIS"
+        }
+      ]
+    },
+    "users": [
+      {
+        "name": "Paulo Super Admin",
+        "email": "paulo@exemplo.com",
+        "role": "admin"
+      },
+      {
+        "name": "Super Admin Supreme",
+        "email": "superadmin@admin.com",
+        "role": "superadmin"
+      },
+      {
+        "name": "Lucas Leme",
+        "email": "lucasleme.af@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Diego Test User",
+        "email": "diegomaninhu@gmail.com",
+        "role": "atendente"
+      },
+      {
+        "name": "Jorge Junior",
+        "email": "mindxgestaocomercial@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Anderson Menezes",
+        "email": "andersonmenezes.af@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Murillo Sano",
+        "email": "murillosano.af@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Andrea Adegas",
+        "email": "andrea.plataformaglobalaf@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Bruno Macedo",
+        "email": "brunomacedolopes.af@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Guilherme Macedo",
+        "email": "guilhermemacedo.af@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Usuário Teste",
+        "email": "heitorsantos@www.hlmidias.com",
+        "role": "admin"
+      },
+      {
+        "name": "Murilo Camargo",
+        "email": "murilo.camargo@nagatecnologia.com.br",
+        "role": "admin"
+      },
+      {
+        "name": "Rafaela Alves Nogueira",
+        "email": "antoniojr@soleenergia.com.br",
+        "role": "admin"
+      },
+      {
+        "name": "Deivid",
+        "email": "deivid.desenvolvedorweb@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Vinicius Andreoli",
+        "email": "viniciusandreoli.af@gmail.com",
+        "role": "admin"
+      },
+      {
+        "name": "Camila Brandao",
+        "email": "camilabrandao.af@gmail.com",
+        "role": "admin"
+      }
+    ],
+    "connections": [
+      {
+        "name": "Camila B.",
+        "type": "evolution",
+        "status": "Conectado",
+        "active": true
+      },
+      {
+        "name": "Diego Abner",
+        "type": "evolution",
+        "status": "Falha na Conexão",
+        "active": true
+      },
+      {
+        "name": "8276_Antônio_BM_GRUP_ED",
+        "type": "meta_api",
+        "status": null,
+        "active": true
+      }
+    ],
+    "boards": [
+      {
+        "name": "EDN - Funil de Agendamento"
+      },
+      {
+        "name": "FUNIL EDN [ATUAL]"
+      },
+      {
+        "name": "FUNIL ENCONTRO DE CASAIS"
+      },
+      {
+        "name": "Funil de Ligação EDN7"
+      },
+      {
+        "name": "FUNIL MENTORIA"
+      },
+      {
+        "name": "FUNIL EVENTO GCR"
+      }
+    ],
+    "campaigns": 86,
+    "contacts": 11321,
+    "conversations": 9325
+  }
+]

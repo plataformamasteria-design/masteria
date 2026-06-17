@@ -129,7 +129,7 @@ async function fetchCampaignsDataOptimized(params: {
                 sent: sql<number>`count(*)::int`.as('sent'),
                 delivered: sql<number>`count(*) FILTER (WHERE ${whatsappDeliveryReports.status} IN ('delivered', 'read'))::int`.as('delivered'),
                 read: sql<number>`count(*) FILTER (WHERE ${whatsappDeliveryReports.status} = 'read')::int`.as('read'),
-                failed: sql<number>`count(*) FILTER (WHERE ${whatsappDeliveryReports.status} = 'failed')::int`.as('failed'),
+                failed: sql<number>`count(*) FILTER (WHERE ${whatsappDeliveryReports.status} IN ('failed', 'FAILED'))::int`.as('failed'),
             })
             .from(whatsappDeliveryReports)
             .where(and(
@@ -175,8 +175,18 @@ async function fetchCampaignsDataOptimized(params: {
         const read = stats?.read ?? 0;
         const failed = stats?.failed ?? 0;
         
-        // Calcular progresso baseado em entregues/lidos vs enviados
-        const progress = sent > 0 ? Math.round(((delivered + read) / (sent * 2)) * 100) : 0;
+        // Calcular progresso baseado em entregues/lidos vs enviados viáveis
+        let progress = 0;
+        if (campaign.channel === 'SMS') {
+            progress = sent > 0 ? 100 : 0; // SMS considera 100% ao disparar tudo
+        } else {
+            const sentViable = Math.max(0, sent - failed);
+            if (sentViable > 0) {
+                progress = Math.round(((delivered + read) / (sentViable * 2)) * 100);
+            } else if (sent > 0 && failed === sent) {
+                progress = 100; // Todas falharam, mas o processo terminou
+            }
+        }
         
         return {
             ...campaign,

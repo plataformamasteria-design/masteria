@@ -620,13 +620,13 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
                 <KanbanIcon className="h-4 w-4 mr-2" />
                 Visualização do Funil
               </TabsTrigger>
-              <TabsTrigger
+              {/* <TabsTrigger
                 value="agents"
                 className="rounded-xl px-5 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground"
               >
                 <Bot className="h-4 w-4 mr-2" />
                 Agentes IA por Estágio
-              </TabsTrigger>
+              </TabsTrigger> */}
               <TabsTrigger
                 value="report"
                 className="rounded-xl px-5 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1),inset_0_0_10px_rgba(16,185,129,0.1)] border border-transparent text-muted-foreground hover:text-foreground"
@@ -664,13 +664,13 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
           />
         </TabsContent>
 
-        <TabsContent value="agents" className="flex-1 mt-0 min-h-0 overflow-auto p-4 data-[state=active]:flex data-[state=active]:flex-col">
+        {/* <TabsContent value="agents" className="flex-1 mt-0 min-h-0 overflow-auto p-4 data-[state=active]:flex data-[state=active]:flex-col">
           <StagePersonaConfig
             boardId={funnelId}
             stages={funnel.stages}
             funnelType={funnel.funnelType ?? undefined}
           />
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="report" className="flex-1 mt-0 min-h-0 overflow-auto data-[state=active]:flex data-[state=active]:flex-col">
           <FunnelReport boardId={funnelId} />

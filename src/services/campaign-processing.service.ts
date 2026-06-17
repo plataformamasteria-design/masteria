@@ -77,9 +77,11 @@ async function isOrphanedSendingCampaign(campaign: typeof campaigns.$inferSelect
     }
     
     const lastSentAt = lastReport[0]?.sentAt;
-    if (!lastSentAt) return true;
+    const lastReportTime = lastSentAt ? new Date(lastSentAt).getTime() : 0;
+    const startedSendingAt = campaign.sentAt?.getTime() || campaign.createdAt.getTime();
     
-    return now - new Date(lastSentAt).getTime() > ORPHAN_THRESHOLD_MS;
+    // Uma campanha SÓ está órfã se a última mensagem tem mais de 5 min AND a retomada tem mais de 5 min
+    return (now - lastReportTime > ORPHAN_THRESHOLD_MS) && (now - startedSendingAt > ORPHAN_THRESHOLD_MS);
   } else if (channel === 'SMS') {
     const lastReport = await db
       .select({ sentAt: smsDeliveryReports.sentAt })
@@ -94,9 +96,10 @@ async function isOrphanedSendingCampaign(campaign: typeof campaigns.$inferSelect
     }
     
     const lastSentAt = lastReport[0]?.sentAt;
-    if (!lastSentAt) return true;
+    const lastReportTime = lastSentAt ? new Date(lastSentAt).getTime() : 0;
+    const startedSendingAt = campaign.sentAt?.getTime() || campaign.createdAt.getTime();
     
-    return now - new Date(lastSentAt).getTime() > ORPHAN_THRESHOLD_MS;
+    return (now - lastReportTime > ORPHAN_THRESHOLD_MS) && (now - startedSendingAt > ORPHAN_THRESHOLD_MS);
   }
   
   return true;
@@ -181,8 +184,30 @@ export async function processPendingCampaigns(): Promise<CampaignProcessingResul
         skipped++;
         continue;
       }
+      
+      // Adquirir lock CAS para campanha órfã
+      const updateResult = await db
+        .update(campaigns)
+        .set({ sentAt: now }) // Atualiza o sentAt para "agora" para resetar a trava
+        .where(
+          and(
+            eq(campaigns.id, campaign.id),
+            eq(campaigns.status, 'SENDING'),
+            campaign.sentAt ? eq(campaigns.sentAt, campaign.sentAt) : isNull(campaigns.sentAt)
+          )
+        )
+        .returning({ id: campaigns.id });
+
+      if (!updateResult || updateResult.length === 0) {
+        console.log(
+          `[CampaignProcessor] Campanha órfã ${campaign.id} já foi assumida por outro processo (CAS falhou). Pulando.`
+        );
+        skipped++;
+        continue;
+      }
+
       console.log(
-        `[CampaignProcessor] 🔄 Retomando campanha órfã ${campaign.id} (${campaign.name}) - sem atividade por 5+ minutos.`
+        `[CampaignProcessor] 🔄 Lock CAS adquirido para retomar campanha órfã ${campaign.id} (${campaign.name}).`
       );
     } else {
       // Adquirir lock via CAS (Compare-And-Swap)

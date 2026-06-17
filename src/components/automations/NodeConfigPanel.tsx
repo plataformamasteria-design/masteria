@@ -1960,7 +1960,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             <TextFieldWithVars
                                 multiline={true}
                                 value={d.prompt || ''}
-                                onChange={v => onChange({ prompt: v })}
+                                onChange={v => update('prompt', v)}
                                 placeholder="Ex: Analise a última mensagem do lead {{message.body}} e crie um resumo."
                             />
                             <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">
@@ -1971,7 +1971,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                         <ConfigSection label="Salvar Resposta em Variável (Opcional)">
                             <Input
                                 value={d.output_variable || 'copilot_response'}
-                                onChange={e => onChange({ output_variable: e.target.value })}
+                                onChange={e => update('output_variable', e.target.value)}
                                 placeholder="copilot_response"
                             />
                             <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">

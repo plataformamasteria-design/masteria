@@ -800,13 +800,37 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
             const startIdx = batchIdx * batchSize;
             const subBatchIds = pendingContactIds.slice(startIdx, startIdx + batchSize);
 
+            // DEDUPLICAÇÃO JIT (Just-In-Time): Evitar duplicidade caso outra thread/servidor
+            // tenha processado estes contatos durante o tempo de execução desta campanha.
+            const jitSentReports = await db
+                .select({ contactId: whatsappDeliveryReports.contactId })
+                .from(whatsappDeliveryReports)
+                .where(
+                    and(
+                        eq(whatsappDeliveryReports.campaignId, campaign.id),
+                        inArray(whatsappDeliveryReports.contactId, subBatchIds)
+                    )
+                );
+            
+            const jitSentContactIds = new Set(jitSentReports.map(r => r.contactId));
+            const safeSubBatchIds = subBatchIds.filter(id => !jitSentContactIds.has(id));
+
+            if (safeSubBatchIds.length === 0) {
+                if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Lote ${batchIdx + 1} ignorado totalmente (Deduplicação JIT).`);
+                continue;
+            }
+
+            if (jitSentContactIds.size > 0 && DEBUG) {
+                logger.debug(`[Campanha WhatsApp ${campaign.id}] Deduplicação JIT bloqueou ${jitSentContactIds.size} envios duplicados no Lote ${batchIdx + 1}.`);
+            }
+
             // Carrega os dados FULL dos contatos apenas para este lote
             // SECURITY: Validar que todos os contatos pertencem à empresa da campanha
             const batch = await db
                 .select()
                 .from(contacts)
                 .where(and(
-                    inArray(contacts.id, subBatchIds),
+                    inArray(contacts.id, safeSubBatchIds),
                     eq(contacts.companyId, campaign.companyId)
                 ));
 
