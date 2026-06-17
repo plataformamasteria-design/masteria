@@ -180,6 +180,19 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getPaidTrafficCampaigns",
+                description: "Busca os dados e métricas reais de campanhas de tráfego pago (Meta Ads / Facebook Ads), como investimento, cliques, leads e custo por lead das campanhas ativas nos últimos 30 dias.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: ["dummy"],
+                    additionalProperties: false
+                }
+            }
         }
     ];
 
@@ -234,6 +247,46 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     else if (tc.function.name === 'getAgentWorkload') toolRes = await toolsObj.getAgentWorkload.execute(args, undefined as any);
                     else if (tc.function.name === 'toggleLeadBot') toolRes = await toolsObj.toggleLeadBot.execute(args, undefined as any);
                     else if (tc.function.name === 'getActiveCampaigns') toolRes = await toolsObj.getActiveCampaigns.execute(args, undefined as any);
+                    else if (tc.function.name === 'getPaidTrafficCampaigns') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { metaFetchPaginated } = await import('./meta-fetch');
+                            
+                            const auth = await getMetaAuthForCompany(companyId);
+                            const res = await metaFetchPaginated({
+                                endpoint: "insights",
+                                fields: "campaign_name,spend,impressions,clicks,actions",
+                                account: auth.accountId,
+                                token: auth.token,
+                                params: { level: "campaign", date_preset: "last_30d" }
+                            });
+                            
+                            if (res.error) {
+                                toolRes = { error: res.error };
+                            } else {
+                                toolRes = {
+                                    summary: "Dados de Tráfego Pago (Meta Ads) - Últimos 30 dias",
+                                    campaigns: res.data.map((c: any) => {
+                                        let leads = 0;
+                                        if (c.actions) {
+                                            const leadAction = c.actions.find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.lead_grouped' || a.action_type === 'leadgen_grouped');
+                                            if (leadAction) leads = parseFloat(leadAction.value);
+                                        }
+                                        return {
+                                            campaign_name: c.campaign_name,
+                                            spend: c.spend ? `R$ ${c.spend}` : "R$ 0.00",
+                                            impressions: c.impressions || "0",
+                                            clicks: c.clicks || "0",
+                                            leads: leads,
+                                            cpl: leads > 0 && c.spend ? `R$ ${(parseFloat(c.spend) / leads).toFixed(2)}` : "N/A"
+                                        };
+                                    })
+                                };
+                            }
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
                     
                     messages.push({
                         role: "tool",

@@ -58,6 +58,37 @@ export async function getMetaAuthForSession(): Promise<MetaAuth> {
 }
 
 /**
+ * Busca as credenciais Meta para uma empresa específica.
+ * Throws se não conectado ou token ausente.
+ */
+export async function getMetaAuthForCompany(companyId: string): Promise<MetaAuth> {
+  const [cred] = await db.select().from(marketingCredentials)
+    .where(and(
+      eq(marketingCredentials.companyId, companyId),
+      eq(marketingCredentials.platform, "meta"),
+      eq(marketingCredentials.status, "connected")
+    ))
+    .limit(1);
+
+  if (!cred?.credentials) {
+    throw new Error("Meta não conectado. A empresa não possui integração com o Facebook Ads ativa.");
+  }
+
+  // external-api: untyped — Meta OAuth credentials
+  const credentials = cred.credentials as any;
+  const token = credentials.access_token;
+  const accountId = credentials.ad_account_id;
+
+  if (!token || !accountId) throw new Error("Token ou Account ID Meta ausentes.");
+
+  return {
+    token,
+    accountId: accountId.startsWith("act_") ? accountId : `act_${accountId}`,
+    companyId,
+  };
+}
+
+/**
  * Formata account_id garantindo prefixo "act_".
  */
 export function formatAccountId(raw: string): string {

@@ -16,6 +16,7 @@ interface MetaFetchOptions {
   endpoint: string; // ex: "insights", "ads"
   fields: string;
   account?: string;
+  token?: string;
   params?: Record<string, string>;
   datePreset?: string;
   since?: string;
@@ -73,7 +74,7 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
 }
 
 async function rawMetaFetch<T>(options: MetaFetchOptions): Promise<T[]> {
-  const token = TOKEN();
+  const token = options.token || TOKEN();
   const account = options.account || ACCOUNT();
 
   const queryParams = new URLSearchParams({
@@ -122,7 +123,7 @@ async function rawMetaFetch<T>(options: MetaFetchOptions): Promise<T[]> {
  * Retorna { data, error, from_cache, rate_limited }.
  */
 export async function metaFetchPaginated<T = Record<string, unknown>>(options: MetaFetchOptions): Promise<MetaResponse<T>> {
-  const token = TOKEN();
+  const token = options.token || TOKEN();
   const account = options.account || ACCOUNT();
 
   if (!token || !account) {
