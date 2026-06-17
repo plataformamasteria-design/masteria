@@ -338,6 +338,73 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "createContactList",
+                description: "Cria uma nova lista de transmissão/contatos.",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        name: { type: "string" },
+                        description: { type: "string" }
+                    },
+                    required: ["name"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "createCampaign",
+                description: "Cria e agenda (ou deixa em fila) uma campanha de disparos no WhatsApp.",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        name: { type: "string", description: "Nome da campanha" },
+                        status: { type: "string", enum: ["QUEUED", "SCHEDULED"], description: "QUEUED para disparar logo após a criação, SCHEDULED para agendar" },
+                        scheduledAt: { type: "string", description: "Data de agendamento em formato ISO (só se status for SCHEDULED)" },
+                        contactListIds: { type: "array", items: { type: "string" }, description: "Array com IDs das listas alvo (opcional)" }
+                    },
+                    required: ["name", "status"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "submitWhatsAppTemplate",
+                description: "Cria um template oficial de WhatsApp e envia para a aprovação da Meta.",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        name: { type: "string", description: "Nome do template (minúsculo sem espaços, ex: alerta_promo_1)" },
+                        category: { type: "string", enum: ["MARKETING", "UTILITY", "AUTHENTICATION"] },
+                        bodyText: { type: "string", description: "Texto principal do template (pode conter variáveis ex: {{1}})" }
+                    },
+                    required: ["name", "category", "bodyText"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "bulkToggleBot",
+                description: "Ativa ou desativa a automação (robô) em massa para conversas recentes.",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        action: { type: "string", enum: ["enable", "disable"] },
+                        daysAgo: { type: "number", description: "Afetar apenas leads que interagiram nos últimos X dias (ex: 7)" }
+                    },
+                    required: ["action", "daysAgo"],
+                    additionalProperties: false
+                }
+            }
         }
     ];
 
@@ -587,6 +654,93 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             });
                             history.reverse();
                             toolRes = { success: true, messages: history };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'createContactList') {
+                        try {
+                            const { contactLists } = await import('./db/schema');
+                            const inserted = await db.insert(contactLists).values({
+                                companyId,
+                                name: args.name,
+                                description: args.description || ""
+                            }).returning();
+                            toolRes = { success: true, message: `Lista '${args.name}' criada com sucesso.`, data: inserted[0] };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'bulkToggleBot') {
+                        try {
+                            const { gte } = await import('drizzle-orm');
+                            const dateThreshold = new Date();
+                            dateThreshold.setDate(dateThreshold.getDate() - args.daysAgo);
+                            
+                            const isActive = args.action === 'enable';
+                            const result = await db.update(conversations)
+                                .set({ aiActive: isActive })
+                                .where(and(eq(conversations.companyId, companyId), gte(conversations.lastMessageAt, dateThreshold)))
+                                .returning({ id: conversations.id });
+                                
+                            toolRes = { success: true, message: `Robô ${isActive ? 'ativado' : 'desativado'} em massa para ${result.length} conversas recentes.` };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'createCampaign') {
+                        try {
+                            const connection = await db.query.connections.findFirst({
+                                where: and(eq(connections.companyId, companyId), eq(connections.connectionType, 'meta_api'))
+                            });
+                            
+                            if (!connection) throw new Error("Nenhuma conexão de API Oficial encontrada para disparar a campanha.");
+                            
+                            const inserted = await db.insert(campaigns).values({
+                                companyId,
+                                name: args.name,
+                                status: args.status,
+                                channel: "WHATSAPP",
+                                scheduledAt: args.scheduledAt ? new Date(args.scheduledAt) : null,
+                                connectionId: connection.id,
+                                contactListIds: args.contactListIds || []
+                            }).returning();
+                            toolRes = { success: true, message: `Campanha '${args.name}' agendada/criada com sucesso!`, data: inserted[0] };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'submitWhatsAppTemplate') {
+                        try {
+                            const { messageTemplates } = await import('./db/schema');
+                            const { submitTemplateToMeta } = await import('./metaTemplatesService');
+                            
+                            const connection = await db.query.connections.findFirst({
+                                where: and(eq(connections.companyId, companyId), eq(connections.connectionType, 'meta_api')),
+                                columns: { id: true, wabaId: true }
+                            });
+                            if (!connection || !connection.wabaId) throw new Error("Nenhuma conexão oficial com WABA ID encontrada.");
+                            
+                            const inserted = await db.insert(messageTemplates).values({
+                                companyId,
+                                connectionId: connection.id,
+                                wabaId: connection.wabaId,
+                                name: args.name,
+                                category: args.category,
+                                language: "pt_BR",
+                                components: [
+                                    { type: "BODY", text: args.bodyText }
+                                ],
+                                status: "DRAFT"
+                            }).returning();
+                            
+                            const submissionResult = await submitTemplateToMeta(inserted[0].id);
+                            
+                            if (submissionResult.success) {
+                                toolRes = { success: true, message: `Template submetido com sucesso! Status: ${submissionResult.status}`, metaId: submissionResult.metaTemplateId };
+                            } else {
+                                toolRes = { success: false, error: submissionResult.error };
+                            }
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
