@@ -13,12 +13,12 @@ function createCopilotTools(companyId: string) {
         getKanbanSummary: tool({
             description: 'Recupera um resumo completo do status do Kanban (funis e etapas) para a empresa atual, mostrando onde os leads estão parados.',
             parameters: z.object({
-                boardId: z.string().optional().describe('ID opcional de um quadro específico. Se omitido, trará um resumo geral.'),
+                boardId: z.string().describe('ID de um quadro específico. Envie string vazia ("") para trazer o resumo geral de todos os quadros.'),
             }),
             execute: async ({ boardId }: any) => {
                 try {
                     const conditions = [eq(kanbanBoards.companyId, companyId)];
-                    if (boardId) conditions.push(eq(kanbanBoards.id, boardId));
+                    if (boardId && boardId !== "") conditions.push(eq(kanbanBoards.id, boardId));
 
                     let query = db.select({
                         boardName: kanbanBoards.name,
@@ -41,7 +41,9 @@ function createCopilotTools(companyId: string) {
 
         getAgentWorkload: tool({
             description: 'Verifica a carga de trabalho dos atendentes, mostrando quantos leads estão atribuídos a cada agente atualmente.',
-            parameters: z.object({}),
+            parameters: z.object({
+                dummy: z.string().describe('Campo ignorado. Envie string vazia ("").')
+            }),
             execute: async (args: any) => {
                 try {
                     const results = await db.select({
@@ -88,7 +90,9 @@ function createCopilotTools(companyId: string) {
 
         getActiveCampaigns: tool({
             description: 'Consulta o status de todas as campanhas de disparo em massa da empresa, incluindo quantas mensagens já foram enviadas.',
-            parameters: z.object({}),
+            parameters: z.object({
+                dummy: z.string().describe('Campo ignorado. Envie string vazia ("").')
+            }),
             execute: async (args: any) => {
                 try {
                     const results = await db.query.campaigns.findMany({
