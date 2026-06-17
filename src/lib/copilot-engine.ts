@@ -237,6 +237,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     required: ["campaignId", "dailyBudgetBRL"],
                     additionalProperties: false
                 }
+            }
         },
         {
             type: "function" as const,
