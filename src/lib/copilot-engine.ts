@@ -193,6 +193,38 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "setPaidTrafficCampaignStatus",
+                description: "Pausa ou ativa uma campanha de tráfego pago (Meta Ads) usando o ID da campanha. Útil para pausar campanhas que não estão performando bem.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        campaignId: { type: "string", description: "O ID da campanha no Meta Ads" },
+                        status: { type: "string", enum: ["ACTIVE", "PAUSED"], description: "O novo status da campanha" }
+                    },
+                    required: ["campaignId", "status"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "setPaidTrafficCampaignBudget",
+                description: "Altera o orçamento diário de uma campanha de tráfego pago (Meta Ads) usando o ID da campanha. O valor deve ser em Reais (BRL).",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        campaignId: { type: "string", description: "O ID da campanha no Meta Ads" },
+                        dailyBudgetBRL: { type: "number", description: "O novo orçamento diário em Reais (ex: 50.50)" }
+                    },
+                    required: ["campaignId", "dailyBudgetBRL"],
+                    additionalProperties: false
+                }
+            }
         }
     ];
 
@@ -283,6 +315,34 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                     })
                                 };
                             }
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'setPaidTrafficCampaignStatus') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { updateStatus } = await import('./meta-write');
+                            const auth = await getMetaAuthForCompany(companyId);
+                            const res = await updateStatus(args.campaignId, args.status as any, auth.token);
+                            
+                            if (res.error) toolRes = { error: res.error };
+                            else toolRes = { success: true, message: `Status da campanha alterado com sucesso para ${args.status}` };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'setPaidTrafficCampaignBudget') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { updateBudget } = await import('./meta-write');
+                            const auth = await getMetaAuthForCompany(companyId);
+                            // O orçamento precisa ser enviado em centavos para a Meta API
+                            const budgetInCents = Math.round(args.dailyBudgetBRL * 100);
+                            const res = await updateBudget(args.campaignId, { daily_budget: budgetInCents }, auth.token);
+                            
+                            if (res.error) toolRes = { error: res.error };
+                            else toolRes = { success: true, message: `Orçamento diário atualizado com sucesso para R$ ${args.dailyBudgetBRL}` };
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }

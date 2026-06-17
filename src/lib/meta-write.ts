@@ -197,8 +197,9 @@ export interface MetaWriteResult<T = Record<string, unknown>> {
 async function metaPost<T>(
   path: string,
   body: Record<string, unknown>,
+  tokenOverride?: string
 ): Promise<MetaWriteResult<T>> {
-  const token = TOKEN();
+  const token = tokenOverride || TOKEN();
   if (!token) return { error: "META_ADS_ACCESS_TOKEN não configurado", status: 500 };
   const url = `${BASE}/${path}`;
   try {
@@ -360,8 +361,9 @@ export async function createAd(params: CreateAdParams): Promise<MetaWriteResult<
 export async function updateStatus(
   objectId: string,
   status: ObjectStatus,
+  token?: string
 ): Promise<MetaWriteResult<{ success: boolean }>> {
-  return metaPost<{ success: boolean }>(objectId, { status });
+  return metaPost<{ success: boolean }>(objectId, { status }, token);
 }
 
 // ============ BUDGET UPDATE ============
@@ -369,11 +371,12 @@ export async function updateStatus(
 export async function updateBudget(
   objectId: string,
   opts: { daily_budget?: number; lifetime_budget?: number },
+  token?: string
 ): Promise<MetaWriteResult<{ success: boolean }>> {
   const body: Record<string, string> = {};
   if (opts.daily_budget !== undefined) body.daily_budget = String(opts.daily_budget);
   if (opts.lifetime_budget !== undefined) body.lifetime_budget = String(opts.lifetime_budget);
-  return metaPost<{ success: boolean }>(objectId, body);
+  return metaPost<{ success: boolean }>(objectId, body, token);
 }
 
 // ============ DUPLICATE ============
