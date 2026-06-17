@@ -2679,28 +2679,12 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
                 let sentConnectionId = 'none';
 
-                // Enviar a mensagem pela conexão do Deivid Rodrigues (88920008007) via Evolution
+                // Enviar a mensagem pela conexão original (podendo ser Evolution ou Oficial)
                 try {
-                    const deividConn = await db.query.connections.findFirst({
-                        where: (connections, { like, or }) => or(
-                            like(connections.phone, '%88920008007%'),
-                            like(connections.phone, '%5588920008007%')
-                        )
-                    });
-
-                    if (deividConn && (ctx.contactPhone || ctx.contactId)) {
-                        sentConnectionId = deividConn.id;
+                    sentConnectionId = ctx.connectionId;
+                    if (ctx.contactPhone || ctx.contactId) {
                         await sendUnifiedMessage({
-                            provider: 'evolution',
-                            connectionId: deividConn.id,
-                            to: ctx.contactPhone || ctx.contactId,
-                            message: result.reply,
-                        });
-                    } else if (ctx.contactPhone || ctx.contactId) {
-                        // Fallback: se não achar a conexão específica, tenta enviar pela conexão atual
-                        sentConnectionId = ctx.connectionId;
-                        await sendUnifiedMessage({
-                            provider: 'evolution',
+                            provider: (ctx.provider as any) || 'evolution',
                             connectionId: ctx.connectionId,
                             to: ctx.contactPhone || ctx.contactId,
                             message: result.reply,
