@@ -2,7 +2,7 @@ import { generateText, tool } from 'ai';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { db } from './db';
-import { contacts, conversations, kanbanBoards, kanbanLeads, companies, aiChats, campaigns, connections, users } from './db/schema';
+import { contacts, conversations, kanbanBoards, kanbanLeads, companies, aiChats, campaigns, connections, users, tags, contactsToTags, messages } from './db/schema';
 import { eq, and, sql, desc, count, isNull, isNotNull } from 'drizzle-orm';
 import { resolveAIKeys } from './ai-keys-resolver';
 
@@ -128,6 +128,15 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
 
     const openai = new OpenAI({ apiKey: OPENAI_KEY });
     
+    let contactId: string | undefined;
+    if (conversationId) {
+        const conv = await db.query.conversations.findFirst({
+            where: (conv, { eq }) => eq(conv.id, conversationId),
+            columns: { contactId: true }
+        });
+        if (conv) contactId = conv.contactId;
+    }
+    
     const tools = [
         {
             type: "function" as const,
@@ -226,6 +235,106 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                         dailyBudgetBRL: { type: "number", description: "O novo orçamento diário em Reais (ex: 50.50)" }
                     },
                     required: ["campaignId", "dailyBudgetBRL"],
+                    additionalProperties: false
+                }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getTags",
+                description: "Consulta e lista todas as etiquetas (tags) disponíveis no sistema com seus IDs, nomes e cores.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: ["dummy"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "createTag",
+                description: "Cria uma nova etiqueta (tag) no sistema.",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        name: { type: "string", description: "Nome da etiqueta" },
+                        color: { type: "string", description: "Cor da etiqueta em formato HEX (ex: #FF0000 para vermelho). Caso não forneça, use uma aleatória." }
+                    },
+                    required: ["name", "color"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "assignTagToLead",
+                description: "Atribui uma etiqueta (tag) a um lead pelo ID da tag.",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        tagId: { type: "string", description: "O ID da etiqueta" },
+                        contactId: { type: "string", description: "O ID do contato/lead. Se não informado, o sistema tenta usar o contato da conversa atual, mas é bom fornecer se souber." }
+                    },
+                    required: ["tagId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getKanbanLeads",
+                description: "Lista os leads atuais presentes em um Kanban/Funil específico.",
+                parameters: {
+                    type: "object",
+                    properties: { boardId: { type: "string", description: "ID do funil/board." } },
+                    required: ["boardId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "moveKanbanLead",
+                description: "Move um lead para outra etapa do Kanban.",
+                parameters: {
+                    type: "object",
+                    properties: { 
+                        leadId: { type: "string", description: "ID do lead no Kanban (tabela kanbanLeads)." },
+                        newStageId: { type: "string", description: "ID da nova etapa para qual o lead vai." },
+                        newStageTitle: { type: "string", description: "Título da nova etapa para preencher o json de currentStage." }
+                    },
+                    required: ["leadId", "newStageId", "newStageTitle"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getLeadAssignment",
+                description: "Verifica qual atendente humano está associado a este lead/conversa.",
+                parameters: {
+                    type: "object",
+                    properties: { conversationId: { type: "string", description: "Se vazio, usa a conversa atual do contexto." } },
+                    required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getLeadConversations",
+                description: "Puxa as últimas 50 mensagens do lead atual para que você (a IA) possa ler e resumir a conversa.",
+                parameters: {
+                    type: "object",
+                    properties: { conversationId: { type: "string", description: "Se vazio, usa a conversa atual do contexto." } },
+                    required: [],
                     additionalProperties: false
                 }
             }
@@ -365,6 +474,119 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             
                             if (res.error) toolRes = { error: res.error };
                             else toolRes = { success: true, message: `Orçamento diário atualizado com sucesso para R$ ${args.dailyBudgetBRL}` };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getTags') {
+                        try {
+                            const results = await db.query.tags.findMany({
+                                where: eq(tags.companyId, companyId)
+                            });
+                            toolRes = { success: true, data: results };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'createTag') {
+                        try {
+                            const { name, color } = args;
+                            const newColor = color || `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
+                            const inserted = await db.insert(tags).values({
+                                companyId,
+                                name,
+                                color: newColor
+                            }).returning();
+                            toolRes = { success: true, message: `Etiqueta '${name}' criada com sucesso`, data: inserted[0] };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'assignTagToLead') {
+                        try {
+                            const targetContactId = args.contactId || contactId;
+                            if (!targetContactId) throw new Error("Contact ID não fornecido e não foi possível inferir da conversa.");
+                            
+                            await db.insert(contactsToTags).values({
+                                companyId,
+                                contactId: targetContactId,
+                                tagId: args.tagId
+                            });
+                            toolRes = { success: true, message: `Etiqueta atribuída com sucesso ao contato.` };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getKanbanLeads') {
+                        try {
+                            const results = await db.query.kanbanLeads.findMany({
+                                where: and(eq(kanbanLeads.companyId, companyId), eq(kanbanLeads.boardId, args.boardId)),
+                                columns: {
+                                    id: true,
+                                    title: true,
+                                    value: true,
+                                    currentStage: true
+                                }
+                            });
+                            toolRes = { success: true, count: results.length, data: results };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'moveKanbanLead') {
+                        try {
+                            await db.update(kanbanLeads)
+                                .set({ currentStage: { id: args.newStageId, title: args.newStageTitle } })
+                                .where(and(eq(kanbanLeads.id, args.leadId), eq(kanbanLeads.companyId, companyId)));
+                            toolRes = { success: true, message: `Lead movido com sucesso para a etapa ${args.newStageTitle}` };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getLeadAssignment') {
+                        try {
+                            const targetConvId = args.conversationId || conversationId;
+                            if (!targetConvId) throw new Error("ID da conversa não fornecido.");
+                            
+                            const results = await db.select({
+                                agentId: users.id,
+                                agentName: users.name,
+                                agentEmail: users.email
+                            })
+                            .from(conversations)
+                            .leftJoin(users, eq(conversations.assignedTo, users.id))
+                            .where(eq(conversations.id, targetConvId));
+                            
+                            if (results.length === 0) throw new Error("Conversa não encontrada.");
+                            
+                            const agent = results[0];
+                            if (agent.agentId) {
+                                toolRes = { success: true, message: "Lead está atribuído a um atendente humano.", agent };
+                            } else {
+                                toolRes = { success: true, message: "Lead NÃO está atribuído a nenhum atendente humano no momento." };
+                            }
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getLeadConversations') {
+                        try {
+                            const targetConvId = args.conversationId || conversationId;
+                            if (!targetConvId) throw new Error("ID da conversa não fornecido.");
+                            
+                            const history = await db.query.messages.findMany({
+                                where: eq(messages.conversationId, targetConvId),
+                                orderBy: [desc(messages.sentAt)],
+                                limit: 50,
+                                columns: {
+                                    content: true,
+                                    senderType: true,
+                                    isAiGenerated: true,
+                                    sentAt: true
+                                }
+                            });
+                            history.reverse();
+                            toolRes = { success: true, messages: history };
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
