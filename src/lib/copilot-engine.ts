@@ -211,11 +211,11 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "setPaidTrafficCampaignStatus",
-                description: "Pausa ou ativa uma campanha de tráfego pago (Meta Ads) usando o ID da campanha. Útil para pausar campanhas que não estão performando bem.",
+                description: "Pausa ou ativa uma campanha de tráfego pago (Meta Ads) usando o ID numérico da campanha. OBRIGATÓRIO: Use apenas o ID numérico exato. Se você tiver apenas o nome da campanha, você DEVE buscar os IDs usando getPaidTrafficCampaigns antes de chamar esta função.",
                 parameters: {
                     type: "object",
                     properties: {
-                        campaignId: { type: "string", description: "O ID da campanha no Meta Ads" },
+                        campaignId: { type: "string", description: "O ID numérico exato da campanha no Meta Ads (ex: 12023939393)" },
                         status: { type: "string", enum: ["ACTIVE", "PAUSED"], description: "O novo status da campanha" }
                     },
                     required: ["campaignId", "status"],
@@ -463,6 +463,71 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getPaidTrafficAccountInsights",
+                description: "Busca as métricas gerais da conta de anúncios (Meta Ads). Puxa o total de gastos, leads, impressões e cliques consolidados da conta inteira.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        datePreset: { type: "string", description: "Período. Ex: today, yesterday, last_7d, last_30d, this_month, last_month. Padrão: last_30d" }
+                    },
+                    required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getPaidTrafficAdSets",
+                description: "Lista os conjuntos de anúncios de uma campanha específica no Meta Ads, incluindo suas métricas de performance (gasto, leads, etc).",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        campaignId: { type: "string", description: "O ID da campanha no Meta Ads." },
+                        datePreset: { type: "string", description: "Período. Ex: today, last_7d, last_30d. Padrão: last_30d" }
+                    },
+                    required: ["campaignId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getPaidTrafficAds",
+                description: "Lista os anúncios/criativos específicos de uma campanha ou de um conjunto de anúncios no Meta Ads e suas métricas.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        campaignId: { type: "string", description: "O ID da campanha (opcional, se passar adsetId não precisa)." },
+                        adsetId: { type: "string", description: "O ID do conjunto de anúncios (opcional)." },
+                        datePreset: { type: "string", description: "Período. Padrão: last_30d" }
+                    },
+                    required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getPaidTrafficDemographics",
+                description: "Faz análise de público / demografia no Meta Ads quebrando os resultados por idade, gênero, estado (region), país ou dispositivo.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        campaignId: { type: "string", description: "O ID da campanha." },
+                        breakdown: { type: "string", enum: ["age", "gender", "age,gender", "country", "region", "impression_device", "publisher_platform"], description: "Qual quebra demográfica analisar." },
+                        datePreset: { type: "string", description: "Período. Padrão: last_30d" }
+                    },
+                    required: ["campaignId", "breakdown"],
+                    additionalProperties: false
+                }
+            }
         }
     ];
 
@@ -613,6 +678,170 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
+                    }
+                    else if (tc.function.name === 'getPaidTrafficAccountInsights') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { metaFetchPaginated } = await import('./meta-fetch');
+                            const auth = await getMetaAuthForCompany(companyId);
+                            const datePreset = args.datePreset || "last_30d";
+                            const res = await metaFetchPaginated({
+                                endpoint: "insights",
+                                fields: "spend,impressions,clicks,actions,cpc,cpm,ctr",
+                                account: auth.accountId,
+                                token: auth.token,
+                                params: { level: "account" },
+                                datePreset
+                            });
+                            if (res.error) toolRes = { error: res.error };
+                            else {
+                                const data = res.data[0] || {};
+                                let leads = 0;
+                                if (data.actions) {
+                                    const leadAction = (data.actions as any[]).find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.lead_grouped' || a.action_type === 'leadgen_grouped');
+                                    if (leadAction) leads = parseFloat(leadAction.value);
+                                }
+                                toolRes = {
+                                    success: true,
+                                    summary: `Relatório Geral da Conta (Período: ${datePreset})`,
+                                    data: {
+                                        spend: data.spend ? `R$ ${data.spend}` : "R$ 0.00",
+                                        impressions: data.impressions || "0",
+                                        clicks: data.clicks || "0",
+                                        leads: leads,
+                                        cpl: leads > 0 && data.spend ? `R$ ${(parseFloat(data.spend) / leads).toFixed(2)}` : "N/A",
+                                        cpc: data.cpc || "N/A",
+                                        ctr: data.ctr || "N/A"
+                                    }
+                                };
+                            }
+                        } catch (e: any) { toolRes = { error: e.message }; }
+                    }
+                    else if (tc.function.name === 'getPaidTrafficAdSets') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { metaFetchPaginated } = await import('./meta-fetch');
+                            const auth = await getMetaAuthForCompany(companyId);
+                            const datePreset = args.datePreset || "last_30d";
+                            const res = await metaFetchPaginated({
+                                endpoint: "adsets",
+                                fields: `id,name,effective_status,insights.date_preset(${datePreset}){spend,impressions,clicks,actions}`,
+                                account: auth.accountId,
+                                token: auth.token,
+                                params: { filtering: JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] }]) }
+                            });
+                            if (res.error) toolRes = { error: res.error };
+                            else {
+                                toolRes = {
+                                    success: true,
+                                    adsets: res.data.map((c: any) => {
+                                        const insights = c.insights?.data?.[0] || {};
+                                        let leads = 0;
+                                        if (insights.actions) {
+                                            const leadAction = insights.actions.find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.lead_grouped' || a.action_type === 'leadgen_grouped');
+                                            if (leadAction) leads = parseFloat(leadAction.value);
+                                        }
+                                        return {
+                                            id: c.id,
+                                            name: c.name,
+                                            status: c.effective_status,
+                                            spend: insights.spend ? `R$ ${insights.spend}` : "R$ 0.00",
+                                            impressions: insights.impressions || "0",
+                                            clicks: insights.clicks || "0",
+                                            leads: leads,
+                                            cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A"
+                                        };
+                                    })
+                                };
+                            }
+                        } catch (e: any) { toolRes = { error: e.message }; }
+                    }
+                    else if (tc.function.name === 'getPaidTrafficAds') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { metaFetchPaginated } = await import('./meta-fetch');
+                            const auth = await getMetaAuthForCompany(companyId);
+                            const datePreset = args.datePreset || "last_30d";
+                            const filtering = [];
+                            if (args.adsetId) filtering.push({ field: "adset.id", operator: "EQUAL", value: [args.adsetId] });
+                            else if (args.campaignId) filtering.push({ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] });
+                            const res = await metaFetchPaginated({
+                                endpoint: "ads",
+                                fields: `id,name,effective_status,insights.date_preset(${datePreset}){spend,impressions,clicks,actions}`,
+                                account: auth.accountId,
+                                token: auth.token,
+                                params: filtering.length > 0 ? { filtering: JSON.stringify(filtering) } : {}
+                            });
+                            if (res.error) toolRes = { error: res.error };
+                            else {
+                                toolRes = {
+                                    success: true,
+                                    ads: res.data.map((c: any) => {
+                                        const insights = c.insights?.data?.[0] || {};
+                                        let leads = 0;
+                                        if (insights.actions) {
+                                            const leadAction = insights.actions.find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.lead_grouped' || a.action_type === 'leadgen_grouped');
+                                            if (leadAction) leads = parseFloat(leadAction.value);
+                                        }
+                                        return {
+                                            id: c.id,
+                                            name: c.name,
+                                            status: c.effective_status,
+                                            spend: insights.spend ? `R$ ${insights.spend}` : "R$ 0.00",
+                                            impressions: insights.impressions || "0",
+                                            clicks: insights.clicks || "0",
+                                            leads: leads,
+                                            cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A"
+                                        };
+                                    })
+                                };
+                            }
+                        } catch (e: any) { toolRes = { error: e.message }; }
+                    }
+                    else if (tc.function.name === 'getPaidTrafficDemographics') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { metaFetchPaginated } = await import('./meta-fetch');
+                            const auth = await getMetaAuthForCompany(companyId);
+                            const datePreset = args.datePreset || "last_30d";
+                            const res = await metaFetchPaginated({
+                                endpoint: "insights",
+                                fields: "spend,impressions,clicks,actions",
+                                account: auth.accountId,
+                                token: auth.token,
+                                params: { 
+                                    level: "campaign",
+                                    breakdowns: args.breakdown,
+                                    filtering: JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] }])
+                                },
+                                datePreset
+                            });
+                            if (res.error) toolRes = { error: res.error };
+                            else {
+                                toolRes = {
+                                    success: true,
+                                    summary: `Análise Demográfica (${args.breakdown})`,
+                                    data: res.data.map((d: any) => {
+                                        let leads = 0;
+                                        if (d.actions) {
+                                            const leadAction = (d.actions as any[]).find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.lead_grouped' || a.action_type === 'leadgen_grouped');
+                                            if (leadAction) leads = parseFloat(leadAction.value);
+                                        }
+                                        const b1 = args.breakdown.split(',')[0];
+                                        const b2 = args.breakdown.split(',')[1];
+                                        const breakdownValue = b2 ? `${d[b1] || 'Unknown'} / ${d[b2] || 'Unknown'}` : (d[b1] || 'Unknown');
+                                        return {
+                                            breakdown_value: breakdownValue,
+                                            spend: d.spend || "0",
+                                            impressions: d.impressions || "0",
+                                            clicks: d.clicks || "0",
+                                            leads: leads,
+                                            cpl: leads > 0 && d.spend ? (parseFloat(d.spend) / leads).toFixed(2) : "N/A"
+                                        };
+                                    })
+                                };
+                            }
+                        } catch (e: any) { toolRes = { error: e.message }; }
                     }
                     else if (tc.function.name === 'getTags') {
                         try {
