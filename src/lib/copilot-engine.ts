@@ -561,7 +561,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
     if (conversationId && contextMessages.length > 0) {
         finalSystemMessage = `${finalSystemMessage}\n\n[INSTRUÇÕES MESTRES (SYSTEM PROMPT)]:\n${prompt}`;
         // O usuário já falou no contextMessages, então o último "user" prompt força o modelo a agir
-        finalUserMessage = "Com base nas Instruções Mestres acima e no histórico da conversa, execute as ferramentas necessárias (se houver) e responda.";
+        finalUserMessage = `IMPORTANTE: A sua diretriz EXECUTIVA PRINCIPAL agora é: "${prompt}".\nUse o histórico da conversa apenas como contexto (por exemplo, para saber de qual lead estamos falando), mas cumpra rigorosamente a diretriz principal. Execute as ferramentas necessárias se for o caso.`;
     }
 
     const messages: any[] = [
