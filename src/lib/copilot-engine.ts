@@ -232,7 +232,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     type: "object",
                     properties: {
                         campaignId: { type: "string", description: "O ID numérico exato da campanha no Meta Ads. APENAS NÚMEROS." },
-                        status: { type: "string", enum: ["ACTIVE", "PAUSED"], description: "O novo status da campanha" }
+                        status: { type: "string", enum: ["ACTIVE", "PAUSED"], description: "O novo status da campanha. OBRIGATÓRIO: Use 'ACTIVE' para ativar e 'PAUSED' para desativar/pausar." }
                     },
                     required: ["campaignId", "status"],
                     additionalProperties: false
@@ -479,8 +479,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
-        },
-        {
+{
             type: "function" as const,
             function: {
                 name: "getPaidTrafficAccountInsights",
@@ -488,7 +487,9 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                 parameters: {
                     type: "object",
                     properties: {
-                        datePreset: { type: "string", description: "Período. Ex: today, yesterday, last_7d, last_30d, this_month, last_month. Padrão: last_30d" }
+                        datePreset: { type: "string", description: "Período. Ex: today, yesterday, last_7d, last_30d, this_month, last_month. Padrão: last_30d" },
+                        since: { type: "string", description: "Data inicial no formato YYYY-MM-DD. Use apenas se o usuário pedir um período muito específico." },
+                        until: { type: "string", description: "Data final no formato YYYY-MM-DD." }
                     },
                     required: [],
                     additionalProperties: false
@@ -504,7 +505,9 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     type: "object",
                     properties: {
                         campaignId: { type: "string", description: "O ID da campanha no Meta Ads." },
-                        datePreset: { type: "string", description: "Período. Ex: today, last_7d, last_30d. Padrão: last_30d" }
+                        datePreset: { type: "string", description: "Período. Ex: today, last_7d, last_30d. Padrão: last_30d" },
+                        since: { type: "string", description: "Data inicial (YYYY-MM-DD)" },
+                        until: { type: "string", description: "Data final (YYYY-MM-DD)" }
                     },
                     required: ["campaignId"],
                     additionalProperties: false
@@ -521,7 +524,9 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     properties: {
                         campaignId: { type: "string", description: "O ID da campanha (opcional, se passar adsetId não precisa)." },
                         adsetId: { type: "string", description: "O ID do conjunto de anúncios (opcional)." },
-                        datePreset: { type: "string", description: "Período. Padrão: last_30d" }
+                        datePreset: { type: "string", description: "Período. Padrão: last_30d" },
+                        since: { type: "string", description: "Data inicial (YYYY-MM-DD)" },
+                        until: { type: "string", description: "Data final (YYYY-MM-DD)" }
                     },
                     required: [],
                     additionalProperties: false
@@ -538,7 +543,9 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     properties: {
                         campaignId: { type: "string", description: "O ID numérico da campanha. APENAS NÚMEROS. NUNCA envie nomes ou colchetes." },
                         breakdown: { type: "string", enum: ["age", "gender", "age,gender", "country", "region", "impression_device", "publisher_platform"], description: "Qual quebra demográfica analisar." },
-                        datePreset: { type: "string", description: "Período. Padrão: last_30d" }
+                        datePreset: { type: "string", description: "Período. Padrão: last_30d" },
+                        since: { type: "string", description: "Data inicial (YYYY-MM-DD)" },
+                        until: { type: "string", description: "Data final (YYYY-MM-DD)" }
                     },
                     required: ["campaignId", "breakdown"],
                     additionalProperties: false
@@ -617,7 +624,17 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             
                             const auth = await getMetaAuthForCompany(companyId);
                             
-                            const datePreset = args.datePreset || "last_30d";
+                            let insightsField = "";
+                            let dateLabel = "";
+                            if (args.since && args.until) {
+                                insightsField = `insights.time_range({"since":"${args.since}","until":"${args.until}"})`;
+                                dateLabel = `${args.since} a ${args.until}`;
+                            } else {
+                                const datePreset = args.datePreset || "last_30d";
+                                insightsField = `insights.date_preset(${datePreset})`;
+                                dateLabel = datePreset;
+                            }
+
                             const statusFilter = args.status && args.status !== "ALL" ? args.status : undefined;
                             
                             const customParams: any = {};
@@ -627,7 +644,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
 
                             const res = await metaFetchPaginated({
                                 endpoint: "campaigns",
-                                fields: `id,name,effective_status,objective,insights.date_preset(${datePreset}){spend,impressions,clicks,actions}`,
+                                fields: `id,name,effective_status,objective,${insightsField}{spend,impressions,clicks,actions}`,
                                 account: auth.accountId,
                                 token: auth.token,
                                 params: customParams
@@ -642,7 +659,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                 }
                                 
                                 toolRes = {
-                                    summary: `Dados de Tráfego Pago (Meta Ads) - Filtro Período: ${datePreset}`,
+                                    summary: `Dados de Tráfego Pago (Meta Ads) - Filtro Período: ${dateLabel}`,
                                     campaigns: campaigns.map((c: any) => {
                                         const insights = c.insights?.data?.[0] || {};
                                         let leads = 0;
@@ -701,14 +718,23 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const { getMetaAuthForCompany } = await import('./meta-ads');
                             const { metaFetchPaginated } = await import('./meta-fetch');
                             const auth = await getMetaAuthForCompany(companyId);
-                            const datePreset = args.datePreset || "last_30d";
+                            let dateLabel = "";
+                            const params: any = { level: "account" };
+                            
+                            if (args.since && args.until) {
+                                params.time_range = JSON.stringify({ since: args.since, until: args.until });
+                                dateLabel = `${args.since} a ${args.until}`;
+                            } else {
+                                params.date_preset = args.datePreset || "last_30d";
+                                dateLabel = args.datePreset || "last_30d";
+                            }
+
                             const res = await metaFetchPaginated({
                                 endpoint: "insights",
                                 fields: "spend,impressions,clicks,actions,cpc,cpm,ctr",
                                 account: auth.accountId,
                                 token: auth.token,
-                                params: { level: "account" },
-                                datePreset
+                                params
                             });
                             if (res.error) toolRes = { error: res.error };
                             else {
@@ -720,7 +746,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                 }
                                 toolRes = {
                                     success: true,
-                                    summary: `Relatório Geral da Conta (Período: ${datePreset})`,
+                                    summary: `Relatório Geral da Conta (Período: ${dateLabel})`,
                                     data: {
                                         spend: data.spend ? `R$ ${data.spend}` : "R$ 0.00",
                                         impressions: data.impressions || "0",
@@ -739,10 +765,18 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const { getMetaAuthForCompany } = await import('./meta-ads');
                             const { metaFetchPaginated } = await import('./meta-fetch');
                             const auth = await getMetaAuthForCompany(companyId);
-                            const datePreset = args.datePreset || "last_30d";
+                            
+                            let insightsField = "";
+                            if (args.since && args.until) {
+                                insightsField = `insights.time_range({"since":"${args.since}","until":"${args.until}"})`;
+                            } else {
+                                const datePreset = args.datePreset || "last_30d";
+                                insightsField = `insights.date_preset(${datePreset})`;
+                            }
+
                             const res = await metaFetchPaginated({
                                 endpoint: "adsets",
-                                fields: `id,name,effective_status,insights.date_preset(${datePreset}){spend,impressions,clicks,actions}`,
+                                fields: `id,name,effective_status,${insightsField}{spend,impressions,clicks,actions}`,
                                 account: auth.accountId,
                                 token: auth.token,
                                 params: { filtering: JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] }]) }
@@ -778,13 +812,21 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const { getMetaAuthForCompany } = await import('./meta-ads');
                             const { metaFetchPaginated } = await import('./meta-fetch');
                             const auth = await getMetaAuthForCompany(companyId);
-                            const datePreset = args.datePreset || "last_30d";
+                            
+                            let insightsField = "";
+                            if (args.since && args.until) {
+                                insightsField = `insights.time_range({"since":"${args.since}","until":"${args.until}"})`;
+                            } else {
+                                const datePreset = args.datePreset || "last_30d";
+                                insightsField = `insights.date_preset(${datePreset})`;
+                            }
+
                             const filtering = [];
                             if (args.adsetId) filtering.push({ field: "adset.id", operator: "EQUAL", value: [args.adsetId] });
                             else if (args.campaignId) filtering.push({ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] });
                             const res = await metaFetchPaginated({
                                 endpoint: "ads",
-                                fields: `id,name,effective_status,insights.date_preset(${datePreset}){spend,impressions,clicks,actions}`,
+                                fields: `id,name,effective_status,${insightsField}{spend,impressions,clicks,actions}`,
                                 account: auth.accountId,
                                 token: auth.token,
                                 params: filtering.length > 0 ? { filtering: JSON.stringify(filtering) } : {}
@@ -820,18 +862,28 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const { getMetaAuthForCompany } = await import('./meta-ads');
                             const { metaFetchPaginated } = await import('./meta-fetch');
                             const auth = await getMetaAuthForCompany(companyId);
-                            const datePreset = args.datePreset || "last_30d";
+                            
+                            let dateLabel = "";
+                            const params: any = { 
+                                level: "campaign",
+                                breakdowns: args.breakdown,
+                                filtering: JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] }])
+                            };
+
+                            if (args.since && args.until) {
+                                params.time_range = JSON.stringify({ since: args.since, until: args.until });
+                                dateLabel = `${args.since} a ${args.until}`;
+                            } else {
+                                params.date_preset = args.datePreset || "last_30d";
+                                dateLabel = args.datePreset || "last_30d";
+                            }
+
                             const res = await metaFetchPaginated({
                                 endpoint: "insights",
                                 fields: "spend,impressions,clicks,actions",
                                 account: auth.accountId,
                                 token: auth.token,
-                                params: { 
-                                    level: "campaign",
-                                    breakdowns: args.breakdown,
-                                    filtering: JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] }])
-                                },
-                                datePreset
+                                params
                             });
                             if (res.error) toolRes = { error: res.error };
                             else {
