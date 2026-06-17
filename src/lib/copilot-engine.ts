@@ -185,11 +185,15 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "getPaidTrafficCampaigns",
-                description: "Busca os dados e métricas reais de campanhas de tráfego pago (Meta Ads / Facebook Ads), como investimento, cliques, leads e custo por lead das campanhas ativas nos últimos 30 dias.",
+                description: "Busca os dados e métricas reais de campanhas de tráfego pago (Meta Ads / Facebook Ads), como investimento, cliques, leads e custo por lead. Permite filtrar por status, objetivo e período de data.",
                 parameters: {
                     type: "object",
-                    properties: { dummy: { type: "string" } },
-                    required: ["dummy"],
+                    properties: {
+                        status: { type: "string", enum: ["ACTIVE", "PAUSED", "ALL"], description: "Filtrar por status. Padrão é ALL." },
+                        datePreset: { type: "string", description: "Período pré-definido. Ex: today, yesterday, last_7d, last_30d, this_month, last_month. Padrão: last_30d" },
+                        objective: { type: "string", description: "Filtrar por objetivo (ex: OUTCOME_LEADS, OUTCOME_SALES). Opcional." }
+                    },
+                    required: [],
                     additionalProperties: false
                 }
             }
@@ -285,32 +289,50 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const { metaFetchPaginated } = await import('./meta-fetch');
                             
                             const auth = await getMetaAuthForCompany(companyId);
+                            
+                            const datePreset = args.datePreset || "last_30d";
+                            const statusFilter = args.status && args.status !== "ALL" ? args.status : undefined;
+                            
+                            const customParams: any = {};
+                            if (statusFilter) {
+                                customParams.filtering = JSON.stringify([{ field: "effective_status", operator: "IN", value: [statusFilter] }]);
+                            }
+
                             const res = await metaFetchPaginated({
-                                endpoint: "insights",
-                                fields: "campaign_name,spend,impressions,clicks,actions",
+                                endpoint: "campaigns",
+                                fields: `id,name,effective_status,objective,insights.date_preset(${datePreset}){spend,impressions,clicks,actions}`,
                                 account: auth.accountId,
                                 token: auth.token,
-                                params: { level: "campaign", date_preset: "last_30d" }
+                                params: customParams
                             });
                             
                             if (res.error) {
                                 toolRes = { error: res.error };
                             } else {
+                                let campaigns = res.data;
+                                if (args.objective) {
+                                    campaigns = campaigns.filter((c: any) => c.objective === args.objective);
+                                }
+                                
                                 toolRes = {
-                                    summary: "Dados de Tráfego Pago (Meta Ads) - Últimos 30 dias",
-                                    campaigns: res.data.map((c: any) => {
+                                    summary: `Dados de Tráfego Pago (Meta Ads) - Filtro Período: ${datePreset}`,
+                                    campaigns: campaigns.map((c: any) => {
+                                        const insights = c.insights?.data?.[0] || {};
                                         let leads = 0;
-                                        if (c.actions) {
-                                            const leadAction = c.actions.find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.lead_grouped' || a.action_type === 'leadgen_grouped');
+                                        if (insights.actions) {
+                                            const leadAction = insights.actions.find((a: any) => a.action_type === 'lead' || a.action_type === 'onsite_conversion.lead_grouped' || a.action_type === 'leadgen_grouped');
                                             if (leadAction) leads = parseFloat(leadAction.value);
                                         }
                                         return {
-                                            campaign_name: c.campaign_name,
-                                            spend: c.spend ? `R$ ${c.spend}` : "R$ 0.00",
-                                            impressions: c.impressions || "0",
-                                            clicks: c.clicks || "0",
+                                            id: c.id,
+                                            campaign_name: c.name,
+                                            status: c.effective_status,
+                                            objective: c.objective,
+                                            spend: insights.spend ? `R$ ${insights.spend}` : "R$ 0.00",
+                                            impressions: insights.impressions || "0",
+                                            clicks: insights.clicks || "0",
                                             leads: leads,
-                                            cpl: leads > 0 && c.spend ? `R$ ${(parseFloat(c.spend) / leads).toFixed(2)}` : "N/A"
+                                            cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A"
                                         };
                                     })
                                 };
