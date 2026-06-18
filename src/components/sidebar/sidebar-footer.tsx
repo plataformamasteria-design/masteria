@@ -66,8 +66,8 @@ export function SidebarFooter({ expanded, isMobile, isPinned, onPinToggle, onMob
             <div className="flex flex-col gap-1">
                 {/* Utility Icon Bar */}
                 <div className={cn(
-                    "flex flex-wrap items-center justify-center gap-1.5 py-2 rounded-3xl bg-white/70 dark:bg-black/50 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_0_20px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)] transition-all duration-300",
-                    expanded ? "px-3 mx-4" : "px-1 mx-2 flex-col"
+                    "flex flex-wrap items-center justify-center transition-all duration-300",
+                    expanded ? "gap-1.5 py-2 px-3 mx-4 rounded-3xl bg-white/70 dark:bg-black/50 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,1)] dark:shadow-[0_0_20px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.05)]" : "gap-3 py-1 px-0 mx-0 flex-col bg-transparent border-transparent shadow-none"
                 )}>
                     {/* Connection Status */}
                     <TooltipProvider>

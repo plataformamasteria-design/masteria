@@ -1,20 +1,22 @@
-import { db } from '../src/lib/db';
-import { automationLogs } from '../src/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+import { executeCopilotCommand } from '../src/lib/copilot-engine';
 
-async function main() {
-    const conversationId = '75c5c756-6dc7-4e5c-b376-cb28abed29eb';
+async function run() {
+    const companyId = 'ba56e066-6609-437c-9c9f-663e1565410a';
+    const qs = [
+        "Vê por favor quantos leads estão no Funil do GCR no Kanban na etapa de Lead Novo",
+    ];
 
-    console.log('\n--- AUTOMATION LOGS ---');
-    const logs = await db.query.automationLogs.findMany({
-        where: eq(automationLogs.conversationId, conversationId),
-        orderBy: [desc(automationLogs.createdAt)],
-        limit: 50
-    });
-
-    for (const log of logs.reverse()) {
-        console.log(`[${log.createdAt?.toISOString()}] Level: ${log.level} | Msg: ${log.message} | Details: ${JSON.stringify(log.details)}`);
+    for (const q of qs) {
+        console.log('\n\n--- TESTE: ' + q + ' ---');
+        try {
+            const res = await executeCopilotCommand(q, companyId, null);
+            console.log(JSON.stringify(res, null, 2));
+        } catch(e) {
+            console.error(e);
+        }
     }
+    process.exit(0);
 }
-
-main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+run();

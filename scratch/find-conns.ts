@@ -5,11 +5,11 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 async function run() {
   const { db } = await import('../src/lib/db');
-  const { automationFlows } = await import('../src/lib/db/schema');
+  const { connections } = await import('../src/lib/db/schema');
   const { eq } = await import('drizzle-orm');
   
-  const f = await db.select().from(automationFlows).where(eq(automationFlows.id, '5f345023-dcde-4201-8f2c-06d9c7e9ae78'));
-  console.log(JSON.stringify(f[0].executionLogic, null, 2));
+  const conns = await db.select().from(connections).where(eq(connections.companyId, '7cb4773e-1fab-4699-b35d-c70d9f8d9149'));
+  console.log(JSON.stringify(conns, null, 2));
   process.exit(0);
 }
 run();

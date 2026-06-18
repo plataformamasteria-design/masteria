@@ -1,38 +1,29 @@
 import { db } from '../src/lib/db';
-import { automationFlowExecutions, automationLogs } from '../src/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { automationLogs, flowExecutions } from '../src/lib/db/schema';
+import { desc, eq, like } from 'drizzle-orm';
 
-async function main() {
-    const execId = '312cb72d-47ca-46ff-bf6f-2552ea3a6ac6'; // from previous check
-    const exec = await db.query.automationFlowExecutions.findFirst({
-        where: eq(automationFlowExecutions.id, execId)
-    });
-    console.log(`\n--- Execution ---`);
-    console.log(`Status: ${exec?.status}`);
-    console.log(`State: ${JSON.stringify(exec?.state)}`);
-    console.log(`Error: ${exec?.error}`);
-
-    console.log('\n--- Execution Logs ---');
-    // In automationLogs, ruleId is usually the flowId, but where is the executionId? 
-    // Is it in details.executionId?
+async function run() {
+    console.log("Checking recent automation logs...");
     const logs = await db.query.automationLogs.findMany({
-        where: eq(automationLogs.conversationId, '75c5c756-6dc7-4e5c-b376-cb28abed29eb'),
         orderBy: [desc(automationLogs.createdAt)],
         limit: 10
     });
-
-    for (const log of logs.reverse()) {
-        console.log(`[${log.createdAt?.toISOString()}] Node: ${log.nodeId} | Lvl: ${log.level} | Msg: ${log.message} | Details: ${JSON.stringify(log.details)}`);
+    
+    for (const log of logs) {
+        console.log(`Log ID: ${log.id} | Action: ${log.action} | Status: ${log.status}`);
+        console.log(`Details: ${JSON.stringify(log.details)}`);
+        console.log('---');
     }
 
-    // Check variables stored on conversation for this exec
-    const { conversations } = await import('../src/lib/db/schema');
-    const conv = await db.query.conversations.findFirst({
-        where: eq(conversations.id, '75c5c756-6dc7-4e5c-b376-cb28abed29eb')
+    console.log("\nChecking flow executions...");
+    const execs = await db.query.flowExecutions.findMany({
+        orderBy: [desc(flowExecutions.createdAt)],
+        limit: 5
     });
-    console.log(`\n--- Conversation Vars ---`);
-    console.log(JSON.stringify(conv?.variables));
 
+    for (const ex of execs) {
+        console.log(`Exec ID: ${ex.id} | Flow: ${ex.flowId} | Status: ${ex.status} | Steps: ${ex.currentStepIndex}`);
+    }
 }
 
-main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+run().catch(console.error).then(() => process.exit(0));

@@ -84,7 +84,10 @@ export function SidebarLayout() {
             <div className="flex h-full flex-col bg-transparent">
                 <SidebarHeader expanded={expanded} isMobile={isMobile} onMobileClose={handleMobileClose} />
 
-                <nav className="flex flex-col gap-2 px-4 py-6 items-center w-full flex-1 overflow-y-auto custom-scrollbar relative z-10">
+                <nav className={cn(
+                    "flex flex-col py-6 items-center w-full flex-1 overflow-y-auto overflow-x-hidden relative z-10",
+                    expanded ? "gap-2 px-4 custom-scrollbar" : "gap-1.5 px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                )}>
                     {loading ? (
                         [...Array(8)].map((_, i) => (
                             <div key={i} className={cn('flex h-[46px] items-center justify-start rounded-2xl', expanded ? 'w-full px-4' : 'w-[46px] justify-center')}>

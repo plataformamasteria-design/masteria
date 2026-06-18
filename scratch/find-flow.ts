@@ -8,8 +8,9 @@ async function run() {
   const { automationFlows } = await import('../src/lib/db/schema');
   const { eq } = await import('drizzle-orm');
   
-  const f = await db.select().from(automationFlows).where(eq(automationFlows.id, '5f345023-dcde-4201-8f2c-06d9c7e9ae78'));
-  console.log(JSON.stringify(f[0].executionLogic, null, 2));
+  const flows = await db.select().from(automationFlows).where(eq(automationFlows.companyId, '7cb4773e-1fab-4699-b35d-c70d9f8d9149'));
+  const copilotFlows = flows.filter(f => JSON.stringify(f.executionLogic).includes('ai_copilot'));
+  console.log(copilotFlows.map(f => ({id: f.id, name: f.name, active: f.isActive})));
   process.exit(0);
 }
 run();

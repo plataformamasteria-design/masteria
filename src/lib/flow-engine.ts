@@ -2704,15 +2704,40 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     // Registrar a resposta do Copilot no chat (Visibilidade)
                     if (conv && sendSuccess) {
                         try {
-                            await db.insert(messages).values({
+                            const [savedMessage] = await db.insert(messages).values({
                                 id: crypto.randomUUID(),
+                                companyId: ctx.companyId,
                                 conversationId: conv.id,
+                                connectionId: sentConnectionId,
                                 content: result.reply,
                                 contentType: 'TEXT',
-                                senderType: 'bot',
+                                senderType: 'AI',
                                 isAiGenerated: true,
                                 status: 'SENT',
-                            });
+                                sentAt: new Date(),
+                            }).returning();
+                            
+                            await db.update(conversations)
+                                .set({ lastMessageAt: new Date() })
+                                .where(eq(conversations.id, conv.id));
+
+                            if (savedMessage) {
+                                emitToCompany(ctx.companyId, 'chat:new-message', {
+                                    conversationId: conv.id,
+                                    messageId: savedMessage.id,
+                                    connectionId: sentConnectionId,
+                                    contactPhone: ctx.contactPhone || '',
+                                    contactName: ctx.contactName || '',
+                                    content: savedMessage.content,
+                                    contentType: savedMessage.contentType,
+                                    mediaUrl: null,
+                                    isFromMe: true,
+                                    senderType: 'AI',
+                                    timestamp: new Date().toISOString(),
+                                });
+                                emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });
+                            }
+
                             logger.debug(`[FLOW-ENGINE] ✅ Copilot message saved to conversation ${conv.id}`);
                         } catch (saveErr) {
                             console.error('[FLOW-ENGINE] ⚠️ Erro ao salvar mensagem do Copilot no banco:', saveErr);

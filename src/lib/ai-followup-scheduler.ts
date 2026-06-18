@@ -273,6 +273,14 @@ export async function processFollowUpQueue(batchSize: number = 50): Promise<numb
                         followupId: followup.id,
                         error: result.error
                     });
+                    
+                    // ✅ FIX: Mark as failed to prevent infinite retry loops
+                    await db.update(aiFollowupQueue)
+                        .set({
+                            status: 'failed',
+                            cancelledAt: new Date()
+                        })
+                        .where(eq(aiFollowupQueue.id, followup.id));
                 }
             } catch (itemError) {
                 logger.error('Error processing follow-up item', {
