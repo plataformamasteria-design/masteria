@@ -178,6 +178,9 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof Error && error.message.includes('Não autorizado: ID da empresa não pôde ser obtido da sessão')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('[dashboard-insights]', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

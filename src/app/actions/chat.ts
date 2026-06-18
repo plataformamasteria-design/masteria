@@ -471,6 +471,9 @@ export async function fetchAvailableConnections() {
 
         return JSON.parse(JSON.stringify(activeConnections));
     } catch (error) {
+        if (error instanceof Error && error.message.includes('Não autorizado: ID da empresa não pôde ser obtido da sessão')) {
+            return [];
+        }
         console.error("FetchAvailableConnections Error:", error);
         return [];
     }

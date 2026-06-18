@@ -119,6 +119,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(stats);
 
     } catch (error: any) {
+        if (error instanceof Error && error.message.includes('Não autorizado: ID da empresa não pôde ser obtido da sessão')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
         console.error("Erro ao buscar estatísticas do dashboard:");
         console.error("Mensagem original:", error?.message);
         console.error("Stack:", error?.stack);

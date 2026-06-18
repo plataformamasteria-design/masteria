@@ -23,6 +23,9 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error) {
+    if (error instanceof Error && error.message.includes('Não autorizado: ID da empresa não pôde ser obtido da sessão')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Erro ao buscar métricas gerais de IA:', error);
     return NextResponse.json(
       { error: (error as Error).message },
