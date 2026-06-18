@@ -552,6 +552,22 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "importLeadListFromDocument",
+                description: "Importa leads de uma planilha CSV ou Excel (xlsx) recém-enviada e cria uma Lista de Contatos. Extrai os dados nativamente e usa IA apenas para entender quais colunas são telefone, nome e email.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        documentUrl: { type: "string", description: "A URL do documento (mediaUrl) enviada na conversa anterior [ARQUIVO ANEXADO: url]." },
+                        listName: { type: "string", description: "O nome sugerido para a nova lista de contatos." }
+                    },
+                    required: ["documentUrl", "listName"],
+                    additionalProperties: false
+                }
+            }
         }
     ];
 
@@ -568,10 +584,16 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             // Reverter para manter ordem cronológica (mais antigas primeiro)
             recentMessages.reverse();
             
-            contextMessages = recentMessages.map(m => ({
-                role: m.senderType === 'contact' ? "user" : "assistant",
-                content: m.content || "(Mídia/Sistema)"
-            }));
+            contextMessages = recentMessages.map(m => {
+                let content = m.content || "";
+                if (m.mediaUrl && (m.contentType === 'DOCUMENT' || m.mediaUrl.endsWith('.csv') || m.mediaUrl.endsWith('.xlsx'))) {
+                    content += `\n[ARQUIVO ANEXADO: ${m.mediaUrl}]`;
+                }
+                return {
+                    role: m.senderType === 'contact' ? "user" : "assistant",
+                    content: content.trim() || "(Mídia/Sistema sem texto)"
+                };
+            });
         } catch (e) {
             console.warn('[COPILOT-ENGINE] Failed to fetch history context:', e);
         }
@@ -1203,6 +1225,20 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             toolRes = { success: true, data: templates };
                         } catch (e: any) {
                             toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'importLeadListFromDocument') {
+                        try {
+                            const { DocumentImportService } = await import('./document-import.service');
+                            // args.documentUrl and args.listName are expected
+                            const result = await DocumentImportService.processDocument(
+                                companyId,
+                                args.documentUrl,
+                                args.listName
+                            );
+                            toolRes = result;
+                        } catch (e: any) {
+                            toolRes = { success: false, error: e.message };
                         }
                     }
                     

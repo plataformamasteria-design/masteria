@@ -78,6 +78,14 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
       return { success: false, error: `Conexão ${connectionId} não encontrada` };
     }
 
+    // ✅ FIX: Strict Provider Routing based on DB connection type
+    // Prevent nodes (like AI Copilot/Agent) from accidentally sending Meta API messages via Evolution API.
+    if (connection.connectionType === 'meta_api' || connection.connectionType === 'instagram') {
+        provider = 'apicloud';
+    } else if (connection.connectionType === 'evolution' || connection.connectionType === 'baileys') {
+        provider = 'evolution';
+    }
+
     // ✅ FIX: Universal Media Fetcher
     // Download media if a URL is provided and buffer is absent.
     // Solves Meta API 503 errors with private S3/Supabase buckets.
