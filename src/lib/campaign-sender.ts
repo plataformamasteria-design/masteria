@@ -782,15 +782,23 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
             // Meta API: usar delay configurado ou default
             minDelaySeconds = configuredMinDelay ?? DEFAULT_MIN_DELAY;
             maxDelaySeconds = configuredMaxDelay ?? DEFAULT_MAX_DELAY;
+            
+            // Se o copilot definiu explicitly batchDelaySeconds = 0 para API Oficial, sobrescreve e desativa delay
+            if (campaign.batchDelaySeconds === 0) {
+                minDelaySeconds = 0;
+                maxDelaySeconds = 0;
+            }
         }
 
         // Evolution SEMPRE usa delay (obrigatório), Meta API pode usar paralelo
-        const useRandomDelay = isEvolution || (minDelaySeconds !== undefined && maxDelaySeconds !== undefined);
+        const useRandomDelay = isEvolution || (minDelaySeconds > 0 && maxDelaySeconds > 0);
 
         if (isEvolution) {
             if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] ⚠️ DELAY OBRIGATÓRIO EVOLUTION ATIVO: ${minDelaySeconds}-${maxDelaySeconds}s entre mensagens (proteção anti-bloqueio)`);
         } else if (useRandomDelay) {
             if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Modo com delay aleatório: ${minDelaySeconds}-${maxDelaySeconds}s entre mensagens`);
+        } else {
+            if (DEBUG) logger.debug(`[Campanha WhatsApp ${campaign.id}] Modo PARALELO SEM DELAY ativado (API Oficial)`);
         }
 
         // PROCESSAMENTO EM LOTES COM CARREGAMENTO SOB DEMANDA (Memory-Safe)

@@ -1,0 +1,471 @@
+{
+  "id": "cf704d19-36ab-4ed9-864b-4d35b71adf21",
+  "name": "Formulario GCR - Aplicação",
+  "company_id": "7cb4773e-1fab-4699-b35d-c70d9f8d9149",
+  "visual_data": {
+    "edges": [
+      {
+        "id": "e_1__lookup_lead_1779374908161",
+        "type": "flow-edge",
+        "source": "1",
+        "target": "lookup_lead_1779374908161",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_lookup_lead_1779374908161_found_update_contact_1779375753320",
+        "type": "flow-edge",
+        "source": "lookup_lead_1779374908161",
+        "target": "update_contact_1779375753320",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        },
+        "sourceHandle": "found"
+      },
+      {
+        "id": "e_update_contact_1779375753320__crm_move_1779375805792",
+        "type": "flow-edge",
+        "source": "update_contact_1779375753320",
+        "target": "crm_move_1779375805792",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_lookup_lead_1779374908161_not_found_update_contact_1779375753320",
+        "type": "flow-edge",
+        "source": "lookup_lead_1779374908161",
+        "target": "update_contact_1779375753320",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        },
+        "sourceHandle": "not_found"
+      },
+      {
+        "id": "e_crm_move_1779375805792__assign_user_1779716393093",
+        "type": "flow-edge",
+        "source": "crm_move_1779375805792",
+        "target": "assign_user_1779716393093",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_assign_user_1779716393093__internal_message_1779415110562",
+        "type": "flow-edge",
+        "source": "assign_user_1779716393093",
+        "target": "internal_message_1779415110562",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      }
+    ],
+    "nodes": [
+      {
+        "id": "1",
+        "data": {
+          "label": "Webhook Externo (HTTP)",
+          "triggerType": "webhook",
+          "webhook_slug": "respondi-antonio-gcr"
+        },
+        "type": "trigger",
+        "position": {
+          "x": 240,
+          "y": 80
+        }
+      },
+      {
+        "id": "lookup_lead_1779374908161",
+        "data": {
+          "label": "",
+          "default_name": "{{body.respondent.answers.Qual seu nome?}}",
+          "phone_variable": "{{body.respondent.answers.Qual seu Whatsapp?}}",
+          "identifier_type": "phone"
+        },
+        "type": "lookup_lead",
+        "position": {
+          "x": 239.99998728434247,
+          "y": 285.6834462483724
+        }
+      },
+      {
+        "id": "update_contact_1779375753320",
+        "data": {
+          "label": "",
+          "fields": [
+            {
+              "name": "nome",
+              "value": "{{body.respondent.answers.Qual seu nome?}}"
+            },
+            {
+              "name": "email",
+              "value": "{{body.respondent.answers.Qual o seu melhor e-mail?}}"
+            },
+            {
+              "name": "cargo",
+              "value": "{{body.respondent.answers.Qual o seu cargo na empresa?}}"
+            },
+            {
+              "name": "instagram",
+              "value": "{{body.respondent.answers.Qual o @ do seu Instagram?}}"
+            },
+            {
+              "name": "colaboradores",
+              "value": "{{body.respondent.answers.Quantos colaboradores você tem na sua empresa atualmente?}}"
+            },
+            {
+              "name": "faturamento",
+              "value": "{{body.respondent.answers.E qual o faturamento médio mensal da sua empresa?}}"
+            },
+            {
+              "name": "nicho",
+              "value": "{{body.respondent.answers.Qual é o seu nicho/área de atuação?}}"
+            },
+            {
+              "name": "objetivo",
+              "value": "{{body.respondent.answers.Qual o seu principal objetivo no Evento Gestão com Resultado?}}"
+            },
+            {
+              "name": "opcao_investimento",
+              "value": "{{body.respondent.answers.O Evento Gestão com Resultado é um evento presencial que acontece no Alphaville SP, valor do Investimento é a partir R$ 1497, qual opção você prefere?}}"
+            },
+            {
+              "name": "utm_source",
+              "value": "{{body.respondent.respondent_utms.utm_source}}"
+            },
+            {
+              "name": "utm_medium",
+              "value": "{{body.respondent.respondent_utms.utm_medium}}"
+            },
+            {
+              "name": "utm_campaign",
+              "value": "{{body.respondent.respondent_utms.utm_campaign}}"
+            },
+            {
+              "name": "utm_term",
+              "value": "{{body.respondent.respondent_utms.utm_term}}"
+            },
+            {
+              "name": "utm_content",
+              "value": "{{body.respondent.respondent_utms.utm_content}}"
+            },
+            {
+              "name": "gclid",
+              "value": "{{body.respondent.respondent_utms.gclid}}"
+            },
+            {
+              "name": "fbclid",
+              "value": "{{body.respondent.respondent_utms.fbclid}}"
+            }
+          ]
+        },
+        "type": "update_contact",
+        "position": {
+          "x": 237.12252916964076,
+          "y": 537.1916720433748
+        }
+      },
+      {
+        "id": "crm_move_1779375805792",
+        "data": {
+          "label": "",
+          "boardId": "",
+          "stage_id": "42011dc3-3868-4b22-ab6c-5896e8352249",
+          "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+          "stage_name": "42011dc3-3868-4b22-ab6c-5896e8352249",
+          "funnel_name": "FUNIL EVENTO GCR"
+        },
+        "type": "crm_move",
+        "position": {
+          "x": 237.2751475852146,
+          "y": 758.1199012652868
+        }
+      },
+      {
+        "id": "internal_message_1779415110562",
+        "data": {
+          "note": "A carne chegou no prato🍖! Bora Vender!",
+          "label": "",
+          "message": "A carne chegou no prato🍖! Bora Vender!"
+        },
+        "type": "internal_message",
+        "position": {
+          "x": 237.1453124797202,
+          "y": 1150.445797923165
+        }
+      },
+      {
+        "id": "assign_user_1779716393093",
+        "data": {
+          "label": "",
+          "team_id": "44c60a5d-5fe4-45cc-9ebc-fd3dd4652d7d",
+          "user_id": "b29b0719-242f-4294-9189-6c5fb89ede63",
+          "assign_type": "user",
+          "agent_weights": [
+            {
+              "weight": 10,
+              "user_id": "7fe5892b-1c52-46cb-8d5a-6feb3caf0854"
+            },
+            {
+              "weight": 15,
+              "user_id": "7913c591-68e5-45f0-8e68-0c37c5673766"
+            },
+            {
+              "weight": 15,
+              "user_id": "711659dd-6618-41b9-bd41-b79599941af2"
+            },
+            {
+              "weight": 15,
+              "user_id": "007729fc-205f-4976-8eac-58043d9c919f"
+            },
+            {
+              "weight": 15,
+              "user_id": "6f2b009b-2faa-45a5-b4e8-52dd1ad3d898"
+            },
+            {
+              "weight": 15,
+              "user_id": "7913c591-68e5-45f0-8e68-0c37c5673766"
+            },
+            {
+              "weight": 15,
+              "user_id": "b29b0719-242f-4294-9189-6c5fb89ede63"
+            }
+          ]
+        },
+        "type": "assign_user",
+        "position": {
+          "x": 236.5418542652743,
+          "y": 975.043835837899
+        }
+      }
+    ]
+  },
+  "execution_logic": [
+    {
+      "id": "1",
+      "data": {
+        "label": "Webhook Externo (HTTP)",
+        "triggerType": "webhook",
+        "webhook_slug": "respondi-antonio-gcr"
+      },
+      "type": "trigger",
+      "nextSteps": [
+        "lookup_lead_1779374908161"
+      ],
+      "connections": [
+        {
+          "target": "lookup_lead_1779374908161"
+        }
+      ]
+    },
+    {
+      "id": "lookup_lead_1779374908161",
+      "data": {
+        "label": "",
+        "default_name": "{{body.respondent.answers.Qual seu nome?}}",
+        "phone_variable": "{{body.respondent.answers.Qual seu Whatsapp?}}",
+        "identifier_type": "phone"
+      },
+      "type": "lookup_lead",
+      "nextSteps": [
+        "update_contact_1779375753320",
+        "update_contact_1779375753320"
+      ],
+      "connections": [
+        {
+          "target": "update_contact_1779375753320",
+          "sourceHandle": "found"
+        },
+        {
+          "target": "update_contact_1779375753320",
+          "sourceHandle": "not_found"
+        }
+      ]
+    },
+    {
+      "id": "update_contact_1779375753320",
+      "data": {
+        "label": "",
+        "fields": [
+          {
+            "name": "nome",
+            "value": "{{body.respondent.answers.Qual seu nome?}}"
+          },
+          {
+            "name": "email",
+            "value": "{{body.respondent.answers.Qual o seu melhor e-mail?}}"
+          },
+          {
+            "name": "cargo",
+            "value": "{{body.respondent.answers.Qual o seu cargo na empresa?}}"
+          },
+          {
+            "name": "instagram",
+            "value": "{{body.respondent.answers.Qual o @ do seu Instagram?}}"
+          },
+          {
+            "name": "colaboradores",
+            "value": "{{body.respondent.answers.Quantos colaboradores você tem na sua empresa atualmente?}}"
+          },
+          {
+            "name": "faturamento",
+            "value": "{{body.respondent.answers.E qual o faturamento médio mensal da sua empresa?}}"
+          },
+          {
+            "name": "nicho",
+            "value": "{{body.respondent.answers.Qual é o seu nicho/área de atuação?}}"
+          },
+          {
+            "name": "objetivo",
+            "value": "{{body.respondent.answers.Qual o seu principal objetivo no Evento Gestão com Resultado?}}"
+          },
+          {
+            "name": "opcao_investimento",
+            "value": "{{body.respondent.answers.O Evento Gestão com Resultado é um evento presencial que acontece no Alphaville SP, valor do Investimento é a partir R$ 1497, qual opção você prefere?}}"
+          },
+          {
+            "name": "utm_source",
+            "value": "{{body.respondent.respondent_utms.utm_source}}"
+          },
+          {
+            "name": "utm_medium",
+            "value": "{{body.respondent.respondent_utms.utm_medium}}"
+          },
+          {
+            "name": "utm_campaign",
+            "value": "{{body.respondent.respondent_utms.utm_campaign}}"
+          },
+          {
+            "name": "utm_term",
+            "value": "{{body.respondent.respondent_utms.utm_term}}"
+          },
+          {
+            "name": "utm_content",
+            "value": "{{body.respondent.respondent_utms.utm_content}}"
+          },
+          {
+            "name": "gclid",
+            "value": "{{body.respondent.respondent_utms.gclid}}"
+          },
+          {
+            "name": "fbclid",
+            "value": "{{body.respondent.respondent_utms.fbclid}}"
+          }
+        ]
+      },
+      "type": "update_contact",
+      "nextSteps": [
+        "crm_move_1779375805792"
+      ],
+      "connections": [
+        {
+          "target": "crm_move_1779375805792"
+        }
+      ]
+    },
+    {
+      "id": "crm_move_1779375805792",
+      "data": {
+        "label": "",
+        "boardId": "",
+        "stage_id": "42011dc3-3868-4b22-ab6c-5896e8352249",
+        "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+        "stage_name": "42011dc3-3868-4b22-ab6c-5896e8352249",
+        "funnel_name": "FUNIL EVENTO GCR"
+      },
+      "type": "crm_move",
+      "nextSteps": [
+        "assign_user_1779716393093"
+      ],
+      "connections": [
+        {
+          "target": "assign_user_1779716393093"
+        }
+      ]
+    },
+    {
+      "id": "internal_message_1779415110562",
+      "data": {
+        "note": "A carne chegou no prato🍖! Bora Vender!",
+        "label": "",
+        "message": "A carne chegou no prato🍖! Bora Vender!"
+      },
+      "type": "internal_message",
+      "nextSteps": [],
+      "connections": []
+    },
+    {
+      "id": "assign_user_1779716393093",
+      "data": {
+        "label": "",
+        "team_id": "44c60a5d-5fe4-45cc-9ebc-fd3dd4652d7d",
+        "user_id": "b29b0719-242f-4294-9189-6c5fb89ede63",
+        "assign_type": "user",
+        "agent_weights": [
+          {
+            "weight": 10,
+            "user_id": "7fe5892b-1c52-46cb-8d5a-6feb3caf0854"
+          },
+          {
+            "weight": 15,
+            "user_id": "7913c591-68e5-45f0-8e68-0c37c5673766"
+          },
+          {
+            "weight": 15,
+            "user_id": "711659dd-6618-41b9-bd41-b79599941af2"
+          },
+          {
+            "weight": 15,
+            "user_id": "007729fc-205f-4976-8eac-58043d9c919f"
+          },
+          {
+            "weight": 15,
+            "user_id": "6f2b009b-2faa-45a5-b4e8-52dd1ad3d898"
+          },
+          {
+            "weight": 15,
+            "user_id": "7913c591-68e5-45f0-8e68-0c37c5673766"
+          },
+          {
+            "weight": 15,
+            "user_id": "b29b0719-242f-4294-9189-6c5fb89ede63"
+          }
+        ]
+      },
+      "type": "assign_user",
+      "nextSteps": [
+        "internal_message_1779415110562"
+      ],
+      "connections": [
+        {
+          "target": "internal_message_1779415110562"
+        }
+      ]
+    }
+  ]
+}

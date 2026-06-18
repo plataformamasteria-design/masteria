@@ -1,0 +1,639 @@
+{
+  "id": "1eb660bb-0be1-4541-b4e1-6445c6355f07",
+  "name": "Automação Camila - GCR",
+  "company_id": "7cb4773e-1fab-4699-b35d-c70d9f8d9149",
+  "visual_data": {
+    "edges": [
+      {
+        "id": "e_1__send_message_1781558682596",
+        "type": "flow-edge",
+        "source": "1",
+        "target": "send_message_1781558682596",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_delay_1781559112497__send_audio_1781558989336",
+        "type": "flow-edge",
+        "source": "delay_1781559112497",
+        "target": "send_audio_1781558989336",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_send_audio_1781558989336__delay_1781559166577",
+        "type": "flow-edge",
+        "source": "send_audio_1781558989336",
+        "target": "delay_1781559166577",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_delay_1781559166577__send_audio_1781559000452",
+        "type": "flow-edge",
+        "source": "delay_1781559166577",
+        "target": "send_audio_1781559000452",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_send_message_1781558682596__delay_1781559112497",
+        "type": "flow-edge",
+        "source": "send_message_1781558682596",
+        "target": "delay_1781559112497",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_send_audio_1781559000452__add_tag_1781559992112",
+        "type": "flow-edge",
+        "source": "send_audio_1781559000452",
+        "target": "add_tag_1781559992112",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_add_tag_1781559992112__router_1781560022968",
+        "type": "flow-edge",
+        "source": "add_tag_1781559992112",
+        "target": "router_1781560022968",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        }
+      },
+      {
+        "id": "e_router_1781560022968_route-0_crm_move_1781561141006",
+        "type": "flow-edge",
+        "source": "router_1781560022968",
+        "target": "crm_move_1781561141006",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        },
+        "sourceHandle": "route-0"
+      },
+      {
+        "id": "e_router_1781560022968_route-1_crm_move_1781561185775",
+        "type": "flow-edge",
+        "source": "router_1781560022968",
+        "target": "crm_move_1781561185775",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        },
+        "sourceHandle": "route-1"
+      },
+      {
+        "id": "e_router_1781560022968_route-2_crm_move_1781561213415",
+        "type": "flow-edge",
+        "source": "router_1781560022968",
+        "target": "crm_move_1781561213415",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        },
+        "sourceHandle": "route-2"
+      },
+      {
+        "id": "e_router_1781560022968_route-3_crm_move_1781561242375",
+        "type": "flow-edge",
+        "source": "router_1781560022968",
+        "target": "crm_move_1781561242375",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        },
+        "sourceHandle": "route-3"
+      },
+      {
+        "id": "e_router_1781560022968_route-4_crm_move_1781563005352",
+        "type": "flow-edge",
+        "source": "router_1781560022968",
+        "target": "crm_move_1781563005352",
+        "animated": false,
+        "markerEnd": {
+          "type": "arrowclosed",
+          "color": "#cbd5e1",
+          "width": 8,
+          "height": 8
+        },
+        "sourceHandle": "route-4"
+      }
+    ],
+    "nodes": [
+      {
+        "id": "1",
+        "data": {
+          "label": "Ativação Manual",
+          "triggerType": "manual"
+        },
+        "type": "trigger",
+        "position": {
+          "x": 233.50346480608601,
+          "y": 361.0751776458965
+        }
+      },
+      {
+        "id": "send_message_1781558682596",
+        "data": {
+          "label": "",
+          "message": "Passo rapidamente para alertar você. Como você demonstrou interesse na nossa Imersão Gestão com Resultado (que ocorrerá agora, dias 18 e 19 de junho, em Alphaville), ouve esse recado aqui 👇"
+        },
+        "type": "send_message",
+        "position": {
+          "x": 231.7560340780908,
+          "y": 587.676808124367
+        }
+      },
+      {
+        "id": "send_audio_1781558989336",
+        "data": {
+          "label": "",
+          "file_url": "https://masteria.app/api/storage/neon?key=tenants%2F7cb4773e-1fab-4699-b35d-c70d9f8d9149%2Fmedia%2F1b5d31ef-be40-4603-a465-3edfd4e603f7.ogg"
+        },
+        "type": "send_audio",
+        "position": {
+          "x": 232.43749344289435,
+          "y": 1064.5816051448512
+        }
+      },
+      {
+        "id": "send_audio_1781559000452",
+        "data": {
+          "label": "",
+          "file_url": "https://masteria.app/api/storage/neon?key=tenants%2F7cb4773e-1fab-4699-b35d-c70d9f8d9149%2Fmedia%2Fc24e5b95-fc54-4ff1-b177-189bbf305db6.ogg"
+        },
+        "type": "send_audio",
+        "position": {
+          "x": 224.17820662207293,
+          "y": 1429.0432443893699
+        }
+      },
+      {
+        "id": "delay_1781559112497",
+        "data": {
+          "unit": "seconds",
+          "label": "",
+          "amount": "30"
+        },
+        "type": "delay",
+        "position": {
+          "x": 231.41913074383882,
+          "y": 893.717456881754
+        }
+      },
+      {
+        "id": "delay_1781559166577",
+        "data": {
+          "unit": "seconds",
+          "label": "",
+          "amount": "20"
+        },
+        "type": "delay",
+        "position": {
+          "x": 226.65565294616357,
+          "y": 1257.9151062502567
+        }
+      },
+      {
+        "id": "add_tag_1781559992112",
+        "data": {
+          "label": "",
+          "tagId": "DISPARADO",
+          "tag_name": "DISPARADO"
+        },
+        "type": "add_tag",
+        "position": {
+          "x": 227.0084019531604,
+          "y": 1625.9842943462356
+        }
+      },
+      {
+        "id": "router_1781560022968",
+        "data": {
+          "label": "",
+          "rules": [
+            {
+              "field": "{{contact.kanban_stage}}",
+              "value": "1° Contato",
+              "operator": "equals",
+              "outputName": ""
+            },
+            {
+              "field": "{{contact.kanban_stage}}",
+              "value": "2° Contato",
+              "operator": "equals",
+              "outputName": ""
+            },
+            {
+              "field": "{{contact.kanban_stage}}",
+              "value": "3° Contato",
+              "operator": "equals",
+              "outputName": ""
+            },
+            {
+              "field": "{{contact.kanban_stage}}",
+              "value": "Tent Contato 04",
+              "operator": "equals",
+              "outputName": ""
+            },
+            {
+              "field": "{{contact.kanban_stage}}",
+              "value": "Tent Contato 05",
+              "operator": "equals",
+              "outputName": ""
+            }
+          ],
+          "routes": []
+        },
+        "type": "router",
+        "position": {
+          "x": 227.203628062937,
+          "y": 1815.5022082296352
+        }
+      },
+      {
+        "id": "crm_move_1781561141006",
+        "data": {
+          "label": "",
+          "boardId": "",
+          "stage_id": "ffe2a00d-b084-4af5-b1e1-44943821f15d",
+          "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+          "stage_name": "ffe2a00d-b084-4af5-b1e1-44943821f15d",
+          "funnel_name": "FUNIL EVENTO GCR"
+        },
+        "type": "crm_move",
+        "position": {
+          "x": -215.0199459733148,
+          "y": 2089.251430372721
+        }
+      },
+      {
+        "id": "crm_move_1781561185775",
+        "data": {
+          "label": "",
+          "boardId": "",
+          "stage_id": "7f12cbb4-fcce-4e5d-a3ad-da9c4977ec7c",
+          "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+          "stage_name": "7f12cbb4-fcce-4e5d-a3ad-da9c4977ec7c",
+          "funnel_name": "FUNIL EVENTO GCR"
+        },
+        "type": "crm_move",
+        "position": {
+          "x": 82.65738272053588,
+          "y": 2113.6374262261725
+        }
+      },
+      {
+        "id": "crm_move_1781561213415",
+        "data": {
+          "label": "",
+          "boardId": "",
+          "stage_id": "067caf3a-4f28-443e-8ef1-eef7a07dffc5",
+          "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+          "stage_name": "067caf3a-4f28-443e-8ef1-eef7a07dffc5",
+          "funnel_name": "FUNIL EVENTO GCR"
+        },
+        "type": "crm_move",
+        "position": {
+          "x": 380.3347114143866,
+          "y": 2207.817824005018
+        }
+      },
+      {
+        "id": "crm_move_1781561242375",
+        "data": {
+          "label": "",
+          "boardId": "",
+          "stage_id": "e551320b-59fc-4e3f-8499-20f334a38b4b",
+          "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+          "stage_name": "e551320b-59fc-4e3f-8499-20f334a38b4b",
+          "funnel_name": "FUNIL EVENTO GCR"
+        },
+        "type": "crm_move",
+        "position": {
+          "x": 691.466382648072,
+          "y": 2180.068242516608
+        }
+      },
+      {
+        "id": "crm_move_1781563005352",
+        "data": {
+          "label": "",
+          "boardId": "",
+          "stage_id": "055bb05f-979f-4258-abc8-e73bbae31494",
+          "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+          "stage_name": "055bb05f-979f-4258-abc8-e73bbae31494",
+          "funnel_name": "FUNIL EVENTO GCR"
+        },
+        "type": "crm_move",
+        "position": {
+          "x": 988.453628062937,
+          "y": 2122.328587846691
+        }
+      }
+    ]
+  },
+  "execution_logic": [
+    {
+      "id": "1",
+      "data": {
+        "label": "Ativação Manual",
+        "triggerType": "manual"
+      },
+      "type": "trigger",
+      "nextSteps": [
+        "send_message_1781558682596"
+      ],
+      "connections": [
+        {
+          "target": "send_message_1781558682596"
+        }
+      ]
+    },
+    {
+      "id": "send_message_1781558682596",
+      "data": {
+        "label": "",
+        "message": "Passo rapidamente para alertar você. Como você demonstrou interesse na nossa Imersão Gestão com Resultado (que ocorrerá agora, dias 18 e 19 de junho, em Alphaville), ouve esse recado aqui 👇"
+      },
+      "type": "send_message",
+      "nextSteps": [
+        "delay_1781559112497"
+      ],
+      "connections": [
+        {
+          "target": "delay_1781559112497"
+        }
+      ]
+    },
+    {
+      "id": "send_audio_1781558989336",
+      "data": {
+        "label": "",
+        "file_url": "https://masteria.app/api/storage/neon?key=tenants%2F7cb4773e-1fab-4699-b35d-c70d9f8d9149%2Fmedia%2F1b5d31ef-be40-4603-a465-3edfd4e603f7.ogg"
+      },
+      "type": "send_audio",
+      "nextSteps": [
+        "delay_1781559166577"
+      ],
+      "connections": [
+        {
+          "target": "delay_1781559166577"
+        }
+      ]
+    },
+    {
+      "id": "send_audio_1781559000452",
+      "data": {
+        "label": "",
+        "file_url": "https://masteria.app/api/storage/neon?key=tenants%2F7cb4773e-1fab-4699-b35d-c70d9f8d9149%2Fmedia%2Fc24e5b95-fc54-4ff1-b177-189bbf305db6.ogg"
+      },
+      "type": "send_audio",
+      "nextSteps": [
+        "add_tag_1781559992112"
+      ],
+      "connections": [
+        {
+          "target": "add_tag_1781559992112"
+        }
+      ]
+    },
+    {
+      "id": "delay_1781559112497",
+      "data": {
+        "unit": "seconds",
+        "label": "",
+        "amount": "30"
+      },
+      "type": "delay",
+      "nextSteps": [
+        "send_audio_1781558989336"
+      ],
+      "connections": [
+        {
+          "target": "send_audio_1781558989336"
+        }
+      ]
+    },
+    {
+      "id": "delay_1781559166577",
+      "data": {
+        "unit": "seconds",
+        "label": "",
+        "amount": "20"
+      },
+      "type": "delay",
+      "nextSteps": [
+        "send_audio_1781559000452"
+      ],
+      "connections": [
+        {
+          "target": "send_audio_1781559000452"
+        }
+      ]
+    },
+    {
+      "id": "add_tag_1781559992112",
+      "data": {
+        "label": "",
+        "tagId": "DISPARADO",
+        "tag_name": "DISPARADO"
+      },
+      "type": "add_tag",
+      "nextSteps": [
+        "router_1781560022968"
+      ],
+      "connections": [
+        {
+          "target": "router_1781560022968"
+        }
+      ]
+    },
+    {
+      "id": "router_1781560022968",
+      "data": {
+        "label": "",
+        "rules": [
+          {
+            "field": "{{contact.kanban_stage}}",
+            "value": "1° Contato",
+            "operator": "equals",
+            "outputName": ""
+          },
+          {
+            "field": "{{contact.kanban_stage}}",
+            "value": "2° Contato",
+            "operator": "equals",
+            "outputName": ""
+          },
+          {
+            "field": "{{contact.kanban_stage}}",
+            "value": "3° Contato",
+            "operator": "equals",
+            "outputName": ""
+          },
+          {
+            "field": "{{contact.kanban_stage}}",
+            "value": "Tent Contato 04",
+            "operator": "equals",
+            "outputName": ""
+          },
+          {
+            "field": "{{contact.kanban_stage}}",
+            "value": "Tent Contato 05",
+            "operator": "equals",
+            "outputName": ""
+          }
+        ],
+        "routes": []
+      },
+      "type": "router",
+      "nextSteps": [
+        "crm_move_1781561141006",
+        "crm_move_1781561185775",
+        "crm_move_1781561213415",
+        "crm_move_1781561242375",
+        "crm_move_1781563005352"
+      ],
+      "connections": [
+        {
+          "target": "crm_move_1781561141006",
+          "sourceHandle": "route-0"
+        },
+        {
+          "target": "crm_move_1781561185775",
+          "sourceHandle": "route-1"
+        },
+        {
+          "target": "crm_move_1781561213415",
+          "sourceHandle": "route-2"
+        },
+        {
+          "target": "crm_move_1781561242375",
+          "sourceHandle": "route-3"
+        },
+        {
+          "target": "crm_move_1781563005352",
+          "sourceHandle": "route-4"
+        }
+      ]
+    },
+    {
+      "id": "crm_move_1781561141006",
+      "data": {
+        "label": "",
+        "boardId": "",
+        "stage_id": "ffe2a00d-b084-4af5-b1e1-44943821f15d",
+        "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+        "stage_name": "ffe2a00d-b084-4af5-b1e1-44943821f15d",
+        "funnel_name": "FUNIL EVENTO GCR"
+      },
+      "type": "crm_move",
+      "nextSteps": [],
+      "connections": []
+    },
+    {
+      "id": "crm_move_1781561185775",
+      "data": {
+        "label": "",
+        "boardId": "",
+        "stage_id": "7f12cbb4-fcce-4e5d-a3ad-da9c4977ec7c",
+        "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+        "stage_name": "7f12cbb4-fcce-4e5d-a3ad-da9c4977ec7c",
+        "funnel_name": "FUNIL EVENTO GCR"
+      },
+      "type": "crm_move",
+      "nextSteps": [],
+      "connections": []
+    },
+    {
+      "id": "crm_move_1781561213415",
+      "data": {
+        "label": "",
+        "boardId": "",
+        "stage_id": "067caf3a-4f28-443e-8ef1-eef7a07dffc5",
+        "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+        "stage_name": "067caf3a-4f28-443e-8ef1-eef7a07dffc5",
+        "funnel_name": "FUNIL EVENTO GCR"
+      },
+      "type": "crm_move",
+      "nextSteps": [],
+      "connections": []
+    },
+    {
+      "id": "crm_move_1781561242375",
+      "data": {
+        "label": "",
+        "boardId": "",
+        "stage_id": "e551320b-59fc-4e3f-8499-20f334a38b4b",
+        "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+        "stage_name": "e551320b-59fc-4e3f-8499-20f334a38b4b",
+        "funnel_name": "FUNIL EVENTO GCR"
+      },
+      "type": "crm_move",
+      "nextSteps": [],
+      "connections": []
+    },
+    {
+      "id": "crm_move_1781563005352",
+      "data": {
+        "label": "",
+        "boardId": "",
+        "stage_id": "055bb05f-979f-4258-abc8-e73bbae31494",
+        "funnel_id": "b7f872be-03db-4e3a-832c-f7c746aa14cc",
+        "stage_name": "055bb05f-979f-4258-abc8-e73bbae31494",
+        "funnel_name": "FUNIL EVENTO GCR"
+      },
+      "type": "crm_move",
+      "nextSteps": [],
+      "connections": []
+    }
+  ]
+}

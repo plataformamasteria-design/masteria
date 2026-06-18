@@ -445,16 +445,32 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "createCampaign",
-                description: "Cria e agenda (ou deixa em fila) uma campanha de disparos no WhatsApp.",
+                description: "Cria e agenda (ou deixa em fila) uma campanha de disparos no WhatsApp. Para templates oficiais, SEMPRE use batchDelaySeconds 0.",
                 parameters: {
                     type: "object",
                     properties: { 
                         name: { type: "string", description: "Nome da campanha" },
                         status: { type: "string", enum: ["QUEUED", "SCHEDULED"], description: "QUEUED para disparar logo após a criação, SCHEDULED para agendar" },
                         scheduledAt: { type: "string", description: "Data de agendamento em formato ISO (só se status for SCHEDULED)" },
-                        contactListIds: { type: "array", items: { type: "string" }, description: "Array com IDs das listas alvo (opcional)" }
+                        contactListIds: { type: "array", items: { type: "string" }, description: "Array com IDs das listas alvo (opcional)" },
+                        connectionId: { type: "string", description: "ID da conexão (número remetente) escolhida." },
+                        templateId: { type: "string", description: "ID do template de mensagem escolhido." },
+                        batchDelaySeconds: { type: "number", description: "Atraso entre mensagens. Use 0 para disparos da API Oficial." }
                     },
-                    required: ["name", "status"],
+                    required: ["name", "status", "connectionId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getOfficialConnections",
+                description: "Busca e lista todas as conexões (números) da API Oficial da Meta ativas. Essencial para perguntar ao usuário de qual número ele quer disparar a campanha.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: [],
                     additionalProperties: false
                 }
             }
@@ -756,7 +772,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
         }
     }
 
-    let finalSystemMessage = `Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nA data e hora atual do sistema é: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta.`;
+    let finalSystemMessage = `Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nA data e hora atual do sistema é: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta.\n\nREGRAS PARA DISPARO DE TEMPLATES (API OFICIAL):\n1. Use a ferramenta getOfficialConnections para listar as conexões oficiais disponíveis.\n2. Pergunte SEMPRE ao usuário qual número ele deseja usar para o disparo, a menos que ele já tenha especificado.\n3. Após a escolha do número, use a ferramenta createCampaign com batchDelaySeconds = 0 e status = "QUEUED" (a menos que ele peça para agendar).\n4. Se o usuário pedir para listar os templates, use getWhatsAppTemplates.`;
     let finalUserMessage = prompt;
 
     // Se estivermos em um fluxo de automação (temos histórico), o 'prompt' enviado 
@@ -1293,11 +1309,14 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     }
                     else if (tc.function.name === 'createCampaign') {
                         try {
-                            const connection = await db.query.connections.findFirst({
-                                where: and(eq(connections.companyId, companyId), eq(connections.connectionType, 'meta_api'))
-                            });
-                            
-                            if (!connection) throw new Error("Nenhuma conexão de API Oficial encontrada para disparar a campanha.");
+                            let finalConnectionId = args.connectionId;
+                            if (!finalConnectionId) {
+                                const connection = await db.query.connections.findFirst({
+                                    where: and(eq(connections.companyId, companyId), eq(connections.connectionType, 'meta_api'))
+                                });
+                                if (!connection) throw new Error("Nenhuma conexão de API Oficial encontrada para disparar a campanha.");
+                                finalConnectionId = connection.id;
+                            }
                             
                             const inserted = await db.insert(campaigns).values({
                                 companyId,
@@ -1305,10 +1324,23 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                 status: args.status,
                                 channel: "WHATSAPP",
                                 scheduledAt: args.scheduledAt ? new Date(args.scheduledAt) : null,
-                                connectionId: connection.id,
+                                connectionId: finalConnectionId,
+                                templateId: args.templateId || null,
+                                batchDelaySeconds: args.batchDelaySeconds !== undefined ? args.batchDelaySeconds : 15,
                                 contactListIds: args.contactListIds || []
                             }).returning();
                             toolRes = { success: true, message: `Campanha '${args.name}' agendada/criada com sucesso!`, data: inserted[0] };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'getOfficialConnections') {
+                        try {
+                            const results = await db.query.connections.findMany({
+                                where: and(eq(connections.companyId, companyId), eq(connections.connectionType, 'meta_api')),
+                                columns: { id: true, wabaId: true, phoneNumber: true, config_name: true }
+                            });
+                            toolRes = { success: true, data: results };
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
