@@ -134,6 +134,10 @@ server.listen(port, hostname, () => {
           const { initializeAutomationTimeoutWorker } = await import('./workers/automation-timeout.worker');
           await initializeAutomationTimeoutWorker();
           console.log('[Server] AutomationTimeoutWorker initialized');
+          
+          const { initializeCopilotSchedulerWorker } = await import('./workers/copilot-scheduler.worker');
+          await initializeCopilotSchedulerWorker();
+          console.log('[Server] CopilotSchedulerWorker initialized');
         } catch (e) {
           console.error('[Server] Failed to initialize workers:', e);
         }

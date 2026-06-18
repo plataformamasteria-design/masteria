@@ -2789,3 +2789,24 @@ export const agentMediaLibrary = pgTable('agent_media_library', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// ==============================
+// COPILOT SCHEDULED TASKS
+// ==============================
+
+export const copilotScheduledTaskStatusEnum = pgEnum('copilot_scheduled_task_status', ['pending', 'completed', 'failed', 'cancelled']);
+
+export const copilotScheduledTasks = pgTable('copilot_scheduled_tasks', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  contactId: text('contact_id').references(() => contacts.id, { onDelete: 'cascade' }),
+  conversationId: text('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }),
+  prompt: text('prompt').notNull(),
+  executeAt: timestamp('execute_at').notNull(),
+  status: copilotScheduledTaskStatusEnum('status').default('pending').notNull(),
+  result: text('result'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+}, (table) => ({
+  companyStatusIdx: index('copilot_tasks_company_status_idx').on(table.companyId, table.status),
+  executeAtIdx: index('copilot_tasks_execute_at_idx').on(table.executeAt),
+}));

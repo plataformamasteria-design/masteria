@@ -2,13 +2,13 @@ import { generateText, tool } from 'ai';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { db } from './db';
-import { contacts, conversations, kanbanBoards, kanbanLeads, companies, aiChats, campaigns, connections, users, tags, contactsToTags, messages } from './db/schema';
+import { contacts, conversations, kanbanBoards, kanbanLeads, companies, aiChats, campaigns, connections, users, tags, contactsToTags, messages as messagesTable } from './db/schema';
 import { eq, and, sql, desc, count, isNull, isNotNull } from 'drizzle-orm';
 import { resolveAIKeys } from './ai-keys-resolver';
 
 // Definição das ferramentas (tools) que dão poderes gerenciais à IA
 
-function createCopilotTools(companyId: string) {
+function createCopilotTools(companyId: string, conversationId?: string) {
     return {
         getKanbanSummary: tool({
             description: 'Recupera um resumo completo do status do Kanban (funis e etapas) para a empresa atual, mostrando onde os leads estão parados.',
@@ -125,6 +125,72 @@ function createCopilotTools(companyId: string) {
                     return { success: true, data: results };
                 } catch (error: any) {
                     return { success: false, error: error.message };
+                }
+            }
+        }),
+        scheduleAction: tool({
+            description: 'Agenda uma ação para o Copilot executar no futuro (ex: "Me lembre disso amanhã às 18:00", "Envie o resumo no dia tal"). ATENÇÃO: Informe a data e hora absolutas em formato ISO.',
+            parameters: z.object({
+                prompt: z.string().describe('O comando exato que você deve executar no futuro (ex: "Enviar o resumo dos atendimentos de hoje")'),
+                executeAt: z.string().describe('A data e hora (em formato ISO 8601, ex: 2026-06-18T18:00:00-03:00) em que a ação deve ser executada.')
+            }),
+            execute: async ({ prompt, executeAt }: any) => {
+                try {
+                    const { copilotScheduledTasks, conversations } = await import('./db/schema');
+                    let contactId = null;
+                    if (conversationId) {
+                        const conv = await db.query.conversations.findFirst({ where: eq(conversations.id, conversationId) });
+                        if (conv) contactId = conv.contactId;
+                    }
+
+                    await db.insert(copilotScheduledTasks).values({
+                        companyId,
+                        contactId,
+                        conversationId,
+                        prompt,
+                        executeAt: new Date(executeAt),
+                        status: 'pending'
+                    });
+                    return { success: true, message: `Ação "${prompt}" agendada com sucesso para ${new Date(executeAt).toLocaleString('pt-BR')}.` };
+                } catch (e: any) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }),
+        listScheduledActions: tool({
+            description: 'Lista todas as ações do Copilot que estão agendadas para o futuro nesta conversa/lead.',
+            parameters: z.object({ dummy: z.string().optional() }),
+            execute: async () => {
+                try {
+                    const { copilotScheduledTasks } = await import('./db/schema');
+                    if (!conversationId) return { success: false, error: "Sem contexto de conversa ativo." };
+                    
+                    const tasks = await db.query.copilotScheduledTasks.findMany({
+                        where: and(
+                            eq(copilotScheduledTasks.conversationId, conversationId),
+                            eq(copilotScheduledTasks.status, 'pending')
+                        )
+                    });
+                    return { success: true, data: tasks };
+                } catch (e: any) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }),
+        cancelScheduledAction: tool({
+            description: 'Cancela uma ação programada usando o ID retornado pelo listScheduledActions.',
+            parameters: z.object({
+                taskId: z.string().describe('O ID da tarefa agendada')
+            }),
+            execute: async ({ taskId }: any) => {
+                try {
+                    const { copilotScheduledTasks } = await import('./db/schema');
+                    await db.update(copilotScheduledTasks)
+                        .set({ status: 'cancelled', updatedAt: new Date() })
+                        .where(eq(copilotScheduledTasks.id, taskId));
+                    return { success: true, message: "Ação cancelada com sucesso." };
+                } catch (e: any) {
+                    return { success: false, error: e.message };
                 }
             }
         })
@@ -397,13 +463,28 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "submitWhatsAppTemplate",
-                description: "Cria um template oficial de WhatsApp e envia para a aprovação da Meta.",
+                description: "Cria um template oficial de WhatsApp avançado e envia para a aprovação da Meta. Suporta imagem/texto no cabeçalho e botões.",
                 parameters: {
                     type: "object",
                     properties: { 
-                        name: { type: "string", description: "Nome do template (minúsculo sem espaços, ex: alerta_promo_1)" },
+                        name: { type: "string", description: "Nome único do template (minúsculo sem espaços, ex: alerta_promo_1)" },
                         category: { type: "string", enum: ["MARKETING", "UTILITY", "AUTHENTICATION"] },
-                        bodyText: { type: "string", description: "Texto principal do template (pode conter variáveis ex: {{1}})" }
+                        bodyText: { type: "string", description: "Texto principal do template (pode conter variáveis ex: {{1}})" },
+                        headerType: { type: "string", enum: ["NONE", "TEXT", "IMAGE", "DOCUMENT"], description: "Tipo de cabeçalho do template (Opcional, padrão NONE)." },
+                        headerContent: { type: "string", description: "Se headerType for TEXT, passe o texto. Se for IMAGE, passe uma URL pública de imagem de exemplo. Opcional." },
+                        buttons: { 
+                            type: "array", 
+                            description: "Lista de botões para o template (Opcional)",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    type: { type: "string", enum: ["QUICK_REPLY", "URL"] },
+                                    text: { type: "string", description: "Texto do botão" },
+                                    url: { type: "string", description: "Obrigatório se type for URL (pode incluir variáveis {{1}} no final da url)" }
+                                },
+                                required: ["type", "text"]
+                            }
+                        }
                     },
                     required: ["name", "category", "bodyText"],
                     additionalProperties: false
@@ -430,11 +511,11 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "searchContact",
-                description: "Pesquisa contatos no CRM pelo nome, email ou telefone. Retorna o ID do contato e o ID da conversa mais recente, vitais para executar outras ações (como etiquetar ou resumir conversa).",
+                description: "Pesquisa contatos no CRM pelo nome, email ou telefone. Retorna o ID do contato e o ID da conversa mais recente, vitais para executar outras ações.",
                 parameters: {
                     type: "object",
                     properties: { 
-                        query: { type: "string", description: "Nome, telefone ou email a pesquisar." }
+                        query: { type: "string", description: "Nome, telefone ou email a pesquisar. Se for telefone, mande apenas os dígitos que possui (ex: 7585 ou 88920008007)." }
                     },
                     required: ["query"],
                     additionalProperties: false
@@ -568,8 +649,84 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     additionalProperties: false
                 }
             }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "sendDirectMessage",
+                description: "Envia uma mensagem de texto simples diretamente para um lead/contato. IMPORTANTE: Só funciona se a janela de 24 horas estiver aberta (o lead interagiu recentemente). OBRIGATÓRIO ter o conversationId.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        conversationId: { type: "string", description: "O ID da conversa (obtido via searchContact se você não tiver no contexto)." },
+                        text: { type: "string", description: "O conteúdo da mensagem a ser enviada." }
+                    },
+                    required: ["conversationId", "text"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "syncWhatsAppTemplates",
+                description: "Força a sincronização do status de todos os templates pendentes com a API da Meta. Use sempre que o usuário perguntar se um template já foi aprovado.",
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: [],
+                    additionalProperties: false
+                }
+            }
         }
     ];
+
+    tools.push(
+        {
+            type: "function" as const,
+            function: {
+                name: "scheduleAction",
+                description: 'Agenda uma ação para o Copilot executar no futuro (ex: "Me lembre disso amanhã às 18:00", "Envie o resumo no dia tal"). ATENÇÃO: Informe a data e hora absolutas em formato ISO.',
+                parameters: {
+                    type: "object",
+                    properties: {
+                        prompt: { type: "string", description: 'O comando exato que você deve executar no futuro (ex: "Enviar o resumo dos atendimentos de hoje")' },
+                        executeAt: { type: "string", description: 'A data e hora (em formato ISO 8601, ex: 2026-06-18T18:00:00-03:00) em que a ação deve ser executada.' }
+                    },
+                    required: ["prompt", "executeAt"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "listScheduledActions",
+                description: 'Lista todas as ações do Copilot que estão agendadas para o futuro nesta conversa/lead.',
+                parameters: {
+                    type: "object",
+                    properties: { dummy: { type: "string" } },
+                    required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "cancelScheduledAction",
+                description: 'Cancela uma ação programada usando o ID retornado pelo listScheduledActions.',
+                parameters: {
+                    type: "object",
+                    properties: {
+                        taskId: { type: "string", description: "O ID da tarefa agendada" }
+                    },
+                    required: ["taskId"],
+                    additionalProperties: false
+                }
+            }
+        }
+    );
 
     let contextMessages: any[] = [];
     if (conversationId && historyLimit > 0) {
@@ -599,7 +756,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
         }
     }
 
-    let finalSystemMessage = "Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta.";
+    let finalSystemMessage = `Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nA data e hora atual do sistema é: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta.`;
     let finalUserMessage = prompt;
 
     // Se estivermos em um fluxo de automação (temos histórico), o 'prompt' enviado 
@@ -618,9 +775,10 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
     }
 
     let toolCallsCount = 0;
-    const toolsObj: any = createCopilotTools(companyId);
+    const toolsObj: any = createCopilotTools(companyId, conversationId);
 
     for (let step = 0; step < 5; step++) {
+        // Identificar a chamada do modelo de acordo com o que foi configurado
         const response = await openai.chat.completions.create({
             model: "gpt-4o",
             messages: messages,
@@ -640,6 +798,9 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     else if (tc.function.name === 'getAgentWorkload') toolRes = await toolsObj.getAgentWorkload.execute(args, undefined as any);
                     else if (tc.function.name === 'toggleLeadBot') toolRes = await toolsObj.toggleLeadBot.execute(args, undefined as any);
                     else if (tc.function.name === 'getActiveCampaigns') toolRes = await toolsObj.getActiveCampaigns.execute(args, undefined as any);
+                    else if (tc.function.name === 'scheduleAction') toolRes = await toolsObj.scheduleAction.execute(args, undefined as any);
+                    else if (tc.function.name === 'listScheduledActions') toolRes = await toolsObj.listScheduledActions.execute(args, undefined as any);
+                    else if (tc.function.name === 'cancelScheduledAction') toolRes = await toolsObj.cancelScheduledAction.execute(args, undefined as any);
                     else if (tc.function.name === 'getPaidTrafficCampaigns') {
                         try {
                             const { getMetaAuthForCompany } = await import('./meta-ads');
@@ -667,7 +828,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
 
                             const res = await metaFetchPaginated({
                                 endpoint: "campaigns",
-                                fields: `id,name,effective_status,objective,${insightsField}{spend,impressions,clicks,actions}`,
+                                fields: `id,name,effective_status,objective,${insightsField}{spend,impressions,clicks,reach,frequency,cpc,cpm,ctr,inline_link_clicks,cost_per_inline_link_click,actions}`,
                                 account: auth.accountId,
                                 token: auth.token,
                                 params: customParams
@@ -697,7 +858,14 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                             objective: c.objective,
                                             spend: insights.spend ? `R$ ${insights.spend}` : "R$ 0.00",
                                             impressions: insights.impressions || "0",
+                                            reach: insights.reach || "0",
+                                            frequency: insights.frequency || "0",
                                             clicks: insights.clicks || "0",
+                                            link_clicks: insights.inline_link_clicks || "0",
+                                            cpc: insights.cpc ? `R$ ${insights.cpc}` : "N/A",
+                                            cpm: insights.cpm ? `R$ ${insights.cpm}` : "N/A",
+                                            ctr: insights.ctr ? `${insights.ctr}%` : "N/A",
+                                            cplc: insights.cost_per_inline_link_click ? `R$ ${insights.cost_per_inline_link_click}` : "N/A",
                                             leads: leads,
                                             cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A"
                                         };
@@ -799,10 +967,10 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
 
                             const res = await metaFetchPaginated({
                                 endpoint: "adsets",
-                                fields: `id,name,effective_status,${insightsField}{spend,impressions,clicks,actions}`,
+                                fields: `id,name,effective_status,targeting,${insightsField}{spend,impressions,clicks,reach,frequency,cpc,cpm,ctr,inline_link_clicks,cost_per_inline_link_click,actions}`,
                                 account: auth.accountId,
                                 token: auth.token,
-                                params: { filtering: JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] }]) }
+                                params: { filtering: JSON.stringify([{ field: "campaign.id", operator: "IN", value: [args.campaignId] }]) }
                             });
                             if (res.error) toolRes = { error: res.error };
                             else {
@@ -821,9 +989,23 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                             status: c.effective_status,
                                             spend: insights.spend ? `R$ ${insights.spend}` : "R$ 0.00",
                                             impressions: insights.impressions || "0",
+                                            reach: insights.reach || "0",
+                                            frequency: insights.frequency || "0",
                                             clicks: insights.clicks || "0",
+                                            link_clicks: insights.inline_link_clicks || "0",
+                                            cpc: insights.cpc ? `R$ ${insights.cpc}` : "N/A",
+                                            cpm: insights.cpm ? `R$ ${insights.cpm}` : "N/A",
+                                            ctr: insights.ctr ? `${insights.ctr}%` : "N/A",
+                                            cplc: insights.cost_per_inline_link_click ? `R$ ${insights.cost_per_inline_link_click}` : "N/A",
                                             leads: leads,
-                                            cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A"
+                                            cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A",
+                                            targeting: c.targeting ? {
+                                                age_min: c.targeting.age_min,
+                                                age_max: c.targeting.age_max,
+                                                geo_locations: c.targeting.geo_locations,
+                                                interests: c.targeting.flexible_spec,
+                                                custom_audiences: c.targeting.custom_audiences
+                                            } : null
                                         };
                                     })
                                 };
@@ -845,11 +1027,11 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             }
 
                             const filtering = [];
-                            if (args.adsetId) filtering.push({ field: "adset.id", operator: "EQUAL", value: [args.adsetId] });
-                            else if (args.campaignId) filtering.push({ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] });
+                            if (args.adsetId) filtering.push({ field: "adset.id", operator: "IN", value: [args.adsetId] });
+                            else if (args.campaignId) filtering.push({ field: "campaign.id", operator: "IN", value: [args.campaignId] });
                             const res = await metaFetchPaginated({
                                 endpoint: "ads",
-                                fields: `id,name,effective_status,${insightsField}{spend,impressions,clicks,actions}`,
+                                fields: `id,name,effective_status,creative{name,body,title,call_to_action_type,image_url,thumbnail_url,object_story_spec},${insightsField}{spend,impressions,clicks,reach,frequency,cpc,cpm,ctr,inline_link_clicks,cost_per_inline_link_click,actions}`,
                                 account: auth.accountId,
                                 token: auth.token,
                                 params: filtering.length > 0 ? { filtering: JSON.stringify(filtering) } : {}
@@ -871,9 +1053,22 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                             status: c.effective_status,
                                             spend: insights.spend ? `R$ ${insights.spend}` : "R$ 0.00",
                                             impressions: insights.impressions || "0",
+                                            reach: insights.reach || "0",
+                                            frequency: insights.frequency || "0",
                                             clicks: insights.clicks || "0",
+                                            link_clicks: insights.inline_link_clicks || "0",
+                                            cpc: insights.cpc ? `R$ ${insights.cpc}` : "N/A",
+                                            cpm: insights.cpm ? `R$ ${insights.cpm}` : "N/A",
+                                            ctr: insights.ctr ? `${insights.ctr}%` : "N/A",
+                                            cplc: insights.cost_per_inline_link_click ? `R$ ${insights.cost_per_inline_link_click}` : "N/A",
                                             leads: leads,
-                                            cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A"
+                                            cpl: leads > 0 && insights.spend ? `R$ ${(parseFloat(insights.spend) / leads).toFixed(2)}` : "N/A",
+                                            creative: c.creative ? {
+                                                body: c.creative.body || c.creative.object_story_spec?.link_data?.message || c.creative.object_story_spec?.video_data?.message || "N/A",
+                                                title: c.creative.title || c.creative.object_story_spec?.link_data?.name || c.creative.object_story_spec?.video_data?.title || "N/A",
+                                                cta: c.creative.call_to_action_type || c.creative.object_story_spec?.link_data?.call_to_action?.type || c.creative.object_story_spec?.video_data?.call_to_action?.type || "N/A",
+                                                image_url: c.creative.image_url || c.creative.thumbnail_url || "N/A"
+                                            } : null
                                         };
                                     })
                                 };
@@ -890,7 +1085,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const params: any = { 
                                 level: "campaign",
                                 breakdowns: args.breakdown,
-                                filtering: JSON.stringify([{ field: "campaign.id", operator: "EQUAL", value: [args.campaignId] }])
+                                filtering: JSON.stringify([{ field: "campaign.id", operator: "IN", value: [args.campaignId] }])
                             };
 
                             if (args.since && args.until) {
@@ -1050,8 +1245,8 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             if (!targetConvId) throw new Error("ID da conversa não fornecido.");
                             
                             const history = await db.query.messages.findMany({
-                                where: eq(messages.conversationId, targetConvId),
-                                orderBy: [desc(messages.sentAt)],
+                                where: eq(messagesTable.conversationId, targetConvId),
+                                orderBy: [desc(messagesTable.sentAt)],
                                 limit: 50,
                                 columns: {
                                     content: true,
@@ -1129,6 +1324,71 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             });
                             if (!connection || !connection.wabaId) throw new Error("Nenhuma conexão oficial com WABA ID encontrada.");
                             
+                            const components: any[] = [];
+                            
+                            if (args.headerType && args.headerType !== "NONE") {
+                                let finalHandle = args.headerContent || "https://example.com/media";
+                                
+                                // Auto-upload da URL pública para a Sessão de Upload da Meta (Resumable Upload)
+                                if ((args.headerType === "IMAGE" || args.headerType === "DOCUMENT") && args.headerContent?.startsWith('http')) {
+                                    try {
+                                        const { decrypt } = await import('@/lib/crypto');
+                                        if (connection.appId && connection.accessToken) {
+                                            const token = decrypt(connection.accessToken);
+                                            const resp = await fetch(args.headerContent);
+                                            if (resp.ok) {
+                                                const buffer = Buffer.from(await resp.arrayBuffer());
+                                                const mime = resp.headers.get('content-type') || 'application/octet-stream';
+                                                
+                                                // 1. Criar Sessão
+                                                const fbApiVer = process.env.FACEBOOK_API_VERSION || 'v20.0';
+                                                const sessResp = await fetch(`https://graph.facebook.com/${fbApiVer}/${connection.appId}/uploads?file_length=${buffer.byteLength}&file_type=${mime}`, {
+                                                    method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
+                                                });
+                                                const sessData = await sessResp.json();
+                                                
+                                                // 2. Fazer Upload Binário
+                                                if (sessData.id) {
+                                                    const upResp = await fetch(`https://graph.facebook.com/${fbApiVer}/${sessData.id}`, {
+                                                        method: 'POST',
+                                                        headers: { 'Authorization': `OAuth ${token}`, 'file_offset': '0' },
+                                                        body: buffer
+                                                    });
+                                                    const upData = await upResp.json();
+                                                    if (upData.h) {
+                                                        finalHandle = upData.h; // O Handle de Upload Retornado pela Meta
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.warn("Falha no auto-upload da imagem para Meta:", e);
+                                    }
+                                }
+
+                                components.push({
+                                    type: "HEADER",
+                                    format: args.headerType,
+                                    text: args.headerType === "TEXT" ? args.headerContent : undefined,
+                                    example: (args.headerType === "IMAGE" || args.headerType === "DOCUMENT") 
+                                        ? { header_handle: [finalHandle] }
+                                        : undefined
+                                });
+                            }
+                            
+                            components.push({ type: "BODY", text: args.bodyText });
+                            
+                            if (args.buttons && args.buttons.length > 0) {
+                                components.push({
+                                    type: "BUTTONS",
+                                    buttons: args.buttons.map((b: any) => ({
+                                        type: b.type,
+                                        text: b.text,
+                                        url: b.url
+                                    }))
+                                });
+                            }
+
                             const inserted = await db.insert(messageTemplates).values({
                                 companyId,
                                 connectionId: connection.id,
@@ -1136,9 +1396,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                 name: args.name,
                                 category: args.category,
                                 language: "pt_BR",
-                                components: [
-                                    { type: "BODY", text: args.bodyText }
-                                ],
+                                components: components,
                                 status: "DRAFT"
                             }).returning();
                             
@@ -1159,18 +1417,22 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const q = `%${args.query}%`;
                             const cleanPhone = args.query.replace(/[^0-9]/g, '');
                             
-                            const conditions = [
+                            let conditions = [
                                 ilike(contacts.name, q),
                                 ilike(contacts.email, q)
                             ];
-                            if (cleanPhone.length > 5) {
+                            
+                            // Se a busca for quase só números, foque MUITO no telefone
+                            if (cleanPhone.length >= 4 && cleanPhone.length >= args.query.length / 2) {
+                                conditions = [ilike(contacts.phone, `%${cleanPhone}%`)];
+                            } else if (cleanPhone.length > 4) {
                                 conditions.push(ilike(contacts.phone, `%${cleanPhone}%`));
                             }
                             
                             const foundContacts = await db.query.contacts.findMany({
                                 where: and(eq(contacts.companyId, companyId), or(...conditions)),
                                 columns: { id: true, name: true, phone: true, email: true },
-                                limit: 5
+                                limit: 15
                             });
                             
                             if (foundContacts.length === 0) {
@@ -1184,7 +1446,15 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                     });
                                     return { ...c, conversationId: conv?.id || null };
                                 }));
-                                toolRes = { success: true, data: enriched };
+                                
+                                // Prioriza os que têm conversationId
+                                enriched.sort((a, b) => {
+                                    if (a.conversationId && !b.conversationId) return -1;
+                                    if (!a.conversationId && b.conversationId) return 1;
+                                    return 0;
+                                });
+
+                                toolRes = { success: true, data: enriched.slice(0, 5) };
                             }
                         } catch (e: any) {
                             toolRes = { error: e.message };
@@ -1237,6 +1507,71 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                 args.listName
                             );
                             toolRes = result;
+                        } catch (e: any) {
+                            toolRes = { success: false, error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'sendDirectMessage') {
+                        try {
+                            const { sendUnifiedMessage } = await import('@/services/unified-message-sender.service');
+                            
+                            const conv = await db.query.conversations.findFirst({
+                                where: and(eq(conversations.id, args.conversationId), eq(conversations.companyId, companyId)),
+                                columns: { id: true, contactId: true, connectionId: true },
+                                with: {
+                                    contact: { columns: { phone: true } },
+                                    connection: { columns: { connectionType: true } }
+                                }
+                            });
+                            
+                            if (!conv) throw new Error("Conversa não encontrada.");
+                            if (!conv.contact?.phone) throw new Error("Contato não possui número de telefone salvo.");
+                            if (!conv.connectionId) throw new Error("Conversa não possui uma conexão atrelada.");
+                            
+                            const provider = (conv.connection?.connectionType === 'meta_api' || conv.connection?.connectionType === 'instagram') ? 'apicloud' : 'evolution';
+
+                            const result = await sendUnifiedMessage({
+                                provider: provider as 'apicloud' | 'evolution',
+                                connectionId: conv.connectionId,
+                                to: conv.contact.phone,
+                                message: args.text
+                            });
+                            
+                            if (result.success) {
+                                toolRes = { success: true, message: "Mensagem enviada com sucesso!", messageId: result.messageId };
+                            } else {
+                                throw new Error(result.error || "Falha desconhecida no envio.");
+                            }
+                        } catch (e: any) {
+                            toolRes = { success: false, error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'syncWhatsAppTemplates') {
+                        try {
+                            const { messageTemplates } = await import('./db/schema');
+                            const { syncTemplateStatus } = await import('./metaTemplatesService');
+                            
+                            const pendingTemplates = await db.query.messageTemplates.findMany({
+                                where: and(eq(messageTemplates.companyId, companyId), eq(messageTemplates.status, 'PENDING')),
+                                columns: { id: true, name: true }
+                            });
+                            
+                            if (pendingTemplates.length === 0) {
+                                toolRes = { success: true, message: "Não há templates pendentes para sincronizar." };
+                            } else {
+                                let aprovados = 0;
+                                let rejeitados = 0;
+                                let pendentes = 0;
+                                
+                                for (const t of pendingTemplates) {
+                                    const res = await syncTemplateStatus(t.id);
+                                    if (res.status === 'APPROVED') aprovados++;
+                                    else if (res.status === 'REJECTED') rejeitados++;
+                                    else pendentes++;
+                                }
+                                
+                                toolRes = { success: true, message: `Sincronização concluída: ${aprovados} aprovados, ${rejeitados} rejeitados, ${pendentes} continuam pendentes.` };
+                            }
                         } catch (e: any) {
                             toolRes = { success: false, error: e.message };
                         }
