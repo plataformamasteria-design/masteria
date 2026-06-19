@@ -463,19 +463,19 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "createCampaign",
-                description: "Cria e agenda (ou deixa em fila) uma campanha de disparos no WhatsApp. Para templates oficiais, SEMPRE use batchDelaySeconds 0.",
+                description: "Cria e agenda (ou deixa em fila) uma campanha de disparos no WhatsApp. FLUXO OBRIGATÓRIO ANTES de chamar esta função: 1) chame getContactLists para confirmar o ID da lista; 2) chame getWhatsAppTemplates para obter os templates APPROVED e seu templateId; 3) chame getOfficialConnections para obter o connectionId. SEM esses 3 dados, NÃO crie a campanha. Use batchDelaySeconds 0 para API Oficial.",
                 parameters: {
                     type: "object",
                     properties: { 
                         name: { type: "string", description: "Nome da campanha" },
                         status: { type: "string", enum: ["QUEUED", "SCHEDULED"], description: "QUEUED para disparar logo após a criação, SCHEDULED para agendar" },
                         scheduledAt: { type: "string", description: "Data de agendamento em formato ISO (só se status for SCHEDULED)" },
-                        contactListIds: { type: "array", items: { type: "string" }, description: "Array com IDs das listas alvo (opcional)" },
-                        connectionId: { type: "string", description: "ID da conexão (número remetente) escolhida." },
-                        templateId: { type: "string", description: "ID do template de mensagem escolhido." },
+                        contactListIds: { type: "array", items: { type: "string" }, description: "Array com IDs das listas alvo. OBRIGATÓRIO ao menos um ID." },
+                        connectionId: { type: "string", description: "ID da conexão (número remetente). Obtenha via getOfficialConnections." },
+                        templateId: { type: "string", description: "ID do template APROVADO. Obtenha via getWhatsAppTemplates. OBRIGATÓRIO." },
                         batchDelaySeconds: { type: "number", description: "Atraso entre mensagens. Use 0 para disparos da API Oficial." }
                     },
-                    required: ["name", "status", "connectionId"],
+                    required: ["name", "status", "connectionId", "templateId", "contactListIds"],
                     additionalProperties: false
                 }
             }
@@ -560,11 +560,44 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "getContactLists",
-                description: "Consulta e retorna todas as listas de transmissão/contatos disponíveis na empresa (IDs e nomes).",
+                description: "Consulta e retorna todas as listas de contatos da empresa com nome, ID e quantidade de contatos em cada lista. Use o parâmetro 'search' para buscar por nome (ex: 'lista teste'). SEMPRE inclua a contagem de membros ao exibir uma lista para o usuário. Se retornar mais de uma lista com o mesmo nome, exiba TODAS com seus respectivos IDs e contagens.",
                 parameters: {
                     type: "object",
-                    properties: { dummy: { type: "string" } },
+                    properties: { 
+                        search: { type: "string", description: "Termo para buscar listas por nome (opcional, busca parcial case-insensitive)." }
+                    },
                     required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "deleteContactList",
+                description: "Exclui permanentemente uma lista de contatos pelo ID. ATENÇÃO: esta ação é irreversível. Confirme o ID exato antes de executar.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        listId: { type: "string", description: "O ID da lista a ser excluída." }
+                    },
+                    required: ["listId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "addContactsToList",
+                description: "Adiciona contatos já existentes no CRM a uma lista de transmissão. Use searchContact primeiro para obter os contactIds, depois chame esta função.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        listId: { type: "string", description: "O ID da lista de destino." },
+                        contactIds: { type: "array", items: { type: "string" }, description: "Array com os IDs dos contatos a adicionar." }
+                    },
+                    required: ["listId", "contactIds"],
                     additionalProperties: false
                 }
             }
@@ -1751,12 +1784,63 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     }
                     else if (tc.function.name === 'getContactLists') {
                         try {
+                            const { contactLists, contactsToContactLists } = await import('./db/schema');
+                            const { count: countFn, ilike: ilikeOp } = await import('drizzle-orm');
+
+                            // Buscar listas com contagem de membros via subquery
+                            const whereClause = args.search
+                                ? and(eq(contactLists.companyId, companyId), ilikeOp(contactLists.name, `%${args.search}%`))
+                                : eq(contactLists.companyId, companyId);
+
+                            const lists = await db.select({
+                                id: contactLists.id,
+                                name: contactLists.name,
+                                description: contactLists.description,
+                                memberCount: sql<number>`(SELECT COUNT(*) FROM contacts_to_contact_lists WHERE list_id = ${contactLists.id})`
+                            })
+                            .from(contactLists)
+                            .where(whereClause)
+                            .orderBy(contactLists.name);
+
+                            if (lists.length === 0 && args.search) {
+                                toolRes = { success: true, data: [], message: `Nenhuma lista encontrada com o nome "${args.search}". Verifique o nome ou liste todas as listas sem filtro.` };
+                            } else {
+                                toolRes = { 
+                                    success: true, 
+                                    total: lists.length,
+                                    note: lists.length > 1 && args.search ? `Atenção: encontradas ${lists.length} listas com esse nome. Exiba todas ao usuário com seus IDs e contagens.` : undefined,
+                                    data: lists 
+                                };
+                            }
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'deleteContactList') {
+                        try {
                             const { contactLists } = await import('./db/schema');
-                            const lists = await db.query.contactLists.findMany({
-                                where: eq(contactLists.companyId, companyId),
-                                columns: { id: true, name: true, description: true }
-                            });
-                            toolRes = { success: true, data: lists };
+                            const deleted = await db.delete(contactLists)
+                                .where(and(eq(contactLists.id, args.listId), eq(contactLists.companyId, companyId)))
+                                .returning({ id: contactLists.id, name: contactLists.name });
+                            if (deleted.length === 0) {
+                                toolRes = { error: `Lista com ID '${args.listId}' não encontrada ou não pertence a esta empresa.` };
+                            } else {
+                                toolRes = { success: true, message: `Lista '${deleted[0].name}' excluída com sucesso.` };
+                            }
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'addContactsToList') {
+                        try {
+                            const { contactsToContactLists } = await import('./db/schema');
+                            const rows = args.contactIds.map((cid: string) => ({
+                                contactId: cid,
+                                listId: args.listId,
+                                companyId
+                            }));
+                            await db.insert(contactsToContactLists).values(rows).onConflictDoNothing();
+                            toolRes = { success: true, message: `${args.contactIds.length} contato(s) adicionado(s) à lista com sucesso.` };
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
