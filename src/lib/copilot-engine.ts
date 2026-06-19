@@ -1840,17 +1840,19 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                 }
             }
         } else {
-            const finalReply = msg.content || '';
+            const finalReply = (msg.content || '').replace(/___TOKENS:\d+/g, '').trim();
             return {
-                reply: totalTokensUsed > 0 && finalReply ? `${finalReply}\n\n___TOKENS:${totalTokensUsed}` : finalReply,
+                reply: finalReply,
+                tokensUsed: totalTokensUsed,
                 toolCalls: new Array(toolCallsCount)
             };
         }
     }
 
-    const fallbackReply = messages[messages.length - 1]?.content || "Processamento concluído após coletar os dados.";
+    const fallbackReply = (messages[messages.length - 1]?.content || "Processamento concluído após coletar os dados.").replace(/___TOKENS:\d+/g, '').trim();
     return {
-        reply: totalTokensUsed > 0 ? `${fallbackReply}\n\n___TOKENS:${totalTokensUsed}` : fallbackReply,
+        reply: fallbackReply,
+        tokensUsed: totalTokensUsed,
         toolCalls: new Array(toolCallsCount)
     };
 }

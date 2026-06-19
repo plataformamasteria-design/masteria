@@ -610,6 +610,7 @@ export const messages = pgTable('messages', {
   failureReason: text('failure_reason'),
   isAiGenerated: boolean('is_ai_generated'),
   aiTranscription: text('ai_transcription'),
+  aiTokensUsed: integer('ai_tokens_used'),
   sentAt: timestamp('sent_at').defaultNow().notNull(),
   readAt: timestamp('read_at'),
 }, (table) => ({

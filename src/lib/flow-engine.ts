@@ -2848,6 +2848,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 contentType: replyWithAudio ? 'AUDIO' : 'TEXT',
                                 senderType: 'AI',
                                 isAiGenerated: true,
+                                aiTokensUsed: result.tokensUsed || null,
                                 status: 'SENT',
                                 sentAt: new Date(),
                             }).returning();
@@ -2868,6 +2869,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                     mediaUrl: null,
                                     isFromMe: true,
                                     senderType: 'AI',
+                                    aiTokensUsed: result.tokensUsed || null,
                                     timestamp: new Date().toISOString(),
                                 });
                                 emitToCompany(ctx.companyId, 'inbox:update', { timestamp: Date.now() });

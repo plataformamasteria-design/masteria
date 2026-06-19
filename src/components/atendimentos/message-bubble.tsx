@@ -18,6 +18,7 @@ type MessageReaction = {
 type MessageWithReactions = Message & {
     reactions?: MessageReaction[];
     aiTranscription?: string;
+    aiTokensUsed?: number | null;
 };
 
 const StatusIcon = ({ status }: { status: Message['status'] }) => {
@@ -583,6 +584,16 @@ export function MessageBubble({ message, allMessages, contactName, templates, co
                     <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
                         <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
                         IA
+                        {message.aiTokensUsed && message.aiTokensUsed > 0 && (
+                            <span
+                                className="ml-1 px-1.5 py-0.5 rounded-full bg-white/10 text-[9px] font-bold normal-case tracking-normal opacity-80 border border-white/10"
+                                title={`${message.aiTokensUsed.toLocaleString('pt-BR')} tokens consumidos nesta resposta`}
+                            >
+                                {message.aiTokensUsed >= 1000
+                                    ? `${(message.aiTokensUsed / 1000).toFixed(1)}k tokens`
+                                    : `${message.aiTokensUsed} tokens`}
+                            </span>
+                        )}
                     </div>
                 )}
                 {message.senderType === 'SYSTEM' && (
