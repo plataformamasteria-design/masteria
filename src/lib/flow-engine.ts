@@ -394,8 +394,20 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
                 ),
             });
             if (existingExec) {
-                logger.debug(`[FLOW - ENGINE] ⏩ Skipping trigger for flow ${flow.id} — existing ${existingExec.status} execution ${existingExec.id} for contact ${contactId}`);
-                continue;
+                // BUG FIX: Se a execução está parada há mais de 5 minutos, ela está travada.
+                // Marcar como completed e permitir que um novo disparo ocorra.
+                const execAge = Date.now() - new Date(existingExec.finishedAt || existingExec.startedAt).getTime();
+                const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutos
+                if (execAge > STALE_THRESHOLD_MS) {
+                    logger.debug(`[FLOW-ENGINE] 🔓 Execução ${existingExec.id} travada há ${Math.floor(execAge/1000)}s — limpando e re-disparando fluxo ${flow.id}`);
+                    await db.update(automationFlowExecutions)
+                        .set({ status: 'completed', finishedAt: new Date() })
+                        .where(eq(automationFlowExecutions.id, existingExec.id));
+                    // Prossegue para triggerFlow abaixo
+                } else {
+                    logger.debug(`[FLOW - ENGINE] ⏩ Skipping trigger for flow ${flow.id} — existing ${existingExec.status} execution ${existingExec.id} for contact ${contactId} (age: ${Math.floor(execAge/1000)}s)`);
+                    continue;
+                }
             }
 
             await triggerFlow(flow.id, companyId, contactId, {
