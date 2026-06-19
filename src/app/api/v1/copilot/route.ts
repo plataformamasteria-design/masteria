@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'O campo prompt é obrigatório.' }, { status: 400 });
         }
 
-        const result = await executeCopilotCommand(prompt, auth.companyId);
+        const result = await executeCopilotCommand(prompt, auth.companyId, undefined, 12);
 
         return NextResponse.json({
             success: true,

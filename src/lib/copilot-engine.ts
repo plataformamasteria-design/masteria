@@ -544,7 +544,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "searchContact",
-                description: "Pesquisa contatos no CRM pelo nome, email ou telefone. Retorna o ID do contato e o ID da conversa mais recente, vitais para executar outras ações.",
+                description: "Pesquisa contatos no CRM pelo nome, email ou telefone. Retorna uma lista com o ID do contato (contactId) E o ID da conversa mais recente (conversationId). ATENÇÃO CRÍTICA: guarde o 'conversationId' do resultado — ele é obrigatório para enviar mensagens ou resumir conversas. Não confunda 'contactId' com 'conversationId', são campos diferentes.",
                 parameters: {
                     type: "object",
                     properties: { 
@@ -753,11 +753,11 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "sendDirectMessage",
-                description: "Envia uma mensagem de texto simples diretamente para um lead/contato. IMPORTANTE: Só funciona se a janela de 24 horas estiver aberta (o lead interagiu recentemente). OBRIGATÓRIO ter o conversationId.",
+                description: "Envia uma mensagem de texto simples diretamente para um lead/contato. FLUXO OBRIGATÓRIO: 1) Se ainda não tiver o conversationId do destinatário, chame searchContact primeiro e pegue o campo 'conversationId' do resultado. 2) Use esse conversationId aqui. NÃO use o contactId no lugar do conversationId — são campos diferentes. 3) Só funciona se a janela de 24h estiver aberta (lead interagiu recentemente).",
                 parameters: {
                     type: "object",
                     properties: {
-                        conversationId: { type: "string", description: "O ID da conversa (obtido via searchContact se você não tiver no contexto)." },
+                        conversationId: { type: "string", description: "O ID da CONVERSA (campo 'conversationId' retornado pelo searchContact, NÃO o campo 'id' do contato)." },
                         text: { type: "string", description: "O conteúdo da mensagem a ser enviada." }
                     },
                     required: ["conversationId", "text"],
@@ -841,15 +841,17 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             recentMessages.reverse();
             
             contextMessages = recentMessages.map(m => {
-                let content = m.content || "";
+                let content = (m.content || "").replace(/___TOKENS:\d+/g, '').trim();
                 if (m.mediaUrl && (m.contentType === 'DOCUMENT' || m.mediaUrl.endsWith('.csv') || m.mediaUrl.endsWith('.xlsx'))) {
                     content += `\n[ARQUIVO ANEXADO: ${m.mediaUrl}]`;
                 }
+                // Skip system messages (automated event notifications) from context window
+                if (m.senderType === 'SYSTEM') return null;
                 return {
                     role: m.senderType === 'contact' ? "user" : "assistant",
-                    content: content.trim() || "(Mídia/Sistema sem texto)"
+                    content: content || "(Mídia sem texto)"
                 };
-            });
+            }).filter(Boolean);
         } catch (e) {
             console.warn('[COPILOT-ENGINE] Failed to fetch history context:', e);
         }
