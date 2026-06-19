@@ -1176,30 +1176,37 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const { getMetaAuthForCompany } = await import('./meta-ads');
                             const { metaFetchPaginated } = await import('./meta-fetch');
                             const auth = await getMetaAuthForCompany(companyId);
-                            
-                            let insightsField = "";
-                            if (args.since && args.until) {
-                                insightsField = `insights.time_range({"since":"${args.since}","until":"${args.until}"})`;
-                            } else {
-                                const datePreset = args.datePreset || "last_30d";
-                                insightsField = `insights.date_preset(${datePreset})`;
-                            }
 
-                            const filtering = [];
-                            if (args.adsetId) filtering.push({ field: "adset.id", operator: "IN", value: [args.adsetId] });
-                            else if (args.campaignId) filtering.push({ field: "campaign.id", operator: "IN", value: [args.campaignId] });
-                            const res = await metaFetchPaginated({
-                                endpoint: "ads",
-                                fields: `id,name,effective_status,creative{name,body,title,call_to_action_type,image_url,thumbnail_url,object_story_spec},${insightsField}{spend,impressions,clicks,reach,frequency,cpc,cpm,ctr,inline_link_clicks,cost_per_inline_link_click,actions}`,
-                                account: auth.accountId,
-                                token: auth.token,
-                                params: filtering.length > 0 ? { filtering: JSON.stringify(filtering) } : {}
-                            });
-                            if (res.error) toolRes = { error: res.error };
-                            else {
+                            // BUG FIX 1: bloquear chamada sem filtro — sem campaignId/adsetId retornaria
+                            // TODOS os ads da conta (ruído enorme, sem insights úteis).
+                            if (!args.campaignId && !args.adsetId) {
                                 toolRes = {
-                                    success: true,
-                                    ads: res.data.map((c: any) => {
+                                    error: "Para analisar criativos é obrigatório passar 'campaignId'. Chame PRIMEIRO 'getPaidTrafficCampaigns' com o parâmetro 'keyword' para encontrar o ID numérico da campanha (ex: keyword: 'A Mesa'), depois chame esta função com esse ID."
+                                };
+                            } else {
+                                let insightsField = "";
+                                if (args.since && args.until) {
+                                    insightsField = `insights.time_range({"since":"${args.since}","until":"${args.until}"})`;
+                                } else {
+                                    const datePreset = args.datePreset || "last_30d";
+                                    insightsField = `insights.date_preset(${datePreset})`;
+                                }
+
+                                const filtering: any[] = [];
+                                if (args.adsetId) filtering.push({ field: "adset.id", operator: "IN", value: [args.adsetId] });
+                                else filtering.push({ field: "campaign.id", operator: "IN", value: [args.campaignId] });
+
+                                const res = await metaFetchPaginated({
+                                    endpoint: "ads",
+                                    fields: `id,name,effective_status,creative{name,body,title,call_to_action_type,image_url,thumbnail_url,object_story_spec},${insightsField}{spend,impressions,clicks,reach,frequency,cpc,cpm,ctr,inline_link_clicks,cost_per_inline_link_click,actions}`,
+                                    account: auth.accountId,
+                                    token: auth.token,
+                                    params: { filtering: JSON.stringify(filtering) }
+                                });
+
+                                if (res.error) { toolRes = { error: res.error }; }
+                                else {
+                                    const processedAds = res.data.map((c: any) => {
                                         const insights = c.insights?.data?.[0] || {};
                                         let leads = 0;
                                         if (insights.actions) {
@@ -1210,6 +1217,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                             id: c.id,
                                             name: c.name,
                                             status: c.effective_status,
+                                            has_data: !!insights.impressions,
                                             spend: insights.spend ? `R$ ${insights.spend}` : "R$ 0.00",
                                             impressions: insights.impressions || "0",
                                             reach: insights.reach || "0",
@@ -1229,8 +1237,30 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                                 image_url: c.creative.image_url || c.creative.thumbnail_url || "N/A"
                                             } : null
                                         };
-                                    })
-                                };
+                                    });
+
+                                    // BUG FIX 2: separar ads com e sem dados para não retornar lista vazia
+                                    // confundindo a IA ("não há dados") quando há ads mas fora do período
+                                    const adsWithData = processedAds.filter((a: any) => a.has_data);
+                                    const adsWithoutData = processedAds.filter((a: any) => !a.has_data).map((a: any) => a.name);
+
+                                    if (adsWithData.length === 0 && processedAds.length > 0) {
+                                        // BUG FIX 3: ao invés de dizer "sem dados", sugerir período maior
+                                        toolRes = {
+                                            success: false,
+                                            warning: `Encontrados ${processedAds.length} anúncios nesta campanha mas NENHUM possui dados no período '${args.datePreset || 'last_30d'}'. Isso indica que a campanha estava pausada neste período. Tente novamente com datePreset: 'maximum' para ver o histórico completo.`,
+                                            ads_found: processedAds.map((a: any) => ({ name: a.name, status: a.status }))
+                                        };
+                                    } else {
+                                        toolRes = {
+                                            success: true,
+                                            total_ads: processedAds.length,
+                                            ads_with_data_count: adsWithData.length,
+                                            ads_without_data: adsWithoutData,
+                                            ads: adsWithData
+                                        };
+                                    }
+                                }
                             }
                         } catch (e: any) { toolRes = { error: e.message }; }
                     }
