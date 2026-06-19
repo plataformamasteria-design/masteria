@@ -44,16 +44,27 @@ async function processTimeouts(): Promise<void> {
   try {
     const now = Date.now();
     
-    // Find all paused executions
-    const pausedExecutions = await db.query.automationFlowExecutions.findMany({
-      where: eq(automationFlowExecutions.status, 'paused'),
-      columns: {
-        id: true,
-        variables: true,
-        currentStepId: true,
-        flowId: true,
+    let pausedExecutions: any[] = [];
+    try {
+      // Find all paused executions
+      pausedExecutions = await db.query.automationFlowExecutions.findMany({
+        where: eq(automationFlowExecutions.status, 'paused'),
+        columns: {
+          id: true,
+          variables: true,
+          currentStepId: true,
+          flowId: true,
+        }
+      });
+    } catch (error: any) {
+      const isTimeout = error?.code === 'CONNECT_TIMEOUT' || error?.message?.includes('timeout') || error?.message?.includes('fetch');
+      if (isTimeout) {
+        console.warn(`[AutomationTimeoutWorker] ⚠️ Conexão com DB indisponível no momento (timeout). Tentando novamente no próximo ciclo.`);
+        isProcessing = false;
+        return;
       }
-    });
+      throw error;
+    }
 
     let processedCount = 0;
 

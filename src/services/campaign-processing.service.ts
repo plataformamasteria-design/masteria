@@ -136,16 +136,33 @@ export async function processPendingCampaigns(): Promise<CampaignProcessingResul
   let dispatched = 0;
   let skipped = 0;
 
-  const pendingCampaigns = await db
-    .select()
-    .from(campaigns)
-    .where(
-      or(
-        inArray(campaigns.status, ['QUEUED', 'PENDING', 'SENDING']),
-        and(eq(campaigns.status, 'SCHEDULED'), lte(campaigns.scheduledAt, now)),
-        and(eq(campaigns.status, 'SCHEDULED'), isNull(campaigns.scheduledAt))
-      )
-    );
+  let pendingCampaigns: any[] = [];
+  try {
+    pendingCampaigns = await db
+      .select()
+      .from(campaigns)
+      .where(
+        or(
+          inArray(campaigns.status, ['QUEUED', 'PENDING', 'SENDING']),
+          and(eq(campaigns.status, 'SCHEDULED'), lte(campaigns.scheduledAt, now)),
+          and(eq(campaigns.status, 'SCHEDULED'), isNull(campaigns.scheduledAt))
+        )
+      );
+  } catch (error: any) {
+    const isTimeout = error?.code === 'CONNECT_TIMEOUT' || error?.message?.includes('timeout') || error?.message?.includes('fetch');
+    if (isTimeout) {
+      console.warn(`[CampaignProcessor] ⚠️ Conexão com DB indisponível no momento (timeout). Tentando novamente no próximo ciclo.`);
+    } else {
+      console.error(`[CampaignProcessor] ❌ Erro ao buscar campanhas pendentes:`, error.message || error);
+    }
+    return {
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      skipped: 0,
+      timestamp: getBrasiliaTime(),
+    };
+  }
 
   if (pendingCampaigns.length === 0) {
     return {
