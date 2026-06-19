@@ -1,5 +1,6 @@
 import { generateText, tool } from 'ai';
 import OpenAI from 'openai';
+import { buildAjudanteMasterPrompt } from './ajudante-master-kb';
 import { z } from 'zod';
 import { db } from './db';
 import { contacts, conversations, kanbanBoards, kanbanLeads, companies, aiChats, campaigns, connections, users, tags, contactsToTags, messages as messagesTable } from './db/schema';
@@ -324,6 +325,22 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
         {
             type: "function" as const,
             function: {
+                name: "setPaidTrafficAdStatus",
+                description: "Pausa ou ativa um anúncio específico (criativo) ou conjunto de anúncios usando o ID numérico. OBRIGATÓRIO: Use apenas o ID numérico exato.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        objectId: { type: "string", description: "O ID numérico exato do anúncio (ad) ou do conjunto de anúncios (adset)." },
+                        status: { type: "string", enum: ["ACTIVE", "PAUSED"], description: "O novo status. 'ACTIVE' para ativar e 'PAUSED' para pausar." }
+                    },
+                    required: ["objectId", "status"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
                 name: "getTags",
                 description: "Consulta e lista todas as etiquetas (tags) disponíveis no sistema com seus IDs, nomes e cores.",
                 parameters: {
@@ -567,6 +584,39 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
         {
             type: "function" as const,
             function: {
+                name: "createKanbanBoard",
+                description: "Cria um novo funil (Board) no CRM Kanban.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        name: { type: "string", description: "O nome do novo funil (ex: Funil de Vendas)." }
+                    },
+                    required: ["name"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "createKanbanStage",
+                description: "Cria uma nova etapa (Stage) dentro de um funil (Board) específico.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        boardId: { type: "string", description: "O ID do funil onde a etapa será criada." },
+                        name: { type: "string", description: "O nome da etapa (ex: Negociação)." },
+                        color: { type: "string", description: "A cor da etapa (ex: bg-blue-500)." },
+                        order: { type: "number", description: "A ordem/posição numérica da etapa (ex: 1, 2, 3)." }
+                    },
+                    required: ["boardId", "name", "color", "order"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
                 name: "getWhatsAppTemplates",
                 description: "Consulta os templates de mensagem de WhatsApp da empresa e seus status de aprovação na Meta.",
                 parameters: {
@@ -608,6 +658,39 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                         until: { type: "string", description: "Data final (YYYY-MM-DD)" }
                     },
                     required: ["campaignId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "searchLeadsBySource",
+                description: "Pesquisa leads filtrando por origem (ex: 'facebook', 'instagram', 'google', 'leadgen', ou utms). Útil para 'quem veio de anúncios novos'.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        sourceTerm: { type: "string", description: "Termo para buscar na origem (ex: 'facebook')." },
+                        limit: { type: "number", description: "Quantos retornar (padrão 50)." }
+                    },
+                    required: ["sourceTerm"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "searchMessagesByKeyword",
+                description: "Vare o histórico de mensagens recentes buscando contatos que enviaram uma palavra-chave específica (ex: 'pix', 'boleto', 'cancelar').",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        keyword: { type: "string", description: "A palavra para buscar (ex: 'pix')." },
+                        daysAgo: { type: "number", description: "Buscar nos últimos X dias (padrão 7)." },
+                        limit: { type: "number", description: "Quantos retornar (padrão 20)." }
+                    },
+                    required: ["keyword"],
                     additionalProperties: false
                 }
             }
@@ -772,7 +855,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
         }
     }
 
-    let finalSystemMessage = `Você é o Masteria Copilot, um assistente inteligente com acesso administrativo TOTAL ao CRM do usuário.\nA data e hora atual do sistema é: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}.\nSua função é auxiliar o gestor respondendo perguntas, puxando métricas ou executando ações internas no sistema via ferramentas (tools).\nSeja objetivo e proativo. Nunca revele detalhes técnicos como 'executei a função X', diga apenas 'Puxei os dados do sistema e aqui estão...' ou 'Pronto, desativei o robô'.\nSe for questionado sobre métricas que você pode puxar, faça a chamada à ferramenta.\n\nREGRAS PARA DISPARO DE TEMPLATES (API OFICIAL):\n1. Use a ferramenta getOfficialConnections para listar as conexões oficiais disponíveis.\n2. Pergunte SEMPRE ao usuário qual número ele deseja usar para o disparo, a menos que ele já tenha especificado.\n3. Após a escolha do número, use a ferramenta createCampaign com batchDelaySeconds = 0 e status = "QUEUED" (a menos que ele peça para agendar).\n4. Se o usuário pedir para listar os templates, use getWhatsAppTemplates.`;
+    let finalSystemMessage = buildAjudanteMasterPrompt(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
     let finalUserMessage = prompt;
 
     // Se estivermos em um fluxo de automação (temos histórico), o 'prompt' enviado 
@@ -791,6 +874,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
     }
 
     let toolCallsCount = 0;
+    let totalTokensUsed = 0;
     const toolsObj: any = createCopilotTools(companyId, conversationId);
 
     for (let step = 0; step < 5; step++) {
@@ -800,6 +884,10 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             messages: messages,
             tools: tools
         });
+
+        if (response.usage?.total_tokens) {
+            totalTokensUsed += response.usage.total_tokens;
+        }
 
         const msg = response.choices[0].message;
         messages.push(msg);
@@ -916,6 +1004,19 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             
                             if (res.error) toolRes = { error: res.error };
                             else toolRes = { success: true, message: `Orçamento diário atualizado com sucesso para R$ ${args.dailyBudgetBRL}` };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'setPaidTrafficAdStatus') {
+                        try {
+                            const { getMetaAuthForCompany } = await import('./meta-ads');
+                            const { updateStatus } = await import('./meta-write');
+                            const auth = await getMetaAuthForCompany(companyId);
+                            const res = await updateStatus(args.objectId, args.status as any, auth.token);
+                            
+                            if (res.error) toolRes = { error: res.error };
+                            else toolRes = { success: true, message: `Status do anúncio/conjunto alterado com sucesso para ${args.status}` };
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
@@ -1307,6 +1408,90 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             toolRes = { error: e.message };
                         }
                     }
+                    else if (tc.function.name === 'searchLeadsBySource') {
+                        try {
+                            const limitCount = args.limit || 50;
+                            const query = db.select({
+                                contactId: contacts.id,
+                                name: contacts.name,
+                                phone: contacts.phone,
+                                source: conversations.source,
+                                conversationId: conversations.id
+                            })
+                            .from(conversations)
+                            .innerJoin(contacts, eq(conversations.contactId, contacts.id))
+                            .where(and(
+                                eq(conversations.companyId, companyId),
+                                isNotNull(conversations.source),
+                                sql`lower(${conversations.source}) LIKE lower(${'%' + args.sourceTerm + '%'})`
+                            ))
+                            .limit(limitCount);
+                            
+                            const results = await query;
+                            toolRes = { success: true, count: results.length, data: results };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'searchMessagesByKeyword') {
+                        try {
+                            const { gte, ilike } = await import('drizzle-orm');
+                            const limitCount = args.limit || 20;
+                            const dateThreshold = new Date();
+                            dateThreshold.setDate(dateThreshold.getDate() - (args.daysAgo || 7));
+                            
+                            const query = db.select({
+                                messageId: messagesTable.id,
+                                content: messagesTable.content,
+                                sentAt: messagesTable.sentAt,
+                                conversationId: conversations.id,
+                                contactName: contacts.name,
+                                contactPhone: contacts.phone
+                            })
+                            .from(messagesTable)
+                            .innerJoin(conversations, eq(messagesTable.conversationId, conversations.id))
+                            .innerJoin(contacts, eq(conversations.contactId, contacts.id))
+                            .where(and(
+                                eq(messagesTable.companyId, companyId),
+                                eq(messagesTable.senderType, 'CONTACT'), // Apenas mensagens enviadas pelo cliente
+                                gte(messagesTable.sentAt, dateThreshold),
+                                ilike(messagesTable.content, `%${args.keyword}%`)
+                            ))
+                            .orderBy(desc(messagesTable.sentAt))
+                            .limit(limitCount);
+                            
+                            const results = await query;
+                            toolRes = { success: true, count: results.length, data: results };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'createKanbanBoard') {
+                        try {
+                            const { kanbanBoards } = await import('./db/schema');
+                            const inserted = await db.insert(kanbanBoards).values({
+                                companyId,
+                                name: args.name
+                            }).returning();
+                            toolRes = { success: true, message: `Funil '${args.name}' criado com sucesso.`, data: inserted[0] };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
+                    else if (tc.function.name === 'createKanbanStage') {
+                        try {
+                            const { kanbanStages } = await import('./db/schema');
+                            const inserted = await db.insert(kanbanStages).values({
+                                boardId: args.boardId,
+                                name: args.name,
+                                color: args.color,
+                                order: args.order
+                            }).returning();
+                            toolRes = { success: true, message: `Etapa '${args.name}' criada com sucesso no funil.`, data: inserted[0] };
+                        } catch (e: any) {
+                            toolRes = { error: e.message };
+                        }
+                    }
                     else if (tc.function.name === 'createCampaign') {
                         try {
                             let finalConnectionId = args.connectionId;
@@ -1623,15 +1808,17 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                 }
             }
         } else {
+            const finalReply = msg.content || '';
             return {
-                reply: msg.content || '',
+                reply: totalTokensUsed > 0 && finalReply ? `${finalReply}\n\n___TOKENS:${totalTokensUsed}` : finalReply,
                 toolCalls: new Array(toolCallsCount)
             };
         }
     }
 
+    const fallbackReply = messages[messages.length - 1]?.content || "Processamento concluído após coletar os dados.";
     return {
-        reply: messages[messages.length - 1]?.content || "Processamento concluído após coletar os dados.",
+        reply: totalTokensUsed > 0 ? `${fallbackReply}\n\n___TOKENS:${totalTokensUsed}` : fallbackReply,
         toolCalls: new Array(toolCallsCount)
     };
 }

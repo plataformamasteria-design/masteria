@@ -528,10 +528,23 @@ async function getMediaData(assetId: string, connectionId: string, wabaId: strin
 
 
 export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSelect): Promise<void> {
-    // 1. Marcar a campanha como 'SENDING'
-    await db.update(campaigns).set({ status: 'SENDING' }).where(eq(campaigns.id, campaign.id));
+    const lockKey = `campaign_lock:${campaign.id}`;
+    const { default: redis } = await import('@/lib/redis');
+    
+    // Tentativa de obter lock exclusivo no Redis por 1 hora
+    const acquired = await redis.setnx(lockKey, '1');
+    if (!acquired) {
+        console.warn(`[Campaign Sender] ⚠️ Bloqueio ativado: A campanha ${campaign.id} já está em execução (Redis lock). Abortando execução duplicada.`);
+        return;
+    }
+    
+    // Garante que o lock expira em 1 hora para evitar deadlock
+    await redis.expire(lockKey, 3600);
 
     try {
+        // 1. Marcar a campanha como 'SENDING'
+        await db.update(campaigns).set({ status: 'SENDING' }).where(eq(campaigns.id, campaign.id));
+
         if (!campaign.companyId) throw new Error(`Campanha ${campaign.id} não tem companyId.`);
         if (!campaign.connectionId) throw new Error(`Campanha ${campaign.id} não tem connectionId.`);
 
@@ -1067,6 +1080,9 @@ export async function sendWhatsappCampaign(campaign: typeof campaigns.$inferSele
             eq(campaigns.companyId, campaign.companyId)
         ));
         throw error;
+    } finally {
+        // Garantir liberação do lock no final da execução (sucesso ou falha)
+        await redis.del(lockKey).catch(e => console.error(`[Campaign Sender] Erro ao liberar Redis lock para campanha ${campaign.id}:`, e));
     }
 }
 

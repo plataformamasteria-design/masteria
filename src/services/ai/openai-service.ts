@@ -138,13 +138,16 @@ export class OpenAIService {
 
         const data = await response.json();
         const aiResponse = data.choices?.[0]?.message?.content;
+        const totalTokens = data.usage?.total_tokens || 0;
 
         if (!aiResponse) {
           throw new Error('IA retornou resposta vazia (OpenAI)');
         }
 
+        const finalResponse = totalTokens > 0 ? `${aiResponse}\n\n___TOKENS:${totalTokens}` : aiResponse;
+
         console.log(`[AI Service] OpenAI Response generated with ${modelName}:`, aiResponse.substring(0, 50));
-        return aiResponse;
+        return finalResponse;
 
       } catch (error: any) {
         console.warn(`[AI Service] Falha no modelo ${modelName}: ${error.message}. Tentando próximo...`);
