@@ -1950,7 +1950,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             .where(
                                 and(
                                     eq(contactsToContactLists.listId, args.listId),
-                                    eq(contactsToContactLists.companyId, companyId)
+                                    eq(contacts.companyId, companyId)
                                 )
                             );
 
@@ -1997,7 +1997,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             // 2. Buscar todos os contactIds da lista
                             const listMembers = await db.select({ contactId: contactsToContactLists.contactId })
                                 .from(contactsToContactLists)
-                                .where(and(eq(contactsToContactLists.listId, args.listId), eq(contactsToContactLists.companyId, companyId)));
+                                .where(eq(contactsToContactLists.listId, args.listId));
                             if (listMembers.length === 0) {
                                 toolRes = { success: false, message: 'Lista vazia — nenhum contato para etiquetar.' };
                             } else {
@@ -2026,7 +2026,7 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                                     const { inArray: inArr } = await import('drizzle-orm');
                                     const members = await db.select({ contactId: contactsToContactLists.contactId })
                                         .from(contactsToContactLists)
-                                        .where(and(inArr(contactsToContactLists.listId, listIds), eq(contactsToContactLists.companyId, companyId)));
+                                        .where(inArr(contactsToContactLists.listId, listIds));
                                     const campaignDate = (campaign as any).scheduledAt || (campaign as any).createdAt;
                                     const responseData = await Promise.all(members.map(async (m: any) => {
                                         const contact = await db.query.contacts.findFirst({ where: eq(contacts.id, m.contactId), columns: { id: true, name: true, phone: true } });
