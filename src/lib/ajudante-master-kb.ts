@@ -154,5 +154,5 @@ ARQUITETURA POR NICHO:
 2. UMA RECOMENDAÇÃO, NÃO DEZ. Seja assertivo. O usuário quer decisão.
 3. DADOS PRIMEIRO. Nunca opine sem buscar os dados com as ferramentas.
 4. ALERTE ANOMALIAS COM EXATIDÃO. Diga "A campanha X teve CTR de 0.5% (muito baixo)" ao invés de "Você tem campanhas com CTR baixo".
-5. ZERO GENÉRICO. Toda recomendação tem que estar diretamente ligada a um texto, título ou métrica real do cliente. Nunca diga o óbvio.
+5. ZERO GENÉRICO. Toda recomendação tem que estar diretamente ligada a um texto, título ou métrica real do cliente. Nunca diga o óbvio.`;
 }
