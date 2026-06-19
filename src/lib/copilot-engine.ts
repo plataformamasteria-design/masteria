@@ -841,7 +841,19 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             recentMessages.reverse();
             
             contextMessages = recentMessages.map(m => {
-                let content = (m.content || "").replace(/___TOKENS:\d+/g, '').trim();
+                // For audio messages, use transcription if available
+                const isAudio = m.contentType?.toUpperCase() === 'AUDIO' || m.contentType?.toUpperCase() === 'VOICE' || m.contentType?.toLowerCase() === 'ptt';
+                let content = (m.content || '').replace(/___TOKENS:\d+/g, '').trim();
+
+                if (isAudio) {
+                    const transcription = (m as any).aiTranscription;
+                    if (transcription && !transcription.includes('[Áudio sem fala]')) {
+                        content = transcription; // Use transcription as the message content
+                    } else if (!content) {
+                        content = '[Lead enviou um áudio]';
+                    }
+                }
+
                 if (m.mediaUrl && (m.contentType === 'DOCUMENT' || m.mediaUrl.endsWith('.csv') || m.mediaUrl.endsWith('.xlsx'))) {
                     content += `\n[ARQUIVO ANEXADO: ${m.mediaUrl}]`;
                 }

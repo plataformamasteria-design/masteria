@@ -2667,14 +2667,77 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
             const rawPrompt = step.data.prompt || '';
             if (!rawPrompt) return { message: 'Copilot: nenhum prompt configurado.' };
             
-            const finalPrompt = await interpolateTemplate(rawPrompt, ctx);
             const outputVar = step.data.output_variable || 'copilot_response';
+            const replyWithAudio = !!step.data.reply_with_audio;
+            const ttsVoiceId = step.data.tts_voice_id || 'Aoede';
+            const ttsProvider = step.data.tts_provider || 'gemini';
 
             try {
                 // Obter a conversa atual para contexto e salvamento
                 const conv = await db.query.conversations.findFirst({
                     where: (conversations, { eq }) => eq(conversations.contactId, ctx.contactId || '')
                 });
+
+                // ════════════════════════════════════════════
+                // 🎤 TRANSCRIÇÃO DE ÁUDIO: Detectar se última mensagem é áudio
+                // ════════════════════════════════════════════
+                let audioTranscription: string | null = null;
+                if (conv) {
+                    try {
+                        const lastContactMsg = await db.query.messages.findFirst({
+                            where: (msgs, { and, eq, inArray }) => and(
+                                eq(msgs.conversationId, conv.id),
+                                inArray(msgs.senderType, ['CONTACT', 'USER'])
+                            ),
+                            orderBy: (msgs, { desc }) => [desc(msgs.sentAt)],
+                        });
+
+                        const isAudioMsg = lastContactMsg?.contentType?.toUpperCase() === 'AUDIO' ||
+                            lastContactMsg?.contentType?.toUpperCase() === 'VOICE' ||
+                            lastContactMsg?.contentType?.toLowerCase() === 'ptt';
+
+                        if (isAudioMsg && lastContactMsg?.mediaUrl) {
+                            // Já foi transcrito? Usa direto. Senão transcreve agora.
+                            if ((lastContactMsg as any).aiTranscription) {
+                                audioTranscription = (lastContactMsg as any).aiTranscription;
+                                logger.debug(`[FLOW-ENGINE/Copilot] 🎤 Usando transcrição existente do áudio.`);
+                            } else {
+                                logger.debug(`[FLOW-ENGINE/Copilot] 🎤 Transcrevendo áudio antes de chamar o Copilot...`);
+                                try {
+                                    const { transcribeAudioOpenAI } = await import('@/services/openai-transcription.service');
+                                    const audioResp = await fetch(lastContactMsg.mediaUrl, { signal: AbortSignal.timeout(15000) });
+                                    if (audioResp.ok) {
+                                        const audioBuffer = Buffer.from(await audioResp.arrayBuffer());
+                                        const transcribed = await transcribeAudioOpenAI(audioBuffer, 'audio/ogg', ctx.companyId);
+                                        if (transcribed && transcribed.trim().length > 0 && !transcribed.includes('[Sem fala detectada]')) {
+                                            audioTranscription = `[Áudio Transcrito]: ${transcribed}`;
+                                            // Salvar no banco para histórico
+                                            await db.update(messages)
+                                                .set({ aiTranscription: audioTranscription })
+                                                .where(eq(messages.id, lastContactMsg.id));
+                                            logger.debug(`[FLOW-ENGINE/Copilot] ✅ Áudio transcrito e salvo no banco.`);
+                                        } else {
+                                            audioTranscription = '[Áudio sem fala detectável]';
+                                            await db.update(messages)
+                                                .set({ aiTranscription: audioTranscription })
+                                                .where(eq(messages.id, lastContactMsg.id));
+                                        }
+                                    }
+                                } catch (transcribeErr: any) {
+                                    logger.debug(`[FLOW-ENGINE/Copilot] ⚠️ Falha na transcrição: ${transcribeErr.message}`);
+                                }
+                            }
+                        }
+                    } catch (detectErr) {
+                        logger.debug('[FLOW-ENGINE/Copilot] Erro ao detectar mensagem de áudio:', detectErr);
+                    }
+                }
+
+                // Montar o prompt final, injetando a transcrição se existir
+                let finalPrompt = await interpolateTemplate(rawPrompt, ctx);
+                if (audioTranscription && !audioTranscription.includes('sem fala')) {
+                    finalPrompt = `${finalPrompt}\n\n[MENSAGEM DO LEAD VIA ÁUDIO]: "${audioTranscription.replace('[Áudio Transcrito]: ', '')}"`;
+                }
 
                 const historyLimit = step.data.history_limit !== undefined ? Number(step.data.history_limit) : 5;
 
@@ -2690,15 +2753,60 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 try {
                     sentConnectionId = ctx.connectionId;
                     let sendSuccess = false;
-                    
+                    const replyText = result.reply.replace(/___TOKENS:\d+/g, '').trim();
+
                     if (ctx.contactPhone || ctx.contactId) {
-                        const sendRes = await sendUnifiedMessage({
-                            provider: (ctx.provider as any) || 'evolution',
-                            connectionId: ctx.connectionId,
-                            to: ctx.contactPhone || ctx.contactId,
-                            message: result.reply,
-                        });
-                        sendSuccess = sendRes.success;
+                        // 🎤 MODO ÁUDIO: Gerar TTS e enviar como nota de voz
+                        if (replyWithAudio && replyText) {
+                            try {
+                                logger.debug(`[FLOW-ENGINE/Copilot] 🎤 Gerando áudio TTS com ${ttsProvider}...`);
+                                const { generateSpeech } = await import('@/services/tts-factory.service');
+                                const audioBuffer = await generateSpeech(replyText, {
+                                    provider: ttsProvider as any,
+                                    voiceId: ttsVoiceId,
+                                    companyId: ctx.companyId,
+                                });
+                                const sendAudioRes = await sendUnifiedMessage({
+                                    provider: (ctx.provider as any) || 'evolution',
+                                    connectionId: ctx.connectionId,
+                                    to: ctx.contactPhone || ctx.contactId,
+                                    message: '',
+                                    mediaBuffer: audioBuffer,
+                                    mediaType: 'audio',
+                                    isVoice: true,
+                                });
+                                sendSuccess = sendAudioRes.success;
+                                if (!sendSuccess) {
+                                    // Fallback para texto se áudio falhar
+                                    logger.debug(`[FLOW-ENGINE/Copilot] ⚠️ TTS falhou, enviando como texto.`);
+                                    const fallback = await sendUnifiedMessage({
+                                        provider: (ctx.provider as any) || 'evolution',
+                                        connectionId: ctx.connectionId,
+                                        to: ctx.contactPhone || ctx.contactId,
+                                        message: replyText,
+                                    });
+                                    sendSuccess = fallback.success;
+                                }
+                            } catch (ttsErr: any) {
+                                logger.debug(`[FLOW-ENGINE/Copilot] ⚠️ Erro no TTS: ${ttsErr.message}. Enviando como texto.`);
+                                const fallback = await sendUnifiedMessage({
+                                    provider: (ctx.provider as any) || 'evolution',
+                                    connectionId: ctx.connectionId,
+                                    to: ctx.contactPhone || ctx.contactId,
+                                    message: replyText,
+                                });
+                                sendSuccess = fallback.success;
+                            }
+                        } else {
+                            // 💬 MODO TEXTO: Envio normal
+                            const sendRes = await sendUnifiedMessage({
+                                provider: (ctx.provider as any) || 'evolution',
+                                connectionId: ctx.connectionId,
+                                to: ctx.contactPhone || ctx.contactId,
+                                message: replyText,
+                            });
+                            sendSuccess = sendRes.success;
+                        }
                     }
 
                     // Registrar a resposta do Copilot no chat (Visibilidade)
@@ -2709,8 +2817,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                                 companyId: ctx.companyId,
                                 conversationId: conv.id,
                                 connectionId: sentConnectionId,
-                                content: result.reply,
-                                contentType: 'TEXT',
+                                content: replyText,
+                                contentType: replyWithAudio ? 'AUDIO' : 'TEXT',
                                 senderType: 'AI',
                                 isAiGenerated: true,
                                 status: 'SENT',
