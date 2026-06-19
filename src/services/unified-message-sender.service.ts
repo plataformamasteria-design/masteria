@@ -78,6 +78,36 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
       return { success: false, error: `Conexão ${connectionId} não encontrada` };
     }
 
+    // ══════════════════════════════════════════════════
+    // 🛡️ DEDUPLICAÇÃO: Bloquear envio idêntico < 30s
+    // ══════════════════════════════════════════════════
+    // Previne que o mesmo conteúdo seja enviado ao mesmo destinatário em rajada
+    // (ex: automação re-disparada, hook duplicado, race condition de workers)
+    try {
+        const dedupContent = (message || '').trim().slice(0, 60);
+        const cleanTo = to.replace(/[^0-9]/g, '');
+        if (dedupContent.length > 3 && cleanTo.length >= 8) {
+            const recentDup = await db.execute(
+                sql`SELECT m.id FROM messages m
+                    JOIN conversations cv ON m.conversation_id = cv.id
+                    JOIN contacts ct ON cv.contact_id = ct.id
+                    WHERE m.sent_at >= NOW() - INTERVAL '30 seconds'
+                      AND m.sender_type IN ('AI','AGENT')
+                      AND ct.phone LIKE ${'%' + cleanTo.slice(-8) + '%'}
+                      AND m.content LIKE ${'%' + dedupContent + '%'}
+                    LIMIT 1`
+            );
+            if (recentDup.rows && recentDup.rows.length > 0) {
+                console.warn(`[UNIFIED-SENDER] 🚫 DEDUP: Mensagem idêntica já enviada para ${to} nos últimos 30s. Bloqueando duplicata.`);
+                return { success: true, messageId: (recentDup.rows[0] as any).id, deduplicated: true } as any;
+            }
+        }
+    } catch (dedupErr) {
+        // Deduplicação nunca deve bloquear o envio legítimo por erro
+        console.warn('[UNIFIED-SENDER] ⚠️ Erro no guard de dedup (ignorando):', dedupErr);
+    }
+
+
     // ✅ FIX: Strict Provider Routing based on DB connection type
     // Prevent nodes (like AI Copilot/Agent) from accidentally sending Meta API messages via Evolution API.
     if (connection.connectionType === 'meta_api' || connection.connectionType === 'instagram') {

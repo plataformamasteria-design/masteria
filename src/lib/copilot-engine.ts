@@ -545,11 +545,11 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "searchContact",
-                description: "Pesquisa contatos no CRM pelo nome, email ou telefone. Retorna uma lista com o ID do contato (contactId) E o ID da conversa mais recente (conversationId). ATENÇÃO CRÍTICA: guarde o 'conversationId' do resultado — ele é obrigatório para enviar mensagens ou resumir conversas. Não confunda 'contactId' com 'conversationId', são campos diferentes.",
+                description: "Pesquisa contatos no CRM pelo nome, email ou telefone. BUSCA FUZZY: se não encontrar exato, tenta variações. Telefones são normalizados automaticamente (com/sem DDI 55, com/sem dígito 9). NUNCA diga 'não encontrado' sem antes tentar variações e apresentar opções similares. Retorna contactId e conversationId.",
                 parameters: {
                     type: "object",
                     properties: { 
-                        query: { type: "string", description: "Nome, telefone ou email a pesquisar. Se for telefone, mande apenas os dígitos que possui (ex: 7585 ou 88920008007)." }
+                        query: { type: "string", description: "Nome, telefone ou email. Para telefone pode mandar com ou sem código do país (ex: '88920008007' ou '5588920008007' ou '+5588920008007')." }
                     },
                     required: ["query"],
                     additionalProperties: false
@@ -560,13 +560,61 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
             type: "function" as const,
             function: {
                 name: "getContactLists",
-                description: "Consulta e retorna todas as listas de contatos da empresa com nome, ID e quantidade de contatos em cada lista. Use o parâmetro 'search' para buscar por nome (ex: 'lista teste'). SEMPRE inclua a contagem de membros ao exibir uma lista para o usuário. Se retornar mais de uma lista com o mesmo nome, exiba TODAS com seus respectivos IDs e contagens.",
+                description: "Consulta e retorna todas as listas de contatos da empresa com nome, ID e quantidade de contatos em cada lista. Use 'search' para filtrar por nome (ILIKE). Use 'zeroOnly: true' para listar apenas listas com ZERO contatos. SEMPRE exiba todas as listas encontradas com seus IDs e contagens — nunca truncar. Se mais de uma tiver o mesmo nome, exiba TODAS.",
                 parameters: {
                     type: "object",
                     properties: { 
-                        search: { type: "string", description: "Termo para buscar listas por nome (opcional, busca parcial case-insensitive)." }
+                        search: { type: "string", description: "Filtrar por nome (opcional, case-insensitive)." },
+                        zeroOnly: { type: "boolean", description: "Se true, retorna apenas listas com 0 contatos." }
                     },
                     required: [],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getListMembers",
+                description: "Retorna todos os contatos de uma lista de transmissão com seus dados (nome, telefone, conversationId) e indica quem enviou mensagem após uma data específica (para verificar quem respondeu a um disparo). Use após disparos para saber quem reagiu.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        listId: { type: "string", description: "ID da lista de contatos." },
+                        checkResponsesAfter: { type: "string", description: "Data ISO (opcional). Se informada, indica quais membros responderam após essa data." }
+                    },
+                    required: ["listId"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "bulkAddTagToList",
+                description: "Cria uma etiqueta (se não existir) e a aplica em TODOS os contatos de uma lista de transmissão de uma só vez. Use quando o usuário pedir para etiquetar todos de uma lista.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        listId: { type: "string", description: "ID da lista cujos membros receberão a etiqueta." },
+                        tagName: { type: "string", description: "Nome da etiqueta a criar/aplicar." }
+                    },
+                    required: ["listId", "tagName"],
+                    additionalProperties: false
+                }
+            }
+        },
+        {
+            type: "function" as const,
+            function: {
+                name: "getCampaignResponseStatus",
+                description: "Verifica o status de uma campanha de disparo: quantas mensagens foram enviadas, quais contatos responderam após o disparo e quais ficaram em silêncio. Use para monitorar resultados pós-campanha.",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        campaignId: { type: "string", description: "ID da campanha." }
+                    },
+                    required: ["campaignId"],
                     additionalProperties: false
                 }
             }
@@ -1736,47 +1784,84 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     else if (tc.function.name === 'searchContact') {
                         try {
                             const { ilike, or } = await import('drizzle-orm');
-                            const q = `%${args.query}%`;
-                            const cleanPhone = args.query.replace(/[^0-9]/g, '');
-                            
-                            let conditions = [
-                                ilike(contacts.name, q),
-                                ilike(contacts.email, q)
-                            ];
-                            
-                            // Se a busca for quase só números, foque MUITO no telefone
-                            if (cleanPhone.length >= 4 && cleanPhone.length >= args.query.length / 2) {
-                                conditions = [ilike(contacts.phone, `%${cleanPhone}%`)];
-                            } else if (cleanPhone.length > 4) {
-                                conditions.push(ilike(contacts.phone, `%${cleanPhone}%`));
+                            const rawQuery = args.query.trim();
+                            const cleanPhone = rawQuery.replace(/[^0-9]/g, '');
+                            const isPhoneSearch = cleanPhone.length >= 6 && cleanPhone.length >= rawQuery.replace(/\s/g, '').length * 0.7;
+
+                            // Normalização de telefone: gerar todas as variações possíveis
+                            // Ex: 88920008007 → também busca 5588920008007, 88920008007, 8920008007
+                            const phoneVariants: string[] = [];
+                            if (isPhoneSearch && cleanPhone.length >= 6) {
+                                phoneVariants.push(`%${cleanPhone}%`); // exato
+                                // Sem DDI (55): remove prefixo 55
+                                if (cleanPhone.startsWith('55') && cleanPhone.length > 10) {
+                                    phoneVariants.push(`%${cleanPhone.slice(2)}%`);
+                                }
+                                // Com DDI: adiciona 55
+                                if (!cleanPhone.startsWith('55')) {
+                                    phoneVariants.push(`%55${cleanPhone}%`);
+                                }
+                                // Sem o 9 (dígito extra pós-2012): remove 9 após DDD (posição 2)
+                                if (cleanPhone.length >= 11 && cleanPhone[2] === '9') {
+                                    phoneVariants.push(`%${cleanPhone.slice(0, 2)}${cleanPhone.slice(3)}%`);
+                                    if (!cleanPhone.startsWith('55')) phoneVariants.push(`%55${cleanPhone.slice(0, 2)}${cleanPhone.slice(3)}%`);
+                                }
+                                // Com o 9: adiciona 9 após DDD
+                                if (cleanPhone.length === 10 && cleanPhone[2] !== '9') {
+                                    phoneVariants.push(`%${cleanPhone.slice(0, 2)}9${cleanPhone.slice(2)}%`);
+                                }
                             }
-                            
+
+                            let conditions: any[] = [];
+                            if (isPhoneSearch) {
+                                conditions = phoneVariants.map(v => ilike(contacts.phone, v));
+                            } else {
+                                conditions = [
+                                    ilike(contacts.name, `%${rawQuery}%`),
+                                    ilike(contacts.email, `%${rawQuery}%`)
+                                ];
+                                if (cleanPhone.length > 4) {
+                                    phoneVariants.push(`%${cleanPhone}%`);
+                                    conditions.push(ilike(contacts.phone, `%${cleanPhone}%`));
+                                }
+                            }
+
                             const foundContacts = await db.query.contacts.findMany({
                                 where: and(eq(contacts.companyId, companyId), or(...conditions)),
                                 columns: { id: true, name: true, phone: true, email: true },
                                 limit: 15
                             });
-                            
+
                             if (foundContacts.length === 0) {
-                                toolRes = { success: false, message: "Nenhum contato encontrado com essa pesquisa." };
+                                // NUNCA retornar vazio sem alternativa — busca fallback por nome parcial
+                                const fallback = await db.query.contacts.findMany({
+                                    where: and(
+                                        eq(contacts.companyId, companyId),
+                                        ilike(contacts.name, `%${rawQuery.split(' ')[0]}%`)
+                                    ),
+                                    columns: { id: true, name: true, phone: true, email: true },
+                                    limit: 5
+                                });
+                                if (fallback.length > 0) {
+                                    toolRes = { success: false, message: `Não encontrado exato para '${rawQuery}'. Contatos similares encontrados:`, suggestions: fallback };
+                                } else {
+                                    toolRes = { success: false, message: `Nenhum contato encontrado para '${rawQuery}'. Tente informar o número de telefone completo ou checar a grafia do nome.` };
+                                }
                             } else {
                                 const enriched = await Promise.all(foundContacts.map(async (c) => {
                                     const conv = await db.query.conversations.findFirst({
-                                        where: eq(conversations.contactId, c.id),
+                                        where: and(eq(conversations.contactId, c.id), eq(conversations.companyId, companyId)),
                                         orderBy: [desc(conversations.lastMessageAt)],
                                         columns: { id: true }
                                     });
                                     return { ...c, conversationId: conv?.id || null };
                                 }));
-                                
-                                // Prioriza os que têm conversationId
                                 enriched.sort((a, b) => {
                                     if (a.conversationId && !b.conversationId) return -1;
                                     if (!a.conversationId && b.conversationId) return 1;
                                     return 0;
                                 });
-
-                                toolRes = { success: true, data: enriched.slice(0, 5) };
+                                toolRes = { success: true, count: enriched.length, data: enriched.slice(0, 8) };
                             }
                         } catch (e: any) {
                             toolRes = { error: e.message };
@@ -1788,11 +1873,12 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const { count: countFn, ilike: ilikeOp } = await import('drizzle-orm');
 
                             // Buscar listas com contagem de membros via subquery
-                            const whereClause = args.search
-                                ? and(eq(contactLists.companyId, companyId), ilikeOp(contactLists.name, `%${args.search}%`))
-                                : eq(contactLists.companyId, companyId);
+                            let whereClause: any = eq(contactLists.companyId, companyId);
+                            if (args.search) {
+                                whereClause = and(eq(contactLists.companyId, companyId), ilikeOp(contactLists.name, `%${args.search}%`));
+                            }
 
-                            const lists = await db.select({
+                            const allLists = await db.select({
                                 id: contactLists.id,
                                 name: contactLists.name,
                                 description: contactLists.description,
@@ -1802,13 +1888,17 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             .where(whereClause)
                             .orderBy(contactLists.name);
 
+                            // Filtro opcional: apenas listas com 0 membros
+                            const lists = args.zeroOnly ? allLists.filter((l: any) => Number(l.memberCount) === 0) : allLists;
+
                             if (lists.length === 0 && args.search) {
-                                toolRes = { success: true, data: [], message: `Nenhuma lista encontrada com o nome "${args.search}". Verifique o nome ou liste todas as listas sem filtro.` };
+                                // Fallback: busca fuzzy sem filtro de nome
+                                toolRes = { success: true, data: allLists, message: `Nenhuma lista com nome exato '${args.search}'. Exibindo todas as listas disponíveis — verifique qual corresponde.` };
                             } else {
                                 toolRes = { 
                                     success: true, 
                                     total: lists.length,
-                                    note: lists.length > 1 && args.search ? `Atenção: encontradas ${lists.length} listas com esse nome. Exiba todas ao usuário com seus IDs e contagens.` : undefined,
+                                    note: lists.length > 1 && args.search ? `Atenção: ${lists.length} listas com nome similar. Exiba TODAS com IDs e contagens.` : undefined,
                                     data: lists 
                                 };
                             }
@@ -1844,6 +1934,121 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                         } catch (e: any) {
                             toolRes = { error: e.message };
                         }
+                    }
+                    else if (tc.function.name === 'getListMembers') {
+                        try {
+                            const { contactsToContactLists } = await import('./db/schema');
+                            // Buscar membros da lista com dados do contato
+                            const members = await db.select({
+                                contactId: contacts.id,
+                                name: contacts.name,
+                                phone: contacts.phone,
+                                email: contacts.email
+                            })
+                            .from(contactsToContactLists)
+                            .innerJoin(contacts, eq(contactsToContactLists.contactId, contacts.id))
+                            .where(
+                                and(
+                                    eq(contactsToContactLists.listId, args.listId),
+                                    eq(contactsToContactLists.companyId, companyId)
+                                )
+                            );
+
+                            if (members.length === 0) {
+                                toolRes = { success: true, memberCount: 0, message: 'Lista vazia ou não encontrada.', members: [] };
+                            } else {
+                                // Enriquecer com conversationId e, se solicitado, checar resposta após data
+                                const enriched = await Promise.all(members.map(async (m) => {
+                                    const conv = await db.query.conversations.findFirst({
+                                        where: and(eq(conversations.contactId, m.contactId), eq(conversations.companyId, companyId)),
+                                        orderBy: [desc(conversations.lastMessageAt)],
+                                        columns: { id: true, lastMessageAt: true }
+                                    });
+                                    let respondedAfter = false;
+                                    if (args.checkResponsesAfter && conv?.id) {
+                                        const checkDate = new Date(args.checkResponsesAfter);
+                                        const response = await db.select({ id: messages.id })
+                                            .from(messages)
+                                            .where(and(
+                                                eq(messages.conversationId, conv.id),
+                                                eq(messages.senderType, 'CONTACT'),
+                                                sql`${messages.sentAt} >= ${checkDate}`
+                                            ))
+                                            .limit(1);
+                                        respondedAfter = response.length > 0;
+                                    }
+                                    return { ...m, conversationId: conv?.id || null, lastMessageAt: conv?.lastMessageAt || null, respondedAfter };
+                                }));
+                                toolRes = { success: true, memberCount: enriched.length, members: enriched };
+                            }
+                        } catch (e: any) { toolRes = { error: e.message }; }
+                    }
+                    else if (tc.function.name === 'bulkAddTagToList') {
+                        try {
+                            const { contactsToContactLists, tags, contactsToTags } = await import('./db/schema');
+                            // 1. Buscar ou criar a tag
+                            let tag = await db.query.tags.findFirst({
+                                where: and(eq(tags.companyId, companyId), sql`lower(${tags.name}) = lower(${args.tagName})`)
+                            });
+                            if (!tag) {
+                                const inserted = await db.insert(tags).values({ companyId, name: args.tagName, color: '#6366f1' }).returning();
+                                tag = inserted[0];
+                            }
+                            // 2. Buscar todos os contactIds da lista
+                            const listMembers = await db.select({ contactId: contactsToContactLists.contactId })
+                                .from(contactsToContactLists)
+                                .where(and(eq(contactsToContactLists.listId, args.listId), eq(contactsToContactLists.companyId, companyId)));
+                            if (listMembers.length === 0) {
+                                toolRes = { success: false, message: 'Lista vazia — nenhum contato para etiquetar.' };
+                            } else {
+                                // 3. Inserir tag em todos (ignorar duplicados)
+                                const tagRows = listMembers.map((m: any) => ({ contactId: m.contactId, tagId: tag!.id, companyId }));
+                                await db.insert(contactsToTags).values(tagRows).onConflictDoNothing();
+                                toolRes = { success: true, message: `Etiqueta '${args.tagName}' aplicada em ${listMembers.length} contato(s) da lista com sucesso.` };
+                            }
+                        } catch (e: any) { toolRes = { error: e.message }; }
+                    }
+                    else if (tc.function.name === 'getCampaignResponseStatus') {
+                        try {
+                            const { campaigns } = await import('./db/schema');
+                            const campaign = await db.query.campaigns.findFirst({
+                                where: and(eq(campaigns.id, args.campaignId), eq(campaigns.companyId, companyId))
+                            });
+                            if (!campaign) {
+                                toolRes = { error: 'Campanha não encontrada.' };
+                            } else {
+                                // Buscar membros das listas da campanha
+                                const listIds: string[] = (campaign as any).contactListIds || [];
+                                if (listIds.length === 0) {
+                                    toolRes = { success: true, campaign: { id: campaign.id, name: (campaign as any).name, status: (campaign as any).status }, message: 'Campanha sem listas associadas.' };
+                                } else {
+                                    const { contactsToContactLists } = await import('./db/schema');
+                                    const { inArray: inArr } = await import('drizzle-orm');
+                                    const members = await db.select({ contactId: contactsToContactLists.contactId })
+                                        .from(contactsToContactLists)
+                                        .where(and(inArr(contactsToContactLists.listId, listIds), eq(contactsToContactLists.companyId, companyId)));
+                                    const campaignDate = (campaign as any).scheduledAt || (campaign as any).createdAt;
+                                    const responseData = await Promise.all(members.map(async (m: any) => {
+                                        const contact = await db.query.contacts.findFirst({ where: eq(contacts.id, m.contactId), columns: { id: true, name: true, phone: true } });
+                                        const conv = await db.query.conversations.findFirst({
+                                            where: and(eq(conversations.contactId, m.contactId), eq(conversations.companyId, companyId)),
+                                            orderBy: [desc(conversations.lastMessageAt)],
+                                            columns: { id: true }
+                                        });
+                                        let responded = false;
+                                        if (conv?.id && campaignDate) {
+                                            const res = await db.select({ id: messages.id }).from(messages)
+                                                .where(and(eq(messages.conversationId, conv.id), eq(messages.senderType, 'CONTACT'), sql`${messages.sentAt} >= ${new Date(campaignDate)}`)).limit(1);
+                                            responded = res.length > 0;
+                                        }
+                                        return { ...contact, responded };
+                                    }));
+                                    const replied = responseData.filter((r: any) => r.responded);
+                                    const silent = responseData.filter((r: any) => !r.responded);
+                                    toolRes = { success: true, campaign: { id: campaign.id, name: (campaign as any).name, status: (campaign as any).status, totalSent: members.length }, replied: { count: replied.length, contacts: replied }, silent: { count: silent.length, contacts: silent } };
+                                }
+                            }
+                        } catch (e: any) { toolRes = { error: e.message }; }
                     }
                     else if (tc.function.name === 'getKanbanBoards') {
                         try {
