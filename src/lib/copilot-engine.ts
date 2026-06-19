@@ -283,7 +283,8 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                     properties: {
                         status: { type: "string", enum: ["ACTIVE", "PAUSED", "ALL"], description: "Filtrar por status. Padrão é ALL." },
                         datePreset: { type: "string", description: "Período pré-definido. Ex: today, yesterday, last_7d, last_30d, this_month, last_month. Padrão: last_30d" },
-                        objective: { type: "string", description: "Filtrar por objetivo (ex: OUTCOME_LEADS, OUTCOME_SALES). Opcional." }
+                        objective: { type: "string", description: "Filtrar por objetivo (ex: OUTCOME_LEADS, OUTCOME_SALES). Opcional." },
+                        keyword: { type: "string", description: "Buscar campanhas por nome (ex: 'A Mesa', 'Lead'). Opcional." }
                     },
                     required: [],
                     additionalProperties: false
@@ -703,8 +704,8 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                 parameters: {
                     type: "object",
                     properties: {
-                        campaignId: { type: "string", description: "O ID da campanha (opcional, se passar adsetId não precisa)." },
-                        adsetId: { type: "string", description: "O ID do conjunto de anúncios (opcional)." },
+                        campaignId: { type: "string", description: "O ID NUMÉRICO da campanha. APENAS NÚMEROS. NUNCA envie o nome (opcional, se passar adsetId não precisa)." },
+                        adsetId: { type: "string", description: "O ID NUMÉRICO do conjunto de anúncios (opcional)." },
                         datePreset: { type: "string", description: "Período. Padrão: last_30d" },
                         since: { type: "string", description: "Data inicial (YYYY-MM-DD)" },
                         until: { type: "string", description: "Data final (YYYY-MM-DD)" }
@@ -958,8 +959,17 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
                             const statusFilter = args.status && args.status !== "ALL" ? args.status : undefined;
                             
                             const customParams: any = {};
+                            const filteringArray: any[] = [];
+                            
                             if (statusFilter) {
-                                customParams.filtering = JSON.stringify([{ field: "effective_status", operator: "IN", value: [statusFilter] }]);
+                                filteringArray.push({ field: "effective_status", operator: "IN", value: [statusFilter] });
+                            }
+                            if (args.keyword) {
+                                filteringArray.push({ field: "name", operator: "CONTAIN", value: args.keyword });
+                            }
+                            
+                            if (filteringArray.length > 0) {
+                                customParams.filtering = JSON.stringify(filteringArray);
                             }
 
                             const res = await metaFetchPaginated({
