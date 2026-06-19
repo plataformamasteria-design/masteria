@@ -1,4 +1,4 @@
-﻿import { generateText, tool } from 'ai';
+import { generateText, tool } from 'ai';
 import OpenAI from 'openai';
 import { buildAjudanteMasterPrompt } from './ajudante-master-kb';
 import { z } from 'zod';
@@ -872,17 +872,29 @@ export async function executeCopilotCommand(prompt: string, companyId: string, c
     let finalSystemMessage = buildAjudanteMasterPrompt(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
     let finalUserMessage = prompt;
 
-    // MISSÃO DA SESSÃO: O prompt do nó é injetado como missão, não como redefinição de identidade.
-    // Frases que tentam redefinir 'quem você é' são removidas para evitar conflito com a KB.
+    // Injeção de contexto de automação: quando há histórico de conversa, o prompt
+    // do nó é a última mensagem do lead (zero-config) OU uma missão personalizada.
+    // Em ambos os casos, NÃO redefinimos identidade — a KB sempre prevalece.
     if (conversationId && contextMessages.length > 0) {
-        const nodePromptClean = prompt
-            .replace(/você é o masteria copilot[\s\S]*?(?=\n\n|\n###|$)/gi, '')
-            .replace(/você é o ajudante[\s\S]*?(?=\n\n|\n###|$)/gi, '')
-            .replace(/### \uD83D\uDEE0\uFE0F SUAS CAPACIDADES[\s\S]*/gi, '')
-            .replace(/### \uD83E\uDDE0 DIRETRIZES[\s\S]*/gi, '')
-            .trim();
-        finalSystemMessage = `${finalSystemMessage}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMISSÃO DESTA SESSÃO:\n${nodePromptClean || prompt}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nUse o histórico da conversa como contexto. Execute a missão com as ferramentas disponíveis.`
-        finalUserMessage = ''; // A mensagem do usuário já está em contextMessages
+        const isAutoMission = prompt && prompt.length < 500 && !prompt.includes('### ');
+        if (isAutoMission) {
+            // Prompt curto/direto: tratar como nova mensagem do usuário no final do histórico
+            // (o modelo responde como se o lead tivesse dito isso agora)
+            finalUserMessage = prompt;
+        } else if (prompt) {
+            // Prompt longo com instruções: injetar como missão da sessão (sem redefinir identidade)
+            const nodePromptClean = prompt
+                .replace(/você é o masteria copilot[\s\S]*?(?=\n\n|\n###|$)/gi, '')
+                .replace(/você é o ajudante[\s\S]*?(?=\n\n|\n###|$)/gi, '')
+                .replace(/### 🛠️ SUAS CAPACIDADES[\s\S]*/gi, '')
+                .replace(/### 🧠 DIRETRIZES[\s\S]*/gi, '')
+                .trim();
+            finalSystemMessage = finalSystemMessage + "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nMISSÃO DESTA SESSÃO:\n" + nodePromptClean + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+            finalUserMessage = ''; // Mensagem do usuário já está em contextMessages
+        } else {
+            // Zero-config sem prompt: apenas responder ao contexto do histórico
+            finalUserMessage = '';
+        }
     }
 
     const messages: any[] = [

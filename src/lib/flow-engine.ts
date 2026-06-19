@@ -2664,9 +2664,10 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
 
         // ---- AI Copilot Interno ----
         case 'ai_copilot': {
-            const rawPrompt = step.data.prompt || '';
-            if (!rawPrompt) return { message: 'Copilot: nenhum prompt configurado.' };
-            
+            // ZERO-CONFIG: O nó não precisa de prompt. A KB do Ajudante Master guia tudo.
+            // Se um prompt for configurado, ele é usado como refinamento da missão.
+            // Se não houver prompt, o Copilot lê a última mensagem do lead e responde naturalmente.
+            const rawPrompt = (step.data.prompt || '').trim();
             const outputVar = step.data.output_variable || 'copilot_response';
             const replyWithAudio = !!step.data.reply_with_audio;
             const ttsVoiceId = step.data.tts_voice_id || 'Aoede';
@@ -2679,9 +2680,11 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 });
 
                 // ════════════════════════════════════════════
-                // 🎤 TRANSCRIÇÃO DE ÁUDIO: Detectar se última mensagem é áudio
+                // 🎤 DETECÇÃO DE ÚLTIMA MENSAGEM DO LEAD (texto ou áudio)
                 // ════════════════════════════════════════════
+                let lastLeadMessageText: string | null = null;
                 let audioTranscription: string | null = null;
+
                 if (conv) {
                     try {
                         const lastContactMsg = await db.query.messages.findFirst({
@@ -2692,51 +2695,75 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             orderBy: (msgs, { desc }) => [desc(msgs.sentAt)],
                         });
 
-                        const isAudioMsg = lastContactMsg?.contentType?.toUpperCase() === 'AUDIO' ||
-                            lastContactMsg?.contentType?.toUpperCase() === 'VOICE' ||
-                            lastContactMsg?.contentType?.toLowerCase() === 'ptt';
+                        if (lastContactMsg) {
+                            const isAudioMsg = lastContactMsg?.contentType?.toUpperCase() === 'AUDIO' ||
+                                lastContactMsg?.contentType?.toUpperCase() === 'VOICE' ||
+                                lastContactMsg?.contentType?.toLowerCase() === 'ptt';
 
-                        if (isAudioMsg && lastContactMsg?.mediaUrl) {
-                            // Já foi transcrito? Usa direto. Senão transcreve agora.
-                            if ((lastContactMsg as any).aiTranscription) {
-                                audioTranscription = (lastContactMsg as any).aiTranscription;
-                                logger.debug(`[FLOW-ENGINE/Copilot] 🎤 Usando transcrição existente do áudio.`);
-                            } else {
-                                logger.debug(`[FLOW-ENGINE/Copilot] 🎤 Transcrevendo áudio antes de chamar o Copilot...`);
-                                try {
-                                    const { transcribeAudioOpenAI } = await import('@/services/openai-transcription.service');
-                                    const audioResp = await fetch(lastContactMsg.mediaUrl, { signal: AbortSignal.timeout(15000) });
-                                    if (audioResp.ok) {
-                                        const audioBuffer = Buffer.from(await audioResp.arrayBuffer());
-                                        const transcribed = await transcribeAudioOpenAI(audioBuffer, 'audio/ogg', ctx.companyId);
-                                        if (transcribed && transcribed.trim().length > 0 && !transcribed.includes('[Sem fala detectada]')) {
-                                            audioTranscription = `[Áudio Transcrito]: ${transcribed}`;
-                                            // Salvar no banco para histórico
-                                            await db.update(messages)
-                                                .set({ aiTranscription: audioTranscription })
-                                                .where(eq(messages.id, lastContactMsg.id));
-                                            logger.debug(`[FLOW-ENGINE/Copilot] ✅ Áudio transcrito e salvo no banco.`);
-                                        } else {
-                                            audioTranscription = '[Áudio sem fala detectável]';
-                                            await db.update(messages)
-                                                .set({ aiTranscription: audioTranscription })
-                                                .where(eq(messages.id, lastContactMsg.id));
+                            if (isAudioMsg && lastContactMsg?.mediaUrl) {
+                                // Áudio: usar transcrição existente ou transcrever agora
+                                if ((lastContactMsg as any).aiTranscription) {
+                                    audioTranscription = (lastContactMsg as any).aiTranscription;
+                                    logger.debug(`[FLOW-ENGINE/Copilot] 🎤 Usando transcrição existente do áudio.`);
+                                } else {
+                                    logger.debug(`[FLOW-ENGINE/Copilot] 🎤 Transcrevendo áudio antes de chamar o Copilot...`);
+                                    try {
+                                        const { transcribeAudioOpenAI } = await import('@/services/openai-transcription.service');
+                                        const audioResp = await fetch(lastContactMsg.mediaUrl, { signal: AbortSignal.timeout(15000) });
+                                        if (audioResp.ok) {
+                                            const audioBuffer = Buffer.from(await audioResp.arrayBuffer());
+                                            const transcribed = await transcribeAudioOpenAI(audioBuffer, 'audio/ogg', ctx.companyId);
+                                            if (transcribed && transcribed.trim().length > 0 && !transcribed.includes('[Sem fala detectada]')) {
+                                                audioTranscription = `[Áudio Transcrito]: ${transcribed}`;
+                                                await db.update(messages)
+                                                    .set({ aiTranscription: audioTranscription })
+                                                    .where(eq(messages.id, lastContactMsg.id));
+                                                logger.debug(`[FLOW-ENGINE/Copilot] ✅ Áudio transcrito e salvo no banco.`);
+                                            } else {
+                                                audioTranscription = '[Áudio sem fala detectável]';
+                                                await db.update(messages)
+                                                    .set({ aiTranscription: audioTranscription })
+                                                    .where(eq(messages.id, lastContactMsg.id));
+                                            }
                                         }
+                                    } catch (transcribeErr: any) {
+                                        logger.debug(`[FLOW-ENGINE/Copilot] ⚠️ Falha na transcrição: ${transcribeErr.message}`);
                                     }
-                                } catch (transcribeErr: any) {
-                                    logger.debug(`[FLOW-ENGINE/Copilot] ⚠️ Falha na transcrição: ${transcribeErr.message}`);
                                 }
+                                lastLeadMessageText = audioTranscription || '[Lead enviou um áudio]';
+                            } else {
+                                // Texto normal
+                                lastLeadMessageText = (lastContactMsg.content || '').trim();
                             }
                         }
                     } catch (detectErr) {
-                        logger.debug('[FLOW-ENGINE/Copilot] Erro ao detectar mensagem de áudio:', detectErr);
+                        logger.debug('[FLOW-ENGINE/Copilot] Erro ao detectar última mensagem:', detectErr);
                     }
                 }
 
-                // Montar o prompt final, injetando a transcrição se existir
-                let finalPrompt = await interpolateTemplate(rawPrompt, ctx);
-                if (audioTranscription && !audioTranscription.includes('sem fala')) {
-                    finalPrompt = `${finalPrompt}\n\n[MENSAGEM DO LEAD VIA ÁUDIO]: "${audioTranscription.replace('[Áudio Transcrito]: ', '')}"`;
+                // ════════════════════════════════════════════
+                // 🧠 MONTAGEM AUTOMÁTICA DA MISSÃO
+                // ════════════════════════════════════════════
+                // Se não houver prompt configurado, o Copilot responde à última mensagem do lead.
+                // Se houver prompt, ele serve como refinamento/instrução adicional.
+                let finalPrompt: string;
+
+                if (!rawPrompt) {
+                    // ZERO-CONFIG: responder naturalmente ao que o lead disse
+                    if (lastLeadMessageText && !lastLeadMessageText.includes('sem fala')) {
+                        finalPrompt = lastLeadMessageText;
+                    } else {
+                        // Nenhuma mensagem identificável — Copilot analisa o contexto e toma iniciativa
+                        finalPrompt = 'Analise o contexto desta conversa e tome a melhor ação para avançar o lead no processo comercial.';
+                    }
+                } else {
+                    // PROMPT CONFIGURADO: usa como missão, enriquecido com a última mensagem do lead
+                    const interpolated = await interpolateTemplate(rawPrompt, ctx);
+                    if (lastLeadMessageText && !lastLeadMessageText.includes('sem fala') && !interpolated.includes(lastLeadMessageText)) {
+                        finalPrompt = `${interpolated}\n\n[ÚLTIMA MENSAGEM DO LEAD]: "${lastLeadMessageText}"`;
+                    } else {
+                        finalPrompt = interpolated;
+                    }
                 }
 
                 const historyLimit = step.data.history_limit !== undefined ? Number(step.data.history_limit) : 5;
