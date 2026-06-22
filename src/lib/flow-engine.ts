@@ -2964,8 +2964,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
         case 'ai_agent':
         case 'ai': {
             const resolvedKeys = await resolveAIKeys(ctx.companyId);
-            const OPENAI_KEY = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
-            const GEMINI_KEY = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+            const OPENAI_KEY = (resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '').replace(/^undefined$/, '');
+            const GEMINI_KEY = (resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').replace(/^undefined$/, '');
             
             const provider = step.data.provider || 'openai';
             let modelName = step.data.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4o-mini');
