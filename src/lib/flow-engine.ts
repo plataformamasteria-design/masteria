@@ -3778,7 +3778,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         });
                         const evalResponse = (evalResult.choices[0]?.message?.content?.trim() || '').toUpperCase();
 
-                        if (evalResponse.includes('SIM')) {
+                        if (evalResponse === 'SIM' || evalResponse.startsWith('SIM.') || evalResponse.startsWith('SIM,') || evalResponse.startsWith('SIM ')) {
                             return {
                                 sourceHandle: 'completed',
                                 newVars: {
