@@ -509,7 +509,6 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         const objective = config.completion_condition || config.dialogue_objective;
         if (config.dialogue_mode && objective) {
             parts.push("\n\n🎯 OBJETIVO DO DIÁLOGO: " + objective);
-            parts.push("Quando o objetivo for alcançado, envie sua mensagem final de confirmação para o lead e, AO FINAL da mensagem, adicione a tag [OBJETIVO_CONCLUÍDO]. Exemplo: 'Tudo certo, seu horário está agendado! [OBJETIVO_CONCLUÍDO]'.");
             parts.push("Continue conversando naturalmente até atingir o objetivo.");
         }
 

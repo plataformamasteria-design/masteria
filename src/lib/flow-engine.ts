@@ -3001,9 +3001,33 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 openai = new OpenAI({ apiKey: OPENAI_KEY });
             }
 
-            let systemPrompt = await interpolateTemplate(
-                step.data.system_message || step.data.description || step.data.systemPrompt || '', ctx
-            );
+            const parts: string[] = [];
+            const basePrompt = step.data.system_message || step.data.description || step.data.systemPrompt || '';
+            if (basePrompt) parts.push(basePrompt);
+            
+            if (step.data.learning_notes) {
+                parts.push("\n\n#REGRAS ABSOLUTAS ACIMA DO PROMPT E DE TUDO, ESSAS INFORMAÇÕES ESTÃO CORRETAS E VALIDADAS E DEVEM SER SEGUIDAS A TODO CUSTO:\n" + step.data.learning_notes);
+            }
+            
+            if (step.data.dialogue_mode && step.data.prompt) {
+                parts.push(step.data.prompt);
+            }
+            
+            if (step.data.followup_prompt) {
+                parts.push(step.data.followup_prompt);
+            }
+            
+            const objective = step.data.completion_condition || step.data.dialogue_objective;
+            if (step.data.dialogue_mode && objective) {
+                parts.push("\n\n🎯 OBJETIVO DO DIÁLOGO: " + objective);
+                parts.push("Continue conversando naturalmente até atingir o objetivo.");
+            }
+
+            if (step.data.format_for_send) {
+                parts.push("\nSepare cada parte da resposta com ⌁⌁⌁");
+            }
+
+            let systemPrompt = await interpolateTemplate(parts.join('\n\n'), ctx);
             
             const temperature = typeof step.data.temperature === 'number' ? step.data.temperature : 0.7;
 
