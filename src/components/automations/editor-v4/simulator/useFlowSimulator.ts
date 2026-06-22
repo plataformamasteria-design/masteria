@@ -1372,6 +1372,24 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                             addMessage({ type: "system", content: `🪙 Tokens gastos neste turno: ${aiResult.tokens}`, nodeId, nodeType });
 
                             // Check if AI signaled objective completion
+                            let hasObjective = objectiveRegex.test(aiResult.response);
+
+                            // Se a IA não gerou a tag, fazemos a mesma checagem de produção (flow-engine.ts) com o Evaluator
+                            if (!hasObjective && objective) {
+                                const evalPrompt = `Com base na conversa abaixo, a seguinte condição foi satisfeita?\n\nCondição: "${objective}"\n\nÚltima mensagem do lead: "${lastUserMsg}"\nResposta do agente: "${aiResult.response}"\n\nResponda APENAS com SIM ou NÃO.`;
+                                
+                                const evalRes = await callAI({
+                                    model: "gpt-4o-mini",
+                                    system_message: "Você é um avaliador rigoroso. Responda apenas com SIM ou NÃO.",
+                                    prompt: evalPrompt,
+                                    temperature: 0
+                                });
+                                
+                                if (evalRes && !evalRes.error && evalRes.response.toUpperCase().includes('SIM')) {
+                                    hasObjective = true;
+                                }
+                            }
+
                             if (hasObjective) {
                                 addMessage({ type: "system", content: `✅ Objetivo concluído! (${aiResult.tokens} tokens)`, nodeId, nodeType });
                                 objectiveCompleted = true;
