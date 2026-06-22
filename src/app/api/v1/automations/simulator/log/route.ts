@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSession } from '@/app/actions';
 import { db } from '@/lib/db';
-import { automationLogs } from '@/lib/db/schema';
+import { automationLogs, automationRules } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
@@ -51,12 +51,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Valida se o ruleId existe no banco para não estourar erro de foreign key
+    let validRuleId = null;
+    if (ruleId) {
+      const existingRule = await db
+        .select({ id: automationRules.id })
+        .from(automationRules)
+        .where(eq(automationRules.id, ruleId))
+        .limit(1);
+      if (existingRule.length > 0) {
+        validRuleId = ruleId;
+      }
+    }
+
     // Se não tinha logId ou não encontrou, cria um novo
     const insertResult = await db
       .insert(automationLogs)
       .values({
         companyId: session.user.companyId,
-        ruleId: ruleId || null,
+        ruleId: validRuleId,
         level: 'INFO',
         message: `Simulação Virtual: ${flowName || 'Fluxo'}`,
         details: payloadDetails,

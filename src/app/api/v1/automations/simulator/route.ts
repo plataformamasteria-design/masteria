@@ -157,11 +157,44 @@ export async function POST(req: NextRequest) {
                 }
             };
 
-            const completion = await executeSimulatorWithFallback();
-            return NextResponse.json({ 
-                response: completion.choices[0]?.message?.content?.trim() || '',
-                total_tokens: completion.usage?.total_tokens || 0
-            });
+            try {
+                const completion = await executeSimulatorWithFallback();
+                return NextResponse.json({ 
+                    response: completion.choices[0]?.message?.content?.trim() || '',
+                    total_tokens: completion.usage?.total_tokens || 0
+                });
+            } catch (simErr: any) {
+                const isContextError = simErr?.status === 400 && (simErr.message?.includes('context length') || simErr.message?.includes('maximum context'));
+                if (isContextError && virtual_history && virtual_history.length > 0) {
+                    console.warn('[SIMULATOR AI] Context Length Exceeded! Generating friendly fallback...');
+                    try {
+                        const OPENAI_KEY = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
+                        const client = new OpenAI({ apiKey: OPENAI_KEY });
+                        const fallbackContext = virtual_history.slice(-15);
+                        const prompt = "Você é um atendente humano via WhatsApp. Ocorreu um erro técnico no sistema (os documentos/arquivos enviados no fluxo eram muito grandes para serem lidos de uma vez). Baseado nas últimas mensagens do cliente, escreva uma mensagem curta, empática e humanizada, sem parecer um robô, avisando que o volume de informações ou o arquivo foi um pouco grande e que você está processando, pedindo para aguardar um instante ou resumir a solicitação. NÃO use jargões técnicos como 'tokens', 'context length' ou 'I.A'.";
+                        
+                        const fbCompletion = await client.chat.completions.create({
+                            model: 'gpt-4o-mini',
+                            messages: [
+                                { role: 'system', content: prompt },
+                                ...fallbackContext.map((m:any) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
+                            ]
+                        });
+                        
+                        return NextResponse.json({
+                            response: fbCompletion.choices[0]?.message?.content?.trim() || 'Poxa, você mandou bastante informação! Deixa eu analisar com calma, só um instante...',
+                            total_tokens: fbCompletion.usage?.total_tokens || 0
+                        });
+                    } catch (fbErr) {
+                        console.error('[SIMULATOR AI] Fallback generation failed:', fbErr);
+                        return NextResponse.json({
+                            response: 'Deixa eu analisar essas informações com calma, me dê só um instante por favor...',
+                            total_tokens: 0
+                        });
+                    }
+                }
+                throw simErr;
+            }
         }
 
         return NextResponse.json({ error: 'Operação não suportada' }, { status: 400 });

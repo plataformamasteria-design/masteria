@@ -244,8 +244,11 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
   const [viewMode, setViewMode] = useState<'all' | 'assigned_only'>('all');
   const [kanbanViewMode, setKanbanViewMode] = useState<'all' | 'assigned_only'>('all');
   const [allowedConnectionIds, setAllowedConnectionIds] = useState<string[]>([]);
+  const [allowedFunnelIds, setAllowedFunnelIds] = useState<string[]>([]);
   const [connectionsList, setConnectionsList] = useState<any[]>([]);
+  const [kanbansList, setKanbansList] = useState<any[]>([]);
   const [isLoadingConnections, setIsLoadingConnections] = useState(false);
+  const [isLoadingKanbans, setIsLoadingKanbans] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const notify = useMemo(() => createToastNotifier(toast), [toast]);
@@ -254,22 +257,31 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
   const agentTabs = allNavItems.filter(item => !item.requireEmail);
 
   useEffect(() => {
-    async function loadConnections() {
+    async function loadConnectionsAndKanbans() {
       if (!isOpen) return;
       setIsLoadingConnections(true);
+      setIsLoadingKanbans(true);
       try {
-        const response = await fetch('/api/v1/connections');
-        if (response.ok) {
-          const data = await response.json();
+        const [connRes, kanbanRes] = await Promise.all([
+          fetch('/api/v1/connections'),
+          fetch('/api/v1/kanbans')
+        ]);
+        if (connRes.ok) {
+          const data = await connRes.json();
           setConnectionsList(data);
         }
+        if (kanbanRes.ok) {
+          const data = await kanbanRes.json();
+          setKanbansList(data);
+        }
       } catch (err) {
-        console.error('Failed to load connections', err);
+        console.error('Failed to load connections or kanbans', err);
       } finally {
         setIsLoadingConnections(false);
+        setIsLoadingKanbans(false);
       }
     }
-    loadConnections();
+    loadConnectionsAndKanbans();
   }, [isOpen]);
 
   useEffect(() => {
@@ -291,12 +303,19 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
       setViewMode(perms.viewMode || 'all');
       setKanbanViewMode(perms.kanbanViewMode || 'all');
       setAllowedConnectionIds(perms.allowedConnectionIds || []);
+      setAllowedFunnelIds(perms.allowedFunnelIds || []);
     }
   }, [user, isOpen]);
 
   const handleToggleConnection = (connId: string) => {
     setAllowedConnectionIds(prev => 
       prev.includes(connId) ? prev.filter(id => id !== connId) : [...prev, connId]
+    );
+  };
+
+  const handleToggleFunnel = (funnelId: string) => {
+    setAllowedFunnelIds(prev => 
+      prev.includes(funnelId) ? prev.filter(id => id !== funnelId) : [...prev, funnelId]
     );
   };
 
@@ -314,7 +333,8 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
             tabs,
             viewMode,
             kanbanViewMode,
-            allowedConnectionIds
+            allowedConnectionIds,
+            allowedFunnelIds
           }
         }),
       });
@@ -415,8 +435,6 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
               </div>
             </div>
 
-            <div className="h-px bg-border w-full my-4" />
-
             <div className="space-y-4">
               <div>
                 <h4 className="text-sm font-medium mb-1">Acesso às Abas</h4>
@@ -437,6 +455,42 @@ function PermissionsDialog({ user, isOpen, setIsOpen, onSaved }: { user: User | 
                     />
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="h-px bg-border w-full my-4" />
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-1">Funis Permitidos</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Quais funis (Kanban) este agente pode visualizar explicitamente?
+                  <br/>
+                  <span className="text-xs opacity-80">Por padrão, o agente já vê os funis vinculados às conexões que ele tem acesso. Adicione aqui funis extras que ele deve ter acesso direto.</span>
+                </p>
+              </div>
+              
+              <div className="space-y-3 bg-muted/30 p-4 rounded-lg border max-h-[200px] overflow-y-auto">
+                {isLoadingKanbans ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : kanbansList.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center">Nenhum funil encontrado.</p>
+                ) : (
+                  kanbansList.map(kanban => (
+                    <div key={kanban.id} className="flex items-center justify-between">
+                      <Label htmlFor={`kanban-${kanban.id}`} className="flex flex-col cursor-pointer font-normal">
+                        <span className="font-medium">{kanban.name}</span>
+                      </Label>
+                      <Switch 
+                        id={`kanban-${kanban.id}`} 
+                        checked={allowedFunnelIds.includes(kanban.id)} 
+                        onCheckedChange={() => handleToggleFunnel(kanban.id)}
+                      />
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

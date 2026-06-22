@@ -3462,10 +3462,30 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 } catch (error: any) {
                     console.error('[FLOW-ENGINE] OpenAI Dialogue Error:', error.message || error);
                     // 🔧 BUG FIX: Graceful fallback em caso de erro 429/cota OpenAI
-                    // Em vez de crashar e quebrar a automação (jogando "Falha no node"), informamos instabilidade.
                     const isQuotaError = error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('insufficient');
+                    const isContextError = error?.status === 400 && (error?.message?.includes('context length') || error?.message?.includes('maximum context'));
+                    
                     if (isQuotaError) {
                         responseText = 'Peço desculpas, mas estou enfrentando uma leve instabilidade no sistema. Por favor, aguarde um instante enquanto direcionamos para um especialista.';
+                    } else if (isContextError) {
+                        logger.warn('[FLOW-ENGINE] ⚠️ Context length exceeded, generating friendly fallback...');
+                        try {
+                            const OPENAI_KEY = process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
+                            const fbOpenai = new OpenAI({ apiKey: OPENAI_KEY });
+                            const fbHistory = chatHistory.slice(-15).filter(m => m.role === 'user' || m.role === 'assistant');
+                            const fbPrompt = "Você é um atendente humano. Ocorreu um erro técnico de 'Context Length Exceeded' porque o cliente mandou mensagens muito longas ou temos muitos documentos. Escreva uma mensagem curta e humanizada avisando o cliente que o volume de informações foi um pouco grande, que você está processando com calma, e pedindo para aguardar. Não use jargões de IA.";
+                            
+                            const fbCompletion = await fbOpenai.chat.completions.create({
+                                model: 'gpt-4o-mini',
+                                messages: [
+                                    { role: 'system', content: fbPrompt },
+                                    ...fbHistory
+                                ]
+                            });
+                            responseText = fbCompletion.choices[0]?.message?.content?.trim() || 'Poxa, é bastante informação! Deixa eu analisar com calma, só um instante...';
+                        } catch (fbErr) {
+                            responseText = 'Deixa eu analisar essas informações com calma, me dê só um instante por favor...';
+                        }
                     } else {
                         throw error; // Let the step block catch it
                     }
@@ -3552,8 +3572,31 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     console.error('[FLOW-ENGINE] OpenAI Single-Shot Error:', error.message || error);
                     // 🔧 BUG FIX: Graceful fallback em caso de erro 429/cota OpenAI
                     const isQuotaError = error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('insufficient');
+                    const isContextError = error?.status === 400 && (error?.message?.includes('context length') || error?.message?.includes('maximum context'));
+                    
                     if (isQuotaError) {
                         responseText = 'Peço desculpas, mas estou enfrentando uma leve instabilidade no sistema. Por favor, aguarde um instante enquanto direcionamos para um especialista.';
+                    } else if (isContextError) {
+                        logger.warn('[FLOW-ENGINE] ⚠️ Context length exceeded (Single-Shot), generating friendly fallback...');
+                        try {
+                            const OPENAI_KEY = process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
+                            const fbOpenai = new OpenAI({ apiKey: OPENAI_KEY });
+                            
+                            // Remove o histórico enorme do prompt
+                            const leadMessage = ctx.variables.last_response || ctx.variables.message_text || '';
+                            const fbPrompt = "Você é um atendente humano via WhatsApp. Ocorreu um erro técnico de 'Context Length Exceeded' porque o documento enviado no fluxo era muito grande. Baseado na última mensagem do cliente, escreva uma mensagem curta, empática e humanizada avisando que a quantidade de informação ou arquivo foi um pouco grande, e que você está processando, pedindo para aguardar um instante ou resumir. Não use jargões de IA.";
+                            
+                            const fbCompletion = await fbOpenai.chat.completions.create({
+                                model: 'gpt-4o-mini',
+                                messages: [
+                                    { role: 'system', content: fbPrompt },
+                                    { role: 'user', content: `Última mensagem do cliente: ${leadMessage}` }
+                                ]
+                            });
+                            responseText = fbCompletion.choices[0]?.message?.content?.trim() || 'Poxa, é bastante informação! Deixa eu analisar com calma, só um instante...';
+                        } catch (fbErr) {
+                            responseText = 'Deixa eu analisar essas informações com calma, me dê só um instante por favor...';
+                        }
                     } else {
                         throw error;
                     }

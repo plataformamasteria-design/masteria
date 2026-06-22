@@ -41,6 +41,7 @@ export async function GET(_request: NextRequest) {
         const isRestricted = user.role === 'atendente';
         const kanbanViewMode = isRestricted ? (user.permissions?.kanbanViewMode || 'all') : 'all';
         const allowedConnectionIds = isRestricted ? (user.permissions?.allowedConnectionIds || []) : null;
+        const allowedFunnelIds = isRestricted ? (user.permissions?.allowedFunnelIds || []) : null;
 
         // Otimização: Em vez de buscar e depois fazer loop (problema N+1),
         // usamos um LEFT JOIN e agregamos os dados diretamente no banco.
@@ -66,15 +67,19 @@ export async function GET(_request: NextRequest) {
         }, CacheTTL.SHORT);
 
         if (isRestricted) {
-            if (allowedConnectionIds && allowedConnectionIds.length > 0) {
-                const filtered = boardsWithCounts.filter(board => {
+            const filtered = boardsWithCounts.filter(board => {
+                // 1. Se atribuído diretamente via allowedFunnelIds
+                if (allowedFunnelIds && allowedFunnelIds.includes(board.id)) {
+                    return true;
+                }
+                // 2. Fallback para a lógica antiga baseada em conexões
+                if (allowedConnectionIds && allowedConnectionIds.length > 0) {
                     if (!board.connectionIds || board.connectionIds.length === 0) return false;
                     return board.connectionIds.some((id: string) => allowedConnectionIds.includes(id));
-                });
-                return NextResponse.json(filtered);
-            } else {
-                return NextResponse.json([]); // No allowed connections -> no boards
-            }
+                }
+                return false;
+            });
+            return NextResponse.json(filtered);
         }
 
         return NextResponse.json(boardsWithCounts);
