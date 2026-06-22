@@ -1330,7 +1330,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                             setTokensUsed((prev) => prev + aiResult.tokens);
 
                             const objectiveRegex = /\[OBJETIVO_CONCLU[IÍ]DO\]/gi;
-                            const hasObjective = objectiveRegex.test(aiResult.response);
+                            let hasObjective = objectiveRegex.test(aiResult.response);
 
                             // Extract file tag before splitting
                             // Pass the last user message so cross-validation can catch AI's wrong file picks
@@ -1372,7 +1372,6 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                             addMessage({ type: "system", content: `🪙 Tokens gastos neste turno: ${aiResult.tokens}`, nodeId, nodeType });
 
                             // Check if AI signaled objective completion
-                            let hasObjective = objectiveRegex.test(aiResult.response);
 
                             // Se a IA não gerou a tag, fazemos a mesma checagem de produção (flow-engine.ts) com o Evaluator
                             if (!hasObjective && objective) {
