@@ -1382,9 +1382,17 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                                     prompt: evalPrompt,
                                     temperature: 0
                                 }, { virtual_history: [] });
+
+                                console.log('[SIMULATOR EVALUATOR] Prompt:', evalPrompt);
+                                console.log('[SIMULATOR EVALUATOR] Response:', evalRes);
+                                addMessage({ type: "system", content: `[DEBUG EVALUATOR] Resposta bruta: ${evalRes?.response}`, nodeId, nodeType });
                                 
-                                if (evalRes && !evalRes.error && evalRes.response.toUpperCase().includes('SIM')) {
-                                    hasObjective = true;
+                                if (evalRes && !evalRes.error) {
+                                    const rawStr = (evalRes.response || "").trim().toUpperCase();
+                                    // Check if it strictly is "SIM" or starts with "SIM." or "SIM," to avoid false positives like "SIMULAÇÃO"
+                                    if (rawStr === 'SIM' || rawStr.startsWith('SIM.') || rawStr.startsWith('SIM,') || rawStr.startsWith('SIM ')) {
+                                        hasObjective = true;
+                                    }
                                 }
                             }
 
