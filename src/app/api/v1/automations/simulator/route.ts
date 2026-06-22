@@ -63,112 +63,105 @@ export async function POST(req: NextRequest) {
             const routeLabels = routes.map((r: any) => typeof r === 'string' ? r : r.label).filter(Boolean).join(', ');
             const systemPrompt = `Você é um classificador de intenções avaliando o histórico de um diálogo. Baseado em TODO o contexto da conversa, classifique qual foi a intenção principal do usuário neste atendimento em EXATAMENTE UMA destas opções: ${routeLabels}.\nSe não for nenhuma delas, responda "OUTROS". Responda APENAS com a palavra da opção exata.`;
             
-            if (isGemini) {
-                const geminiKey = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_AGENTS1;
-                if (!geminiKey) return NextResponse.json({ error: 'No Gemini API Key found' }, { status: 500 });
-                const genAI = new GoogleGenerativeAI(geminiKey);
-                const model = genAI.getGenerativeModel({ model: config.model, systemInstruction: systemPrompt });
-                
-                const fullConversation = (virtual_history || []).map((m: any) => `${m.role === 'user' ? 'Lead' : 'Atendente'}: ${m.content}`).join('\n');
-                if (!fullConversation) return NextResponse.json({ intent: 'OUTROS', total_tokens: 0 });
-                
-                const result = await model.generateContent(fullConversation);
-                return NextResponse.json({ 
-                    intent: result.response.text().trim() || 'OUTROS', 
-                    total_tokens: result.response.usageMetadata?.totalTokenCount || 0 
-                });
-            } else {
-                const apiKey = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
-                if (!apiKey) return NextResponse.json({ error: 'No OpenAI API Key found' }, { status: 500 });
-                const openai = new OpenAI({ apiKey });
-                
-                const fullConversation = (virtual_history || []).map((m: any) => `${m.role === 'user' ? 'Lead' : 'Atendente'}: ${m.content}`).join('\n');
-                
-                let messages: any[] = [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: `[HISTÓRICO DO DIÁLOGO]\n${fullConversation}` }
-                ];
+            const fullConversation = (virtual_history || []).map((m: any) => `${m.role === 'user' ? 'Lead' : 'Atendente'}: ${m.content}`).join('\n');
+            const messages: any[] = [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `[HISTÓRICO DO DIÁLOGO]\n${fullConversation}` }
+            ];
 
-                const completion = await openai.chat.completions.create({
-                    model: getValidOpenAIModel(config.model),
-                    messages,
-                    temperature: 0,
-                });
-                return NextResponse.json({ 
-                    intent: completion.choices[0]?.message?.content?.trim() || 'OUTROS',
-                    total_tokens: completion.usage?.total_tokens || 0
-                });
-            }
+            const OPENAI_KEY = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
+            const GEMINI_KEY = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+            const primaryKey = isGemini ? GEMINI_KEY : OPENAI_KEY;
+
+            const executeIntentFallback = async () => {
+                try {
+                    if (!primaryKey) throw new Error('Primary API Key missing');
+                    const client = new OpenAI({
+                        apiKey: primaryKey,
+                        ...(isGemini ? { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' } : {})
+                    });
+                    return await client.chat.completions.create({
+                        model: isGemini ? config.model : getValidOpenAIModel(config.model),
+                        messages,
+                        temperature: 0,
+                    });
+                } catch (error: any) {
+                    console.warn(`[SIMULATOR INTENT] Fallback triggered. Error:`, error.message);
+                    const fallbackModel = isGemini ? 'gpt-4o-mini' : 'gemini-2.5-flash';
+                    const fallbackKey = isGemini ? OPENAI_KEY : GEMINI_KEY;
+                    if (!fallbackKey) throw error;
+
+                    const fallbackClient = new OpenAI({
+                        apiKey: fallbackKey,
+                        ...(isGemini ? {} : { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' })
+                    });
+                    return await fallbackClient.chat.completions.create({
+                        model: fallbackModel,
+                        messages,
+                        temperature: 0,
+                    });
+                }
+            };
+
+            const completion = await executeIntentFallback();
+            return NextResponse.json({ 
+                intent: completion.choices[0]?.message?.content?.trim() || 'OUTROS',
+                total_tokens: completion.usage?.total_tokens || 0
+            });
         }
 
         // ==== SIMULATE AI NODE ====
         if (simulate_ai_virtual || simulate_ai_node) {
-            if (isGemini) {
-                const geminiKey = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_AGENTS1;
-                if (!geminiKey) return NextResponse.json({ error: 'No Gemini API Key found' }, { status: 500 });
-                
-                const genAI = new GoogleGenerativeAI(geminiKey);
-                
-                const tools = config.google_search_enabled ? [{ googleSearch: {} }] : undefined;
+            const OPENAI_KEY = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
+            const GEMINI_KEY = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+            const primaryKey = isGemini ? GEMINI_KEY : OPENAI_KEY;
 
-                const model = genAI.getGenerativeModel({ 
-                    model: config.model,
-                    systemInstruction: finalSystemMessage,
-                    ...(tools ? { tools } : {})
-                });
-
-                let responseText = '';
-                let totalTokens = 0;
-                
-                if (virtual_history && virtual_history.length > 0) {
-                    // Chat mode
-                    const history = virtual_history.slice(0, -1).map((msg: any) => ({
-                        role: msg.role === 'user' ? 'user' : 'model',
-                        parts: [{ text: msg.content }]
-                    }));
-                    const lastMsg = virtual_history[virtual_history.length - 1].content;
-                    
-                    const chat = model.startChat({ history });
-                    const result = await chat.sendMessage(lastMsg);
-                    responseText = result.response.text();
-                    totalTokens = result.response.usageMetadata?.totalTokenCount || 0;
-                } else if (config.prompt) {
-                    // Single shot
-                    const result = await model.generateContent(config.prompt);
-                    responseText = result.response.text();
-                    totalTokens = result.response.usageMetadata?.totalTokenCount || 0;
+            let messages: any[] = [];
+            if (finalSystemMessage) messages.push({ role: 'system', content: finalSystemMessage });
+            
+            if (virtual_history && virtual_history.length > 0) {
+                for (const msg of virtual_history) {
+                    messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content });
                 }
-
-                return NextResponse.json({ 
-                    response: responseText.trim(), 
-                    total_tokens: totalTokens 
-                });
-            } else {
-                const apiKey = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
-                if (!apiKey) return NextResponse.json({ error: 'No OpenAI API Key found' }, { status: 500 });
-                const openai = new OpenAI({ apiKey });
-                
-                let messages: any[] = [];
-                if (finalSystemMessage) messages.push({ role: 'system', content: finalSystemMessage });
-                
-                if (virtual_history && virtual_history.length > 0) {
-                    for (const msg of virtual_history) {
-                        messages.push({ role: msg.role, content: msg.content });
-                    }
-                } else if (config.prompt) {
-                    messages.push({ role: 'user', content: config.prompt });
-                }
-
-                const completion = await openai.chat.completions.create({
-                    model: getValidOpenAIModel(config.model),
-                    messages,
-                    temperature: config.temperature ?? 0.7,
-                });
-                return NextResponse.json({ 
-                    response: completion.choices[0]?.message?.content?.trim() || '',
-                    total_tokens: completion.usage?.total_tokens || 0
-                });
+            } else if (config.prompt) {
+                messages.push({ role: 'user', content: config.prompt });
             }
+
+            const executeSimulatorWithFallback = async () => {
+                try {
+                    if (!primaryKey) throw new Error(`Primary key missing`);
+                    const client = new OpenAI({
+                        apiKey: primaryKey,
+                        ...(isGemini ? { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' } : {})
+                    });
+                    return await client.chat.completions.create({
+                        model: isGemini ? config.model : getValidOpenAIModel(config.model),
+                        messages,
+                        temperature: config.temperature ?? 0.7,
+                    });
+                } catch (error: any) {
+                    console.warn(`[SIMULATOR AI] Fallback triggered. Error:`, error.message);
+                    const fallbackModel = isGemini ? 'gpt-4o-mini' : 'gemini-2.5-flash';
+                    const fallbackKey = isGemini ? OPENAI_KEY : GEMINI_KEY;
+                    if (!fallbackKey) throw error; 
+
+                    const fallbackClient = new OpenAI({
+                        apiKey: fallbackKey,
+                        ...(isGemini ? {} : { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' })
+                    });
+                    return await fallbackClient.chat.completions.create({
+                        model: fallbackModel,
+                        messages,
+                        temperature: config.temperature ?? 0.7,
+                    });
+                }
+            };
+
+            const completion = await executeSimulatorWithFallback();
+            return NextResponse.json({ 
+                response: completion.choices[0]?.message?.content?.trim() || '',
+                total_tokens: completion.usage?.total_tokens || 0
+            });
         }
 
         return NextResponse.json({ error: 'Operação não suportada' }, { status: 400 });
