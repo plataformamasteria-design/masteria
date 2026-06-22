@@ -16,7 +16,7 @@ if (!DATABASE_URL) {
 const connectionConfig = {
   max: 30, // Aumentado de 15 para 30 para suportar carga simultânea do App Router
   idle_timeout: 20, // 20s — evita reconexão excessiva sem segurar conexões ociosas
-  connect_timeout: 5,
+  connect_timeout: 15,
   prepare: false,
 };
 

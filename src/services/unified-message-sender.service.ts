@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { connections, messageTemplates } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { sendWhatsappTextMessage, sendWhatsappTemplateMessage, sendInstagramMessage, sendWhatsappMediaMessage, sendWhatsappInteractiveMessage } from '@/lib/facebookApiService';
 import { evolutionApiService } from '@/services/evolution-api.service';
 import { convertMp3ToOgg, getAudioDurationInSeconds } from '@/services/audio-converter.service';
