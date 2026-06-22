@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, Settings2 } from 'lucide-react';
 import type { Node } from '@xyflow/react';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+import { motion, useDragControls } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const NodeConfigPanel = dynamic(() => import('../NodeConfigPanel').then(m => m.NodeConfigPanel), {
@@ -87,6 +87,7 @@ export function NodeConfigDrawer({
 }: NodeConfigDrawerProps) {
     const drawerRef = useRef<HTMLDivElement>(null);
     const [showTestPanel, setShowTestPanel] = useState(false);
+    const dragControls = useDragControls();
 
     // Reset test panel when node changes
     useEffect(() => {
@@ -112,8 +113,9 @@ export function NodeConfigDrawer({
             <motion.div
                 ref={drawerRef}
                 drag
+                dragControls={dragControls}
+                dragListener={false}
                 dragMomentum={false}
-                dragHandle=".drag-handle"
                 onPointerDownCapture={onFocus}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -130,7 +132,10 @@ export function NodeConfigDrawer({
                 )}
             >
                 {/* Header */}
-                <div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0 drag-handle cursor-grab active:cursor-grabbing">
+                <div 
+                    onPointerDown={(e) => dragControls.start(e)}
+                    className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0 drag-handle cursor-grab active:cursor-grabbing"
+                >
                     <div className="w-7 h-7 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded-lg">
                         <Settings2 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
                     </div>

@@ -205,40 +205,25 @@ function TextFieldWithVars({ value, onChange, placeholder, multiline, monoFont }
         >
             <div className="relative w-full group">
                 {multiline ? (
-                    <>
-                        <div 
-                            className={`absolute inset-0 pointer-events-none p-3 whitespace-pre-wrap break-words overflow-hidden border border-transparent rounded-xl ${monoFont ? 'font-mono text-xs' : 'text-sm font-medium'} text-zinc-900 dark:text-zinc-100`}
-                            aria-hidden="true"
-                        >
-                            {value ? highlighted : <span className="text-muted-foreground">{isDragOver ? '⬇ Solte aqui para inserir a referência' : placeholder}</span>}
-                            <br className="hidden" />
-                        </div>
-                        <Textarea
-                            ref={inputRef as any}
-                            value={value || ''}
-                            onChange={handleTextChange}
-                            onScroll={handleScroll}
-                            className={`min-h-[120px] rounded-xl bg-muted/50 border-border focus:ring-blue-500/20 transition-all text-sm ${monoFont ? 'font-mono text-xs' : 'font-medium'} ${dropZoneClass} text-transparent caret-foreground relative z-10 placeholder-transparent`}
-                            spellCheck={false}
-                        />
-                    </>
+                    <Textarea
+                        ref={inputRef as any}
+                        value={value || ''}
+                        onChange={handleTextChange}
+                        onScroll={handleScroll}
+                        className={`min-h-[120px] rounded-xl bg-muted/50 border-border focus:ring-blue-500/20 transition-all text-sm ${monoFont ? 'font-mono text-xs' : 'font-medium'} ${dropZoneClass} text-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground nodrag nowheel`}
+                        placeholder={isDragOver ? '⬇ Solte aqui para inserir a referência' : placeholder}
+                        spellCheck={false}
+                    />
                 ) : (
-                    <>
-                        <div 
-                            className={`absolute inset-0 pointer-events-none px-3 py-2.5 overflow-hidden whitespace-nowrap border border-transparent rounded-xl flex items-center ${monoFont ? 'font-mono text-xs' : 'text-sm font-medium'} text-zinc-900 dark:text-zinc-100`}
-                            aria-hidden="true"
-                        >
-                            {value ? highlighted : <span className="text-muted-foreground">{isDragOver ? '⬇ Solte aqui' : placeholder}</span>}
-                        </div>
-                        <Input
-                            ref={inputRef as any}
-                            value={value || ''}
-                            onChange={handleTextChange}
-                            onScroll={handleScroll}
-                            className={`rounded-xl h-11 bg-muted/50 border-border text-sm ${monoFont ? 'font-mono text-xs' : 'font-medium'} ${dropZoneClass} text-transparent caret-foreground relative z-10 placeholder-transparent`}
-                            spellCheck={false}
-                        />
-                    </>
+                    <Input
+                        ref={inputRef as any}
+                        value={value || ''}
+                        onChange={handleTextChange}
+                        onScroll={handleScroll}
+                        className={`rounded-xl h-11 bg-muted/50 border-border text-sm ${monoFont ? 'font-mono text-xs' : 'font-medium'} ${dropZoneClass} text-zinc-900 dark:text-zinc-100 placeholder:text-muted-foreground nodrag nowheel`}
+                        placeholder={isDragOver ? '⬇ Solte aqui' : placeholder}
+                        spellCheck={false}
+                    />
                 )}
 
                 {/* Autocomplete Dropdown */}

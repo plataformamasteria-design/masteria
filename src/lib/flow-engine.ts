@@ -2965,30 +2965,76 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
         case 'ai': {
             const resolvedKeys = await resolveAIKeys(ctx.companyId);
             const OPENAI_KEY = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY || '';
-            if (!OPENAI_KEY) {
-                console.error('[FLOW-ENGINE] ❌ No OpenAI API key configured');
-                return {
-                    sourceHandle: 'completed',
-                    newVars: { ai_error: 'No OpenAI API key configured' },
-                    message: 'AI Agent: No API key configured — skipping AI node',
-                };
-            }
-            let systemPrompt = await interpolateTemplate(
-                step.data.system_message || step.data.description || step.data.systemPrompt || '', ctx
-            );
+            const GEMINI_KEY = resolvedKeys.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
             
-            const openai = new OpenAI({ apiKey: OPENAI_KEY });
-            // Força um modelo padrão OpenAI confiável apenas se o frontend enviar modelo do Gemini (pois o backend não tem suporte nativo ainda)
-            let modelName = step.data.model || 'gpt-4o-mini';
-            if (modelName.includes('gemini')) modelName = 'gpt-4o-mini';
+            const provider = step.data.provider || 'openai';
+            let modelName = step.data.model || (provider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4o-mini');
             
             // Corrige o ID do modelo "ChatGPT 4.1" que foi adicionado na UI para o ID real da OpenAI
             if (modelName === 'chatgpt-4.1') modelName = 'gpt-4o';
+
+            let openai: any;
+            
+            if (modelName.includes('gemini')) {
+                if (!GEMINI_KEY) {
+                    console.error('[FLOW-ENGINE] ❌ No Gemini API key configured');
+                    return {
+                        sourceHandle: 'completed',
+                        newVars: { ai_error: 'No Gemini API key configured' },
+                        message: 'AI Agent: No Gemini API key configured — skipping AI node',
+                    };
+                }
+                // Inicializa o cliente OpenAI apontando para a base URL de compatibilidade do Gemini
+                openai = new OpenAI({ 
+                    apiKey: GEMINI_KEY,
+                    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+                });
+            } else {
+                if (!OPENAI_KEY) {
+                    console.error('[FLOW-ENGINE] ❌ No OpenAI API key configured');
+                    return {
+                        sourceHandle: 'completed',
+                        newVars: { ai_error: 'No OpenAI API key configured' },
+                        message: 'AI Agent: No OpenAI API key configured — skipping AI node',
+                    };
+                }
+                openai = new OpenAI({ apiKey: OPENAI_KEY });
+            }
+
+            let systemPrompt = await interpolateTemplate(
+                step.data.system_message || step.data.description || step.data.systemPrompt || '', ctx
+            );
             
             const temperature = typeof step.data.temperature === 'number' ? step.data.temperature : 0.7;
 
             // Determine if we're in dialogue mode to use chat-based approach
             const isDialogueMode = !!step.data.dialogue_mode;
+
+            // ── Fallback Helper ──
+            const executeWithFallback = async (params: any) => {
+                try {
+                    return await openai.chat.completions.create(params);
+                } catch (error: any) {
+                    console.warn(`[FLOW-ENGINE] ⚠️ Erro no provedor primário (${modelName}). Tentando fallback instantâneo...`, error.message);
+                    
+                    const isGeminiPrimary = modelName.includes('gemini');
+                    const fallbackModel = isGeminiPrimary ? 'gpt-4o-mini' : 'gemini-2.5-flash';
+                    const fallbackKey = isGeminiPrimary ? OPENAI_KEY : GEMINI_KEY;
+                    
+                    if (!fallbackKey) {
+                        console.error(`[FLOW-ENGINE] ❌ Fallback falhou: Sem chave de API para o provedor secundário (${fallbackModel})`);
+                        throw error;
+                    }
+
+                    const fallbackOpenai = new OpenAI({ 
+                        apiKey: fallbackKey, 
+                        ...(isGeminiPrimary ? {} : { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/' })
+                    });
+
+                    const fallbackParams = { ...params, model: fallbackModel };
+                    return await fallbackOpenai.chat.completions.create(fallbackParams);
+                }
+            };
 
             // ── Resolving Connection and Provider early for Tools and Sending ──
             let aiConversation: any = null;
@@ -3250,7 +3296,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         ...((calendarTools.length > 0 || mediaTools.length > 0) && { tools: [...calendarTools, ...mediaTools] as any, tool_choice: 'auto' as const }),
                     };
 
-                    let completion = await openai.chat.completions.create(completionParams);
+                    let completion = await executeWithFallback(completionParams);
 
                     // ── Tool-calling loop for Google Calendar ────────────────
                     let toolIterations = 0;
@@ -3390,7 +3436,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             }
                         }
 
-                        completion = await openai.chat.completions.create({
+                        completion = await executeWithFallback({
                             ...completionParams,
                             messages: chatHistory,
                         });
@@ -3488,7 +3534,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 messagesPayload.push({ role: 'user', content: userInput });
 
                 try {
-                    const completion = await openai.chat.completions.create({
+                    const completion = await executeWithFallback({
                         model: modelName,
                         messages: messagesPayload,
                         temperature,
@@ -3658,7 +3704,7 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 if (step.data.completion_condition) {
                     try {
                         const evalPrompt = `Com base na conversa abaixo, a seguinte condição foi satisfeita ?\n\nCondição: "${step.data.completion_condition}"\n\nÚltima mensagem do lead: "${ctx.variables.last_response || ''}"\nResposta do agente: "${responseText}"\n\nResponda APENAS com SIM ou NÃO.`;
-                        const evalResult = await openai.chat.completions.create({
+                        const evalResult = await executeWithFallback({
                             model: 'gpt-4o-mini',
                             messages: [{ role: 'user', content: evalPrompt }],
                             temperature: 0,
