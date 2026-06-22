@@ -73,7 +73,10 @@ export async function POST(req: NextRequest) {
                 if (!fullConversation) return NextResponse.json({ intent: 'OUTROS', total_tokens: 0 });
                 
                 const result = await model.generateContent(fullConversation);
-                return NextResponse.json({ intent: result.response.text().trim() || 'OUTROS', total_tokens: 0 });
+                return NextResponse.json({ 
+                    intent: result.response.text().trim() || 'OUTROS', 
+                    total_tokens: result.response.usageMetadata?.totalTokenCount || 0 
+                });
             } else {
                 const apiKey = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
                 if (!apiKey) return NextResponse.json({ error: 'No OpenAI API Key found' }, { status: 500 });
@@ -105,12 +108,17 @@ export async function POST(req: NextRequest) {
                 if (!geminiKey) return NextResponse.json({ error: 'No Gemini API Key found' }, { status: 500 });
                 
                 const genAI = new GoogleGenerativeAI(geminiKey);
+                
+                const tools = config.google_search_enabled ? [{ googleSearch: {} }] : undefined;
+
                 const model = genAI.getGenerativeModel({ 
                     model: config.model,
-                    systemInstruction: finalSystemMessage
+                    systemInstruction: finalSystemMessage,
+                    ...(tools ? { tools } : {})
                 });
 
                 let responseText = '';
+                let totalTokens = 0;
                 
                 if (virtual_history && virtual_history.length > 0) {
                     // Chat mode
@@ -123,13 +131,18 @@ export async function POST(req: NextRequest) {
                     const chat = model.startChat({ history });
                     const result = await chat.sendMessage(lastMsg);
                     responseText = result.response.text();
+                    totalTokens = result.response.usageMetadata?.totalTokenCount || 0;
                 } else if (config.prompt) {
                     // Single shot
                     const result = await model.generateContent(config.prompt);
                     responseText = result.response.text();
+                    totalTokens = result.response.usageMetadata?.totalTokenCount || 0;
                 }
 
-                return NextResponse.json({ response: responseText.trim(), total_tokens: 0 });
+                return NextResponse.json({ 
+                    response: responseText.trim(), 
+                    total_tokens: totalTokens 
+                });
             } else {
                 const apiKey = resolvedKeys.openaiApiKey || process.env.OPENAI_API_KEY_AGENTS1 || process.env.OPENAI_API_KEY;
                 if (!apiKey) return NextResponse.json({ error: 'No OpenAI API Key found' }, { status: 500 });

@@ -1103,7 +1103,7 @@ async function callExternalAIAgent(
 
         // TENTATIVA 2: GOOGLE GEMINI (Se configurado ou se OpenAI falhou no Fallback)
         if (effectiveProvider === 'GOOGLE' || effectiveProvider === 'GEMINI') {
-            const modelName = (persona as any)?.model || 'gemini-2.0-flash';
+            const modelName = (persona as any)?.model || 'gemini-2.5-flash';
             try {
                 // ðŸ” Carregar API key da credencial do banco de dados (prioridade 1)
                 let credentialApiKey: string | null = null;
@@ -1128,7 +1128,7 @@ async function callExternalAIAgent(
 
                 let googleSuccess = false;
                 // âœ… FIX CRÃTICO: Declarar modelName ANTES do loop para estar disponÃ­vel no catch
-                const modelNameForLoop = persona?.model || 'gemini-2.0-flash';
+                const modelNameForLoop = persona?.model || 'gemini-2.5-flash';
 
                 await logAutomation('INFO', `[V3-FIX] modelName resolvido: ${modelNameForLoop}, keys disponÃ­veis: ${keysToTry.length}`, logContextBase);
 
@@ -1221,13 +1221,21 @@ async function callExternalAIAgent(
                             }
                         }
 
+                        const toolsArray: any[] = [];
+                        if (functionDeclarations.length > 0) {
+                            toolsArray.push({ functionDeclarations });
+                        }
+                        if (persona.google_search_enabled) {
+                            toolsArray.push({ googleSearch: {} });
+                        }
+
                         const model = genAI.getGenerativeModel({
                             model: modelName,
                             systemInstruction: {
                                 role: 'system',
                                 parts: [{ text: systemPrompt }]
                             },
-                            ...(functionDeclarations.length > 0 ? { tools: [{ functionDeclarations }] } : {}),
+                            ...(toolsArray.length > 0 ? { tools: toolsArray } : {}),
                         });
 
                         const rawHistory: any[] = [];

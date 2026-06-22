@@ -11,7 +11,7 @@ import {
     Rocket, MessageCircle, CheckCircle2, XCircle, AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { m as motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useFlowSimulator, SimMessage, FlowCorrection, FlowSimulatorUIProps, MEDIA_ICONS } from "./useFlowSimulator";
 import { RobotDataDashboard } from "./RobotDataDashboard";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -421,10 +421,12 @@ export function FlowSimulatorUI({ nodes, edges, automationId, onClose, onHighlig
 
     return (
         <motion.div
+            key="simulator"
             drag
             dragHandle=".drag-handle"
             dragMomentum={false}
-            className="fixed right-8 top-16 bottom-8 w-[380px] z-50 flex flex-col"
+            style={{ right: 32, top: 64 }}
+            className="fixed h-[80vh] max-h-[850px] min-h-[500px] w-[380px] z-[60] flex flex-col"
         >
             {containerContent}
         </motion.div>

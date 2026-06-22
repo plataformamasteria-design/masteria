@@ -78,7 +78,7 @@ export const TriggerNodeV4 = memo(({ data, selected }: NodePropsV4) => {
                 </>
             ) : (
                 <>
-                    <span className="text-[9px] text-zinc-400 font-semibold tracking-widest uppercase mt-1">Início do Fluxo</span>
+                    <span className="text-[9px] text-zinc-400 dark:text-zinc-400 font-semibold tracking-widest uppercase mt-1">Início do Fluxo</span>
                     <NodeHandle
                         type="source"
                         position={Position.Bottom}

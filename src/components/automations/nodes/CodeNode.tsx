@@ -54,14 +54,14 @@ function CodeNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border-2 border-purple-500/60 rounded-xl shadow-lg min-w-[260px] max-w-[380px] overflow-visible">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-purple-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-purple-50 dark:bg-purple-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
-        icon={<Code2 className="h-4 w-4 text-white" />}
+        icon={<Code2 className="h-4 w-4 text-zinc-900 dark:text-white" />}
         defaultLabel="Código"
         customLabel={customLabel}
         colorClass="bg-purple-600"
-        textColorClass="text-white"
+        textColorClass="text-zinc-900 dark:text-white"
         solidHeader
         showOnHover={false}
         onExecute={() => (data as any)?.onExecute?.(id)}
@@ -111,14 +111,14 @@ function CodeNodeComponent({ id, data }: NodeProps) {
               onDrop={handleDropOnCode}
               onDragOver={(e) => e.preventDefault()}
               onKeyDown={(e) => e.stopPropagation()}
-              className="text-[11px] font-mono min-h-[180px] bg-zinc-950 text-zinc-100 border-zinc-700 nodrag nowheel nopan"
+              className="text-[11px] font-mono min-h-[180px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 nodrag nowheel nopan"
               placeholder="Escreva seu código aqui..."
               spellCheck={false}
             />
           </div>
-          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-500/20 px-3 py-2">
             <p className="text-[10px] text-amber-600 dark:text-amber-400">
-              Arraste campos do output de outros nós ou use <code className="font-mono bg-amber-500/20 px-1 rounded">{"{{ NomeDoNó.$json.campo }}"}</code>
+              Arraste campos do output de outros nós ou use <code className="font-mono bg-amber-50 dark:bg-amber-900/300/20 px-1 rounded">{"{{ NomeDoNó.$json.campo }}"}</code>
             </p>
           </div>
         </div>
@@ -126,7 +126,7 @@ function CodeNodeComponent({ id, data }: NodeProps) {
 
       <NodeStatsBar stats={(data as any)?.stats} />
       <NodeOutputPanel nodeId={id} nodeLabel={customLabel || "Código"} output={(data as any)?.nodeOutput} error={(data as any)?.nodeError} isPinned={(data as any)?.isPinned || false} isExecuting={(data as any)?.isExecuting || false} onExecute={() => (data as any)?.onExecute?.(id)} onPin={() => (data as any)?.onPinOutput?.(id)} onUnpin={() => (data as any)?.onUnpinOutput?.(id)} />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-purple-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-purple-50 dark:bg-purple-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

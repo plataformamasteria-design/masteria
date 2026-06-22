@@ -34,9 +34,9 @@ export const DelayNodeV4 = memo(({ data, selected }: NodePropsV4) => {
             }
         >
             <NodeHandle type="target" position={Position.Top} accentColor="amber" />
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5 flex items-center gap-2">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5 flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="text-[12px] font-semibold text-zinc-700">{label}</span>
+                <span className="text-[12px] font-semibold text-zinc-700 dark:text-zinc-200">{label}</span>
             </div>
         </BaseNode>
     );

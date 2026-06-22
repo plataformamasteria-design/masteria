@@ -22,7 +22,7 @@ import {
     Signpost, Clock, ArrowRightLeft, Bot, ShieldOff, RefreshCw,
     Brain, Send, MessageSquareHeart, Globe, Code2, PenLine,
     Plus, Trash2, Zap, Settings2, Info, Loader2, CheckCircle2, AlertTriangle,
-    FolderOpen
+    FolderOpen, Tag, UserCheck, Rocket, Play, User, Users, Dices
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
@@ -183,9 +183,9 @@ function TextFieldWithVars({ value, onChange, placeholder, multiline, monoFont }
             const inner = part.slice(2, -2);
             const isValid = allFields.some(f => f.field_key === inner);
             if (isValid) {
-                return <span key={i} className="text-violet-700 bg-violet-100/80 rounded-sm">{part}</span>;
+                return <span key={i} className="text-violet-700 dark:text-violet-300 bg-violet-100/80 rounded-sm">{part}</span>;
             } else {
-                return <span key={i} className="text-red-700 bg-red-100/80 rounded-sm">{part}</span>;
+                return <span key={i} className="text-red-700 dark:text-red-300 bg-red-100/80 rounded-sm">{part}</span>;
             }
         }
         return <span key={i} className="text-zinc-900 dark:text-zinc-100">{part}</span>;
@@ -258,7 +258,7 @@ function TextFieldWithVars({ value, onChange, placeholder, multiline, monoFont }
                                             onClick={() => handleAutoSelect(f.field_key)}
                                             className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md hover:bg-muted transition-colors"
                                         >
-                                            <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0 bg-violet-500/10 text-violet-600 border-violet-500/20 shrink-0">
+                                            <Badge variant="secondary" className="text-[10px] font-mono px-1.5 py-0 bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border-violet-500/20 shrink-0">
                                                 {`{{${f.field_key}}}`}
                                             </Badge>
                                             <span className="text-xs text-foreground truncate font-medium">{f.field_label}</span>
@@ -327,7 +327,7 @@ function SystemVariableDropdown({ value, onChange, customFields = [] }: { value:
                     )}
                     <SelectGroup>
                         <SelectLabel className="text-[10px]">Avançado</SelectLabel>
-                        <SelectItem value="custom" className="text-xs font-semibold text-indigo-600">Variável Personalizada / Webhook...</SelectItem>
+                        <SelectItem value="custom" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">Variável Personalizada / Webhook...</SelectItem>
                     </SelectGroup>
                 </SelectContent>
             </Select>
@@ -401,17 +401,24 @@ function DynamicValueInput({ field, value, onChange, kanbanBoards = [], companyT
 }
 
 function SelectField({ value, onChange, options, placeholder }: {
-    value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; placeholder?: string;
+    value: string; onChange: (v: string) => void; options: { value: string; label: string; icon?: React.ElementType }[]; placeholder?: string;
 }) {
     return (
-        <select
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-xl h-11 bg-muted/50 border border-border px-3 text-sm font-medium text-foreground focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all cursor-pointer"
-        >
-            {placeholder && <option value="">{placeholder}</option>}
-            {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <Select value={value || ''} onValueChange={(v) => onChange(v)}>
+            <SelectTrigger className="w-full rounded-xl h-11 bg-muted/50 border border-border px-3 text-sm font-medium text-foreground focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all cursor-pointer">
+                <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+                {options.map((o) => (
+                    <SelectItem key={o.value} value={o.value} className="cursor-pointer">
+                        <div className="flex items-center gap-2">
+                            {o.icon && <o.icon className="w-4 h-4 text-muted-foreground" />}
+                            <span>{o.label}</span>
+                        </div>
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
     );
 }
 
@@ -419,7 +426,7 @@ function ToggleSwitch({ label, checked, onChange, color = 'blue' }: {
     label: string; checked: boolean; onChange: (v: boolean) => void; color?: string;
 }) {
     const colors: Record<string, string> = {
-        blue: 'bg-blue-600', green: 'bg-green-600', violet: 'bg-violet-600', red: 'bg-red-500',
+        blue: 'bg-blue-600', green: 'bg-green-600', violet: 'bg-violet-600', red: 'bg-red-50 dark:bg-red-900/300',
     };
     return (
         <button
@@ -429,7 +436,7 @@ function ToggleSwitch({ label, checked, onChange, color = 'blue' }: {
         >
             <span className="text-sm font-semibold text-foreground">{label}</span>
             <div className={`w-10 h-6 rounded-full transition-all ${checked ? colors[color] || colors.blue : 'bg-gray-300'} relative`}>
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${checked ? 'left-5' : 'left-1'}`} />
+                <div className={`absolute top-1 w-4 h-4 bg-white dark:bg-zinc-900 rounded-full shadow-md transition-all ${checked ? 'left-5' : 'left-1'}`} />
             </div>
         </button>
     );
@@ -456,7 +463,7 @@ function InfoBanner({ text, color = 'blue' }: { text: string; color?: string }) 
         blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300',
         amber: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300',
         red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-300',
-        green: 'bg-green-500/10 dark:bg-green-900/20 border-green-500/20 dark:border-green-800/30 text-green-800 dark:text-green-300',
+        green: 'bg-green-50 dark:bg-green-900/30 dark:bg-green-900/20 border-green-500/20 dark:border-green-800/30 text-green-800 dark:text-green-300',
     };
     return (
         <div className={`px-4 py-2.5 rounded-xl border text-[11px] font-medium ${colors[color] || colors.blue}`}>
@@ -489,7 +496,7 @@ function DynamicListBuilder<T extends Record<string, any>>({
                     <button
                         type="button"
                         onClick={() => onRemove(i)}
-                        className="mt-2.5 p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        className="mt-2.5 p-1.5 text-red-500 hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-900/30 rounded-lg transition-all"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -500,7 +507,7 @@ function DynamicListBuilder<T extends Record<string, any>>({
                 variant="outline"
                 size="sm"
                 onClick={onAdd}
-                className="w-full rounded-xl border-dashed border-gray-300 text-gray-500 hover:text-blue-600 hover:border-blue-400 h-9 text-xs"
+                className="w-full rounded-xl border-dashed border-gray-300 dark:border-zinc-700 text-gray-500 dark:text-zinc-400 hover:text-blue-600 dark:text-blue-400 hover:border-blue-400 h-9 text-xs"
             >
                 <Plus className="h-3.5 w-3.5 mr-1.5" /> {addLabel}
             </Button>
@@ -563,8 +570,8 @@ const AI_PROVIDER_OPTIONS = [
 
 const AI_MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
     gemini: [
-        { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-        { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+        { value: 'gemini-2.5-flash', label: 'Gemini 2.0 Flash' },
+        { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.0 Flash Lite' },
         { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
     ],
     openai: [
@@ -781,16 +788,15 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 const webhookUrl = `${appUrl}/api/v1/automation-flows/webhook-trigger/${d.webhook_slug || node.id}`;
 
                 const TRIGGER_TYPE_OPTIONS = [
-                    { value: '', label: 'Selecione um gatilho...' },
-                    { value: 'message_received', label: '📩 Mensagem Recebida' },
-                    { value: 'webhook', label: '🌐 Webhook Externo (HTTP)' },
-                    { value: 'contact_created', label: '👤 Novo Lead (Contato ou Kanban)' },
-                    { value: 'stage_changed', label: '🔄 Movido para Kanban' },
-                    { value: 'contact_tag_added', label: '🏷️ Tag Adicionada' },
-                    { value: 'lead_assigned', label: '👤 Lead Atribuído' },
-                    { value: 'campaign_dispatched', label: '🚀 Campanha Disparada' },
-                    { value: 'schedule', label: '⏰ Agendado' },
-                    { value: 'manual', label: '▶️ Ativação Manual' },
+                    { value: 'message_received', label: 'Mensagem Recebida', icon: MessageSquare, color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/30' },
+                    { value: 'webhook', label: 'Webhook Externo (HTTP)', icon: Globe, color: 'text-purple-500 bg-purple-50 dark:bg-purple-900/30' },
+                    { value: 'contact_created', label: 'Novo Lead (Contato ou Kanban)', icon: UserPlus, color: 'text-green-500 bg-green-50 dark:bg-green-900/30' },
+                    { value: 'stage_changed', label: 'Movido para Kanban', icon: ArrowRightLeft, color: 'text-orange-500 bg-orange-50 dark:bg-orange-900/30' },
+                    { value: 'contact_tag_added', label: 'Tag Adicionada', icon: Tag, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' },
+                    { value: 'lead_assigned', label: 'Lead Atribuído', icon: UserCheck, color: 'text-pink-500 bg-pink-50 dark:bg-pink-900/30' },
+                    { value: 'campaign_dispatched', label: 'Campanha Disparada', icon: Rocket, color: 'text-red-500 bg-red-50 dark:bg-red-900/30' },
+                    { value: 'schedule', label: 'Agendado', icon: Clock, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/30' },
+                    { value: 'manual', label: 'Ativação Manual', icon: Play, color: 'text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/50' },
                 ];
 
                 const MATCH_MODE_OPTIONS = [
@@ -810,16 +816,47 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 return (
                     <div className="space-y-5">
                         <ConfigSection label="Tipo de Gatilho" hint="Escolha o evento que ativará esta automação">
-                            <SelectField
+                            <Select
                                 value={triggerType}
-                                onChange={(v) => {
+                                onValueChange={(v) => {
                                     update('triggerType', v);
                                     const opt = TRIGGER_TYPE_OPTIONS.find(o => o.value === v);
-                                    if (opt && opt.value) update('label', opt.label.replace(/^[^\s]+\s/, ''));
+                                    if (opt && opt.value) update('label', opt.label);
                                 }}
-                                options={TRIGGER_TYPE_OPTIONS}
-                                placeholder="Selecione um gatilho"
-                            />
+                            >
+                                <SelectTrigger className="w-full rounded-xl h-11 bg-muted/50 border border-border px-3 text-sm font-medium text-foreground focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all">
+                                    <SelectValue placeholder="Selecione um gatilho...">
+                                        {(() => {
+                                            const selectedOpt = TRIGGER_TYPE_OPTIONS.find(o => o.value === triggerType);
+                                            if (!selectedOpt) return "Selecione um gatilho...";
+                                            const Icon = selectedOpt.icon;
+                                            return (
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`p-1 rounded-md ${selectedOpt.color}`}>
+                                                        <Icon className="w-4 h-4" />
+                                                    </div>
+                                                    <span>{selectedOpt.label}</span>
+                                                </div>
+                                            );
+                                        })()}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[300px]">
+                                    {TRIGGER_TYPE_OPTIONS.map((opt) => {
+                                        const Icon = opt.icon;
+                                        return (
+                                            <SelectItem key={opt.value} value={opt.value} className="cursor-pointer py-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`p-1 rounded-md ${opt.color}`}>
+                                                        <Icon className="w-4 h-4" />
+                                                    </div>
+                                                    <span>{opt.label}</span>
+                                                </div>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
                         </ConfigSection>
 
                         {triggerType === 'message_received' && (
@@ -945,7 +982,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         monoFont
                                     />
                                     {!d.webhook_slug && (
-                                        <p className="text-[10px] text-amber-500 mt-1">⚠️ Defina um nome para gerar a URL.</p>
+                                        <p className="text-[10px] text-amber-500 mt-1">Defina um nome para gerar a URL.</p>
                                     )}
                                 </ConfigSection>
 
@@ -959,7 +996,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         />
                                         <button
                                             onClick={() => navigator.clipboard.writeText(webhookUrl)}
-                                            className="px-3 py-2 text-xs font-medium bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors shrink-0"
+                                            className="px-3 py-2 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:bg-indigo-900/40 transition-colors shrink-0"
                                         >
                                             Copiar
                                         </button>
@@ -984,9 +1021,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     />
                                 </ConfigSection>
 
-                                <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
-                                    <p className="text-xs font-semibold text-muted-foreground">📋 Exemplo de chamada:</p>
-                                    <pre className="text-[10px] font-mono text-gray-500 bg-white p-3 rounded-lg border border-gray-100 overflow-x-auto whitespace-pre">{`curl -X POST \\
+                                <div className="bg-gray-50 dark:bg-zinc-900/50 rounded-xl border border-gray-200 dark:border-zinc-800 p-4 space-y-3">
+                                    <p className="text-xs font-semibold text-muted-foreground">Exemplo de chamada:</p>
+                                    <pre className="text-[10px] font-mono text-gray-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 p-3 rounded-lg border border-gray-100 dark:border-zinc-800/80 overflow-x-auto whitespace-pre">{`curl -X POST \\
   '${webhookUrl}' \\${d.webhook_secret ? `\n  -H 'X-Webhook-Secret: ${d.webhook_secret}' \\` : ''}
   -H 'Content-Type: application/json' \\
   -d '{
@@ -1038,7 +1075,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                             onChange={(v) => update('timeout_minutes', parseInt(v))}
                                             min={1}
                                         />
-                                        <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-3 border rounded-xl">
+                                        <div className="flex items-center text-sm text-gray-500 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-900/50 px-3 border rounded-xl">
                                             minutos
                                         </div>
                                     </div>
@@ -1196,13 +1233,13 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             />
                         </ConfigSection>
                         {(d.message || d.content || d.text || (d.buttons && d.buttons.length > 0)) && (
-                            <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-xl p-3">
                                 <span className="text-[10px] font-bold text-green-500 uppercase mb-1 block">Preview</span>
                                 <p className="text-sm text-green-800 whitespace-pre-wrap mb-2">{(d.message || d.content || d.text) || 'Sem texto'}</p>
                                 {node.type === 'interactive_message' && d.buttons && d.buttons.length > 0 && (
                                     <div className="flex flex-col gap-1.5 mt-2">
                                         {d.buttons.map((b: any, idx: number) => (
-                                            <div key={idx} className="bg-white border border-green-200 text-green-700 text-center py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm">
+                                            <div key={idx} className="bg-white dark:bg-zinc-900 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-center py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm">
                                                 {typeof b === 'string' ? b : (b.text || `Botão ${idx+1}`)}
                                             </div>
                                         ))}
@@ -1229,7 +1266,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     renderRow={(item, i, onUpdate) => {
                                         const btnType = item.type || 'reply';
                                         return (
-                                            <div className="space-y-2 w-full bg-white p-2.5 rounded-xl border border-slate-200">
+                                            <div className="space-y-2 w-full bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800">
                                                 <div className="flex gap-2">
                                                     <div className="w-[120px] shrink-0">
                                                         <SelectField
@@ -1245,7 +1282,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                                         value={typeof item === 'string' ? item : (item.text || item.title || '')}
                                                         onChange={(e) => onUpdate('text', e.target.value)}
                                                         placeholder={btnType === 'url' ? "Texto do Link" : `Botão ${i + 1}`}
-                                                        className="rounded-xl h-10 bg-slate-50 border-slate-200 text-sm flex-1"
+                                                        className="rounded-xl h-10 bg-slate-50 dark:bg-zinc-900/50 border-slate-200 dark:border-zinc-800 text-sm flex-1"
                                                     />
                                                 </div>
                                                 {btnType === 'url' && (
@@ -1253,14 +1290,14 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                                         value={item.url || ''}
                                                         onChange={(e) => onUpdate('url', e.target.value)}
                                                         placeholder="https://seu-site.com"
-                                                        className="rounded-xl h-10 bg-slate-50 border-slate-200 text-sm w-full"
+                                                        className="rounded-xl h-10 bg-slate-50 dark:bg-zinc-900/50 border-slate-200 dark:border-zinc-800 text-sm w-full"
                                                     />
                                                 )}
                                                 {btnType === 'url' && (d.buttons?.filter((b:any)=>b.type==='url').length > 1) && (
-                                                    <p className="text-[10px] text-amber-600 font-semibold px-1 mt-1">⚠️ A API Oficial permite apenas 1 botão de Link por mensagem.</p>
+                                                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold px-1 mt-1">A API Oficial permite apenas 1 botão de Link por mensagem.</p>
                                                 )}
                                                 {btnType === 'url' && (d.buttons?.filter((b:any)=>b.type!=='url').length > 0) && (
-                                                    <p className="text-[10px] text-amber-600 font-semibold px-1 mt-1">⚠️ Ao usar um botão Link, os outros botões serão enviados como texto.</p>
+                                                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold px-1 mt-1">Ao usar um botão Link, os outros botões serão enviados como texto.</p>
                                                 )}
                                             </div>
                                         );
@@ -1478,7 +1515,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                         <ConfigSection label="Timeout" hint="Tempo máximo de espera. 0 = sem timeout.">
                             <div className="flex gap-2">
                                 <NumberField value={d.timeout_minutes || 0} onChange={(v) => update('timeout_minutes', parseInt(v) || 0)} min={0} placeholder="0" />
-                                <div className="flex items-center px-3 bg-gray-100 rounded-xl text-xs text-gray-500 font-medium border border-gray-200 shrink-0">minutos</div>
+                                <div className="flex items-center px-3 bg-gray-100 dark:bg-zinc-800/80 rounded-xl text-xs text-gray-500 dark:text-zinc-400 font-medium border border-gray-200 dark:border-zinc-800 shrink-0">minutos</div>
                             </div>
                         </ConfigSection>
                         <ConfigSection label="Mensagem de Timeout (Opcional)" hint="Enviada se o timeout for atingido">
@@ -1512,12 +1549,12 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             </ConfigSection>
                         )}
                         <div className="grid grid-cols-2 gap-3 pt-2">
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-                                <span className="text-[10px] font-black text-emerald-600 tracking-wider">✓ SIM</span>
-                                <p className="text-[10px] text-emerald-600 mt-0.5">Condição verdadeira</p>
+                            <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center">
+                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 tracking-wider">SIM</span>
+                                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">Condição verdadeira</p>
                             </div>
-                            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-                                <span className="text-[10px] font-black text-red-500 tracking-wider">✕ NÃO</span>
+                            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-3 text-center">
+                                <span className="text-[10px] font-black text-red-500 tracking-wider">NÃO</span>
                                 <p className="text-[10px] text-red-500 mt-0.5">Condição falsa</p>
                             </div>
                         </div>
@@ -1549,7 +1586,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 }}
                                 addLabel="Adicionar Condição"
                                 renderRow={(item, i, onUpdate) => (
-                                    <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-gray-200">
+                                    <div className="space-y-1.5 bg-slate-50 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-gray-200 dark:border-zinc-800">
                                         <SystemVariableDropdown value={item.field || ''} onChange={(v) => onUpdate('field', v)} customFields={companyCustomFields} />
                                         <SelectField value={item.operator || 'equals'} onChange={(v) => onUpdate('operator', v)} options={OPERATOR_OPTIONS} />
                                         {!['is_empty', 'is_not_empty'].includes(item.operator) && (
@@ -1578,7 +1615,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 }}
                                 addLabel="Adicionar Rota"
                                 renderRow={(item, i, onUpdate) => (
-                                    <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-gray-200">
+                                    <div className="space-y-1.5 bg-slate-50 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-gray-200 dark:border-zinc-800">
                                         <Input value={item.outputName || ''} onChange={(e) => onUpdate('outputName', e.target.value)} placeholder={`Nome da Rota ${i + 1}`} className="rounded-lg h-9 bg-muted/50 border-border text-xs font-bold" />
                                         <SystemVariableDropdown value={item.field || ''} onChange={(v) => onUpdate('field', v)} customFields={companyCustomFields} />
                                         <SelectField value={item.operator || 'equals'} onChange={(v) => onUpdate('operator', v)} options={OPERATOR_OPTIONS} />
@@ -1671,9 +1708,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 value={d.assign_type || 'user'}
                                 onChange={(v) => update('assign_type', v)}
                                 options={[
-                                    { value: 'user', label: '👤 Agente Específico' },
-                                    { value: 'team', label: '👥 Equipe Inteira' },
-                                    { value: 'random_in_team', label: '🎲 Aleatório na Equipe (Roleta)' },
+                                    { value: 'user', label: 'Agente Específico', icon: User },
+                                    { value: 'team', label: 'Equipe Inteira', icon: Users },
+                                    { value: 'random_in_team', label: 'Aleatório na Equipe (Roleta)', icon: Dices },
                                 ]}
                             />
                         </ConfigSection>
@@ -1702,7 +1739,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
 
                         {d.assign_type === 'random_in_team' && d.team_id && (
                             <ConfigSection label="Distribuição de Leads (%)" hint="Defina a porcentagem para cada atendente (a soma deve dar 100%)">
-                                <div className="space-y-3 bg-fuchsia-50/50 p-4 rounded-xl border border-fuchsia-100">
+                                <div className="space-y-3 bg-fuchsia-50/50 p-4 rounded-xl border border-fuchsia-100 dark:border-fuchsia-800/50">
                                     <InfoBanner text="Lembre-se de ajustar para que a soma chegue a 100%." color="blue" />
                                     {/* Componente simples de lista de pesos */}
                                     <DynamicListBuilder
@@ -1733,15 +1770,15 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                                         value={item.weight || ''}
                                                         onChange={(e) => onUpdate('weight', e.target.value)}
                                                         placeholder="0"
-                                                        className="rounded-xl h-11 bg-white border-border text-sm pr-6"
+                                                        className="rounded-xl h-11 bg-white dark:bg-zinc-900 border-border text-sm pr-6"
                                                     />
-                                                    <span className="absolute right-3 text-xs text-gray-400 font-bold">%</span>
+                                                    <span className="absolute right-3 text-xs text-gray-400 dark:text-zinc-400 font-bold">%</span>
                                                 </div>
                                             </div>
                                         )}
                                     />
-                                    <div className="flex justify-between items-center px-2 pt-2 border-t border-fuchsia-100">
-                                        <span className="text-xs font-semibold text-gray-500">Soma Total:</span>
+                                    <div className="flex justify-between items-center px-2 pt-2 border-t border-fuchsia-100 dark:border-fuchsia-800/50">
+                                        <span className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Soma Total:</span>
                                         <span className={`text-sm font-black ${(Array.isArray(d.agent_weights) ? d.agent_weights : []).reduce((acc: number, item: any) => acc + (Number(item.weight) || 0), 0) === 100 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                             {(Array.isArray(d.agent_weights) ? d.agent_weights : []).reduce((acc: number, item: any) => acc + (Number(item.weight) || 0), 0)}%
                                         </span>
@@ -1757,7 +1794,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                     <div className="space-y-5">
                         <ConfigSection label="Ação do Bot">
                             <ToggleSwitch
-                                label={d.action === 'enable' ? '🤖 Bot ATIVADO' : '🔴 Bot DESATIVADO'}
+                                label={d.action === 'enable' ? 'Bot ATIVADO' : 'Bot DESATIVADO'}
                                 checked={d.action === 'enable'}
                                 onChange={(v) => update('action', v ? 'enable' : 'disable')}
                                 color={d.action === 'enable' ? 'green' : 'red'}
@@ -1771,7 +1808,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                 return (
                     <div className="space-y-5">
                         <InfoBanner text="Este nó encerra permanentemente a automação para este contato. Nenhuma ação posterior será executada." color="red" />
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 text-center">
                             <ShieldOff className="h-8 w-8 text-red-500 mx-auto mb-2" />
                             <p className="text-sm font-bold text-red-500">Automação Encerrada</p>
                             <p className="text-[10px] text-red-500 mt-1">Nó terminal — sem saídas</p>
@@ -1824,11 +1861,11 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             </ConfigSection>
                         )}
                         <div className="grid grid-cols-2 gap-3 pt-2">
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-                                <span className="text-[10px] font-black text-emerald-600 tracking-wider">✓ ENCONTRADO</span>
+                            <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center">
+                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 tracking-wider">ENCONTRADO</span>
                             </div>
-                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-                                <span className="text-[10px] font-black text-amber-600 tracking-wider">+ NOVO / NÃO ENCONTRADO</span>
+                            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-center">
+                                <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 tracking-wider">+ NOVO / NÃO ENCONTRADO</span>
                             </div>
                         </div>
                     </div>
@@ -1882,8 +1919,8 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             </select>
                         </ConfigSection>
                         {selectedTemplate && (
-                            <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-3">
-                                <div className="text-[10px] font-black uppercase text-emerald-600 tracking-wider mb-1">Preview do Template</div>
+                            <div className="bg-emerald-50/50 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3">
+                                <div className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider mb-1">Preview do Template</div>
                                 <div className="text-xs text-muted-foreground whitespace-pre-wrap">
                                     {(() => {
                                         const bodyComp = (selectedTemplate.components || []).find((c: any) => c.type === 'BODY');
@@ -1891,7 +1928,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     })()}
                                 </div>
                                 <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
-                                    <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.status}</span>
+                                    <span className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.status}</span>
                                     <span>{selectedTemplate.category}</span>
                                     <span>{selectedTemplate.language}</span>
                                 </div>
@@ -1963,7 +2000,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 onChange={v => update('prompt', v)}
                                 placeholder="Ex: Analise a última mensagem do lead {{message.body}} e crie um resumo."
                             />
-                            <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">
+                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
                                 Escreva a instrução que o assistente interno deve executar. Ele tem acesso completo às ferramentas do sistema para puxar métricas e modificar o banco.
                             </p>
                         </ConfigSection>
@@ -1974,7 +2011,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 onChange={e => update('output_variable', e.target.value)}
                                 placeholder="copilot_response"
                             />
-                            <p className="text-[10px] text-zinc-500 mt-1.5 leading-relaxed">
+                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
                                 O resultado do assistente será armazenado nesta variável para que você possa utilizá-la em blocos seguintes, como "Enviar Mensagem Interna".
                             </p>
                         </ConfigSection>
@@ -2014,7 +2051,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 { id: 'input', label: 'Input' },
                                 { id: 'config', label: 'Configurações' },
                                 { id: 'agenda', label: 'Agenda' },
-                                { id: 'library', label: '📂 Biblioteca' },
+                                { id: 'library', label: 'Biblioteca' },
                             ].map(tab => (
                                 <button
                                     key={tab.id}
@@ -2052,7 +2089,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         multiline
                                     />
                                 </ConfigSection>
-                                <ConfigSection label="🧠 Memória de Aprendizado" hint="Regras e correções aprendidas automaticamente pelo Simulador. Você pode editar livremente.">
+                                <ConfigSection label="Memória de Aprendizado" hint="Regras e correções aprendidas automaticamente pelo Simulador. Você pode editar livremente.">
                                     <div className="relative">
                                         <Textarea
                                             value={d.learning_notes || ''}
@@ -2084,9 +2121,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                             step={0.1}
                                             value={d.temperature ?? 0.7}
                                             onChange={(e) => update('temperature', parseFloat(e.target.value))}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-600"
+                                            className="w-full h-2 bg-gray-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-violet-600"
                                         />
-                                        <span className="text-sm font-mono font-bold text-violet-600 min-w-[36px] text-center">{(d.temperature ?? 0.7).toFixed(1)}</span>
+                                        <span className="text-sm font-mono font-bold text-violet-600 dark:text-violet-400 min-w-[36px] text-center">{(d.temperature ?? 0.7).toFixed(1)}</span>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground mt-1">0.0 = Focado e preciso · 1.0 = Criativo e variado</p>
                                 </ConfigSection>
@@ -2098,13 +2135,13 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             <div className="space-y-5">
                                 <InfoBanner text="Configure como o input do agente será composto. O input final será: mensagem do lead + dados do webhook + histórico." color="indigo" />
                                 <ToggleSwitch
-                                    label="📩 Incluir mensagem do lead"
+                                    label="Incluir mensagem do lead"
                                     checked={d.include_lead_message !== false}
                                     onChange={(v) => update('include_lead_message', v)}
                                     color="blue"
                                 />
                                 <ToggleSwitch
-                                    label="🔗 Incluir variáveis do webhook"
+                                    label="Incluir variáveis do webhook"
                                     checked={!!d.include_webhook_vars}
                                     onChange={(v) => update('include_webhook_vars', v)}
                                     color="teal"
@@ -2133,7 +2170,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     </ConfigSection>
                                 )}
                                 <ToggleSwitch
-                                    label="📜 Incluir histórico de chat"
+                                    label="Incluir histórico de chat"
                                     checked={d.include_history !== false}
                                     onChange={(v) => update('include_history', v)}
                                     color="violet"
@@ -2168,7 +2205,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         ))}
                                     </select>
                                 </ConfigSection>
-                                <ToggleSwitch label="🔁 Modo Diálogo (multi-turn)" checked={!!d.dialogue_mode} onChange={(v) => update('dialogue_mode', v)} color="violet" />
+                                <ToggleSwitch label="Modo Diálogo (multi-turn)" checked={!!d.dialogue_mode} onChange={(v) => update('dialogue_mode', v)} color="violet" />
                                 {d.dialogue_mode && (
                                     <>
                                         <ConfigSection label="Condição de Conclusão" hint="Descreva quando o objetivo do agente foi atingido. A IA avaliará a cada turno.">
@@ -2189,11 +2226,11 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         </ConfigSection>
                                         <InfoBanner text="O fluxo ficará travado neste nó até o objetivo ser cumprido ou o limite de turnos ser atingido. Cada mensagem do lead conta como 1 turno." color="violet" />
                                         <div className="grid grid-cols-2 gap-3 pt-2">
-                                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-                                                <span className="text-[10px] font-black text-emerald-600 tracking-wider">✓ CONCLUÍDO</span>
+                                            <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center">
+                                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 tracking-wider">CONCLUÍDO</span>
                                             </div>
-                                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-                                                <span className="text-[10px] font-black text-amber-600 tracking-wider">⚠ MAX TURNOS</span>
+                                            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-center">
+                                                <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 tracking-wider">MAX TURNOS</span>
                                             </div>
                                         </div>
                                     </>
@@ -2203,6 +2240,22 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                     <ConfigSection label="Timeout (minutos)">
                                         <NumberField value={d.response_timeout_minutes || 5} onChange={(v) => update('response_timeout_minutes', parseInt(v) || 5)} min={1} />
                                     </ConfigSection>
+                                )}
+                                
+                                {(!d.provider || d.provider === 'gemini') && (
+                                    <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                                        <ToggleSwitch 
+                                            label="🌐 Pesquisa na Internet (Google Search)" 
+                                            checked={!!d.google_search_enabled} 
+                                            onChange={(v) => update('google_search_enabled', v)} 
+                                            color="emerald" 
+                                        />
+                                        {d.google_search_enabled && (
+                                            <div className="mt-3">
+                                                <InfoBanner text="O agente terá permissão para buscar informações em tempo real na internet (notícias, sites, links) usando o Google Search." color="emerald" />
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -2218,7 +2271,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verificando conexão...
                                     </div>
                                 ) : googleCalendarStatus.connected ? (
-                                    <div className="flex items-center gap-3 rounded-xl bg-emerald-50/50 px-3 py-2.5 border border-emerald-100">
+                                    <div className="flex items-center gap-3 rounded-xl bg-emerald-50/50 px-3 py-2.5 border border-emerald-100 dark:border-emerald-800/50">
                                         <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                                         <div>
                                             <p className="text-xs font-semibold text-emerald-900">Google Agenda conectada</p>
@@ -2226,7 +2279,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-3 rounded-xl bg-amber-50/50 px-3 py-2.5 border border-amber-100">
+                                    <div className="flex items-center gap-3 rounded-xl bg-amber-50/50 px-3 py-2.5 border border-amber-100 dark:border-amber-800/50">
                                         <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
                                         <div>
                                             <p className="text-xs font-semibold text-amber-900">Google Agenda não conectada</p>
@@ -2236,7 +2289,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 )}
                                 
                                 <ToggleSwitch 
-                                    label="🗓️ Ativar Agenda no Agente" 
+                                    label="Ativar Agenda no Agente" 
                                     checked={googleCalendarEnabled} 
                                     onChange={(v) => update('google_calendar_enabled', v)} 
                                     color="blue"
@@ -2244,9 +2297,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 />
                                 
                                 {googleCalendarEnabled && googleCalendarStatus?.connected && (
-                                    <div className="space-y-5 pl-3 border-l-2 border-blue-100 ml-1.5 pt-2">
+                                    <div className="space-y-5 pl-3 border-l-2 border-blue-100 dark:border-blue-800/50 ml-1.5 pt-2">
                                         <ToggleSwitch 
-                                            label="🎥 Gerar link do Google Meet ao agendar" 
+                                            label="Gerar link do Google Meet ao agendar" 
                                             checked={googleMeetEnabled} 
                                             onChange={(v) => update('google_meet_enabled', v)} 
                                             color="emerald" 
@@ -2355,11 +2408,11 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             <NumberField value={d.response_timeout_minutes || 60} onChange={(v) => update('response_timeout_minutes', parseInt(v) || 60)} min={1} />
                         </ConfigSection>
                         <div className="grid grid-cols-2 gap-3 pt-2">
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-                                <span className="text-[10px] font-black text-emerald-600 tracking-wider">✓ RESPONDEU</span>
+                            <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center">
+                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 tracking-wider">RESPONDEU</span>
                             </div>
-                            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-                                <span className="text-[10px] font-black text-red-500 tracking-wider">✕ NÃO RESP.</span>
+                            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-3 text-center">
+                                <span className="text-[10px] font-black text-red-500 tracking-wider">NÃO RESP.</span>
                             </div>
                         </div>
                     </div>
@@ -2394,9 +2447,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                         step={1}
                                         value={d.delay_seconds || 2}
                                         onChange={(e) => update('delay_seconds', parseInt(e.target.value))}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                                        className="w-full h-2 bg-gray-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-green-600"
                                     />
-                                    <span className="text-sm font-mono font-bold text-green-600 min-w-[30px] text-center">{d.delay_seconds || 2}s</span>
+                                    <span className="text-sm font-mono font-bold text-green-600 dark:text-green-400 min-w-[30px] text-center">{d.delay_seconds || 2}s</span>
                                 </div>
                             </ConfigSection>
                         )}
@@ -2559,7 +2612,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                         </ConfigSection>
 
                         {/* Variable reference */}
-                        <div className="bg-gray-50 rounded-xl border border-gray-200 p-3 space-y-1.5">
+                        <div className="bg-gray-50 dark:bg-zinc-900/50 rounded-xl border border-gray-200 dark:border-zinc-800 p-3 space-y-1.5">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Variáveis Disponíveis</span>
                             <div className="grid grid-cols-2 gap-1">
                                 {[
@@ -2572,7 +2625,7 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 ].map(v => (
                                     <div key={v.var} className="flex items-center gap-1.5 text-[10px]">
                                         <code className="text-green-400 font-mono">{v.var}</code>
-                                        <span className="text-gray-500">— {v.desc}</span>
+                                        <span className="text-gray-500 dark:text-zinc-400">— {v.desc}</span>
                                     </div>
                                 ))}
                             </div>
@@ -2817,9 +2870,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 value={assignType}
                                 onChange={(v) => updateMulti({ assign_type: v, user_id: '', team_id: '', user_name: '', team_name: '' })}
                                 options={[
-                                    { value: 'user', label: '👤 Agente específico' },
-                                    { value: 'team', label: '👥 Equipe específica' },
-                                    { value: 'random_in_team', label: '🎲 Aleatório na equipe' },
+                                    { value: 'user', label: 'Agente específico', icon: User },
+                                    { value: 'team', label: 'Equipe específica', icon: Users },
+                                    { value: 'random_in_team', label: 'Aleatório na equipe', icon: Dices },
                                 ]}
                             />
                         </ConfigSection>
@@ -2887,16 +2940,16 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 }}
                                 addLabel="Mapear Novo Campo"
                                 renderRow={(item, i, onUpdate) => (
-                                    <div className="flex flex-col gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-lg relative group">
+                                    <div className="flex flex-col gap-2 p-3 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-lg relative group">
                                         <div className="flex items-center gap-2">
                                             <div className="flex-1">
-                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1 block">Nome do Campo (Chave)</label>
+                                                <label className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 block">Nome do Campo (Chave)</label>
                                                 <Input value={item.name || ''} onChange={(e) => onUpdate('name', e.target.value)} placeholder="Ex: cpf, idade" className="h-8 text-xs font-mono" />
                                             </div>
                                         </div>
                                         <div className="flex-1">
-                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1 block">Valor a ser salvo</label>
-                                            <div className="bg-white rounded-md border border-zinc-200 shadow-sm relative">
+                                            <label className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1 block">Valor a ser salvo</label>
+                                            <div className="bg-white dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800 shadow-sm relative">
                                                 <TextFieldWithVars 
                                                     value={item.value || ''} 
                                                     onChange={(v) => onUpdate('value', v)} 
@@ -2939,10 +2992,10 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                             />
                         </ConfigSection>
 
-                        <div className="flex items-center justify-between mt-4 bg-gray-50/50 border border-gray-100 p-3 rounded-lg">
+                        <div className="flex items-center justify-between mt-4 bg-gray-50/50 border border-gray-100 dark:border-zinc-800/80 p-3 rounded-lg">
                             <div className="mr-4">
-                                <h4 className="text-[13px] font-medium text-gray-800">Multi Funil (Manter Anteriores)</h4>
-                                <p className="text-xs text-gray-500 mt-0.5">Se ativado, cria o lead neste funil sem remover de outros funis. Se desativado, o lead sai de qualquer outro funil e move para este.</p>
+                                <h4 className="text-[13px] font-medium text-gray-800 dark:text-zinc-100">Multi Funil (Manter Anteriores)</h4>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">Se ativado, cria o lead neste funil sem remover de outros funis. Se desativado, o lead sai de qualquer outro funil e move para este.</p>
                             </div>
                             <Switch
                                 checked={!!d.multi_funnel}
@@ -2987,9 +3040,9 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
                                 value={d.append_mode || 'prepend'}
                                 onChange={(v) => update('append_mode', v)}
                                 options={[
-                                    { value: 'prepend', label: '📌 Adicionar no início' },
-                                    { value: 'append', label: '📝 Adicionar no final' },
-                                    { value: 'replace', label: '🔄 Substituir tudo' },
+                                    { value: 'prepend', label: 'Adicionar no início' },
+                                    { value: 'append', label: 'Adicionar no final' },
+                                    { value: 'replace', label: 'Substituir tudo' },
                                 ]}
                             />
                         </ConfigSection>
@@ -3045,10 +3098,10 @@ export const NodeConfigPanel = memo(({ node, onUpdateData, testOutput, isTesting
             default:
                 return (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="p-4 bg-gray-100 rounded-full mb-4 opacity-40">
-                            <Settings2 className="h-8 w-8 text-gray-400" />
+                        <div className="p-4 bg-gray-100 dark:bg-zinc-800/80 rounded-full mb-4 opacity-40">
+                            <Settings2 className="h-8 w-8 text-gray-400 dark:text-zinc-400" />
                         </div>
-                        <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">Este node não requer configuração adicional</p>
+                        <p className="text-gray-400 dark:text-zinc-400 font-bold text-sm uppercase tracking-widest">Este node não requer configuração adicional</p>
                     </div>
                 );
         }

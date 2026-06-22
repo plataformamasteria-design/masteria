@@ -444,7 +444,7 @@ async function executeNodeTest(step: FlowStep, vars: Record<string, any>): Promi
 
             try {
                 const genAI = new GoogleGenerativeAI(apiKey);
-                const modelName = d.model || 'gemini-2.0-flash';
+                const modelName = d.model || 'gemini-2.5-flash';
                 const temperature = d.temperature ?? 0.7;
                 const model = genAI.getGenerativeModel({ model: modelName, generationConfig: { temperature } });
 

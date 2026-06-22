@@ -30,8 +30,8 @@ export const FollowUpAiNodeV4 = memo(({ data, selected }: NodePropsV4) => {
             footer={footer}
         >
             <NodeHandle type="target" position={Position.Top} accentColor="orange" />
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5">
-                <p className="text-[11px] text-zinc-500">Reengajamento automático com IA</p>
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Reengajamento automático com IA</p>
             </div>
         </BaseNode>
     );

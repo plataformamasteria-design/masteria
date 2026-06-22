@@ -68,7 +68,7 @@ export function FlowToolbar({
             {/* Voltar */}
             <button
                 onClick={onBack}
-                className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 text-xs font-medium transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-100 dark:hover:text-zinc-900 dark:text-zinc-100 text-xs font-medium transition-colors px-2 py-1.5 rounded-lg hover:bg-zinc-50 dark:bg-zinc-900/50 dark:hover:bg-white dark:bg-zinc-900"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Sair</span>
@@ -93,11 +93,11 @@ export function FlowToolbar({
                 ) : (
                     <button
                         onClick={() => { setNameValue(flowName); setEditingName(true); }}
-                        className="flex items-center gap-1.5 group px-1 py-1 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                        className="flex items-center gap-1.5 group px-1 py-1 rounded-lg hover:bg-zinc-50 dark:bg-zinc-900/50 dark:hover:bg-white dark:bg-zinc-900 transition-colors"
                         title="Clique para renomear"
                     >
                         <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-[240px]">{flowName}</span>
-                        <Pencil className="w-3 h-3 text-zinc-300 group-hover:text-zinc-500 transition-colors shrink-0" />
+                        <Pencil className="w-3 h-3 text-zinc-300 group-hover:text-zinc-500 dark:text-zinc-400 transition-colors shrink-0" />
                     </button>
                 )}
             </div>
@@ -106,7 +106,7 @@ export function FlowToolbar({
             <div className="flex items-center gap-1">
                 <button
                     onClick={onAutoLayout}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-zinc-200 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:hover:bg-white dark:bg-zinc-900 transition-colors"
                     title="Organizar layout automaticamente"
                 >
                     <LayoutGrid className="w-4 h-4" />
@@ -114,7 +114,7 @@ export function FlowToolbar({
 
                 <button
                     onClick={onHistory}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-700 dark:text-zinc-200 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:hover:bg-white dark:bg-zinc-900 transition-colors"
                     title="Histórico de execuções"
                 >
                     <History className="w-4 h-4" />
@@ -122,7 +122,7 @@ export function FlowToolbar({
 
                 <button
                     onClick={onAIGenerate}
-                    className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-xs font-semibold"
+                    className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:bg-amber-900/40 dark:hover:bg-amber-900/40 transition-colors text-xs font-semibold"
                     title="Gerar fluxo com IA"
                 >
                     <Sparkles className="w-3.5 h-3.5" />
@@ -144,7 +144,7 @@ export function FlowToolbar({
                 />
                 <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-xs font-semibold"
+                    className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:bg-blue-900/40 dark:hover:bg-blue-900/40 transition-colors text-xs font-semibold"
                     title="Importar exportação do Kommo CRM (.json)"
                 >
                     <DownloadCloud className="w-3.5 h-3.5" />
@@ -161,8 +161,8 @@ export function FlowToolbar({
                 className={[
                     'flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-colors',
                     isListening
-                        ? 'bg-emerald-500 text-white animate-pulse'
-                        : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
+                        ? 'bg-emerald-50 dark:bg-emerald-900/300 text-zinc-900 dark:text-white animate-pulse'
+                        : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/40',
                 ].join(' ')}
                 title="Testar fluxo"
             >
@@ -181,7 +181,7 @@ export function FlowToolbar({
             <div className="flex items-center">
                 <button
                     onClick={onToggleSimulator}
-                    className="flex items-center gap-1.5 h-8 px-3 rounded-l-lg border border-r-0 border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors text-xs font-semibold shadow-sm"
+                    className="flex items-center gap-1.5 h-8 px-3 rounded-l-lg border border-r-0 border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/40 transition-colors text-xs font-semibold shadow-sm"
                     title="Testar no Simulador Virtual"
                 >
                     <Smartphone className="w-3.5 h-3.5" />
@@ -190,7 +190,7 @@ export function FlowToolbar({
                 <button
                     onClick={handleCopySimulatorLink}
                     disabled={!automationId}
-                    className="flex items-center justify-center h-8 px-2 rounded-r-lg border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-sm disabled:opacity-50"
+                    className="flex items-center justify-center h-8 px-2 rounded-r-lg border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/40 transition-colors shadow-sm disabled:opacity-50"
                     title="Copiar Link da Máquina Virtual"
                 >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -203,7 +203,7 @@ export function FlowToolbar({
             <button
                 onClick={onSave}
                 disabled={isSaving}
-                className="flex items-center gap-1.5 h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors shadow-sm disabled:opacity-60"
+                className="flex items-center gap-1.5 h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-zinc-900 dark:text-white text-xs font-semibold transition-colors shadow-sm disabled:opacity-60"
             >
                 {isSaving ? (
                     <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Salvando...</>

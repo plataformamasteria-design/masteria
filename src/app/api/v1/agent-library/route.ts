@@ -5,6 +5,7 @@ import { uploadFileToS3, deleteFileFromS3 } from '@/lib/s3';
 import { getCompanyIdFromSession } from '@/app/actions';
 import { eq, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { parseDocumentBuffer } from '@/lib/document-parser';
 
 const ALLOWED_TYPES = [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
             file_size: f.fileSize,
             description: f.description,
             created_at: f.createdAt,
+            extractedText: f.extractedText,
         }));
 
         return NextResponse.json({ files: mappedFiles });
@@ -88,6 +90,15 @@ export async function POST(req: NextRequest) {
         const fileBuffer = Buffer.from(await file.arrayBuffer());
         const fileUrl = await uploadFileToS3(companyId, storagePath, fileBuffer, file.type);
 
+        // Extract text if it's a document (PDF, TXT, CSV)
+        let extractedText = null;
+        if (fileType === 'document') {
+            const parsedText = await parseDocumentBuffer(fileBuffer, file.type);
+            if (parsedText && parsedText.trim().length > 0) {
+                extractedText = parsedText;
+            }
+        }
+
         // Persist metadata to Postgres
         const [row] = await db
             .insert(agentMediaLibrary)
@@ -101,6 +112,7 @@ export async function POST(req: NextRequest) {
                 fileSize: file.size,
                 description: description || null,
                 storagePath,
+                extractedText,
             })
             .returning();
 
@@ -112,6 +124,7 @@ export async function POST(req: NextRequest) {
             file_size: row.fileSize,
             description: row.description,
             created_at: row.createdAt,
+            extractedText: row.extractedText,
         };
 
         return NextResponse.json({ file: mappedRow }, { status: 201 });

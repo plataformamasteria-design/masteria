@@ -232,6 +232,8 @@ export const connections = pgTable('connections', {
   qrCode: text('qr_code'),
   status: text('status'),
   lastConnected: timestamp('last_connected'),
+  profileName: text('profile_name'),
+  profilePicUrl: text('profile_pic_url'),
 
   isActive: boolean('is_active').default(false).notNull(),
   assignedPersonaId: text('assigned_persona_id').references(() => aiPersonas.id, { onDelete: 'set null' }),
@@ -435,7 +437,7 @@ export const aiPersonas = pgTable('ai_personas', {
   name: text('name').notNull(),
   systemPrompt: text('system_prompt'),
   provider: text('provider').notNull().$type<'GEMINI'>(),
-  model: text('model').notNull(), // e.g., 'gemini-2.0-flash-exp'
+  model: text('model').notNull(), // e.g., 'gemini-2.5-flash-exp'
   credentialId: text('credential_id').references(() => aiCredentials.id, { onDelete: 'set null' }),
   temperature: decimal('temperature', { precision: 3, scale: 2 }).default('0.7').notNull(),
   topP: decimal('top_p', { precision: 3, scale: 2 }).default('0.9').notNull(),
@@ -2787,6 +2789,7 @@ export const agentMediaLibrary = pgTable('agent_media_library', {
   fileSize: integer('file_size'),
   description: text('description'),
   storagePath: text('storage_path'),
+  extractedText: text('extracted_text'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

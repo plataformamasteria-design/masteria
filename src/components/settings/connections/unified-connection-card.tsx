@@ -33,6 +33,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export type UnifiedPlatform = 'meta_api' | 'instagram' | 'evolution';
 export type UnifiedStatus = 'connected' | 'disconnected' | 'qr' | 'error' | 'verifying';
@@ -63,6 +64,10 @@ export interface UnifiedConnectionItem {
   // Raw objects
   rawConnection?: any;
   rawBaileys?: any;
+  
+  // Profile
+  profileName?: string;
+  profilePicUrl?: string;
 }
 
 interface UnifiedConnectionCardProps {
@@ -158,14 +163,29 @@ export function UnifiedConnectionCard({
     <div className="group relative border border-zinc-200 dark:border-white/10 shadow-sm dark:shadow-[0_0_30px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.05)] bg-white dark:bg-white/[0.02] backdrop-blur-md rounded-[2rem] overflow-hidden p-6 transition-all hover:bg-zinc-50 dark:hover:bg-white/[0.04]">
       {/* Top Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex flex-col gap-1">
-          <Badge variant="outline" className={cn("w-fit font-normal text-[10px] mb-1 gap-1", currentPlatform.bg, currentPlatform.color)}>
-            <PlatformIcon className="w-3 h-3" />
-            {currentPlatform.label}
-          </Badge>
-          <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-            {item.name}
-          </h3>
+        <div className="flex items-center gap-4 min-w-0 flex-1 pr-4">
+          <Avatar className="h-12 w-12 border-2 border-white dark:border-zinc-800 shadow-sm shrink-0">
+            {item.profilePicUrl ? (
+              <AvatarImage src={item.profilePicUrl} alt={item.profileName || item.name} className="object-cover" />
+            ) : null}
+            <AvatarFallback className={cn("bg-zinc-100 dark:bg-white/5", currentPlatform.color)}>
+              <PlatformIcon className="h-5 w-5" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col gap-1 overflow-hidden">
+            <Badge variant="outline" className={cn("w-fit font-normal text-[10px] mb-0.5 gap-1", currentPlatform.bg, currentPlatform.color)}>
+              <PlatformIcon className="w-3 h-3" />
+              {currentPlatform.label}
+            </Badge>
+            <h3 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white truncate" title={item.profileName || item.name}>
+              {item.profileName || item.name}
+            </h3>
+            {item.profileName && (
+               <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate" title={item.name}>
+                 {item.name}
+               </span>
+            )}
+          </div>
         </div>
         
         {/* Dropdown Menu */}

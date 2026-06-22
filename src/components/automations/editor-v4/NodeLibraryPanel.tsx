@@ -29,13 +29,13 @@ const NODE_CATALOG: NodeCategory[] = [
         key: 'messages',
         label: 'Mensagens',
         nodes: [
-            { type: 'send_message',  label: 'WhatsApp',        icon: MessageSquare,      color: 'text-green-600',   defaultData: { message: '' } },
-            { type: 'interactive_message', label: 'Mensagem Interativa', icon: MessageSquareDashed, color: 'text-blue-600', defaultData: { message: '', buttons: [], attachments: [] } },
-            { type: 'send_template', label: 'Template',         icon: MessageSquareShare, color: 'text-green-700',   defaultData: { template_name: '' } },
-            { type: 'send_image',    label: 'Imagem',           icon: ImageIcon,          color: 'text-blue-600',    defaultData: { file_url: '' } },
-            { type: 'send_audio',    label: 'Áudio',            icon: Mic,                color: 'text-rose-600',    defaultData: { file_url: '' } },
-            { type: 'send_document', label: 'Documento',        icon: FileText,           color: 'text-orange-600',  defaultData: { file_url: '' } },
-            { type: 'send_video',    label: 'Vídeo',            icon: Video,              color: 'text-violet-600',  defaultData: { file_url: '' } },
+            { type: 'send_message',  label: 'WhatsApp',        icon: MessageSquare,      color: 'text-green-600 dark:text-green-400',   defaultData: { message: '' } },
+            { type: 'interactive_message', label: 'Mensagem Interativa', icon: MessageSquareDashed, color: 'text-blue-600 dark:text-blue-400', defaultData: { message: '', buttons: [], attachments: [] } },
+            { type: 'send_template', label: 'Template',         icon: MessageSquareShare, color: 'text-green-700 dark:text-green-300',   defaultData: { template_name: '' } },
+            { type: 'send_image',    label: 'Imagem',           icon: ImageIcon,          color: 'text-blue-600 dark:text-blue-400',    defaultData: { file_url: '' } },
+            { type: 'send_audio',    label: 'Áudio',            icon: Mic,                color: 'text-rose-600 dark:text-rose-400',    defaultData: { file_url: '' } },
+            { type: 'send_document', label: 'Documento',        icon: FileText,           color: 'text-orange-600 dark:text-orange-400',  defaultData: { file_url: '' } },
+            { type: 'send_video',    label: 'Vídeo',            icon: Video,              color: 'text-violet-600 dark:text-violet-400',  defaultData: { file_url: '' } },
         ],
     },
     {
@@ -43,26 +43,26 @@ const NODE_CATALOG: NodeCategory[] = [
         label: 'Lógica e Controle',
         nodes: [
             { type: 'trigger',       label: 'Gatilho Inicial',  icon: Zap,                color: 'text-yellow-500',  defaultData: { trigger_type: 'stage_entry' } },
-            { type: 'condition',     label: 'Condição',         icon: GitBranch,          color: 'text-amber-600',   defaultData: { conditions: [] } },
+            { type: 'condition',     label: 'Condição',         icon: GitBranch,          color: 'text-amber-600 dark:text-amber-400',   defaultData: { conditions: [] } },
             { type: 'delay',         label: 'Atraso',           icon: Clock,              color: 'text-amber-500',   defaultData: { amount: 1, unit: 'minutes' } },
-            { type: 'wait_response', label: 'Aguardar Resp.',   icon: MessageCircle,      color: 'text-teal-600',    defaultData: { maxWaitTime: 10 } },
-            { type: 'campaign_wait_response', label: 'Resp. Campanha', icon: Send,        color: 'text-emerald-600', defaultData: { maxWaitTime: 24, unit: 'hours' } },
-            { type: 'router',        label: 'Roteador',         icon: Signpost,           color: 'text-indigo-600',  defaultData: { routes: [] } },
-            { type: 'filter',        label: 'Filtro',           icon: Filter,             color: 'text-violet-600',  defaultData: { conditions: [] } },
+            { type: 'wait_response', label: 'Aguardar Resp.',   icon: MessageCircle,      color: 'text-teal-600 dark:text-teal-400',    defaultData: { maxWaitTime: 10 } },
+            { type: 'campaign_wait_response', label: 'Resp. Campanha', icon: Send,        color: 'text-emerald-600 dark:text-emerald-400', defaultData: { maxWaitTime: 24, unit: 'hours' } },
+            { type: 'router',        label: 'Roteador',         icon: Signpost,           color: 'text-indigo-600 dark:text-indigo-400',  defaultData: { routes: [] } },
+            { type: 'filter',        label: 'Filtro',           icon: Filter,             color: 'text-violet-600 dark:text-violet-400',  defaultData: { conditions: [] } },
         ],
     },
     {
         key: 'crm',
         label: 'CRM & Ações',
         nodes: [
-            { type: 'lookup_lead',   label: 'Buscar Lead',      icon: UserSearch,         color: 'text-cyan-600',    defaultData: { identifier_type: 'phone' } },
-            { type: 'update_contact',label: 'Campos Personalizados',icon: Database,           color: 'text-blue-600',    defaultData: { fields: [] } },
-            { type: 'assign_user',   label: 'Atribuir Lead',    icon: UserPlus,           color: 'text-fuchsia-600', defaultData: { assign_type: 'user' } },
-            { type: 'assign_connection', label: 'Atribuir Conexão', icon: Wifi,           color: 'text-indigo-600',  defaultData: { connection_id: '' } },
-            { type: 'add_note',      label: 'Adicionar Nota',   icon: StickyNote,         color: 'text-amber-600',   defaultData: { note: '' } },
-            { type: 'add_tag',       label: 'Adicionar Tag',    icon: Hash,               color: 'text-rose-600',    defaultData: { tagId: '' } },
-            { type: 'crm_move',      label: 'Mover Kanban',     icon: Columns3,           color: 'text-orange-600',  defaultData: { boardId: '', pipelineId: '' } },
-            { type: 'bot_toggle',    label: 'Controlar Robô',   icon: Bot,                color: 'text-zinc-600',    defaultData: { action: 'stop' } },
+            { type: 'lookup_lead',   label: 'Buscar Lead',      icon: UserSearch,         color: 'text-cyan-600 dark:text-cyan-400',    defaultData: { identifier_type: 'phone' } },
+            { type: 'update_contact',label: 'Campos Personalizados',icon: Database,           color: 'text-blue-600 dark:text-blue-400',    defaultData: { fields: [] } },
+            { type: 'assign_user',   label: 'Atribuir Lead',    icon: UserPlus,           color: 'text-fuchsia-600 dark:text-fuchsia-400', defaultData: { assign_type: 'user' } },
+            { type: 'assign_connection', label: 'Atribuir Conexão', icon: Wifi,           color: 'text-indigo-600 dark:text-indigo-400',  defaultData: { connection_id: '' } },
+            { type: 'add_note',      label: 'Adicionar Nota',   icon: StickyNote,         color: 'text-amber-600 dark:text-amber-400',   defaultData: { note: '' } },
+            { type: 'add_tag',       label: 'Adicionar Tag',    icon: Hash,               color: 'text-rose-600 dark:text-rose-400',    defaultData: { tagId: '' } },
+            { type: 'crm_move',      label: 'Mover Kanban',     icon: Columns3,           color: 'text-orange-600 dark:text-orange-400',  defaultData: { boardId: '', pipelineId: '' } },
+            { type: 'bot_toggle',    label: 'Controlar Robô',   icon: Bot,                color: 'text-zinc-600 dark:text-zinc-300',    defaultData: { action: 'stop' } },
             { type: 'capture_info',  label: 'Capturar Dado',    icon: Database,           color: 'text-blue-500',    defaultData: { fieldInfo: '' } },
             { type: 'internal_message', label: 'Mensagem Interna', icon: MessageSquareWarning, color: 'text-amber-500', defaultData: { message: '' } },
         ],
@@ -71,26 +71,26 @@ const NODE_CATALOG: NodeCategory[] = [
         key: 'scheduling',
         label: 'Agendamentos',
         nodes: [
-            { type: 'add_task',      label: 'Adicionar Tarefa', icon: CalendarCheck,      color: 'text-rose-600',    defaultData: { task_text: '' } },
+            { type: 'add_task',      label: 'Adicionar Tarefa', icon: CalendarCheck,      color: 'text-rose-600 dark:text-rose-400',    defaultData: { task_text: '' } },
         ],
     },
     {
         key: 'ai',
         label: 'Inteligência IA',
         nodes: [
-            { type: 'ai_agent',       label: 'Agente IA',       icon: Brain,              color: 'text-violet-600',  defaultData: { provider: 'gemini', model: 'gemini-2.0-flash' } },
-            { type: 'ai_copilot',     label: 'Assistente Interno', icon: BrainCircuit,       color: 'text-indigo-600',  defaultData: { prompt: '', output_variable: 'copilot_response' } },
-            { type: 'intent_router',  label: 'Classificador',   icon: Target,             color: 'text-purple-600',  defaultData: { intents: [] } },
+            { type: 'ai_agent',       label: 'Agente IA',       icon: Brain,              color: 'text-violet-600 dark:text-violet-400',  defaultData: { provider: 'gemini', model: 'gemini-2.5-flash' } },
+            { type: 'ai_copilot',     label: 'Assistente Interno', icon: BrainCircuit,       color: 'text-indigo-600 dark:text-indigo-400',  defaultData: { prompt: '', output_variable: 'copilot_response' } },
+            { type: 'intent_router',  label: 'Classificador',   icon: Target,             color: 'text-purple-600 dark:text-purple-400',  defaultData: { intents: [] } },
             { type: 'follow_up_ai',   label: 'Follow-Up IA',    icon: MessageSquareHeart, color: 'text-orange-500',  defaultData: {} },
-            { type: 'send_ai_response',label: 'Resposta IA',    icon: Send,               color: 'text-emerald-600', defaultData: {} },
+            { type: 'send_ai_response',label: 'Resposta IA',    icon: Send,               color: 'text-emerald-600 dark:text-emerald-400', defaultData: {} },
         ],
     },
     {
         key: 'advanced',
         label: 'Avançado',
         nodes: [
-            { type: 'http_request',  label: 'HTTP Request',     icon: Globe,              color: 'text-teal-600',    defaultData: { method: 'GET', url: '' } },
-            { type: 'code',          label: 'Código',           icon: Code2,              color: 'text-zinc-600',    defaultData: { language: 'javascript', code: '' } },
+            { type: 'http_request',  label: 'HTTP Request',     icon: Globe,              color: 'text-teal-600 dark:text-teal-400',    defaultData: { method: 'GET', url: '' } },
+            { type: 'code',          label: 'Código',           icon: Code2,              color: 'text-zinc-600 dark:text-zinc-300',    defaultData: { language: 'javascript', code: '' } },
             { type: 'edit_fields',   label: 'Edit Fields',      icon: PenLine,            color: 'text-teal-500',    defaultData: { fields: [], mode: 'pairs' } },
         ],
     },
@@ -111,7 +111,7 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
             <div className="flex flex-col items-center w-10 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 shadow-sm py-3 gap-2 z-20">
                 <button
                     onClick={() => setCollapsed(false)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500 dark:text-zinc-400 transition-colors"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:bg-zinc-800/80 dark:hover:bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 transition-colors"
                     title="Expandir painel"
                 >
                     <ChevronRight className="w-4 h-4" />
@@ -126,7 +126,7 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
                         <button
                             key={cat.key}
                             onClick={() => { setCollapsed(false); setOpenCategory(cat.key); }}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 transition-colors"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:bg-zinc-800/80 dark:hover:bg-white dark:bg-zinc-900 text-zinc-400 transition-colors"
                             title={cat.label}
                         >
                             <CatIcon className="w-3.5 h-3.5" />
@@ -141,10 +141,10 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
         <div className="flex flex-col w-[220px] bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden z-20 shrink-0">
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-3 border-b border-zinc-100 dark:border-zinc-800/50">
-                <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Blocos</span>
+                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Blocos</span>
                 <button
                     onClick={() => setCollapsed(true)}
-                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 transition-colors"
+                    className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:bg-zinc-800/80 dark:hover:bg-white dark:bg-zinc-900 text-zinc-400 transition-colors"
                     title="Recolher"
                 >
                     <ChevronLeft className="w-3.5 h-3.5" />
@@ -158,9 +158,9 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
                         {/* Toggle de categoria */}
                         <button
                             onClick={() => setOpenCategory(openCategory === cat.key ? null : cat.key)}
-                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group"
+                            className="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:hover:bg-white dark:bg-zinc-900 transition-colors group"
                         >
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest group-hover:text-zinc-600 dark:text-zinc-300 dark:group-hover:text-zinc-300 transition-colors">
                                 {cat.label}
                             </span>
                             <ChevronRight className={`w-3 h-3 text-zinc-300 transition-transform ${openCategory === cat.key ? 'rotate-90' : ''}`} />
@@ -175,7 +175,7 @@ export function NodeLibraryPanel({ onAddNode }: NodeLibraryPanelProps) {
                                         <button
                                             key={node.type}
                                             onClick={() => onAddNode(node.type, node.defaultData)}
-                                            className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors group/node-btn"
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:hover:bg-white dark:bg-zinc-900 transition-colors group/node-btn"
                                             title={`Adicionar ${node.label}`}
                                         >
                                             <NodeIcon className={`w-3.5 h-3.5 shrink-0 ${node.color} opacity-80 group-hover/node-btn:opacity-100`} />

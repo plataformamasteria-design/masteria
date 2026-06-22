@@ -120,7 +120,7 @@ function TriggerNodeComponent({ data }: NodeProps) {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-4 !h-4 !bg-primary !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 "
+        className="!w-4 !h-4 !bg-primary !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 "
       />
     </div>
   );

@@ -31,14 +31,14 @@ function LoopNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border-2 border-amber-500/60 rounded-xl shadow-lg min-w-[280px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-amber-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-amber-50 dark:bg-amber-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
-        icon={<RefreshCw className="h-4 w-4 text-amber-600" />}
+        icon={<RefreshCw className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
         defaultLabel="Loop (Reiniciar)"
         customLabel={customLabel}
-        colorClass="bg-amber-500/10"
-        textColorClass="text-amber-600"
+        colorClass="bg-amber-50 dark:bg-amber-900/30"
+        textColorClass="text-amber-600 dark:text-amber-400"
         onExecute={() => (data as any)?.onExecute?.(id)}
         isExecuting={(data as any)?.isExecuting}
         onDuplicate={() => (data as any)?.onDuplicate?.(id)}
@@ -46,7 +46,7 @@ function LoopNodeComponent({ id, data }: NodeProps) {
         onRename={(l) => (data as any)?.onRename?.(id, l)}
       />
       <div className="px-4 py-3 space-y-3">
-        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2">
+        <div className="rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-500/20 px-2.5 py-2">
           <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed">
             🔄 Após o tempo definido, a automação será reiniciada para este lead quando ele enviar uma nova mensagem.
           </p>
@@ -106,7 +106,7 @@ function LoopNodeComponent({ id, data }: NodeProps) {
         onPin={() => (data as any)?.onPinOutput?.(id)}
         onUnpin={() => (data as any)?.onUnpinOutput?.(id)}
       />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-amber-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-amber-50 dark:bg-amber-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

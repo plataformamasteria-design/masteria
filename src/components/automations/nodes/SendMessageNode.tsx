@@ -45,7 +45,7 @@ function SendMessageNodeComponent({ id, data }: NodeProps) {
     return (
       <div className="px-4 pb-2 flex flex-wrap gap-1 text-[10px] text-muted-foreground">
         {parts.filter(p => p.startsWith('{{')).map((p, i) => (
-          <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 font-mono text-[9px]">{p}</span>
+          <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 font-mono text-[9px]">{p}</span>
         ))}
       </div>
     );
@@ -53,13 +53,13 @@ function SendMessageNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[260px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-blue-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-blue-50 dark:bg-blue-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
         icon={<MessageSquare className="h-4 w-4 text-blue-500" />}
         defaultLabel="Enviar Mensagem"
         customLabel={customLabel}
-        colorClass="bg-blue-500/10"
+        colorClass="bg-blue-50 dark:bg-blue-900/30"
         textColorClass="text-blue-500"
         onExecute={() => (data as any)?.onExecute?.(id)}
         isExecuting={(data as any)?.isExecuting}
@@ -87,7 +87,7 @@ function SendMessageNodeComponent({ id, data }: NodeProps) {
         onPin={() => (data as any)?.onPinOutput?.(id)}
         onUnpin={() => (data as any)?.onUnpinOutput?.(id)}
       />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-blue-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-blue-50 dark:bg-blue-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

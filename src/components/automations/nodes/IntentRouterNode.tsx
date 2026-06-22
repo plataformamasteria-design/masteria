@@ -17,8 +17,8 @@ const OPENAI_MODELS = [
 ];
 
 const ROUTE_COLORS = [
-    "bg-indigo-500", "bg-purple-500", "bg-pink-500", "bg-blue-500",
-    "bg-emerald-500", "bg-amber-500", "bg-red-500", "bg-teal-500",
+    "bg-indigo-50 dark:bg-indigo-900/300", "bg-purple-50 dark:bg-purple-900/300", "bg-pink-50 dark:bg-pink-900/300", "bg-blue-50 dark:bg-blue-900/300",
+    "bg-emerald-50 dark:bg-emerald-900/300", "bg-amber-50 dark:bg-amber-900/300", "bg-red-50 dark:bg-red-900/300", "bg-teal-50 dark:bg-teal-900/300",
 ];
 
 interface Credential {
@@ -85,15 +85,15 @@ function IntentRouterNodeComponent({ id, data }: NodeProps) {
 
     return (
         <div className="bg-white dark:bg-zinc-950 border-2 border-indigo-500/50 rounded-xl shadow-xl min-w-[340px] max-w-[400px] overflow-visible group">
-            <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-indigo-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+            <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-indigo-50 dark:bg-indigo-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
 
             <NodeHeader
                 nodeId={id}
-                icon={<Signpost className="h-4 w-4 text-white" />}
+                icon={<Signpost className="h-4 w-4 text-zinc-900 dark:text-white" />}
                 defaultLabel="Classificador de Intenções"
                 customLabel={customLabel}
                 colorClass="bg-indigo-600"
-                textColorClass="text-white"
+                textColorClass="text-zinc-900 dark:text-white"
                 solidHeader
                 onExecute={() => (data as any)?.onExecute?.(id)}
                 isExecuting={(data as any)?.isExecuting}
@@ -104,10 +104,10 @@ function IntentRouterNodeComponent({ id, data }: NodeProps) {
 
             <div className="px-4 py-3 space-y-4">
                 {/* Model Selection */}
-                <div className="space-y-1.5 p-2 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+                <div className="space-y-1.5 p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-500/10">
                     <div className="flex items-center gap-2 mb-1">
                         <Key className="h-3 w-3 text-indigo-500" />
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase">Configuração I.A</span>
+                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">Configuração I.A</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -198,7 +198,7 @@ function IntentRouterNodeComponent({ id, data }: NodeProps) {
                         })}
                     </div>
 
-                    <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1 border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50" onClick={addIntent}>
+                    <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-1 border-dashed border-indigo-300 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:bg-indigo-900/30" onClick={addIntent}>
                         <Plus className="h-3 w-3" /> Adicionar Intenção
                     </Button>
                 </div>
@@ -241,7 +241,7 @@ function IntentRouterNodeComponent({ id, data }: NodeProps) {
                         type="source"
                         position={Position.Bottom}
                         id="fallback"
-                        className="!w-4 !h-4 !bg-slate-400 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 hover:scale-125 transition-transform shadow-sm"
+                        className="!w-4 !h-4 !bg-slate-400 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 hover:scale-125 transition-transform shadow-sm"
                     />
                 </div>
             </div>

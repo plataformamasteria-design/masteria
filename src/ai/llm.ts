@@ -13,8 +13,8 @@ export function getActiveAIProviders(): string[] {
 
 export async function getModel(): Promise<ModelConfig> {
   return {
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     provider: 'gemini',
-    modelName: 'gemini-2.0-flash'
+    modelName: 'gemini-2.5-flash'
   };
 }

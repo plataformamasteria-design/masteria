@@ -27,8 +27,8 @@ function AskQuestionNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[280px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
-      <NodeHeader nodeId={id} icon={<HelpCircle className="h-4 w-4 text-emerald-500" />} defaultLabel="Fazer Pergunta" customLabel={customLabel} colorClass="bg-emerald-500/10" textColorClass="text-emerald-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <NodeHeader nodeId={id} icon={<HelpCircle className="h-4 w-4 text-emerald-500" />} defaultLabel="Fazer Pergunta" customLabel={customLabel} colorClass="bg-emerald-50 dark:bg-emerald-900/30" textColorClass="text-emerald-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
       <div className="px-4 py-3 space-y-3">
         <div>
           <Label className="text-[10px] text-muted-foreground">Pergunta</Label>
@@ -61,12 +61,12 @@ function AskQuestionNodeComponent({ id, data }: NodeProps) {
         {((Array.isArray(options) ? options : []) || []).map((opt, i) => (
           <div key={i} className="flex flex-col items-center relative">
             <span className="text-[8px] text-muted-foreground truncate max-w-[60px] mb-1">{opt}</span>
-            <Handle type="source" position={Position.Bottom} id={`opt-${i}`} className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+            <Handle type="source" position={Position.Bottom} id={`opt-${i}`} className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
           </div>
         ))}
         <div className="flex flex-col items-center relative">
           <span className="text-[8px] text-orange-500 font-medium mb-1">Outro</span>
-          <Handle type="source" position={Position.Bottom} id="fallback" className="!w-4 !h-4 !bg-orange-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+          <Handle type="source" position={Position.Bottom} id="fallback" className="!w-4 !h-4 !bg-orange-50 dark:bg-orange-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
         </div>
       </div>
     </div>

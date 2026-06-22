@@ -58,14 +58,14 @@ function SendAIResponseNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border-2 border-emerald-500/60 rounded-xl shadow-lg min-w-[280px] max-w-[380px] overflow-visible">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
-        icon={<Send className="h-4 w-4 text-white" />}
+        icon={<Send className="h-4 w-4 text-zinc-900 dark:text-white" />}
         defaultLabel="Enviar Resposta I.A"
         customLabel={customLabel}
         colorClass="bg-emerald-600"
-        textColorClass="text-white"
+        textColorClass="text-zinc-900 dark:text-white"
         solidHeader
         showOnHover={false}
         onExecute={() => (data as any)?.onExecute?.(id)}
@@ -82,7 +82,7 @@ function SendAIResponseNodeComponent({ id, data }: NodeProps) {
             <Brain className="h-3 w-3" /> Nó de Agente I.A
           </Label>
           {aiAgentNodes.length === 0 ? (
-            <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-1.5">
+            <div className="rounded-md bg-amber-50 dark:bg-amber-900/30 border border-amber-500/20 px-2 py-1.5">
               <p className="text-[10px] text-amber-600 dark:text-amber-400">
                 Nenhum nó "Agente I.A" encontrado no fluxo. Adicione um primeiro.
               </p>
@@ -105,7 +105,7 @@ function SendAIResponseNodeComponent({ id, data }: NodeProps) {
             </Select>
           )}
           {sourceNodeId && !agentHasFormatting && (
-            <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-1.5 mt-1">
+            <div className="rounded-md bg-amber-50 dark:bg-amber-900/30 border border-amber-500/20 px-2 py-1.5 mt-1">
               <p className="text-[9px] text-amber-600 dark:text-amber-400">
                 ⚠ O agente selecionado não tem "Formatar para envio" ativado. Ative no nó do agente para dividir automaticamente.
               </p>
@@ -143,7 +143,7 @@ function SendAIResponseNodeComponent({ id, data }: NodeProps) {
         )}
 
         {/* Info */}
-        <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 px-2 py-1.5">
+        <div className="rounded-md bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-500/20 px-2 py-1.5">
           <p className="text-[9px] text-emerald-700 dark:text-emerald-400">
             A mensagem será enviada automaticamente para o lead que ativou o gatilho da automação.
           </p>
@@ -165,7 +165,7 @@ function SendAIResponseNodeComponent({ id, data }: NodeProps) {
         onPin={() => (data as any)?.onPinOutput?.(id)}
         onUnpin={() => (data as any)?.onUnpinOutput?.(id)}
       />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

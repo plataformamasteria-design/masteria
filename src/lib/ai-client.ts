@@ -17,7 +17,7 @@ interface CallAIResult {
 const MODELS: Record<AIProvider, { endpoint: string; model: string; type: "anthropic" | "gemini" | "openai" }> = {
   "anthropic": { endpoint: "https://api.anthropic.com/v1/messages", model: "claude-sonnet-4-20250514", type: "anthropic" },
   "anthropic-haiku": { endpoint: "https://api.anthropic.com/v1/messages", model: "claude-haiku-4-5-20251001", type: "anthropic" },
-  "gemini": { endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", model: "gemini-2.0-flash", type: "gemini" },
+  "gemini": { endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", model: "gemini-2.5-flash", type: "gemini" },
   "openai": { endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o", type: "openai" },
   "openai-mini": { endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", type: "openai" },
 };

@@ -34,7 +34,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="w-full h-full flex items-center justify-center bg-slate-50 p-6">
+                <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-zinc-900/50 p-6">
                     <div className="max-w-2xl w-full bg-white rounded-xl shadow-lg border border-red-100 overflow-hidden">
                         <div className="bg-red-50 px-6 py-4 flex items-center gap-3 border-b border-red-100">
                             <AlertTriangle className="h-6 w-6 text-red-500" />
@@ -42,7 +42,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
                         </div>
 
                         <div className="p-6 space-y-4">
-                            <p className="text-slate-600 text-sm">
+                            <p className="text-slate-600 dark:text-zinc-300 text-sm">
                                 Encontramos um problema inesperado ao renderizar este fluxo. Copie as informações abaixo e envie para o suporte para correções imediatas:
                             </p>
 

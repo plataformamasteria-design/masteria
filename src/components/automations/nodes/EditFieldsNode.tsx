@@ -77,14 +77,14 @@ function EditFieldsNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border-2 border-teal-500/60 rounded-xl shadow-lg min-w-[260px] max-w-[380px] overflow-visible">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-teal-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-teal-50 dark:bg-teal-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
-        icon={<PenLine className="h-4 w-4 text-white" />}
+        icon={<PenLine className="h-4 w-4 text-zinc-900 dark:text-white" />}
         defaultLabel="Edit Fields"
         customLabel={customLabel}
         colorClass="bg-teal-600"
-        textColorClass="text-white"
+        textColorClass="text-zinc-900 dark:text-white"
         solidHeader
         showOnHover={false}
         onExecute={() => (data as any)?.onExecute?.(id)}
@@ -148,7 +148,7 @@ function EditFieldsNodeComponent({ id, data }: NodeProps) {
                   {/* Preview of source node */}
                   {field.sourceNodeLabel && (
                     <div className="flex items-center gap-1 px-1">
-                      <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600">
+                      <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
                         ← {field.sourceNodeLabel}
                       </span>
                       {field.sourceValue && (
@@ -179,9 +179,9 @@ function EditFieldsNodeComponent({ id, data }: NodeProps) {
             </div>
           )}
 
-          <div className="rounded-lg bg-teal-500/10 border border-teal-500/20 px-3 py-2">
+          <div className="rounded-lg bg-teal-50 dark:bg-teal-900/30 border border-teal-500/20 px-3 py-2">
             <p className="text-[10px] text-teal-600 dark:text-teal-400">
-              Arraste campos do output de outros nós ou use <code className="font-mono bg-teal-500/20 px-1 rounded">{"{{ NomeDoNó.$json.campo }}"}</code>
+              Arraste campos do output de outros nós ou use <code className="font-mono bg-teal-50 dark:bg-teal-900/300/20 px-1 rounded">{"{{ NomeDoNó.$json.campo }}"}</code>
             </p>
           </div>
         </div>
@@ -189,7 +189,7 @@ function EditFieldsNodeComponent({ id, data }: NodeProps) {
 
       <NodeStatsBar stats={(data as any)?.stats} />
       <NodeOutputPanel nodeId={id} nodeLabel={customLabel || "Edit Fields"} output={(data as any)?.nodeOutput} error={(data as any)?.nodeError} isPinned={(data as any)?.isPinned || false} isExecuting={(data as any)?.isExecuting || false} onExecute={() => (data as any)?.onExecute?.(id)} onPin={() => (data as any)?.onPinOutput?.(id)} onUnpin={() => (data as any)?.onUnpinOutput?.(id)} />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-teal-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-teal-50 dark:bg-teal-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

@@ -15,12 +15,12 @@ export const AssignConnectionNodeV4 = memo(({ data, selected }: NodePropsV4<{ co
             footer={<div className="relative flex justify-center py-3"><NodeHandle type="source" position={Position.Bottom} accentColor="indigo" /></div>}
         >
             <NodeHandle type="target" position={Position.Top} accentColor="indigo" />
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5 space-y-1">
-                <p className="text-[11px] text-zinc-600 font-medium">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5 space-y-1">
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">
                     {data.connection_id ? 'Conexão definida:' : 'Não configurado'}
                 </p>
                 {data.connection_id && (
-                    <p className="text-[10px] text-zinc-500 font-medium bg-zinc-200/50 px-2 py-0.5 rounded inline-block truncate max-w-full">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-200/50 dark:bg-zinc-800/50 px-2 py-0.5 rounded inline-block truncate max-w-full">
                         🌐 {data.connection_name || 'Conexão'}
                     </p>
                 )}

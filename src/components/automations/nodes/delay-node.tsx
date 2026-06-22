@@ -18,12 +18,12 @@ export const DelayNode = memo(({ data, selected }: any) => {
 
     return (
         <div
-            className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white border ${selected ? 'border-purple-500' : 'border-purple-500/20'} min-w-[260px] max-w-[300px]  animate-in zoom-in duration-200 group/node relative transition-all`}
+            className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white dark:bg-zinc-900 border ${selected ? 'border-purple-500' : 'border-purple-500/20'} min-w-[260px] max-w-[300px]  animate-in zoom-in duration-200 group/node relative transition-all`}
         >
             <Handle
                 type="target"
                 position={Position.Top}
-                className="!w-4 !h-4 !bg-purple-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-top-2 z-50 transition-transform hover:scale-125"
+                className="!w-4 !h-4 !bg-purple-50 dark:bg-purple-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-top-2 z-50 transition-transform hover:scale-125"
             />
 
             <NodeHeader
@@ -31,16 +31,16 @@ export const DelayNode = memo(({ data, selected }: any) => {
                 category="Lógica"
                 label={data.label || 'Aguardar'}
                 selected={selected}
-                color={{ bg: 'bg-purple-500/10', text: 'text-purple-500' }}
+                color={{ bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-500' }}
                 onDelete={data.onDelete}
                 onDuplicate={data.onDuplicate}
                 onLabelChange={data.onLabelChange}
             />
 
-            <div className="bg-gray-50/80 p-4 rounded-xl border border-gray-100">
+            <div className="bg-gray-50 dark:bg-zinc-900/80 p-4 rounded-xl border border-gray-100 dark:border-zinc-800/80">
                 <div className="flex items-center justify-center gap-3">
                     <div className="text-center">
-                        <span className="text-2xl font-black text-purple-600 tracking-tight">
+                        <span className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
                             {amount || '?'}
                         </span>
                         <span className="block text-[11px] text-purple-400 font-semibold mt-0.5">
@@ -53,7 +53,7 @@ export const DelayNode = memo(({ data, selected }: any) => {
             <Handle
                 type="source"
                 position={Position.Bottom}
-                className="!w-4 !h-4 !bg-purple-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-bottom-2 z-50 transition-transform hover:scale-125"
+                className="!w-4 !h-4 !bg-purple-50 dark:bg-purple-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-bottom-2 z-50 transition-transform hover:scale-125"
             />
         </div>
     );

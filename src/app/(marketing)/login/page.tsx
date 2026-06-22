@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
-  Bot,
+  BotMessageSquare,
   Sparkles,
   ArrowRight
 } from 'lucide-react';
@@ -122,8 +122,8 @@ function LoginPageContent() {
                 <div className="flex justify-center mb-8">
                   <div className="relative">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
-                    <div className="relative bg-zinc-950/80 border border-emerald-500/30 p-6 rounded-3xl shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                      <Bot className="h-16 w-16 text-emerald-400" />
+                    <div className="relative bg-white dark:bg-zinc-950/80 border border-emerald-500/30 p-6 rounded-3xl shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                      <BotMessageSquare className="h-16 w-16 text-emerald-500 dark:text-emerald-400" />
                     </div>
                   </div>
                 </div>
@@ -184,7 +184,7 @@ function LoginPageContent() {
               >
                 <div className="mb-8 text-center">
                   <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                    <Bot className="h-8 w-8 text-emerald-400" />
+                    <BotMessageSquare className="h-8 w-8 text-emerald-500 dark:text-emerald-400" />
                   </div>
                   <h2 className="text-2xl font-bold tracking-tight text-foreground dark:text-white">Bem-vindo de volta!</h2>
                   <p className="mt-2 text-sm text-zinc-400">

@@ -72,13 +72,13 @@ export const NodeInputPanel = memo(({
         return (
             <div className="h-full flex flex-col">
                 {/* Header */}
-                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Input</span>
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-zinc-800/80 bg-gray-50/50">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-400">Input</span>
                 </div>
                 <div className="flex-1 flex items-center justify-center p-6">
                     <div className="text-center">
                         <Database className="h-8 w-8 text-gray-200 mx-auto mb-3" />
-                        <p className="text-xs text-gray-400 font-medium">Nenhum dado de entrada</p>
+                        <p className="text-xs text-gray-400 dark:text-zinc-400 font-medium">Nenhum dado de entrada</p>
                         <p className="text-[10px] text-gray-300 mt-1">Execute os nodes anteriores para ver os dados aqui</p>
                     </div>
                 </div>
@@ -89,20 +89,20 @@ export const NodeInputPanel = memo(({
     return (
         <div className="h-full flex flex-col">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Input</span>
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-zinc-800/80 bg-gray-50/50 flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-400">Input</span>
                 <span className="text-[10px] text-gray-300">{previousOutputs.length} node{previousOutputs.length > 1 ? 's' : ''}</span>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-gray-100 bg-white">
+            <div className="flex border-b border-gray-100 dark:border-zinc-800/80 bg-white">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium transition-colors border-b-2 ${activeTab === tab.id
                             ? 'border-indigo-500 text-indigo-600'
-                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                            : 'border-transparent text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:text-zinc-300'
                             }`}
                     >
                         {tab.icon}
@@ -118,14 +118,14 @@ export const NodeInputPanel = memo(({
                         {/* Node header */}
                         <button
                             onClick={() => toggleNode(output.nodeId)}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-50/80 border-b border-gray-100 hover:bg-gray-100/50 transition-colors"
+                            className="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-50/80 border-b border-gray-100 dark:border-zinc-800/80 hover:bg-gray-100/50 transition-colors"
                         >
                             {expandedNodes.has(output.nodeId) || previousOutputs.length === 1 ? (
-                                <ChevronDown className="h-3 w-3 text-gray-400" />
+                                <ChevronDown className="h-3 w-3 text-gray-400 dark:text-zinc-400" />
                             ) : (
-                                <ChevronRight className="h-3 w-3 text-gray-400" />
+                                <ChevronRight className="h-3 w-3 text-gray-400 dark:text-zinc-400" />
                             )}
-                            <span className="text-[11px] font-semibold text-gray-600">{output.nodeLabel}</span>
+                            <span className="text-[11px] font-semibold text-gray-600 dark:text-zinc-300">{output.nodeLabel}</span>
                             {output.status === 'ok' && (
                                 <span className="text-[9px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded-full font-medium ml-auto">
                                     1 item
@@ -135,7 +135,7 @@ export const NodeInputPanel = memo(({
 
                         {/* Node data */}
                         {(expandedNodes.has(output.nodeId) || previousOutputs.length === 1) && output.output && (
-                            <div className="border-b border-gray-100">
+                            <div className="border-b border-gray-100 dark:border-zinc-800/80">
                                 {activeTab === 'schema' && (
                                     <DraggableSchemaFields
                                         data={output.output}
@@ -146,7 +146,7 @@ export const NodeInputPanel = memo(({
                                     <TableView data={output.output} />
                                 )}
                                 {activeTab === 'json' && (
-                                    <pre className="p-3 text-[11px] font-mono text-gray-600 whitespace-pre-wrap break-all bg-gray-50/30">
+                                    <pre className="p-3 text-[11px] font-mono text-gray-600 dark:text-zinc-300 whitespace-pre-wrap break-all bg-gray-50/30">
                                         {typeof output.output === 'string'
                                             ? output.output
                                             : JSON.stringify(output.output, null, 2)}
@@ -169,7 +169,7 @@ function DraggableSchemaFields({ data, nodeLabel }: { data: any; nodeLabel: stri
     const fields = useMemo(() => extractDraggableFields(data, nodeLabel), [data, nodeLabel]);
 
     if (fields.length === 0) {
-        return <div className="p-4 text-[11px] text-gray-400 italic">Nenhum campo encontrado</div>;
+        return <div className="p-4 text-[11px] text-gray-400 dark:text-zinc-400 italic">Nenhum campo encontrado</div>;
     }
 
     return (
@@ -225,7 +225,7 @@ function DraggableFieldRow({ field }: { field: DraggableFieldInfo }) {
         boolean: 'bg-amber-50 text-amber-600',
         object: 'bg-violet-50 text-violet-600',
         array: 'bg-pink-50 text-pink-600',
-        null: 'bg-gray-100 text-gray-400',
+        null: 'bg-gray-100 dark:bg-zinc-800/80 text-gray-400 dark:text-zinc-400',
     };
 
     const handleDragStart = (e: React.DragEvent) => {
@@ -252,7 +252,7 @@ function DraggableFieldRow({ field }: { field: DraggableFieldInfo }) {
             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${typeColors[field.type] || typeColors.null}`}>
                 {field.type}
             </span>
-            <span className="text-[11px] font-mono text-gray-700 truncate flex-1">
+            <span className="text-[11px] font-mono text-gray-700 dark:text-zinc-200 truncate flex-1">
                 {field.path}
             </span>
             <span className="text-[10px] text-gray-300 truncate max-w-[80px] hidden group-hover:block">
@@ -276,28 +276,28 @@ function DraggableFieldRow({ field }: { field: DraggableFieldInfo }) {
 
 function TableView({ data }: { data: any }) {
     if (!data || typeof data !== 'object') {
-        return <div className="p-4 text-[11px] text-gray-400 italic">Dados não tabulares</div>;
+        return <div className="p-4 text-[11px] text-gray-400 dark:text-zinc-400 italic">Dados não tabulares</div>;
     }
 
     const entries = Object.entries(data);
     if (entries.length === 0) {
-        return <div className="p-4 text-[11px] text-gray-400 italic">Vazio</div>;
+        return <div className="p-4 text-[11px] text-gray-400 dark:text-zinc-400 italic">Vazio</div>;
     }
 
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
                 <thead>
-                    <tr className="bg-gray-50/80">
-                        <th className="text-left px-3 py-2 text-gray-400 font-semibold border-b border-gray-100">Campo</th>
-                        <th className="text-left px-3 py-2 text-gray-400 font-semibold border-b border-gray-100">Valor</th>
+                    <tr className="bg-gray-50 dark:bg-zinc-900/80">
+                        <th className="text-left px-3 py-2 text-gray-400 dark:text-zinc-400 font-semibold border-b border-gray-100 dark:border-zinc-800/80">Campo</th>
+                        <th className="text-left px-3 py-2 text-gray-400 dark:text-zinc-400 font-semibold border-b border-gray-100 dark:border-zinc-800/80">Valor</th>
                     </tr>
                 </thead>
                 <tbody>
                     {entries.map(([key, value]) => (
                         <tr key={key} className="hover:bg-gray-50/50 border-b border-gray-50">
                             <td className="px-3 py-2 font-mono text-violet-600 font-medium">{key}</td>
-                            <td className="px-3 py-2 text-gray-600 truncate max-w-[150px]">
+                            <td className="px-3 py-2 text-gray-600 dark:text-zinc-300 truncate max-w-[150px]">
                                 {typeof value === 'object'
                                     ? JSON.stringify(value).slice(0, 80)
                                     : String(value).slice(0, 80)}

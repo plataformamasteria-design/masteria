@@ -107,8 +107,8 @@ export function MetaIntegrationPopup() {
 
                     <div className="space-y-6 py-2">
                         {/* Passo 1: Informações de Webhook para a Meta */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-4">
-                            <h3 className="text-sm font-semibold mb-3 text-slate-800">1. Configuração de Webhook (Painel da Meta)</h3>
+                        <div className="bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/80 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold mb-3 text-slate-800 dark:text-zinc-100">1. Configuração de Webhook (Painel da Meta)</h3>
                             <WebhookInfoCard />
                             <div className="mt-3 text-xs text-muted-foreground p-3 bg-blue-50 rounded-md border border-blue-100">
                                 <p><strong className="text-blue-900">Token de Verificação:</strong> <code className="bg-white px-2 py-0.5 rounded text-blue-700">masteria_secure_token_2025</code></p>
@@ -119,8 +119,8 @@ export function MetaIntegrationPopup() {
                         {/* Passo 2 Dinâmico: Escolhendo o Cadastro ou Exibindo Sucesso Parcial */}
                         {!pendingConn ? (
                             <div className="space-y-3 pb-2">
-                                <h3 className="text-sm font-semibold text-slate-800">2. Conectar Conta (MasterIA)</h3>
-                                <p className="text-sm text-slate-500 mb-2">Após copiar o Webhook para o painel de Desenvolvedor, conecte sua conta com 1 clique.</p>
+                                <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-100">2. Conectar Conta (MasterIA)</h3>
+                                <p className="text-sm text-slate-500 dark:text-zinc-400 mb-2">Após copiar o Webhook para o painel de Desenvolvedor, conecte sua conta com 1 clique.</p>
                                 <Button
                                     className="w-full shadow-sm bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
                                     onClick={handleLoginClick}
@@ -135,14 +135,14 @@ export function MetaIntegrationPopup() {
                                 <h3 className="text-sm font-semibold text-green-700 flex items-center gap-2">
                                     <CheckCircle2 className="h-4 w-4" /> Conta Conectada
                                 </h3>
-                                <p className="text-sm text-slate-500 mb-2">Suas permissões foram autorizadas. Selecione o Número do WhatsApp associado:</p>
+                                <p className="text-sm text-slate-500 dark:text-zinc-400 mb-2">Suas permissões foram autorizadas. Selecione o Número do WhatsApp associado:</p>
 
                                 {step2Loading ? (
                                     <div className="flex justify-center p-4"><Loader2 className="h-5 w-5 animate-spin text-blue-500" /></div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                                            <label className="text-xs font-semibold text-slate-700 mb-1 block">Número do WhatsApp (WABA)</label>
+                                        <div className="bg-slate-50 dark:bg-zinc-900/50 p-4 rounded-lg border border-slate-100 dark:border-zinc-800/80">
+                                            <label className="text-xs font-semibold text-slate-700 dark:text-zinc-200 mb-1 block">Número do WhatsApp (WABA)</label>
                                             <select
                                                 className="w-full border rounded-md p-2 text-sm bg-white"
                                                 value={`${selectedWabaId}:${selectedPhoneId}`}

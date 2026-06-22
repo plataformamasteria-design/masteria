@@ -60,8 +60,8 @@ export const NodeOutputPanel = memo(({
     return (
         <div className="h-full flex flex-col">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Output</span>
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-zinc-800/80 bg-gray-50/50 flex items-center justify-between shrink-0">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-zinc-400">Output</span>
                 <div className="flex items-center gap-1.5">
                     {/* Webhook listen button */}
                     {isWebhookTrigger && onListen && (
@@ -89,10 +89,10 @@ export const NodeOutputPanel = memo(({
                         onClick={onTest}
                         disabled={isLoading || !canTest}
                         className={`flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-md transition-all active:scale-95 ${isLoading
-                            ? 'bg-gray-100 text-gray-400 cursor-wait'
+                            ? 'bg-gray-100 dark:bg-zinc-800/80 text-gray-400 dark:text-zinc-400 cursor-wait'
                             : canTest
                                 ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm'
-                                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                : 'bg-gray-100 dark:bg-zinc-800/80 text-gray-300 cursor-not-allowed'
                             }`}
                     >
                         {isLoading ? (
@@ -107,14 +107,14 @@ export const NodeOutputPanel = memo(({
 
             {/* Tabs */}
             {output && (
-                <div className="flex border-b border-gray-100 bg-white px-2 shrink-0">
+                <div className="flex border-b border-gray-100 dark:border-zinc-800/80 bg-white px-2 shrink-0">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-1 px-3 py-2 text-[11px] font-medium transition-colors border-b-2 ${activeTab === tab.id
                                 ? 'border-indigo-500 text-indigo-600'
-                                : 'border-transparent text-gray-400 hover:text-gray-600'
+                                : 'border-transparent text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:text-zinc-300'
                                 }`}
                         >
                             {tab.icon}
@@ -124,7 +124,7 @@ export const NodeOutputPanel = memo(({
                     <div className="flex-1" />
                     <button
                         onClick={handleCopy}
-                        className="flex items-center gap-1 px-2 py-2 text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+                        className="flex items-center gap-1 px-2 py-2 text-[10px] text-gray-400 dark:text-zinc-400 hover:text-gray-600 dark:text-zinc-300 transition-colors"
                     >
                         {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
                         {copied ? 'Copiado!' : 'Copiar'}
@@ -146,8 +146,8 @@ export const NodeOutputPanel = memo(({
                                 {output.message || (output.status === 'ok' ? 'Sucesso' : 'Erro')}
                             </span>
                             <div className="flex-1" />
-                            <Clock className="h-3 w-3 text-gray-400" />
-                            <span className="text-gray-400">{output.executionTime}ms</span>
+                            <Clock className="h-3 w-3 text-gray-400 dark:text-zinc-400" />
+                            <span className="text-gray-400 dark:text-zinc-400">{output.executionTime}ms</span>
                         </div>
 
                         {activeTab === 'schema' && (
@@ -167,7 +167,7 @@ export const NodeOutputPanel = memo(({
                     <div className="flex-1 flex items-center justify-center p-8">
                         <div className="text-center">
                             <Loader2 className="h-7 w-7 text-indigo-400 animate-spin mx-auto mb-3" />
-                            <p className="text-xs text-gray-400">Executando...</p>
+                            <p className="text-xs text-gray-400 dark:text-zinc-400">Executando...</p>
                         </div>
                     </div>
                 )}
@@ -183,7 +183,7 @@ export const NodeOutputPanel = memo(({
                                 </span>
                             </div>
                             <p className="text-xs text-teal-600 font-medium">Aguardando webhook...</p>
-                            <p className="text-[10px] text-gray-400 mt-1">Envie dados para a URL do webhook</p>
+                            <p className="text-[10px] text-gray-400 dark:text-zinc-400 mt-1">Envie dados para a URL do webhook</p>
                         </div>
                     </div>
                 )}
@@ -193,8 +193,8 @@ export const NodeOutputPanel = memo(({
                     <div className="flex-1 flex items-center justify-center p-8">
                         <div className="text-center">
                             <div className="text-3xl mb-3">|→</div>
-                            <p className="text-xs font-medium text-gray-500">No output data</p>
-                            <p className="text-[10px] text-gray-400 mt-1.5">
+                            <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">No output data</p>
+                            <p className="text-[10px] text-gray-400 dark:text-zinc-400 mt-1.5">
                                 <button onClick={onTest} className="text-indigo-500 hover:text-indigo-600 font-medium">Execute step</button>
                                 {' '}or{' '}
                                 <button className="text-indigo-500 hover:text-indigo-600 font-medium">set mock data</button>
@@ -213,7 +213,7 @@ NodeOutputPanel.displayName = 'NodeOutputPanel';
 
 function JsonTreeView({ data }: { data: any }) {
     if (data === null || data === undefined) {
-        return <div className="p-4 text-[11px] text-gray-400 italic">null</div>;
+        return <div className="p-4 text-[11px] text-gray-400 dark:text-zinc-400 italic">null</div>;
     }
     return (
         <div className="p-3 text-[11px] font-mono">
@@ -225,8 +225,8 @@ function JsonTreeView({ data }: { data: any }) {
 function JsonNode({ value, path, depth }: { value: any; path: string; depth: number }) {
     const [expanded, setExpanded] = useState(depth < 2);
 
-    if (value === null) return <span className="text-gray-400">null</span>;
-    if (value === undefined) return <span className="text-gray-400">undefined</span>;
+    if (value === null) return <span className="text-gray-400 dark:text-zinc-400">null</span>;
+    if (value === undefined) return <span className="text-gray-400 dark:text-zinc-400">undefined</span>;
     if (typeof value === 'boolean') return <span className="text-amber-600">{value ? 'true' : 'false'}</span>;
     if (typeof value === 'number') return <span className="text-blue-600">{value}</span>;
     if (typeof value === 'string') {
@@ -237,15 +237,15 @@ function JsonNode({ value, path, depth }: { value: any; path: string; depth: num
     }
 
     if (Array.isArray(value)) {
-        if (value.length === 0) return <span className="text-gray-400">[]</span>;
+        if (value.length === 0) return <span className="text-gray-400 dark:text-zinc-400">[]</span>;
         return (
             <div>
-                <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:text-zinc-200 transition-colors">
                     {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    <span className="text-gray-400">Array ({value.length})</span>
+                    <span className="text-gray-400 dark:text-zinc-400">Array ({value.length})</span>
                 </button>
                 {expanded && (
-                    <div className="ml-4 border-l border-gray-100 pl-3 mt-1 space-y-0.5">
+                    <div className="ml-4 border-l border-gray-100 dark:border-zinc-800/80 pl-3 mt-1 space-y-0.5">
                         {value.map((item, i) => (
                             <div key={i} className="flex items-start gap-2">
                                 <span className="text-gray-300 select-none shrink-0">{i}:</span>
@@ -260,15 +260,15 @@ function JsonNode({ value, path, depth }: { value: any; path: string; depth: num
 
     if (typeof value === 'object') {
         const keys = Object.keys(value);
-        if (keys.length === 0) return <span className="text-gray-400">{'{}'}</span>;
+        if (keys.length === 0) return <span className="text-gray-400 dark:text-zinc-400">{'{}'}</span>;
         return (
             <div>
-                <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:text-zinc-200 transition-colors">
                     {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    <span className="text-gray-400">Object ({keys.length} keys)</span>
+                    <span className="text-gray-400 dark:text-zinc-400">Object ({keys.length} keys)</span>
                 </button>
                 {expanded && (
-                    <div className="ml-4 border-l border-gray-100 pl-3 mt-1 space-y-0.5">
+                    <div className="ml-4 border-l border-gray-100 dark:border-zinc-800/80 pl-3 mt-1 space-y-0.5">
                         {keys.map(key => (
                             <div key={key} className="flex items-start gap-2">
                                 <span className="text-violet-600 shrink-0">&quot;{key}&quot;:</span>
@@ -281,7 +281,7 @@ function JsonNode({ value, path, depth }: { value: any; path: string; depth: num
         );
     }
 
-    return <span className="text-gray-500">{String(value)}</span>;
+    return <span className="text-gray-500 dark:text-zinc-400">{String(value)}</span>;
 }
 
 // ---- Output Schema View (draggable fields) ----
@@ -290,7 +290,7 @@ function OutputSchemaView({ data, nodeLabel }: { data: any; nodeLabel: string })
     const fields = useMemo(() => extractFields(data, nodeLabel), [data, nodeLabel]);
 
     if (fields.length === 0) {
-        return <div className="p-4 text-[11px] text-gray-400 italic">Nenhum campo encontrado</div>;
+        return <div className="p-4 text-[11px] text-gray-400 dark:text-zinc-400 italic">Nenhum campo encontrado</div>;
     }
 
     return (
@@ -346,7 +346,7 @@ function DraggableOutputField({ field }: { field: FieldInfo }) {
         boolean: 'bg-amber-50 text-amber-600',
         object: 'bg-violet-50 text-violet-600',
         array: 'bg-pink-50 text-pink-600',
-        null: 'bg-gray-100 text-gray-400',
+        null: 'bg-gray-100 dark:bg-zinc-800/80 text-gray-400 dark:text-zinc-400',
     };
 
     const handleDragStart = (e: React.DragEvent) => {
@@ -372,7 +372,7 @@ function DraggableOutputField({ field }: { field: FieldInfo }) {
             <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${typeColors[field.type] || typeColors.null}`}>
                 {field.type}
             </span>
-            <span className="text-[11px] font-mono text-gray-700 truncate flex-1">{field.path}</span>
+            <span className="text-[11px] font-mono text-gray-700 dark:text-zinc-200 truncate flex-1">{field.path}</span>
             <button
                 onClick={handleCopy}
                 className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -391,28 +391,28 @@ function DraggableOutputField({ field }: { field: FieldInfo }) {
 
 function OutputTableView({ data }: { data: any }) {
     if (!data || typeof data !== 'object') {
-        return <div className="p-4 text-[11px] text-gray-400 italic">Dados não tabulares</div>;
+        return <div className="p-4 text-[11px] text-gray-400 dark:text-zinc-400 italic">Dados não tabulares</div>;
     }
 
     const entries = Object.entries(data);
     if (entries.length === 0) {
-        return <div className="p-4 text-[11px] text-gray-400 italic">Vazio</div>;
+        return <div className="p-4 text-[11px] text-gray-400 dark:text-zinc-400 italic">Vazio</div>;
     }
 
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
                 <thead>
-                    <tr className="bg-gray-50/80">
-                        <th className="text-left px-3 py-2 text-gray-400 font-semibold border-b border-gray-100">Campo</th>
-                        <th className="text-left px-3 py-2 text-gray-400 font-semibold border-b border-gray-100">Valor</th>
+                    <tr className="bg-gray-50 dark:bg-zinc-900/80">
+                        <th className="text-left px-3 py-2 text-gray-400 dark:text-zinc-400 font-semibold border-b border-gray-100 dark:border-zinc-800/80">Campo</th>
+                        <th className="text-left px-3 py-2 text-gray-400 dark:text-zinc-400 font-semibold border-b border-gray-100 dark:border-zinc-800/80">Valor</th>
                     </tr>
                 </thead>
                 <tbody>
                     {entries.map(([key, val]) => (
                         <tr key={key} className="hover:bg-gray-50/50 border-b border-gray-50">
                             <td className="px-3 py-2 font-mono text-violet-600 font-medium">{key}</td>
-                            <td className="px-3 py-2 text-gray-600 truncate max-w-[160px]">
+                            <td className="px-3 py-2 text-gray-600 dark:text-zinc-300 truncate max-w-[160px]">
                                 {typeof val === 'object'
                                     ? JSON.stringify(val).slice(0, 80)
                                     : String(val).slice(0, 80)}

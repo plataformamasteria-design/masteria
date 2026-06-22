@@ -25,14 +25,14 @@ export const SendTemplateNodeV4 = memo(({ data, selected }: NodePropsV4) => {
             }
         >
             <NodeHandle type="target" position={Position.Top} accentColor="green" />
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5 space-y-1">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5 space-y-1">
                 {data.template_name ? (
                     <>
-                        <p className="text-[12px] font-semibold text-zinc-800">{data.template_name}</p>
-                        <p className="text-[10px] text-zinc-400">{data.template_language || 'pt_BR'}</p>
+                        <p className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-100">{data.template_name}</p>
+                        <p className="text-[10px] text-zinc-400 dark:text-zinc-400">{data.template_language || 'pt_BR'}</p>
                     </>
                 ) : (
-                    <p className="text-[12px] text-zinc-400 italic">Selecionar template aprovado...</p>
+                    <p className="text-[12px] text-zinc-400 dark:text-zinc-400 italic">Selecionar template aprovado...</p>
                 )}
             </div>
         </BaseNode>

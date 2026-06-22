@@ -52,7 +52,7 @@ const SYSTEM_PROMPT = `Você é um especialista em criar workflows de automaçã
 
 ### Inteligência Artificial
 - **ai_agent**: Agente de IA que processa texto
-  - provider: "gemini", model: "gemini-2.0-flash", prompt: string (instrução do agente)
+  - provider: "gemini", model: "gemini-2.5-flash", prompt: string (instrução do agente)
 - **intent_router**: Classificador de intenção via IA
   - intents: Array<{label: string, description: string}> (ex: [{label: "vendas", description: "Cliente quer comprar"}])
 - **follow_up_ai**: Follow up inteligente com IA
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 8192,

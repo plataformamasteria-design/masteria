@@ -22,24 +22,8 @@ export async function resolveAIKeys(companyId?: string | null): Promise<Resolved
     };
 
     try {
-        // 1. Busca Chave Global do Sistema
-        const [globalSettings] = await db.select().from(systemSettings).where(eq(systemSettings.id, 'global'));
-        
-        if (globalSettings) {
-            if (globalSettings.openaiApiKey) keys.openaiApiKey = globalSettings.openaiApiKey;
-            if (globalSettings.geminiApiKey) keys.geminiApiKey = globalSettings.geminiApiKey;
-            if (globalSettings.elevenlabsApiKey) keys.elevenlabsApiKey = globalSettings.elevenlabsApiKey;
-        }
-
-        // 2. Busca Chave Local da Empresa (Sobrescreve a Global e a .env)
-        if (companyId) {
-            const [companyCreds] = await db.select().from(companyCredentials).where(eq(companyCredentials.companyId, companyId));
-            if (companyCreds) {
-                if (companyCreds.openaiApiKey) keys.openaiApiKey = companyCreds.openaiApiKey;
-                if (companyCreds.geminiApiKey) keys.geminiApiKey = companyCreds.geminiApiKey;
-                if (companyCreds.elevenlabsApiKey) keys.elevenlabsApiKey = companyCreds.elevenlabsApiKey;
-            }
-        }
+        // Ignorando as consultas ao banco de dados e forçando o uso exclusivo das variáveis do .env 
+        // conforme solicitado pelo usuário.
     } catch (error) {
         console.error('[resolveAIKeys] Erro ao buscar chaves no banco de dados:', error);
         // Em caso de erro no banco (por ex., tabela nao criada ainda), continua usando o fallback silenciosamente

@@ -58,7 +58,7 @@ export async function POST(
     console.log(`[IA Test] Using Google Gemini (Suffix: ...${geminiKey.slice(-4)})`);
 
     const geminiModels = [
-      'gemini-2.0-flash-exp',
+      'gemini-2.5-flash-exp',
       'gemini-1.5-flash',
       'gemini-1.5-flash-8b',
       'gemini-1.5-pro'

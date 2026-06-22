@@ -355,7 +355,14 @@ export function AgentMediaLibrary({ nodeId, ruleId, enabled, onToggle, onFilesCh
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-200 truncate">{file.file_name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-[12px] font-semibold text-zinc-800 dark:text-zinc-200 truncate">{file.file_name}</p>
+                                                {file.extractedText && (
+                                                    <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" title="Este documento será lido pela IA (Base de Conhecimento)">
+                                                        RAG ATIVO
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-[10px] text-zinc-400">{formatBytes(file.file_size)}</p>
                                             {editingDesc === file.id ? (
                                                 <div className="flex gap-1 mt-1.5">

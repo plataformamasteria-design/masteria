@@ -41,8 +41,8 @@ function ConditionNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[260px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-amber-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
-      <NodeHeader nodeId={id} icon={<GitBranch className="h-4 w-4 text-amber-500" />} defaultLabel="Condição" customLabel={customLabel} colorClass="bg-amber-500/10" textColorClass="text-amber-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-amber-50 dark:bg-amber-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <NodeHeader nodeId={id} icon={<GitBranch className="h-4 w-4 text-amber-500" />} defaultLabel="Condição" customLabel={customLabel} colorClass="bg-amber-50 dark:bg-amber-900/30" textColorClass="text-amber-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
       <div className="px-4 py-3 space-y-2">
         <div>
           <Label className="text-[10px] text-muted-foreground">Tipo de condição</Label>
@@ -82,8 +82,8 @@ function ConditionNodeComponent({ id, data }: NodeProps) {
           <span className="text-[9px] text-red-500 font-medium mb-1">Não</span>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} id="yes" className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '20%' }} />
-      <Handle type="source" position={Position.Bottom} id="no" className="!w-4 !h-4 !bg-red-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '80%' }} />
+      <Handle type="source" position={Position.Bottom} id="yes" className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '20%' }} />
+      <Handle type="source" position={Position.Bottom} id="no" className="!w-4 !h-4 !bg-red-50 dark:bg-red-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '80%' }} />
     </div>
   );
 }

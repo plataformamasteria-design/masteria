@@ -38,7 +38,7 @@ interface VoiceOption {
 }
 
 const modelOptions = [
-  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.0 Flash' },
 ];
 
 const defaultVoices: VoiceOption[] = [

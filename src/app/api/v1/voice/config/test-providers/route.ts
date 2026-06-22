@@ -86,7 +86,7 @@ async function testLLMProvider(): Promise<{ success: boolean; message: string; d
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-exp:generateContent?key=${geminiKey}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {

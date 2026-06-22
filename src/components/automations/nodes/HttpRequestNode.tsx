@@ -114,19 +114,19 @@ function HttpRequestNodeComponent({ id, data }: NodeProps) {
 
   const methodColor: Record<string, string> = {
     GET: "text-green-500", POST: "text-yellow-500", PUT: "text-blue-500",
-    PATCH: "text-orange-500", DELETE: "text-red-500", HEAD: "text-purple-500", OPTIONS: "text-gray-500",
+    PATCH: "text-orange-500", DELETE: "text-red-500", HEAD: "text-purple-500", OPTIONS: "text-gray-500 dark:text-zinc-400",
   };
 
   return (
     <div className="bg-white dark:bg-zinc-950 border-2 border-orange-500/60 rounded-xl shadow-lg min-w-[260px] max-w-[340px] overflow-visible">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-orange-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-orange-50 dark:bg-orange-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
-        icon={<Globe className="h-4 w-4 text-white" />}
+        icon={<Globe className="h-4 w-4 text-zinc-900 dark:text-white" />}
         defaultLabel="HTTP Request"
         customLabel={customLabel}
-        colorClass="bg-orange-500"
-        textColorClass="text-white"
+        colorClass="bg-orange-50 dark:bg-orange-900/300"
+        textColorClass="text-zinc-900 dark:text-white"
         solidHeader
         showOnHover={false}
         onExecute={() => (data as any)?.onExecute?.(id)}
@@ -195,7 +195,7 @@ function HttpRequestNodeComponent({ id, data }: NodeProps) {
 
       <NodeStatsBar stats={(data as any)?.stats} />
       <NodeOutputPanel nodeId={id} nodeLabel={customLabel || "HTTP Request"} output={(data as any)?.nodeOutput} error={(data as any)?.nodeError} isPinned={(data as any)?.isPinned || false} isExecuting={(data as any)?.isExecuting || false} onExecute={() => (data as any)?.onExecute?.(id)} onPin={() => (data as any)?.onPinOutput?.(id)} onUnpin={() => (data as any)?.onUnpinOutput?.(id)} />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-orange-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-orange-50 dark:bg-orange-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

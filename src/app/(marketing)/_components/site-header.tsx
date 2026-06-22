@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Bot } from "lucide-react";
+import { BotMessageSquare } from "lucide-react";
 
 export function SiteHeader() {
   return (
@@ -10,7 +10,7 @@ export function SiteHeader() {
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
         <Link href="/site" className="flex items-center space-x-3 group">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/30 transition-all duration-300 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/50 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-            <Bot className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <BotMessageSquare className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <span className="font-bold text-xl tracking-tight text-zinc-900 dark:text-white">Master<span className="text-emerald-600 dark:text-emerald-400">IA</span></span>
         </Link>

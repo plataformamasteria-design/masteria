@@ -72,6 +72,8 @@ export async function GET(_request: NextRequest) {
                 phone: connections.phone,
                 assignedPersonaId: connections.assignedPersonaId,
                 createdAt: connections.createdAt,
+                profileName: connections.profileName,
+                profilePicUrl: connections.profilePicUrl,
                 // Token Metadata
                 tokenType: connections.tokenType,
                 tokenExpiresAt: connections.tokenExpiresAt,
@@ -202,6 +204,27 @@ export async function POST(request: NextRequest) {
         const existingConnections = await db.select({ id: connections.id }).from(connections).where(eq(connections.companyId, companyId)).limit(1);
         const isFirstConnection = existingConnections.length === 0;
 
+        // --- FETCH PROFILE DATA PARA META API E INSTAGRAM ---
+        let picUrl: string | null = null;
+        let profileName: string | null = null;
+        try {
+            if (connectionType === 'meta_api') {
+                const profileUrl = `https://graph.facebook.com/${process.env.FACEBOOK_API_VERSION || 'v21.0'}/${phoneNumberId}/whatsapp_business_profile?fields=profile_picture_url`;
+                const profileRes = await fetch(profileUrl, { headers: { 'Authorization': `Bearer ${finalAccessToken}` } });
+                const profileData = await profileRes.json();
+                picUrl = profileData?.data?.[0]?.profile_picture_url || null;
+            } else if (connectionType === 'instagram' || connectionType === 'instagram_direct') {
+                const profileUrl = `https://graph.facebook.com/${process.env.FACEBOOK_API_VERSION || 'v21.0'}/${phoneNumberId}?fields=profile_picture_url,name,username`;
+                const profileRes = await fetch(profileUrl, { headers: { 'Authorization': `Bearer ${finalAccessToken}` } });
+                const profileData = await profileRes.json();
+                picUrl = profileData?.profile_picture_url || null;
+                profileName = profileData?.name || profileData?.username || null;
+            }
+        } catch (e) {
+            console.warn('[Connections API] Aviso: Não foi possível extrair dados do perfil durante a criação', e);
+        }
+        // ----------------------------------------------------
+
         const currentEnv = process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
         const [newConnection] = await db.insert(connections).values({
@@ -216,6 +239,8 @@ export async function POST(request: NextRequest) {
             appSecret: encryptedAppSecret,
             isActive: isFirstConnection,
             environment: currentEnv,
+            profilePicUrl: picUrl,
+            profileName: profileName,
             // Token management fields
             tokenType,
             tokenExpiresAt,

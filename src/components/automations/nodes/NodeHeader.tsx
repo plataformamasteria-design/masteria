@@ -79,10 +79,10 @@ export function NodeHeader({
     if (e.key === "Escape") setEditing(false);
   };
 
-  const finalBgClass = color?.bg || colorClass || "bg-slate-100";
-  const finalTxtClass = color?.text || textColorClass || "text-slate-900";
+  const finalBgClass = color?.bg || colorClass || "bg-slate-100 dark:bg-zinc-800/80";
+  const finalTxtClass = color?.text || textColorClass || "text-slate-900 dark:text-zinc-100";
   const btnClass = solidHeader || color?.bg
-    ? "text-white/80 hover:text-white hover:bg-white/20"
+    ? "text-white/80 hover:text-zinc-900 dark:text-white hover:bg-white/20"
     : "text-muted-foreground";
 
   const actionsVisibility = showOnHover
@@ -112,7 +112,7 @@ export function NodeHeader({
         {color && (
           <div className="flex flex-col ml-1">
             {category && <span className="text-[9px] font-black text-zinc-400/80 uppercase tracking-[0.2em]">{category}</span>}
-            <span className={`text-[13px] font-bold text-zinc-800 tracking-tight truncate leading-tight`} onDoubleClick={handleStartEdit} title="Duplo clique para renomear">
+            <span className={`text-[13px] font-bold text-zinc-800 dark:text-zinc-100 tracking-tight truncate leading-tight`} onDoubleClick={handleStartEdit} title="Duplo clique para renomear">
               {displayLabel}
             </span>
           </div>
@@ -146,7 +146,7 @@ export function NodeHeader({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-3 right-3 h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+          className="absolute top-3 right-3 h-6 w-6 text-gray-400 dark:text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:bg-red-900/30 transition-colors"
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -170,7 +170,7 @@ export function NodeHeader({
             </Button>
           )}
           {onDelete && (
-            <Button variant="ghost" size="icon" className={`h-5 w-5 ${solidHeader ? "text-white/80 hover:text-white hover:bg-white/20" : "text-destructive"}`} onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+            <Button variant="ghost" size="icon" className={`h-5 w-5 ${solidHeader ? "text-white/80 hover:text-zinc-900 dark:text-white hover:bg-white/20" : "text-destructive"}`} onClick={(e) => { e.stopPropagation(); onDelete(); }}>
               <Trash2 className="h-3 w-3" />
             </Button>
           )}

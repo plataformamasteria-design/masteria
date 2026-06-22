@@ -54,7 +54,7 @@ export function TestLeadSelector({ value, onChange }: TestLeadSelectorProps) {
 
   if (value) {
     return (
-      <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-1.5">
+      <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-500/20 px-2 py-1.5">
         <User className="h-3 w-3 text-emerald-500 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-medium truncate">{value.name}</p>

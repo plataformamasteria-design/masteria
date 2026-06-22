@@ -114,8 +114,9 @@ export class ExternalSourceService {
             console.log(`[processPDF] Starting extraction. Buffer size: ${buffer.length} bytes`);
 
             // Dynamic import to avoid loading in browser context
-            const pdfParse = await import('pdf-parse');
-            const data = await pdfParse.default(buffer);
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const pdfParse = require('pdf-parse');
+            const data = await pdfParse(buffer);
 
             // Clean up extracted text
             const cleanText = data.text

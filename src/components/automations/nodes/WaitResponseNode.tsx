@@ -24,14 +24,14 @@ function WaitResponseNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[260px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-cyan-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
-      <NodeHeader nodeId={id} icon={<MessageCircle className="h-4 w-4 text-cyan-500" />} defaultLabel="Aguardar Resposta" customLabel={customLabel} colorClass="bg-cyan-500/10" textColorClass="text-cyan-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-cyan-50 dark:bg-cyan-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <NodeHeader nodeId={id} icon={<MessageCircle className="h-4 w-4 text-cyan-500" />} defaultLabel="Aguardar Resposta" customLabel={customLabel} colorClass="bg-cyan-50 dark:bg-cyan-900/30" textColorClass="text-cyan-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
       <div className="px-4 py-3 space-y-2">
         <p className="text-[10px] text-muted-foreground">Pausa o fluxo até o contato enviar uma mensagem via WhatsApp.</p>
-        <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+        <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-500/20">
           <div className="flex items-center gap-1.5">
             <Zap className="h-3.5 w-3.5 text-cyan-500" />
-            <Label className="text-[10px] font-medium text-cyan-600 cursor-pointer">Resposta imediata</Label>
+            <Label className="text-[10px] font-medium text-cyan-600 dark:text-cyan-400 cursor-pointer">Resposta imediata</Label>
           </div>
           <Switch checked={immediateResponse} onCheckedChange={(v) => { setImmediateResponse(v); updateConfig({ immediate_response: v }); }} className="nodrag scale-75" />
         </div>
@@ -65,9 +65,9 @@ function WaitResponseNodeComponent({ id, data }: NodeProps) {
           <span className="text-[8px] text-red-500 font-medium mb-1">Fallback</span>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} id="responded" className="!w-4 !h-4 !bg-cyan-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '16%' }} />
-      <Handle type="source" position={Position.Bottom} id="timeout" className="!w-4 !h-4 !bg-orange-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '50%' }} />
-      <Handle type="source" position={Position.Bottom} id="fallback" className="!w-4 !h-4 !bg-red-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '84%' }} />
+      <Handle type="source" position={Position.Bottom} id="responded" className="!w-4 !h-4 !bg-cyan-50 dark:bg-cyan-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '16%' }} />
+      <Handle type="source" position={Position.Bottom} id="timeout" className="!w-4 !h-4 !bg-orange-50 dark:bg-orange-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '50%' }} />
+      <Handle type="source" position={Position.Bottom} id="fallback" className="!w-4 !h-4 !bg-red-50 dark:bg-red-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '84%' }} />
     </div>
   );
 }

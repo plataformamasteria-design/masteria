@@ -23,7 +23,7 @@ const OPENAI_MODELS = [
 const GEMINI_MODELS = [
   { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
   { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.0 Flash" },
 ];
 
 interface Credential {
@@ -79,15 +79,15 @@ function FollowUpAINodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] w-[340px] overflow-visible transition-all hover:shadow-xl group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-blue-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-blue-50 dark:bg-blue-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
 
       <NodeHeader
         nodeId={id}
-        icon={<MessageSquareHeart className="h-4 w-4 text-white" />}
+        icon={<MessageSquareHeart className="h-4 w-4 text-zinc-900 dark:text-white" />}
         defaultLabel="Follow Up I.A"
         customLabel={customLabel}
         colorClass="bg-blue-600"
-        textColorClass="text-white"
+        textColorClass="text-zinc-900 dark:text-white"
         solidHeader
         showOnHover={false}
         onExecute={() => (data as any)?.onExecute?.(id)}
@@ -171,13 +171,13 @@ function FollowUpAINodeComponent({ id, data }: NodeProps) {
           <Textarea
             value={followupPrompt}
             onChange={(e) => updateConfig({ followup_prompt: e.target.value })}
-            className="text-[11px] min-h-[80px] bg-zinc-950 text-zinc-100 border-zinc-700"
+            className="text-[11px] min-h-[80px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700"
             placeholder="Gere um follow-up curto, empático e objetivo para reengajar o lead com base no histórico abaixo."
           />
         </div>
 
         {/* History info */}
-        <div className="rounded-md bg-blue-500/10 border border-blue-500/20 px-2 py-1.5 flex items-start gap-1.5">
+        <div className="rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-500/20 px-2 py-1.5 flex items-start gap-1.5">
           <MessageCircle className="h-3.5 w-3.5 text-blue-500 mt-0.5 shrink-0" />
           <p className="text-[9px] text-blue-700 dark:text-blue-400 leading-relaxed">
             O histórico das últimas mensagens do chat do lead será usado automaticamente como contexto (user message) para a I.A gerar o follow-up personalizado. A resposta é gerada automaticamente ao chegar neste nó.
@@ -195,7 +195,7 @@ function FollowUpAINodeComponent({ id, data }: NodeProps) {
         </div>
 
         {/* Format for send */}
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-500/10 px-2 py-1.5 border border-emerald-500/20">
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1.5 border border-emerald-500/20">
           <div>
             <p className="text-[11px] font-medium">Formatar para envio</p>
             <p className="text-[9px] text-muted-foreground">Divide a resposta com delimitador ⌁⌁⌁</p>
@@ -204,7 +204,7 @@ function FollowUpAINodeComponent({ id, data }: NodeProps) {
         </div>
 
         {/* Humanize text */}
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 px-2 py-1.5 border border-amber-500/20">
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 px-2 py-1.5 border border-amber-500/20">
           <div>
             <p className="text-[11px] font-medium">Tratar texto</p>
             <p className="text-[9px] text-muted-foreground">Humaniza a resposta removendo tom robótico</p>
@@ -213,7 +213,7 @@ function FollowUpAINodeComponent({ id, data }: NodeProps) {
         </div>
 
         {/* Timer */}
-        <div className="space-y-1.5 rounded-lg border border-blue-500/20 bg-blue-500/5 p-2">
+        <div className="space-y-1.5 rounded-lg border border-blue-500/20 bg-blue-50 dark:bg-blue-900/20 p-2">
           <p className="text-[10px] font-semibold uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1">
             <Clock3 className="h-3.5 w-3.5" /> Temporizador de resposta
           </p>
@@ -236,7 +236,7 @@ function FollowUpAINodeComponent({ id, data }: NodeProps) {
         </div>
 
         {/* Bot checks */}
-        <div className="space-y-1.5 rounded-lg border border-orange-500/20 bg-orange-500/5 p-2">
+        <div className="space-y-1.5 rounded-lg border border-orange-500/20 bg-orange-50 dark:bg-orange-900/20 p-2">
           <p className="text-[10px] font-semibold uppercase text-orange-600 dark:text-orange-400">Verificação do robô</p>
           <div className="flex items-center justify-between gap-2">
             <div>
@@ -274,8 +274,8 @@ function FollowUpAINodeComponent({ id, data }: NodeProps) {
           <span className="text-[8px] font-bold text-orange-600 dark:text-orange-400 tracking-wider uppercase mb-1">Não respondeu</span>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} id="responded" className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '25%' }} />
-      <Handle type="source" position={Position.Bottom} id="not_responded" className="!w-4 !h-4 !bg-orange-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '75%' }} />
+      <Handle type="source" position={Position.Bottom} id="responded" className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '25%' }} />
+      <Handle type="source" position={Position.Bottom} id="not_responded" className="!w-4 !h-4 !bg-orange-50 dark:bg-orange-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '75%' }} />
     </div>
   );
 }

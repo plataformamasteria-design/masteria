@@ -141,7 +141,7 @@ Lembre-se:
 
   try {
     // Using Gemini 2.0 Flash Exp as preferred model
-    const modelName = 'gemini-2.0-flash-exp';
+    const modelName = 'gemini-2.5-flash-exp';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
 
     const response = await fetch(url, {

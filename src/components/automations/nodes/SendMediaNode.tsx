@@ -81,7 +81,7 @@ function SendMediaNodeComponent({ id, data, type }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[260px] max-w-[300px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className={`!w-4 !h-4 !bg-${mediaConfig.color}-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125`} />
+      <Handle type="target" position={Position.Top} className={`!w-4 !h-4 !bg-${mediaConfig.color}-500 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125`} />
       <NodeHeader nodeId={id} icon={<Icon className={`h-4 w-4 ${colorClass}`} />} defaultLabel={mediaConfig.label} customLabel={customLabel} colorClass={bgClass} textColorClass={colorClass} onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
       <div className="px-4 py-3 space-y-2">
         {/* Mode tabs */}
@@ -143,7 +143,7 @@ function SendMediaNodeComponent({ id, data, type }: NodeProps) {
             />
             {variableMatch && (
               <div className="flex items-center gap-1 px-1">
-                <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 truncate">
+                <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 truncate">
                   ← {variableMatch[1]}.{variableMatch[2]}
                 </span>
               </div>
@@ -153,7 +153,7 @@ function SendMediaNodeComponent({ id, data, type }: NodeProps) {
       </div>
       <NodeStatsBar stats={(data as any)?.stats} />
       <NodeOutputPanel nodeId={id} nodeLabel={customLabel || mediaConfig.label} nodeType={nodeType} output={(data as any)?.nodeOutput} error={(data as any)?.nodeError} isPinned={(data as any)?.isPinned || false} isExecuting={(data as any)?.isExecuting || false} onExecute={(testLead) => (data as any)?.onExecute?.(id, testLead)} onPin={() => (data as any)?.onPinOutput?.(id)} onUnpin={() => (data as any)?.onUnpinOutput?.(id)} />
-      <Handle type="source" position={Position.Bottom} className={`!w-4 !h-4 !bg-${mediaConfig.color}-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125`} />
+      <Handle type="source" position={Position.Bottom} className={`!w-4 !h-4 !bg-${mediaConfig.color}-500 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125`} />
     </div>
   );
 }

@@ -72,6 +72,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             try {
                 const { evolutionApiService } = require('@/services/evolution-api.service');
                 await evolutionApiService.setWebhook(connection.id, webhookUrl);
+
+                // Sincronizar nome e foto do perfil
+                try {
+                    const instancesData = await evolutionApiService.fetchAllInstances();
+                    const instance = instancesData.find((inst: any) => inst.name === connection.id || inst.instanceName === connection.id);
+                    if (instance && (instance.profileName || instance.profilePicUrl)) {
+                        await db.update(connections).set({
+                            profileName: instance.profileName,
+                            profilePicUrl: instance.profilePicUrl
+                        }).where(eq(connections.id, connection.id));
+                    }
+                } catch (syncErr) {
+                    console.log(`[Webhook Sync] Aviso: Não foi possível extrair dados do perfil para ${connection.id}:`, syncErr);
+                }
+
                 return NextResponse.json({ 
                     success: true, 
                     message: `Webhook (Evolution API) atualizado com sucesso! Domínio atual: ${webhookUrl}`,
@@ -171,6 +186,40 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         console.log(`[Webhook Sync] Sucesso (${targetObject}):`, createResponseData);
+
+        // --- FETCH PROFILE DATA PARA META API E INSTAGRAM ---
+        try {
+            if (connection.phoneNumberId && connection.accessToken) {
+                const userToken = decrypt(connection.accessToken);
+                let picUrl: string | undefined = undefined;
+                let profileName: string | undefined = undefined;
+
+                if (targetObject === 'whatsapp_business_account') {
+                    // WhatsApp Cloud API
+                    const profileUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${connection.phoneNumberId}/whatsapp_business_profile?fields=profile_picture_url`;
+                    const profileRes = await fetch(profileUrl, { headers: { 'Authorization': `Bearer ${userToken}` } });
+                    const profileData = await profileRes.json();
+                    picUrl = profileData?.data?.[0]?.profile_picture_url;
+                } else if (targetObject === 'instagram') {
+                    // Instagram Graph API
+                    const profileUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${connection.phoneNumberId}?fields=profile_picture_url,name,username`;
+                    const profileRes = await fetch(profileUrl, { headers: { 'Authorization': `Bearer ${userToken}` } });
+                    const profileData = await profileRes.json();
+                    picUrl = profileData?.profile_picture_url;
+                    profileName = profileData?.name || profileData?.username;
+                }
+
+                if (picUrl || profileName) {
+                    await db.update(connections).set({
+                        profilePicUrl: picUrl || null,
+                        profileName: profileName || null,
+                    }).where(eq(connections.id, connection.id));
+                }
+            }
+        } catch(e) {
+            console.warn("[Webhook Sync] Aviso: Não foi possível extrair dados do perfil Meta/IG para", connection.id, e);
+        }
+        // ----------------------------------------------------
 
         return NextResponse.json({ success: true, message: `Webhook (${targetObject}) configurado e sincronizado com a Meta com sucesso!` });
 

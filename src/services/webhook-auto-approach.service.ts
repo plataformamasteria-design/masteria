@@ -567,7 +567,7 @@ async function generateAIApproachMessage(
         const geminiKey = resolvedKeys.geminiApiKey;
         if (!geminiKey) throw new Error("Gemini API key not configured");
         const genAI = new GoogleGenerativeAI(geminiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const prompt = isAbordagemAgent
             ? `Você é "${persona.name}", um agente especializado em abordagem de leads que preencheram formulários/quiz.

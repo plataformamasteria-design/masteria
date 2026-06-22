@@ -31,6 +31,7 @@ interface FlowStep {
 /** Execution context passed between nodes */
 interface ExecutionContext {
     executionId: string;
+    flowId: string;
     companyId: string;
     contactId: string;
     contactPhone: string;
@@ -182,6 +183,49 @@ async function logNodeExecution(
         });
     } catch (e) {
         console.error('[FLOW-ENGINE] Log insert failed:', e);
+    }
+}
+
+// Analytics Helpers
+export async function incrementNodeReached(automationId: string, companyId: string, nodeId: string) {
+    try {
+        await db.execute(sql`
+            INSERT INTO automation_node_stats (id, node_id, automation_id, company_id, total_reached, updated_at)
+            VALUES (gen_random_uuid(), ${nodeId}, ${automationId}, ${companyId}, 1, now())
+            ON CONFLICT (node_id)
+            DO UPDATE SET total_reached = automation_node_stats.total_reached + 1, updated_at = now()
+        `);
+    } catch (e) {
+        console.error('[FLOW-ENGINE] incrementNodeReached failed:', e);
+    }
+}
+
+export async function incrementNodeResponded(automationId: string, companyId: string, nodeId: string, routeId?: string) {
+    try {
+        if (!routeId) {
+            await db.execute(sql`
+                INSERT INTO automation_node_stats (id, node_id, automation_id, company_id, total_responded, updated_at)
+                VALUES (gen_random_uuid(), ${nodeId}, ${automationId}, ${companyId}, 1, now())
+                ON CONFLICT (node_id)
+                DO UPDATE SET total_responded = automation_node_stats.total_responded + 1, updated_at = now()
+            `);
+        } else {
+            await db.execute(sql`
+                INSERT INTO automation_node_stats (id, node_id, automation_id, company_id, total_responded, responses, updated_at)
+                VALUES (gen_random_uuid(), ${nodeId}, ${automationId}, ${companyId}, 1, jsonb_build_object(${routeId}::text, 1::int), now())
+                ON CONFLICT (node_id)
+                DO UPDATE SET 
+                    total_responded = automation_node_stats.total_responded + 1,
+                    responses = jsonb_set(
+                        COALESCE(automation_node_stats.responses, '{}'::jsonb),
+                        string_to_array(${routeId}, ','),
+                        (COALESCE((automation_node_stats.responses->>${routeId})::int, 0) + 1)::text::jsonb
+                    ),
+                    updated_at = now()
+            `);
+        }
+    } catch (e) {
+        console.error('[FLOW-ENGINE] incrementNodeResponded failed:', e);
     }
 }
 
@@ -908,6 +952,7 @@ export async function processFlowExecution(executionId: string, logic: { steps: 
 
     const ctx: ExecutionContext = {
         executionId,
+        flowId: execution.flowId,
         companyId: execution.companyId,
         contactId: execution.contactId || '',
         contactPhone: contact?.phone || '',
@@ -1149,6 +1194,11 @@ interface NodeResult {
 }
 
 async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: FlowStep[]): Promise<NodeResult> {
+    logger.debug(`[FLOW-ENGINE] ⚙️ Executing node ${step.type} (${step.id})`);
+    
+    // 🔥 Gravar estatística de visualização (Reached)
+    await incrementNodeReached(ctx.flowId, ctx.companyId, step.id);
+    
     switch (step.type) {
         // ---- System ----
         // ---- System ----
@@ -1206,6 +1256,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         break;
                     }
                 }
+
+                await incrementNodeResponded(ctx.flowId, ctx.companyId, step.id, sourceHandle);
 
                 return {
                     action: 'continue',
@@ -1898,6 +1950,8 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                 ? results.every((r: boolean) => r)
                 : results.some((r: boolean) => r);
 
+            await incrementNodeResponded(ctx.flowId, ctx.companyId, step.id, passed ? 'pass' : 'block');
+
             return { sourceHandle: passed ? 'pass' : 'block', message: `Filter: ${passed ? 'PASS' : 'BLOCK'} ` };
         }
 
@@ -1925,9 +1979,11 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                     default: matches = false;
                 }
                 if (matches) {
+                    await incrementNodeResponded(ctx.flowId, ctx.companyId, step.id, `route-${i}`);
                     return { sourceHandle: `route-${i}`, message: `Router: matched route ${i}` };
                 }
             }
+            await incrementNodeResponded(ctx.flowId, ctx.companyId, step.id, 'fallback');
             return { sourceHandle: 'fallback', message: 'Router: fallback' };
         }
 
@@ -3024,24 +3080,40 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                         
                         if (isDialogueMode) {
                             const fileNames = libraryFiles.map((f: any) => f.fileName).filter(Boolean);
-                            mediaTools.push({
-                                type: 'function',
-                                function: {
-                                    name: 'send_media_file',
-                                    description: 'Envia um catálogo, imagem, áudio ou documento para o cliente imediatamente pelo WhatsApp.',
-                                    parameters: {
-                                        type: 'object',
-                                        properties: {
-                                            fileName: {
-                                                type: 'string',
-                                                description: 'O nome exato do arquivo a enviar.',
-                                                enum: fileNames
-                                            }
-                                        },
-                                        required: ['fileName']
+                            const uniqueFileNames = [...new Set(fileNames)];
+                            if (uniqueFileNames.length > 0) {
+                                mediaTools.push({
+                                    type: 'function',
+                                    function: {
+                                        name: 'send_media_file',
+                                        description: 'Envia um catálogo, imagem, áudio ou documento para o cliente imediatamente pelo WhatsApp.',
+                                        parameters: {
+                                            type: 'object',
+                                            properties: {
+                                                fileName: {
+                                                    type: 'string',
+                                                    description: 'O nome exato do arquivo a enviar.',
+                                                    enum: uniqueFileNames
+                                                }
+                                            },
+                                            required: ['fileName']
+                                        }
                                     }
-                                }
-                            });
+                                });
+                            }
+
+                            // INJETAR RAG: Adiciona o texto extraído dos documentos como Base de Conhecimento
+                            const ragDocs = libraryFiles.filter((f: any) => f.extractedText && f.extractedText.trim().length > 0);
+                            if (ragDocs.length > 0) {
+                                parts.push("\n\n📚 [BASE DE CONHECIMENTO / DOCUMENTOS ANEXADOS]");
+                                parts.push("Você tem acesso ao conteúdo dos seguintes documentos. USE ESTAS INFORMAÇÕES para responder às perguntas do usuário e guiar a conversa:");
+                                ragDocs.forEach((doc: any) => {
+                                    const safeText = doc.extractedText.length > 25000 ? doc.extractedText.substring(0, 25000) + '... [TRUNCADO]' : doc.extractedText;
+                                    parts.push(`\n--- INÍCIO DO DOCUMENTO: ${doc.fileName} ---`);
+                                    parts.push(safeText);
+                                    parts.push(`--- FIM DO DOCUMENTO: ${doc.fileName} ---`);
+                                });
+                            }
 
                             parts.push("\n\n📂 [BIBLIOTECA DE ARQUIVOS]");
                             parts.push("Você possui acesso a arquivos da empresa para enviar ao lead. NÃO DIGA que não consegue enviar arquivos ou que só pode enviar por e-mail. VOCÊ PODE ENVIAR ARQUIVOS DIRETAMENTE VIA WHATSAPP.");
@@ -3054,6 +3126,18 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
                             });
                         } else {
                             // Fallback for single-shot
+                            const ragDocs = libraryFiles.filter((f: any) => f.extractedText && f.extractedText.trim().length > 0);
+                            if (ragDocs.length > 0) {
+                                parts.push("\n\n📚 [BASE DE CONHECIMENTO]");
+                                parts.push("USE ESTAS INFORMAÇÕES DOS ARQUIVOS ANEXADOS para responder à pergunta:");
+                                ragDocs.forEach((doc: any) => {
+                                    const safeText = doc.extractedText.length > 25000 ? doc.extractedText.substring(0, 25000) + '... [TRUNCADO]' : doc.extractedText;
+                                    parts.push(`\n--- CONTEÚDO DE ${doc.fileName} ---`);
+                                    parts.push(safeText);
+                                    parts.push(`-----------------------`);
+                                });
+                            }
+
                             parts.push("\n\n📂 CAPACIDADE DE ENVIO DE ARQUIVOS — LEIA COM ATENÇÃO:");
                             parts.push("VOCÊ TEM TOTAL CAPACIDADE de enviar imagens e documentos para o cliente. NÃO diga que não pode enviar arquivos. Este sistema suporta envio de mídia.");
                             parts.push("COMO FUNCIONA: Quando quiser enviar um arquivo, adicione ao FINAL de sua mensagem exatamente esta tag: [ARQUIVO:nome-exato-do-arquivo.extensão]");

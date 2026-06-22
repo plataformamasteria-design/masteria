@@ -81,11 +81,11 @@ export function FileUploadField({ value, onChange, accept, mediaType, label }: F
     if (value) {
         return (
             <div className="space-y-2">
-                {label && <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>}
+                {label && <label className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">{label}</label>}
                 <div className={`relative rounded-xl border-2 border-${config.color}-200 bg-${config.color}-50/30 p-3 transition-all`}>
                     {/* Preview area */}
                     {mediaType === 'image' ? (
-                        <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-white">
+                        <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-800 bg-white">
                             <img
                                 src={value}
                                 alt="Preview"
@@ -101,7 +101,7 @@ export function FileUploadField({ value, onChange, accept, mediaType, label }: F
                                 <Icon className={`h-5 w-5 text-${config.color}-500`} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-gray-700 truncate">
+                                <p className="text-sm font-semibold text-gray-700 dark:text-zinc-200 truncate">
                                     {fileName || value.split('/').pop() || 'Arquivo carregado'}
                                 </p>
                                 <div className="flex items-center gap-1 mt-0.5">
@@ -116,14 +116,14 @@ export function FileUploadField({ value, onChange, accept, mediaType, label }: F
                     <button
                         type="button"
                         onClick={handleRemove}
-                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-all"
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white border border-gray-200 dark:border-zinc-800 shadow-sm flex items-center justify-center text-gray-400 dark:text-zinc-400 hover:text-red-500 hover:border-red-200 transition-all"
                     >
                         <X className="h-3.5 w-3.5" />
                     </button>
                 </div>
 
                 {/* URL display */}
-                <div className="text-[10px] text-gray-400 font-mono truncate px-1">{value}</div>
+                <div className="text-[10px] text-gray-400 dark:text-zinc-400 font-mono truncate px-1">{value}</div>
             </div>
         );
     }
@@ -131,7 +131,7 @@ export function FileUploadField({ value, onChange, accept, mediaType, label }: F
     // Upload area (no file yet)
     return (
         <div className="space-y-2">
-            {label && <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</label>}
+            {label && <label className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wide">{label}</label>}
 
             <div
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -142,7 +142,7 @@ export function FileUploadField({ value, onChange, accept, mediaType, label }: F
                     relative cursor-pointer rounded-xl border-2 border-dashed transition-all duration-200
                     ${dragOver
                         ? `border-${config.color}-400 bg-${config.color}-50/50 scale-[1.01]`
-                        : `border-gray-200 bg-gray-50/50 hover:border-${config.color}-300 hover:bg-${config.color}-50/20`
+                        : `border-gray-200 dark:border-zinc-800 bg-gray-50/50 hover:border-${config.color}-300 hover:bg-${config.color}-50/20`
                     }
                     ${uploading ? 'pointer-events-none opacity-70' : ''}
                 `}
@@ -151,17 +151,17 @@ export function FileUploadField({ value, onChange, accept, mediaType, label }: F
                     {uploading ? (
                         <>
                             <Loader2 className={`h-8 w-8 text-${config.color}-400 animate-spin mb-2`} />
-                            <span className="text-xs font-semibold text-gray-500">Enviando arquivo...</span>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-zinc-400">Enviando arquivo...</span>
                         </>
                     ) : (
                         <>
                             <div className={`w-12 h-12 rounded-xl bg-${config.color}-500/10 flex items-center justify-center mb-3`}>
                                 <Upload className={`h-5 w-5 text-${config.color}-500`} />
                             </div>
-                            <span className="text-sm font-semibold text-gray-600">
+                            <span className="text-sm font-semibold text-gray-600 dark:text-zinc-300">
                                 Arraste ou clique para enviar
                             </span>
-                            <span className="text-[11px] text-gray-400 mt-1">
+                            <span className="text-[11px] text-gray-400 dark:text-zinc-400 mt-1">
                                 Formatos: {config.extensions}
                             </span>
                         </>

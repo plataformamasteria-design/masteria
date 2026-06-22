@@ -382,7 +382,7 @@ export function NodeOutputPanel({ nodeId, nodeLabel, nodeType, output, isPinned,
               <TabsContent value="schema" className="mt-0 max-h-[280px] overflow-y-auto rounded-lg border border-slate-200 dark:border-zinc-800/40 bg-muted/30 p-1">
                 <SchemaView data={output} nodeLabel={nodeLabel} nodeId={nodeId} />
               </TabsContent>
-              <TabsContent value="json" className="mt-0 max-h-[200px] overflow-y-auto rounded-lg border border-slate-200 dark:border-zinc-800/40 bg-zinc-950 p-2">
+              <TabsContent value="json" className="mt-0 max-h-[200px] overflow-y-auto rounded-lg border border-slate-200 dark:border-zinc-800/40 bg-white dark:bg-zinc-950 p-2">
                 <pre className="text-[10px] font-mono text-zinc-300 whitespace-pre-wrap break-all">
                   {isMedia
                     ? JSON.stringify({ ...output, base64: `[${(output.base64 || "").length} chars]` }, null, 2)
@@ -469,7 +469,7 @@ export function DroppableInput({
       />
       {variableMatch && (
         <div className="flex items-center gap-1 px-1">
-          <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-violet-500/10 text-violet-600 truncate">
+          <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 truncate">
             ← {variableMatch[1]}
           </span>
           {droppedMeta?.value && (

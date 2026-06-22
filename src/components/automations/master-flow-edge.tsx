@@ -87,7 +87,7 @@ export default function MasterFlowEdge({
                 >
                     <button
                         onClick={onEdgeClick}
-                        className={`w-6 h-6 bg-white border border-gray-200 rounded-full shadow-md text-gray-400 hover:text-red-500 hover:border-red-200 flex items-center justify-center transition-all ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} active:scale-90`}
+                        className={`w-6 h-6 bg-white border border-gray-200 dark:border-zinc-800 rounded-full shadow-md text-gray-400 dark:text-zinc-400 hover:text-red-500 hover:border-red-200 flex items-center justify-center transition-all ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} active:scale-90`}
                     >
                         <X className="h-3 w-3" />
                     </button>

@@ -14,7 +14,7 @@ export const SendMessageNode = memo(({ data, selected }: any) => {
             <Handle
                 type="target"
                 position={Position.Top}
-                className="!w-4 !h-4 !bg-blue-500 !border-[3px] !border-zinc-100 shadow-sm z-50 transition-transform hover:scale-125 !-top-2"
+                className="!w-4 !h-4 !bg-blue-50 dark:bg-blue-900/300 !border-[3px] !border-zinc-100 dark:border-zinc-800/80 shadow-sm z-50 transition-transform hover:scale-125 !-top-2"
             />
 
             <NodeHeader
@@ -22,13 +22,13 @@ export const SendMessageNode = memo(({ data, selected }: any) => {
                 category="Mensagens"
                 label={data.label || 'Enviar Mensagem'}
                 selected={selected}
-                color={{ bg: 'bg-blue-500/10', text: 'text-blue-500' }}
+                color={{ bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-500' }}
                 onDelete={data.onDelete}
                 onDuplicate={data.onDuplicate}
                 onLabelChange={data.onLabelChange}
             />
 
-            <div className="text-sm leading-relaxed text-gray-700 bg-gray-50/80 p-3 rounded-xl border border-gray-100">
+            <div className="text-sm leading-relaxed text-gray-700 dark:text-zinc-200 bg-gray-50/80 p-3 rounded-xl border border-gray-100 dark:border-zinc-800/80">
                 <p className="line-clamp-3 group-hover/node:line-clamp-none transition-all whitespace-pre-wrap">
                     {data.message || data.content || 'Digite a mensagem...'}
                 </p>
@@ -44,7 +44,7 @@ export const SendMessageNode = memo(({ data, selected }: any) => {
             <Handle
                 type="source"
                 position={Position.Bottom}
-                className="!w-4 !h-4 !bg-blue-500 !border-[3px] !border-zinc-100 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-2"
+                className="!w-4 !h-4 !bg-blue-50 dark:bg-blue-900/300 !border-[3px] !border-zinc-100 dark:border-zinc-800/80 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-2"
             />
         </div>
     );

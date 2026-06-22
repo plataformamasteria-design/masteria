@@ -30,6 +30,8 @@ import { saveFlow, getFlow } from '@/lib/automations';
 import { getAutoLayoutNodes } from '@/lib/auto-layout';
 import { useNodeTestOutputs } from '@/hooks/useNodeTestOutputs';
 import { toast } from 'sonner';
+import { useFlowAnalytics } from '@/hooks/use-flow-analytics';
+import { FlowAnalyticsProvider } from './FlowAnalyticsContext';
 
 // ── Nodes V4 ─────────────────────────────────────────────────────────────────
 import { TriggerNodeV4 } from './nodes/TriggerNodeV4';
@@ -161,7 +163,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
     const [flowName, setFlowName] = useState('Nova Automação MasterFlow');
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingFlow, setIsLoadingFlow] = useState(flowId !== 'new');
-    const [editingNode, setEditingNode] = useState<Node | null>(null);
+    const [editingNodes, setEditingNodes] = useState<Node[]>([]);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [aiPromptOpen, setAiPromptOpen] = useState(false);
     const [webhookListenState, setWebhookListenState] = useState<'idle' | 'listening' | 'received'>('idle');
@@ -197,7 +199,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                 onDelete: () => {
                     setNodes(ns => ns.filter(n => n.id !== node.id));
                     setEdges(es => es.filter(e => e.source !== node.id && e.target !== node.id));
-                    setEditingNode(prev => prev?.id === node.id ? null : prev);
+                    setEditingNodes(prev => prev.filter(n => n.id !== node.id));
                 },
                 onDuplicate: () => {
                     const newNode: Node = {
@@ -212,7 +214,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                 },
                 onLabelChange: (label: string) => {
                     setNodes(ns => ns.map(n => n.id === node.id ? { ...n, data: { ...n.data, label } } : n));
-                    setEditingNode(prev => prev?.id === node.id ? { ...prev, data: { ...prev.data, label } } : prev);
+                    setEditingNodes(prev => prev.map(n => n.id === node.id ? { ...n, data: { ...n.data, label } } : n));
                 },
             },
         };
@@ -326,12 +328,14 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
     // ── Atualizar dados de um node ────────────────────────────────────────────
     const handleUpdateNodeData = useCallback((nodeId: string, data: Record<string, any>) => {
         setNodes(ns => ns.map(n => n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n));
-        setEditingNode(prev => prev?.id === nodeId ? { ...prev, data: { ...prev.data, ...data } } : prev);
+        setEditingNodes(prev => prev.map(n => n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n));
     }, [setNodes]);
 
-    // ── Clicar em node → abrir drawer ────────────────────────────────────────
     const onNodeClick = useCallback((_evt: React.MouseEvent, node: Node) => {
-        setEditingNode(node);
+        setEditingNodes(prev => {
+            const filtered = prev.filter(n => n.id !== node.id);
+            return [...filtered, node];
+        });
     }, []);
 
     // ── Salvar ────────────────────────────────────────────────────────────────
@@ -470,21 +474,19 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
     }, [enrichNodeWithCallbacks, setNodes, setEdges, reactFlowInstance, uiToast]);
 
     // ── Derivados ─────────────────────────────────────────────────────────────
-    const editingNodeTestOutput = editingNode ? getNodeOutput(editingNode.id) : undefined;
-
     if (isLoadingFlow) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-zinc-50">
+            <div className="flex-1 flex items-center justify-center bg-zinc-50 dark:bg-zinc-900/50">
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm text-zinc-500 font-medium">Carregando fluxo...</p>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">Carregando fluxo...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full w-full overflow-hidden bg-zinc-50">
+        <div className="flex flex-col h-full w-full overflow-hidden bg-zinc-50 dark:bg-zinc-900/50">
             {/* Toolbar */}
             <FlowToolbar
                 flowName={flowName}
@@ -510,7 +512,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                 <NodeLibraryPanel onAddNode={handleAddNode} />
 
                 {/* Canvas */}
-                <div className="flex-1 relative [&_.react-flow__controls-button]:!bg-white dark:[&_.react-flow__controls-button]:!bg-zinc-900 [&_.react-flow__controls-button]:!border-zinc-200 dark:[&_.react-flow__controls-button]:!border-zinc-800 [&_.react-flow__controls-button]:!text-zinc-600 dark:[&_.react-flow__controls-button]:!text-zinc-400 [&_.react-flow__controls-button:hover]:!bg-zinc-50 dark:[&_.react-flow__controls-button:hover]:!bg-zinc-800 dark:[--minimap-mask:rgba(9,9,11,0.7)] dark:[--minimap-node:#27272a] [--minimap-mask:rgba(244,244,245,0.7)] [--minimap-node:#e4e4e7] dark:[--bg-dots:#27272a] [--bg-dots:#d4d4d8]">
+                <div className="flex-1 relative [&_.react-flow__controls-button]:!bg-white dark:bg-zinc-900 dark:[&_.react-flow__controls-button]:!bg-white dark:bg-zinc-900 [&_.react-flow__controls-button]:!border-zinc-200 dark:border-zinc-800 dark:[&_.react-flow__controls-button]:!border-zinc-200 dark:border-zinc-800 [&_.react-flow__controls-button]:!text-zinc-600 dark:text-zinc-300 dark:[&_.react-flow__controls-button]:!text-zinc-400 [&_.react-flow__controls-button:hover]:!bg-zinc-50 dark:bg-zinc-900/50 dark:[&_.react-flow__controls-button:hover]:!bg-zinc-100 dark:bg-zinc-800 dark:[--minimap-mask:rgba(9,9,11,0.7)] dark:[--minimap-node:#27272a] [--minimap-mask:rgba(244,244,245,0.7)] [--minimap-node:#e4e4e7] dark:[--bg-dots:#27272a] [--bg-dots:#d4d4d8]">
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -543,33 +545,43 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                             nodeStrokeWidth={2}
                             nodeColor="var(--minimap-node)"
                             maskColor="var(--minimap-mask)"
-                            className="!border !border-zinc-200 dark:!border-zinc-800 !rounded-xl !shadow-sm !bg-white dark:!bg-zinc-950"
+                            className="!border !border-zinc-200 dark:border-zinc-800 !rounded-xl !shadow-sm !bg-white dark:!bg-zinc-950"
                         />
                         <Controls
                             showInteractive={false}
-                            className="!border !border-zinc-200 dark:!border-zinc-800 !rounded-xl !shadow-sm !bg-white dark:!bg-zinc-900 overflow-hidden"
+                            className="!border !border-zinc-200 dark:border-zinc-800 dark:!border-zinc-200 dark:border-zinc-800 !rounded-xl !shadow-sm !bg-white dark:bg-zinc-900 dark:!bg-white dark:bg-zinc-900 overflow-hidden"
                         />
                     </ReactFlow>
                 </div>
 
                 {/* Drawer de configuração (direita) */}
-                <NodeConfigDrawer
-                    node={editingNode}
-                    onClose={() => setEditingNode(null)}
-                    onUpdateData={handleUpdateNodeData}
-                    testOutput={editingNodeTestOutput}
-                    isTestingNode={!!isTestingNode}
-                    onTestNode={editingNode ? () => {
-                        if (session?.empresaId && editingNode) {
-                            testNode(editingNode.id, editingNode.type || '', editingNode.data as any, session.empresaId);
-                        }
-                    } : undefined}
-                    allTestOutputs={testOutputs}
-                    isListening={!!isListening}
-                    onListen={editingNode ? () => listenForWebhook(editingNode.id, flowId, editingNode.data as any) : undefined}
-                    onCancelListen={cancelListen}
-                    flowId={flowId !== 'new' ? flowId : undefined}
-                />
+                {editingNodes.map((editingNode, idx) => (
+                    <NodeConfigDrawer
+                        key={editingNode.id}
+                        node={editingNode}
+                        zIndex={50 + idx}
+                        onFocus={() => {
+                            setEditingNodes(prev => {
+                                const filtered = prev.filter(n => n.id !== editingNode.id);
+                                return [...filtered, editingNode];
+                            });
+                        }}
+                        onClose={() => setEditingNodes(prev => prev.filter(n => n.id !== editingNode.id))}
+                        onUpdateData={handleUpdateNodeData}
+                        testOutput={getNodeOutput(editingNode.id)}
+                        isTestingNode={!!isTestingNode}
+                        onTestNode={() => {
+                            if (session?.empresaId && editingNode) {
+                                testNode(editingNode.id, editingNode.type || '', editingNode.data as any, session.empresaId);
+                            }
+                        }}
+                        allTestOutputs={testOutputs}
+                        isListening={!!isListening}
+                        onListen={() => listenForWebhook(editingNode.id, flowId, editingNode.data as any)}
+                        onCancelListen={cancelListen}
+                        flowId={flowId !== 'new' ? flowId : undefined}
+                    />
+                ))}
             </div>
 
             {/* Simulador Virtual */}
@@ -603,23 +615,23 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                             }
                             return n;
                         }));
-                        // Update currently editing node if it's the one being modified
-                        setEditingNode(prev => {
-                            if (prev && prev.id === nodeId) {
+                        // Update currently editing nodes if it's the one being modified
+                        setEditingNodes(prev => prev.map(prevNode => {
+                            if (prevNode && prevNode.id === nodeId) {
                                 return {
-                                    ...prev,
+                                    ...prevNode,
                                     data: {
-                                        ...prev.data,
+                                        ...prevNode.data,
                                         learning_notes: notes,
                                         config: {
-                                            ...(prev.data.config as any),
+                                            ...(prevNode.data.config as any),
                                             learning_notes: notes
                                         }
                                     }
                                 };
                             }
-                            return prev;
-                        });
+                            return prevNode;
+                        }));
                     }}
                     onCorrectionsGenerated={(corrections) => {
                         setPendingCorrections(corrections);
@@ -655,7 +667,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                                 <p className="text-[10px] text-violet-600 dark:text-violet-400 font-medium">{pendingCorrections.length} itens encontrados</p>
                             </div>
                         </div>
-                        <button onClick={() => setPendingCorrections([])} className="text-violet-400 hover:text-violet-700 hover:bg-violet-100 p-1.5 rounded-lg transition-colors">
+                        <button onClick={() => setPendingCorrections([])} className="text-violet-400 hover:text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:bg-violet-900/40 p-1.5 rounded-lg transition-colors">
                             <X className="w-4 h-4" />
                         </button>
                     </div>
@@ -663,9 +675,9 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                         {pendingCorrections.map((corr, idx) => (
                             <div key={idx} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg flex gap-3">
                                 <div className="shrink-0 mt-0.5">
-                                    {corr.action === 'add_node' && <span className="text-green-500 font-bold text-xs bg-green-50 px-1.5 py-0.5 rounded border border-green-200">NOVO</span>}
-                                    {corr.action === 'update_node' && <span className="text-blue-500 font-bold text-xs bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">EDITAR</span>}
-                                    {corr.action === 'delete_node' && <span className="text-red-500 font-bold text-xs bg-red-50 px-1.5 py-0.5 rounded border border-red-200">REMOVER</span>}
+                                    {corr.action === 'add_node' && <span className="text-green-500 font-bold text-xs bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800">NOVO</span>}
+                                    {corr.action === 'update_node' && <span className="text-blue-500 font-bold text-xs bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">EDITAR</span>}
+                                    {corr.action === 'delete_node' && <span className="text-red-500 font-bold text-xs bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800">REMOVER</span>}
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-1">{corr.node_id ? `Nó: ${corr.node_id}` : 'Novo Nó'}</p>
@@ -675,7 +687,7 @@ function FlowEditorInner({ flowId, onSave: onSaveProp, onClose: onCloseProp }: {
                         ))}
                     </div>
                     <div className="p-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 rounded-b-xl shrink-0">
-                        <button onClick={() => setPendingCorrections([])} className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-violet-200">
+                        <button onClick={() => setPendingCorrections([])} className="w-full py-2 bg-violet-600 hover:bg-violet-700 text-zinc-900 dark:text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-violet-200">
                             Entendi, Fechar
                         </button>
                     </div>
@@ -705,9 +717,13 @@ interface FlowEditorV4Props {
 }
 
 export function FlowEditorV4({ flowId, onSave, onClose }: FlowEditorV4Props) {
+    const { stats } = useFlowAnalytics(flowId);
+
     return (
-        <ReactFlowProvider>
-            <FlowEditorInner flowId={flowId} onSave={onSave} onClose={onClose} />
-        </ReactFlowProvider>
+        <FlowAnalyticsProvider stats={stats}>
+            <ReactFlowProvider>
+                <FlowEditorInner flowId={flowId} onSave={onSave} onClose={onClose} />
+            </ReactFlowProvider>
+        </FlowAnalyticsProvider>
     );
 }

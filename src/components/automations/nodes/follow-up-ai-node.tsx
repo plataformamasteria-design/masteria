@@ -8,12 +8,12 @@ import { NodeHeader } from './NodeHeader';
 export const FollowUpAiNode = memo(({ data, selected }: any) => {
     return (
         <div
-            className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white border ${selected ? 'border-orange-500' : 'border-orange-500/30'} min-w-[280px] max-w-[320px] ring-1 ring-orange-500/10 animate-in zoom-in duration-200 group/node relative transition-all overflow-visible`}
+            className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white dark:bg-zinc-900 border ${selected ? 'border-orange-500' : 'border-orange-500/30'} min-w-[280px] max-w-[320px] ring-1 ring-orange-500/10 animate-in zoom-in duration-200 group/node relative transition-all overflow-visible`}
         >
             <Handle
                 type="target"
                 position={Position.Top}
-                className="!w-4 !h-4 !bg-orange-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-top-2 z-50 transition-transform hover:scale-125"
+                className="!w-4 !h-4 !bg-orange-50 dark:bg-orange-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-top-2 z-50 transition-transform hover:scale-125"
             />
 
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-t-2xl" />
@@ -23,15 +23,15 @@ export const FollowUpAiNode = memo(({ data, selected }: any) => {
                 category="Inteligência I.A"
                 label={data.label || 'Follow Up I.A'}
                 selected={selected}
-                color={{ bg: 'bg-orange-500', text: 'text-white' }}
+                color={{ bg: 'bg-orange-50 dark:bg-orange-900/300', text: 'text-zinc-900 dark:text-white' }}
                 onDelete={data.onDelete}
                 onDuplicate={data.onDuplicate}
                 onLabelChange={data.onLabelChange}
             />
 
-            <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 shadow-inner space-y-2">
+            <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 dark:border-orange-800/50 shadow-inner space-y-2">
                 {data.followup_prompt && (
-                    <p className="text-[11px] text-gray-500 line-clamp-2 italic">{data.followup_prompt}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-zinc-400 line-clamp-2 italic">{data.followup_prompt}</p>
                 )}
                 {data.response_timeout_minutes && (
                     <div className="text-[10px] text-orange-500 font-semibold">
@@ -44,14 +44,14 @@ export const FollowUpAiNode = memo(({ data, selected }: any) => {
             </div>
 
             {/* Responded / Not Responded handles */}
-            <div className="grid grid-cols-2 gap-4 mt-3 -mx-5 px-6 border-t border-orange-100 pt-3 bg-orange-50/30 rounded-b-2xl pb-3">
+            <div className="grid grid-cols-2 gap-4 mt-3 -mx-5 px-6 border-t border-orange-100 dark:border-orange-800/50 pt-3 bg-orange-50/30 rounded-b-2xl pb-3">
                 <div className="flex flex-col items-center gap-1 relative">
-                    <span className="text-[9px] text-emerald-600 font-black tracking-wider">RESPONDEU</span>
+                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black tracking-wider">RESPONDEU</span>
                     <Handle
                         type="source"
                         position={Position.Bottom}
                         id="responded"
-                        className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-bottom-2 z-50 transition-transform hover:scale-125"
+                        className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-bottom-2 z-50 transition-transform hover:scale-125"
                         
                     />
                 </div>
@@ -61,7 +61,7 @@ export const FollowUpAiNode = memo(({ data, selected }: any) => {
                         type="source"
                         position={Position.Bottom}
                         id="not_responded"
-                        className="!w-4 !h-4 !bg-red-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-bottom-2 z-50 transition-transform hover:scale-125"
+                        className="!w-4 !h-4 !bg-red-50 dark:bg-red-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 shadow-lg !-bottom-2 z-50 transition-transform hover:scale-125"
                         
                     />
                 </div>

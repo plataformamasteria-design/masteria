@@ -26,17 +26,17 @@ export default async function ManagementPage() {
 
       <Tabs defaultValue="team" className="w-full">
         <div className="overflow-x-auto -mx-2 px-2 pb-1 custom-scrollbar">
-          <TabsList className="inline-flex h-12 items-center justify-center rounded-xl bg-black/20 p-1 text-zinc-400 border border-white/5">
+          <TabsList className="inline-flex h-12 items-center justify-center rounded-xl bg-zinc-100 dark:bg-black/20 p-1 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-white/5">
             <TabsTrigger 
               value="team" 
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-6 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1)] gap-2"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-6 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-50 dark:data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1)] gap-2"
             >
               <Users className="h-4 w-4 shrink-0" />
               Equipe
             </TabsTrigger>
             <TabsTrigger 
               value="integrations" 
-              className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-6 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1)] gap-2"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-lg px-6 py-2 text-sm font-medium transition-all data-[state=active]:bg-emerald-50 dark:data-[state=active]:bg-emerald-500/10 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-[0_0_15px_rgba(16,185,129,0.1)] gap-2"
             >
               <Plug className="h-4 w-4 shrink-0" />
               Integrações

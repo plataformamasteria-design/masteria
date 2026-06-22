@@ -50,8 +50,8 @@ function isStandardVar(v: string) {
 }
 
 const ROUTE_COLORS = [
-  "bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500",
-  "bg-purple-500", "bg-red-500", "bg-teal-500", "bg-orange-500",
+  "bg-blue-50 dark:bg-blue-900/300", "bg-emerald-50 dark:bg-emerald-900/300", "bg-amber-50 dark:bg-amber-900/300", "bg-pink-50 dark:bg-pink-900/300",
+  "bg-purple-50 dark:bg-purple-900/300", "bg-red-50 dark:bg-red-900/300", "bg-teal-50 dark:bg-teal-900/300", "bg-orange-50 dark:bg-orange-900/300",
 ];
 
 function RouterNodeComponent({ id, data }: NodeProps) {
@@ -113,13 +113,13 @@ function RouterNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[340px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-indigo-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-indigo-50 dark:bg-indigo-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
         icon={<Signpost className="h-4 w-4 text-indigo-500" />}
         defaultLabel="Caminho"
         customLabel={customLabel}
-        colorClass="bg-indigo-500/10"
+        colorClass="bg-indigo-50 dark:bg-indigo-900/30"
         textColorClass="text-indigo-500"
         onExecute={() => (data as any)?.onExecute?.(id)}
         isExecuting={(data as any)?.isExecuting}
@@ -260,7 +260,7 @@ function RouterNodeComponent({ id, data }: NodeProps) {
                 {/* Variable preview */}
                 {rule.field.match(/\{\{.+\}\}/) && (
                   <div className="flex items-center gap-1 px-0.5">
-                    <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-violet-500/10 text-violet-600 truncate">
+                    <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 truncate">
                       {rule.field.replace(/\{\{\s*|\s*\}\}/g, "").split(".$json.")[0]}
                     </span>
                   </div>
@@ -311,7 +311,7 @@ function RouterNodeComponent({ id, data }: NodeProps) {
             type="source"
             position={Position.Bottom}
             id="fallback"
-            className="!w-4 !h-4 !bg-gray-400 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125"
+            className="!w-4 !h-4 !bg-gray-400 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125"
           />
         </div>
       </div>

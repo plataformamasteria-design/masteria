@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
 
         // 1. PDF - Parse natively to save tokens
         if (mimeType === "application/pdf") {
-            const pdfParse = (await import("pdf-parse")).default;
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const pdfParse = require("pdf-parse");
             const data = await pdfParse(buffer);
             transcription = data.text;
         } 

@@ -15,7 +15,7 @@ export const InternalMessageNodeV4 = memo(({ data, selected }: NodePropsV4) => {
             footer={<div className="relative flex justify-center py-3"><NodeHandle type="source" position={Position.Bottom} accentColor="amber" /></div>}
         >
             <NodeHandle type="target" position={Position.Top} accentColor="amber" />
-            <div className="bg-amber-50 rounded-xl border border-amber-200 px-3 py-2.5">
+            <div className="bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800 px-3 py-2.5">
                 {message ? (
                     <p className="text-[11px] text-amber-800 line-clamp-3 leading-relaxed font-medium">{message}</p>
                 ) : (

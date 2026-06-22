@@ -19,10 +19,10 @@ const colors = {
 };
 
 const bgColors = {
-    image: 'bg-emerald-500/10',
-    audio: 'bg-amber-500/10',
-    video: 'bg-rose-500/10',
-    document: 'bg-sky-500/10',
+    image: 'bg-emerald-50 dark:bg-emerald-900/30',
+    audio: 'bg-amber-50 dark:bg-amber-900/30',
+    video: 'bg-rose-50 dark:bg-rose-900/30',
+    document: 'bg-sky-50 dark:bg-sky-900/30',
 };
 
 const borderColors = {
@@ -44,14 +44,14 @@ export const MediaNode = memo(({ data, selected }: any) => {
     const Icon = icons[type];
 
     return (
-        <div className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white border ${selected ? 'border-primary' : borderColors[type]} min-w-[280px]  animate-in zoom-in duration-200 group/node relative transition-all`}>
+        <div className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white dark:bg-zinc-900 border ${selected ? 'border-primary' : borderColors[type]} min-w-[280px]  animate-in zoom-in duration-200 group/node relative transition-all`}>
             {/* Botão de Excluir */}
             <button
                 onClick={(e) => {
                     e.stopPropagation();
                     data.onDelete?.();
                 }}
-                className={`absolute -top-3 -right-3 w-8 h-8 bg-white border-2 border-slate-200 rounded-full shadow-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
+                className={`absolute -top-3 -right-3 w-8 h-8 bg-white dark:bg-zinc-900 border-2 border-slate-200 dark:border-zinc-800 rounded-full shadow-xl text-gray-400 dark:text-zinc-400 hover:text-rose-600 dark:text-rose-400 hover:border-rose-200 dark:border-rose-800 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
             >
                 <X className="h-4 w-4" />
             </button>
@@ -60,7 +60,7 @@ export const MediaNode = memo(({ data, selected }: any) => {
                 type="target"
                 position={Position.Top}
                 style={{ borderColor: type === 'image' ? '#10b981' : type === 'audio' ? '#f59e0b' : type === 'video' ? '#f43f5e' : '#0ea5e9' }}
-                className="!w-5 !h-5 !bg-white !border-[3px] shadow-md !-top-[10px] !left-1/2 !-translate-x-1/2 z-50 transition-transform hover:scale-125"
+                className="!w-5 !h-5 !bg-white dark:bg-zinc-900 !border-[3px] shadow-md !-top-[10px] !left-1/2 !-translate-x-1/2 z-50 transition-transform hover:scale-125"
             />
             <div className="flex items-center gap-3 mb-4">
                 <div className={`p-2 ${bgColors[type]} rounded-xl shadow-inner`}>
@@ -68,30 +68,30 @@ export const MediaNode = memo(({ data, selected }: any) => {
                 </div>
                 <div>
                     <span className={`block text-[10px] font-black ${colors[type]} opacity-70 uppercase tracking-[0.2em]`}>Arquivo Digital</span>
-                    <span className="text-sm font-bold text-slate-900 tracking-tight">{labels[type]}</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">{labels[type]}</span>
                 </div>
             </div>
 
             <div className="space-y-3">
-                <div className="text-[10px] text-gray-400 font-mono flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100 overflow-visible">
+                <div className="text-[10px] text-gray-400 dark:text-zinc-400 font-mono flex items-center gap-2 bg-slate-50 dark:bg-zinc-900/50 p-2 rounded-lg border border-slate-100 dark:border-zinc-800/80 overflow-visible">
                     <span className={`w-1.5 h-1.5 rounded-full ${colors[type].replace('text-', 'bg-')}`} />
                     <span className="truncate">{data.url ? data.url.split('/').pop() : 'Aguardando upload...'}</span>
                 </div>
 
                 {data.url ? (
-                    <div className="relative group/media overflow-visible rounded-xl border border-slate-200 aspect-video bg-slate-50">
+                    <div className="relative group/media overflow-visible rounded-xl border border-slate-200 dark:border-zinc-800 aspect-video bg-slate-50 dark:bg-zinc-900/50">
                         {type === 'image' ? (
                             <img src={data.url} alt="Preview" className="w-full h-full object-cover transition-transform group-hover/media:scale-110 duration-500" />
                         ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center gap-2">
                                 <Icon className={`h-8 w-8 ${colors[type]} opacity-20`} />
-                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Mídia Pronta</span>
+                                <span className="text-[10px] text-gray-400 dark:text-zinc-400 font-bold uppercase tracking-widest">Mídia Pronta</span>
                             </div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover/media:bg-black/5 transition-colors" />
                     </div>
                 ) : (
-                    <div className="w-full h-24 border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center bg-slate-50/50">
+                    <div className="w-full h-24 border-2 border-dashed border-slate-100 dark:border-zinc-800/80 rounded-xl flex items-center justify-center bg-slate-50/50">
                         <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sem Arquivo</span>
                     </div>
                 )}
@@ -101,7 +101,7 @@ export const MediaNode = memo(({ data, selected }: any) => {
                 type="source"
                 position={Position.Bottom}
                 style={{ borderColor: type === 'image' ? '#10b981' : type === 'audio' ? '#f59e0b' : type === 'video' ? '#f43f5e' : '#0ea5e9' }}
-                className="!w-5 !h-5 !bg-white !border-[3px] shadow-md !-bottom-[10px] !left-1/2 !-translate-x-1/2 z-50 transition-transform hover:scale-125"
+                className="!w-5 !h-5 !bg-white dark:bg-zinc-900 !border-[3px] shadow-md !-bottom-[10px] !left-1/2 !-translate-x-1/2 z-50 transition-transform hover:scale-125"
             />
         </div>
     );

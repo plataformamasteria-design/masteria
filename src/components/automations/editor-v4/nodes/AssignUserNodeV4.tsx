@@ -20,17 +20,17 @@ export const AssignUserNodeV4 = memo(({ data, selected }: NodePropsV4<{ assign_t
             footer={<div className="relative flex justify-center py-3"><NodeHandle type="source" position={Position.Bottom} accentColor="fuchsia" /></div>}
         >
             <NodeHandle type="target" position={Position.Top} accentColor="fuchsia" />
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5 space-y-1">
-                <p className="text-[11px] text-zinc-600 font-medium">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5 space-y-1">
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-300 font-medium">
                     {data.assign_type && labelMap[data.assign_type] ? labelMap[data.assign_type] : 'Não configurado'}
                 </p>
                 {data.assign_type === 'user' && data.user_name && (
-                    <p className="text-[10px] text-zinc-500 font-medium bg-zinc-200/50 px-2 py-0.5 rounded inline-block truncate max-w-full">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-200/50 dark:bg-zinc-800/50 px-2 py-0.5 rounded inline-block truncate max-w-full">
                         👤 {data.user_name}
                     </p>
                 )}
                 {(data.assign_type === 'team' || data.assign_type === 'random_in_team') && data.team_name && (
-                    <p className="text-[10px] text-zinc-500 font-medium bg-zinc-200/50 px-2 py-0.5 rounded inline-block truncate max-w-full">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium bg-zinc-200/50 dark:bg-zinc-800/50 px-2 py-0.5 rounded inline-block truncate max-w-full">
                         👥 {data.team_name}
                     </p>
                 )}

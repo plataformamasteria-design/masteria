@@ -24,7 +24,7 @@ export const AssignUserNode = memo(({ data, selected }: any) => {
                     e.stopPropagation();
                     data.onDelete?.();
                 }}
-                className={`absolute -top-3 -right-3 w-8 h-8 bg-white border-2 border-slate-200 rounded-full shadow-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
+                className={`absolute -top-3 -right-3 w-8 h-8 bg-white dark:bg-zinc-900 border-2 border-slate-200 dark:border-zinc-800 rounded-full shadow-xl text-gray-400 dark:text-zinc-400 hover:text-rose-600 dark:text-rose-400 hover:border-rose-200 dark:border-rose-800 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
             >
                 <X className="h-4 w-4" />
             </button>
@@ -32,16 +32,16 @@ export const AssignUserNode = memo(({ data, selected }: any) => {
             <Handle
                 type="target"
                 position={Position.Top}
-                className="!w-4 !h-4 !bg-fuchsia-500 !border-[3px] !border-zinc-100 shadow-sm z-50 transition-transform hover:scale-125 !-top-2 !left-1/2 !-translate-x-1/2"
+                className="!w-4 !h-4 !bg-fuchsia-50 dark:bg-fuchsia-900/300 !border-[3px] !border-zinc-100 dark:border-zinc-800/80 shadow-sm z-50 transition-transform hover:scale-125 !-top-2 !left-1/2 !-translate-x-1/2"
             />
 
             <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-fuchsia-500/10 rounded-xl shadow-inner">
-                    <UserPlus className="h-5 w-5 text-fuchsia-600" />
+                <div className="p-2 bg-fuchsia-50 dark:bg-fuchsia-900/30 rounded-xl shadow-inner">
+                    <UserPlus className="h-5 w-5 text-fuchsia-600 dark:text-fuchsia-400" />
                 </div>
                 <div>
-                    <span className="block text-[10px] font-black text-fuchsia-600 opacity-70 uppercase tracking-[0.2em]">AÇÃO</span>
-                    <span className="text-sm font-bold text-slate-900 tracking-tight">Atribuição</span>
+                    <span className="block text-[10px] font-black text-fuchsia-600 dark:text-fuchsia-400 opacity-70 uppercase tracking-[0.2em]">AÇÃO</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Atribuição</span>
                 </div>
             </div>
 
@@ -52,7 +52,7 @@ export const AssignUserNode = memo(({ data, selected }: any) => {
             <Handle
                 type="source"
                 position={Position.Bottom}
-                className="!w-4 !h-4 !bg-fuchsia-500 !border-[3px] !border-zinc-100 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-2 !left-1/2 !-translate-x-1/2"
+                className="!w-4 !h-4 !bg-fuchsia-50 dark:bg-fuchsia-900/300 !border-[3px] !border-zinc-100 dark:border-zinc-800/80 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-2 !left-1/2 !-translate-x-1/2"
             />
         </div>
     );

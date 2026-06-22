@@ -188,9 +188,9 @@ export async function POST(req: NextRequest) {
             case 'ai_agent': {
                 output = {
                     _test: true,
-                    response: `[Simulação] Resposta do ${nodeData.provider || 'gemini'} / ${nodeData.model || 'gemini-2.0-flash'}`,
+                    response: `[Simulação] Resposta do ${nodeData.provider || 'gemini'} / ${nodeData.model || 'gemini-2.5-flash'}`,
                     provider: nodeData.provider || 'gemini',
-                    model: nodeData.model || 'gemini-2.0-flash',
+                    model: nodeData.model || 'gemini-2.5-flash',
                     tokens_used: 0,
                     system_message_preview: (nodeData.system_message || '').slice(0, 100),
                 };

@@ -33,7 +33,7 @@ const OPENAI_MODELS = [
 const GEMINI_MODELS = [
   { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
   { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.0 Flash" },
   { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
   { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
 ];
@@ -64,7 +64,7 @@ function PromptSelector({ onSelect }: { onSelect: (content: string) => void }) {
   return (
     <Popover open={open} onOpenChange={(val) => { setOpen(val); if (val) loadPrompts(); }}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2 border border-violet-500/20 hover:bg-violet-500/10">
+        <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2 border border-violet-500/20 hover:bg-violet-50 dark:bg-violet-900/30">
           {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 text-violet-400" />}
           Selecionar Modelo
         </Button>
@@ -238,14 +238,14 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[320px] max-w-[420px] overflow-visible transition-all hover:shadow-xl group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-violet-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-violet-50 dark:bg-violet-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
-        icon={<Brain className="h-4 w-4 text-white" />}
+        icon={<Brain className="h-4 w-4 text-zinc-900 dark:text-white" />}
         defaultLabel="Agente I.A"
         customLabel={customLabel}
         colorClass="bg-violet-600"
-        textColorClass="text-white"
+        textColorClass="text-zinc-900 dark:text-white"
         solidHeader
         showOnHover={false}
         onExecute={() => (data as any)?.onExecute?.(id)}
@@ -294,7 +294,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
             </div>
 
             {/* Head Prompt Toggle */}
-            <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 px-2.5 py-2 border border-amber-500/20">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 px-2.5 py-2 border border-amber-500/20">
               <div className="flex items-center gap-2 min-w-0">
                 <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                 <div className="min-w-0">
@@ -311,7 +311,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
               />
             </div>
             {useHeadPrompt && headPromptName && (
-              <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-1.5">
+              <div className="rounded-md bg-amber-50 dark:bg-amber-900/30 border border-amber-500/20 px-2 py-1.5">
                 <p className="text-[9px] text-amber-700 dark:text-amber-400">
                   👑 O conteúdo do Head Prompt <strong>"{headPromptName}"</strong> será injetado antes da System Message deste agente.
                 </p>
@@ -332,7 +332,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                 onChange={(e) => updateConfig({ prompt: e.target.value })}
                 onDrop={handleDropOnPrompt}
                 onDragOver={(e) => e.preventDefault()}
-                className="text-[11px] min-h-[80px] bg-zinc-950 text-zinc-100 border-zinc-700 nodrag nowheel"
+                className="text-[11px] min-h-[80px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 nodrag nowheel"
                 placeholder="{{ NóAnterior.$json.mensagem }}"
               />
             </div>
@@ -343,7 +343,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                 onChange={(e) => updateConfig({ system_message: e.target.value })}
                 onDrop={handleDropOnSystemMessage}
                 onDragOver={(e) => e.preventDefault()}
-                className="text-[11px] min-h-[140px] bg-zinc-950 text-zinc-100 border-zinc-700 nodrag nowheel"
+                className="text-[11px] min-h-[140px] bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 nodrag nowheel"
                 placeholder="Você é um assistente inteligente..."
               />
             </div>
@@ -360,7 +360,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
             </div>
 
             {/* Format for Send */}
-            <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-2 border border-emerald-500/20">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-2 border border-emerald-500/20">
               <div>
                 <p className="text-[11px] font-medium">Formatar para envio</p>
                 <p className="text-[9px] text-muted-foreground">Adiciona instrução ao prompt para dividir a resposta com delimitador automático</p>
@@ -379,7 +379,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
             )}
 
             {/* Dialogue Mode */}
-            <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-500/10 px-2.5 py-2 border border-blue-500/20">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 px-2.5 py-2 border border-blue-500/20">
               <div>
                 <p className="text-[11px] font-medium">Modo Diálogo</p>
                 <p className="text-[9px] text-muted-foreground">O agente conversa em loop com o lead até concluir o objetivo definido</p>
@@ -417,7 +417,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                     onChange={(e) => updateConfig({ dialogue_delay_seconds: parseFloat(e.target.value) || 0 })}
                     className="h-7 text-[11px] nodrag" />
                 </div>
-                <div className="rounded-md bg-blue-500/10 border border-blue-500/20 px-2 py-2">
+                <div className="rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-500/20 px-2 py-2">
                   <p className="text-[9px] text-blue-700 dark:text-blue-400 leading-relaxed">
                     💬 Em modo diálogo, o agente envia mensagens ao lead, aguarda a resposta e avalia se o objetivo foi concluído. Quando detectar que o objetivo foi atingido, o fluxo segue pela saída "Concluído". {timeoutEnabled ? 'Se o tempo limite for atingido sem resposta, segue pela saída "Tempo esgotado".' : ''}
                   </p>
@@ -426,7 +426,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
             )}
 
             {/* Humanize text */}
-            <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 px-2.5 py-2 border border-amber-500/20">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 px-2.5 py-2 border border-amber-500/20">
               <div>
                 <p className="text-[11px] font-medium">Tratar texto</p>
                 <p className="text-[9px] text-muted-foreground">Envia o output para a I.A novamente (sem memória) para humanizar a resposta, removendo excessos de emoji e formatação robótica</p>
@@ -434,7 +434,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
               <Switch checked={humanizeText} onCheckedChange={(v) => updateConfig({ humanize_text: v })} />
             </div>
             {humanizeText && (
-              <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-2 py-1.5">
+              <div className="rounded-md bg-amber-50 dark:bg-amber-900/30 border border-amber-500/20 px-2 py-1.5">
                 <p className="text-[9px] text-amber-700 dark:text-amber-400">
                   ✍️ O output será reprocessado para parecer que um humano escreveu. Os tokens serão somados (ex: 7108 + 281 = 7389 tokens) e o total é debitado do saldo.
                 </p>
@@ -442,7 +442,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
             )}
 
             {/* Timeout - OUTSIDE dialogue mode */}
-            <div className="flex items-center justify-between gap-2 rounded-lg bg-red-500/10 px-2.5 py-2 border border-red-500/20">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-red-50 dark:bg-red-900/30 px-2.5 py-2 border border-red-500/20">
               <div>
                 <p className="text-[11px] font-medium">⏱️ Tempo limite de resposta</p>
                 <p className="text-[9px] text-muted-foreground">Se o lead não responder no tempo definido, o fluxo segue pela saída "Tempo esgotado"</p>
@@ -470,7 +470,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                     </Select>
                   </div>
                 </div>
-                <div className="rounded-md bg-red-500/10 border border-red-500/20 px-2 py-1.5">
+                <div className="rounded-md bg-red-50 dark:bg-red-900/30 border border-red-500/20 px-2 py-1.5">
                   <p className="text-[9px] text-red-700 dark:text-red-400">
                     ⏳ Após {timeoutAmount} {timeoutUnit === 'minutes' ? 'minutos' : timeoutUnit === 'hours' ? 'horas' : 'dias'}, se o lead não responder, o fluxo seguirá pela saída <strong>"Tempo esgotado"</strong>. Se responder, segue pela saída <strong>"Concluído"</strong>.
                   </p>
@@ -479,7 +479,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
             )}
 
             {/* Bot Status Checks */}
-            <div className="space-y-2 rounded-lg border border-orange-500/20 bg-orange-500/5 p-2.5">
+            <div className="space-y-2 rounded-lg border border-orange-500/20 bg-orange-50 dark:bg-orange-900/20 p-2.5">
               <p className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 uppercase">Verificação do Robô</p>
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -644,7 +644,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
 
           {/* MEMORY TAB */}
           <TabsContent value="memory" className="space-y-3 mt-0">
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 mb-2">
+            <div className="rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-500/20 px-3 py-2 mb-2">
               <p className="text-[10px] text-amber-600 dark:text-amber-400">
                 A memória armazena as interações por chave. Use uma chave única por conversa (ex: telefone do lead) para manter contexto entre execuções.
               </p>
@@ -685,7 +685,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
 
           {/* TOOLS TAB */}
           <TabsContent value="tools" className="space-y-3 mt-0">
-            <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 mb-2">
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-500/20 px-3 py-2 mb-2">
               <p className="text-[10px] text-blue-600 dark:text-blue-400">
                 Defina as ferramentas (tools) que o agente pode chamar. O agente decidirá quando usar cada tool com base na conversa.
               </p>
@@ -715,7 +715,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                   placeholder='{"type":"object","properties":{"query":{"type":"string"}}}'
                   value={tool.parameters}
                   onChange={(e) => updateTool(i, "parameters", e.target.value)}
-                  className="text-[11px] min-h-[60px] font-mono bg-zinc-950 text-zinc-100 border-zinc-700 nodrag nowheel"
+                  className="text-[11px] min-h-[60px] font-mono bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 nodrag nowheel"
                 />
               </div>
             ))}
@@ -727,7 +727,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
 
           {/* AGENDA TAB */}
           <TabsContent value="agenda" className="space-y-3 mt-0">
-            <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2">
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-500/20 px-3 py-2">
               <p className="text-[10px] text-blue-600 dark:text-blue-400">
                 Permita que o agente consulte, crie, edite e cancele eventos no Google Calendar de forma autônoma durante a conversa.
               </p>
@@ -739,7 +739,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                 <Loader2 className="h-3 w-3 animate-spin" /> Verificando conexão...
               </div>
             ) : googleCalendarStatus.connected ? (
-              <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-2 border border-emerald-500/20">
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-2 border border-emerald-500/20">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                 <div>
                   <p className="text-[11px] font-medium">Google Agenda conectada</p>
@@ -747,7 +747,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-2.5 py-2 border border-amber-500/20">
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 px-2.5 py-2 border border-amber-500/20">
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                 <div>
                   <p className="text-[11px] font-medium">Google Agenda não conectada</p>
@@ -757,7 +757,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
             )}
 
             {/* Main Toggle */}
-            <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-500/10 px-2.5 py-2 border border-blue-500/20">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 px-2.5 py-2 border border-blue-500/20">
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-3.5 w-3.5 text-blue-500 shrink-0" />
                 <div>
@@ -776,7 +776,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
               <div className="space-y-3 pl-2 border-l-2 border-blue-500/30 ml-1">
 
                 {/* Google Meet Toggle */}
-                <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-500/10 px-2.5 py-2 border border-emerald-500/20">
+                <div className="flex items-center justify-between gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-2 border border-emerald-500/20">
                   <div className="flex items-center gap-2">
                     <Video className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                     <div>
@@ -842,7 +842,7 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
                   <p className="text-[9px] text-muted-foreground">Adicionada após as instruções automáticas da agenda.</p>
                 </div>
 
-                <div className="rounded-md bg-blue-500/10 border border-blue-500/20 px-2 py-2">
+                <div className="rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-500/20 px-2 py-2">
                   <p className="text-[9px] text-blue-700 dark:text-blue-400 leading-relaxed">
                     📅 O agente verificará a disponibilidade antes de confirmar qualquer horário e criará o evento automaticamente quando o lead confirmar.
                     {googleMeetEnabled ? ' O link do Google Meet será enviado por mensagem após a criação.' : ''}
@@ -877,8 +877,8 @@ function AIAgentNodeComponent({ id, data }: NodeProps) {
           <span className="text-[8px] font-bold text-red-600 dark:text-red-400 tracking-wider uppercase mb-1">Tempo esgotado</span>
         </div>
       </div>
-      <Handle type="source" position={Position.Bottom} id="completed" className="!w-4 !h-4 !bg-emerald-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '25%' }} />
-      <Handle type="source" position={Position.Bottom} id="timeout" className="!w-4 !h-4 !bg-red-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '75%' }} />
+      <Handle type="source" position={Position.Bottom} id="completed" className="!w-4 !h-4 !bg-emerald-50 dark:bg-emerald-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '25%' }} />
+      <Handle type="source" position={Position.Bottom} id="timeout" className="!w-4 !h-4 !bg-red-50 dark:bg-red-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" style={{ left: '75%' }} />
     </div>
   );
 }

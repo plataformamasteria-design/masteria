@@ -39,7 +39,7 @@ export async function runSmokeTests(options: SmokeTestOptions = {}): Promise<{
       { name: 'GOOGLE_GEMINI_AGENTS2', key: geminiKey2 }
     ];
 
-    const models = ['gemini-2.0-flash', 'gemini-1.5-flash-latest'];
+    const models = ['gemini-2.5-flash', 'gemini-1.5-flash-latest'];
 
     for (const { name, key } of keys) {
       for (const modelName of models) {

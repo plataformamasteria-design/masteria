@@ -126,7 +126,7 @@ export function Api4ComIntegration() {
 
     if (loading) {
         return (
-            <Card className="bg-white/[0.02] border-white/5 backdrop-blur-xl shadow-2xl">
+            <Card className="bg-white dark:bg-white/[0.02] border-zinc-200 dark:border-white/5 backdrop-blur-xl shadow-sm dark:shadow-2xl">
                 <CardContent className="flex items-center justify-center py-10">
                     <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
                 </CardContent>
@@ -135,7 +135,7 @@ export function Api4ComIntegration() {
     }
 
     return (
-        <Card className="bg-white/[0.02] border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bg-white dark:bg-white/[0.02] border-zinc-200 dark:border-white/5 backdrop-blur-xl shadow-sm dark:shadow-2xl">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -143,8 +143,8 @@ export function Api4ComIntegration() {
                             <Phone className="h-6 w-6 text-emerald-400" />
                         </div>
                         <div>
-                            <CardTitle className="text-lg text-white">API4COM (Telefonia)</CardTitle>
-                            <CardDescription className="text-zinc-400 mt-1">
+                            <CardTitle className="text-lg text-zinc-900 dark:text-white">API4COM (Telefonia)</CardTitle>
+                            <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
                                 Conecte sua conta API4COM para habilitar o recurso de Click-to-Call direto pelo MasterIA.
                             </CardDescription>
                         </div>

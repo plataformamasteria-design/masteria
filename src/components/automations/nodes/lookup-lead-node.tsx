@@ -10,7 +10,7 @@ export const LookupLeadNode = memo(({ data, selected }: any) => {
             {/* Botão de Excluir */}
             <button
                 onClick={(e) => { e.stopPropagation(); data.onDelete?.(); }}
-                className={`absolute -top-3 -right-3 w-8 h-8 bg-white border-2 border-slate-200 rounded-full shadow-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
+                className={`absolute -top-3 -right-3 w-8 h-8 bg-white dark:bg-zinc-900 border-2 border-slate-200 dark:border-zinc-800 rounded-full shadow-xl text-gray-400 dark:text-zinc-400 hover:text-rose-600 dark:text-rose-400 hover:border-rose-200 dark:border-rose-800 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
             >
                 <X className="h-4 w-4" />
             </button>
@@ -18,40 +18,40 @@ export const LookupLeadNode = memo(({ data, selected }: any) => {
             <Handle
                 type="target"
                 position={Position.Top}
-                className="!w-4 !h-4 !bg-white !border-[3px] !border-zinc-200 shadow-sm z-50 transition-transform hover:scale-125 !-top-[10px] !left-1/2 !-translate-x-1/2"
+                className="!w-4 !h-4 !bg-white dark:bg-zinc-900 !border-[3px] !border-zinc-200 dark:border-zinc-800 shadow-sm z-50 transition-transform hover:scale-125 !-top-[10px] !left-1/2 !-translate-x-1/2"
             />
 
             <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-cyan-500/10 rounded-xl shadow-inner">
-                    <UserSearch className="h-5 w-5 text-cyan-600" />
+                <div className="p-2 bg-cyan-50 dark:bg-cyan-900/30 rounded-xl shadow-inner">
+                    <UserSearch className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                 </div>
                 <div>
-                    <span className="block text-[10px] font-black text-cyan-600 opacity-70 uppercase tracking-[0.2em]">CRM</span>
-                    <span className="text-sm font-bold text-slate-900 tracking-tight">Buscar Lead</span>
+                    <span className="block text-[10px] font-black text-cyan-600 dark:text-cyan-400 opacity-70 uppercase tracking-[0.2em]">CRM</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-zinc-100 tracking-tight">Buscar Lead</span>
                 </div>
             </div>
 
-            <div className="text-sm font-semibold text-gray-700 bg-gray-50/80 p-3 rounded-xl border border-gray-100">
+            <div className="text-sm font-semibold text-gray-700 dark:text-zinc-200 bg-gray-50/80 p-3 rounded-xl border border-gray-100 dark:border-zinc-800/80">
                 {data.phone_variable ? `📱 {{${data.phone_variable}}}` : 'Buscar por telefone...'}
             </div>
 
             {/* Saída: Lead Encontrado */}
             <div className="flex justify-between mt-3 text-[9px] font-bold tracking-wider px-1">
-                <span className="text-emerald-600">✓ ENCONTRADO</span>
-                <span className="text-amber-600">+ NOVO</span>
+                <span className="text-emerald-600 dark:text-emerald-400">✓ ENCONTRADO</span>
+                <span className="text-amber-600 dark:text-amber-400">+ NOVO</span>
             </div>
 
             <Handle
                 type="source"
                 position={Position.Bottom}
                 id="found"
-                className="!w-4 !h-4 !bg-white !border-[3px] !border-zinc-200 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-[10px] !left-[30%]"
+                className="!w-4 !h-4 !bg-white dark:bg-zinc-900 !border-[3px] !border-zinc-200 dark:border-zinc-800 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-[10px] !left-[30%]"
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
                 id="not_found"
-                className="!w-4 !h-4 !bg-white !border-[3px] !border-zinc-200 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-[10px] !left-[70%]"
+                className="!w-4 !h-4 !bg-white dark:bg-zinc-900 !border-[3px] !border-zinc-200 dark:border-zinc-800 shadow-sm z-50 transition-transform hover:scale-125 !-bottom-[10px] !left-[70%]"
             />
         </div>
     );

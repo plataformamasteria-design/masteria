@@ -108,13 +108,13 @@ export function AutomationExecutions() {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-32 text-center text-slate-500 italic">
+                                    <TableCell colSpan={5} className="h-32 text-center text-slate-500 dark:text-zinc-400 italic">
                                         Carregando histórico...
                                     </TableCell>
                                 </TableRow>
                             ) : executions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-32 text-center text-slate-500">
+                                    <TableCell colSpan={5} className="h-32 text-center text-slate-500 dark:text-zinc-400">
                                         Nenhuma execução encontrada.
                                     </TableCell>
                                 </TableRow>

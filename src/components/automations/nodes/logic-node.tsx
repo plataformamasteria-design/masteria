@@ -19,10 +19,10 @@ const colors = {
 };
 
 const bgColors = {
-    wait: 'bg-orange-500/10',
-    condition: 'bg-indigo-500/10',
-    filter: 'bg-pink-500/10',
-    branch: 'bg-cyan-500/10',
+    wait: 'bg-orange-50 dark:bg-orange-900/30',
+    condition: 'bg-indigo-50 dark:bg-indigo-900/30',
+    filter: 'bg-pink-50 dark:bg-pink-900/30',
+    branch: 'bg-cyan-50 dark:bg-cyan-900/30',
 };
 
 const borderColors = {
@@ -44,14 +44,14 @@ export const LogicNode = memo(({ data, selected }: any) => {
     const Icon = icons[type];
 
     return (
-        <div className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white border ${selected ? 'border-primary' : borderColors[type]} min-w-[240px]  animate-in zoom-in duration-200 group/node relative transition-all`}>
+        <div className={`px-5 py-4 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-2xl bg-white dark:bg-zinc-900 border ${selected ? 'border-primary' : borderColors[type]} min-w-[240px]  animate-in zoom-in duration-200 group/node relative transition-all`}>
             {/* Botão de Excluir */}
             <button
                 onClick={(e) => {
                     e.stopPropagation();
                     data.onDelete?.();
                 }}
-                className={`absolute -top-3 -right-3 w-8 h-8 bg-white border-2 border-slate-200 rounded-full shadow-xl text-gray-400 hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
+                className={`absolute -top-3 -right-3 w-8 h-8 bg-white dark:bg-zinc-900 border-2 border-slate-200 dark:border-zinc-800 rounded-full shadow-xl text-gray-400 dark:text-zinc-400 hover:text-rose-600 dark:text-rose-400 hover:border-rose-200 dark:border-rose-800 flex items-center justify-center transition-all z-[100] ${selected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'} group-hover/node:scale-100 group-hover/node:opacity-100 active:scale-90`}
             >
                 <X className="h-4 w-4" />
             </button>
@@ -68,17 +68,17 @@ export const LogicNode = memo(({ data, selected }: any) => {
                 </div>
                 <div>
                     <span className={`block text-[10px] font-black ${colors[type]} opacity-70 uppercase tracking-[0.2em]`}>Lógica Inteligente</span>
-                    <span className="text-sm font-bold text-slate-900">{labels[type]}</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-zinc-100">{labels[type]}</span>
                 </div>
             </div>
-            <div className="text-sm text-gray-500 font-semibold bg-gray-50/80 p-3 rounded-xl border border-gray-100">
+            <div className="text-sm text-gray-500 dark:text-zinc-400 font-semibold bg-gray-50/80 p-3 rounded-xl border border-gray-100 dark:border-zinc-800/80">
                 {data.description || 'Configurar regra...'}
             </div>
 
             {type === 'branch' ? (
-                <div className="grid grid-cols-2 gap-4 mt-6 -mx-5 px-6 relative border-t border-gray-100 pt-5 bg-gray-50/50 rounded-b-2xl">
-                    <div className="flex flex-col items-center gap-2 border-r border-slate-200">
-                        <span className="text-[9px] text-emerald-600 font-black tracking-[0.2em]">SUCESSO</span>
+                <div className="grid grid-cols-2 gap-4 mt-6 -mx-5 px-6 relative border-t border-gray-100 dark:border-zinc-800/80 pt-5 bg-gray-50/50 rounded-b-2xl">
+                    <div className="flex flex-col items-center gap-2 border-r border-slate-200 dark:border-zinc-800">
+                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-black tracking-[0.2em]">SUCESSO</span>
                         <Handle
                             type="source"
                             position={Position.Bottom}
@@ -88,7 +88,7 @@ export const LogicNode = memo(({ data, selected }: any) => {
                         />
                     </div>
                     <div className="flex flex-col items-center gap-2 relative">
-                        <span className="text-[9px] text-rose-600 font-black tracking-[0.2em]">FALHA</span>
+                        <span className="text-[9px] text-rose-600 dark:text-rose-400 font-black tracking-[0.2em]">FALHA</span>
                         <Handle
                             type="source"
                             position={Position.Bottom}

@@ -49,20 +49,20 @@ export const ConditionNodeV4 = memo(({ data, selected }: NodePropsV4) => {
             footer={footer}
         >
             <NodeHandle type="target" position={Position.Top} accentColor="amber" />
-            <div className="bg-zinc-50 rounded-xl border border-zinc-100 px-3 py-2.5">
+            <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800/80 px-3 py-2.5">
                 {hasConfig ? (
                     <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-amber-600 uppercase">
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">
                             {CONDITION_LABELS[data.condition_type] || data.condition_type}
                         </span>
                         {data.condition_value && (
-                            <p className="text-[11px] font-mono bg-amber-50 px-2 py-1 rounded border border-amber-100 truncate text-amber-800">
+                            <p className="text-[11px] font-mono bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded border border-amber-100 dark:border-amber-800/50 truncate text-amber-800">
                                 {data.condition_value}
                             </p>
                         )}
                     </div>
                 ) : (
-                    <p className="text-[12px] text-zinc-400 italic">Configurar condição...</p>
+                    <p className="text-[12px] text-zinc-400 dark:text-zinc-400 italic">Configurar condição...</p>
                 )}
             </div>
         </BaseNode>

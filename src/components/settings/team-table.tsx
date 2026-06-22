@@ -666,11 +666,11 @@ export function TeamTable({ initialUsers = [] }: { initialUsers?: User[] }): JSX
 
   return (
     <>
-      <Card className="bg-white/[0.02] border-white/5 backdrop-blur-xl shadow-2xl">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 border-b border-white/5 pb-6">
+      <Card className="bg-white dark:bg-white/[0.02] border-zinc-200 dark:border-white/5 backdrop-blur-xl shadow-sm dark:shadow-2xl">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 border-b border-zinc-200 dark:border-white/5 pb-6">
           <div>
-            <CardTitle className="text-xl font-bold text-white">Gerenciamento de Equipe</CardTitle>
-            <CardDescription className="text-zinc-400 mt-1">
+            <CardTitle className="text-xl font-bold text-zinc-900 dark:text-white">Gerenciamento de Equipe</CardTitle>
+            <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
               Convide e gerencie os usuários da sua equipe.
             </CardDescription>
           </div>
@@ -742,39 +742,39 @@ export function TeamTable({ initialUsers = [] }: { initialUsers?: User[] }): JSX
           ) : isMobile ? (
             <TeamListMobile users={users} onEdit={openEditModal} onDeactivate={openDeactivateAlert} onRemove={openRemoveAlert} onResendInvite={handleResendInvite} onResetPassword={openResetPasswordDialog} isResending={isResending} onMarkAsVerified={handleMarkAsVerified} onEditPermissions={openPermissionsDialog} />
           ) : (
-            <div className="w-full border border-white/5 rounded-xl relative overflow-hidden bg-black/20">
+            <div className="w-full border border-zinc-200 dark:border-white/5 rounded-xl relative overflow-hidden bg-zinc-50 dark:bg-black/20">
               <div className="w-full overflow-auto">
                 <Table>
-                  <TableHeader className="bg-white/[0.02]">
-                    <TableRow className="border-white/5 hover:bg-transparent">
-                      <TableHead className="text-zinc-400 font-medium">Nome</TableHead>
-                      <TableHead className="text-zinc-400 font-medium">Email</TableHead>
-                      <TableHead className="text-zinc-400 font-medium">Cargo</TableHead>
-                      <TableHead className="text-zinc-400 font-medium">Status</TableHead>
-                      <TableHead className="text-right text-zinc-400 font-medium">Ações</TableHead>
+                  <TableHeader className="bg-zinc-100/50 dark:bg-white/[0.02]">
+                    <TableRow className="border-zinc-200 dark:border-white/5 hover:bg-transparent">
+                      <TableHead className="text-zinc-600 dark:text-zinc-400 font-medium">Nome</TableHead>
+                      <TableHead className="text-zinc-600 dark:text-zinc-400 font-medium">Email</TableHead>
+                      <TableHead className="text-zinc-600 dark:text-zinc-400 font-medium">Cargo</TableHead>
+                      <TableHead className="text-zinc-600 dark:text-zinc-400 font-medium">Status</TableHead>
+                      <TableHead className="text-right text-zinc-600 dark:text-zinc-400 font-medium">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.length === 0 ? (
-                      <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableRow className="border-zinc-200 dark:border-white/5 hover:bg-transparent">
                         <TableCell colSpan={5} className="h-24 text-center text-zinc-500">Nenhum usuário na equipe.</TableCell>
                       </TableRow>
                     ) : users.map((user) => (
-                      <TableRow key={user.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
-                        <TableCell className="font-medium text-white">
+                      <TableRow key={user.id} className="border-zinc-200 dark:border-white/5 hover:bg-zinc-100 dark:hover:bg-white/[0.02] transition-colors">
+                        <TableCell className="font-medium text-zinc-900 dark:text-white">
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 border border-white/10">
+                            <Avatar className="h-9 w-9 border border-zinc-200 dark:border-white/10">
                               <AvatarImage
                                 src={user.avatarUrl || ''}
                                 alt={user.name}
                                 data-ai-hint="avatar user"
                               />
-                              <AvatarFallback className="bg-zinc-800 text-zinc-300">{user.name?.substring(0, 2) || 'U'}</AvatarFallback>
+                              <AvatarFallback className="bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">{user.name?.substring(0, 2) || 'U'}</AvatarFallback>
                             </Avatar>
                             <span className="font-medium whitespace-nowrap">{user.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-zinc-300">
+                        <TableCell className="whitespace-nowrap text-zinc-600 dark:text-zinc-300">
                           {user.email}
                         </TableCell>
                         <TableCell>
@@ -793,7 +793,7 @@ export function TeamTable({ initialUsers = [] }: { initialUsers?: User[] }): JSX
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-white/10">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-white/10">
                                 <span className="sr-only">Abrir menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>

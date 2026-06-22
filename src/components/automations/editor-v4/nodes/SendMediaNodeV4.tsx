@@ -19,12 +19,12 @@ const MEDIA_CONFIG: Record<MediaType, { icon: LucideIcon; label: string; color: 
 function ImagePreview({ url }: { url: string }) {
     const [error, setError] = useState(false);
     if (error) return (
-        <div className="flex items-center justify-center h-28 bg-zinc-100 rounded-lg border border-zinc-200">
+        <div className="flex items-center justify-center h-28 bg-zinc-100 dark:bg-zinc-800/80 rounded-lg border border-zinc-200 dark:border-zinc-800">
             <ImageIcon className="w-8 h-8 text-zinc-300" />
         </div>
     );
     return (
-        <div className="rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100 h-28">
+        <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-800/80 h-28">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
                 src={url}
@@ -39,7 +39,7 @@ function ImagePreview({ url }: { url: string }) {
 // ─── Preview de Vídeo ─────────────────────────────────────────────────────────
 function VideoPreview({ url }: { url: string }) {
     return (
-        <div className="rounded-lg overflow-hidden border border-zinc-200 bg-zinc-900 h-28 relative">
+        <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 h-28 relative">
             <video
                 src={url}
                 className="w-full h-full object-cover opacity-80"
@@ -48,7 +48,7 @@ function VideoPreview({ url }: { url: string }) {
             />
             <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center shadow">
-                    <Play className="w-4 h-4 text-zinc-700 ml-0.5" />
+                    <Play className="w-4 h-4 text-zinc-700 dark:text-zinc-200 ml-0.5" />
                 </div>
             </div>
         </div>
@@ -61,23 +61,23 @@ function DocumentPreview({ url, caption }: { url: string; caption?: string }) {
     const ext = filename.split('.').pop()?.toUpperCase() || 'DOC';
 
     const EXT_COLOR: Record<string, string> = {
-        PDF: 'bg-red-100 text-red-600 border-red-200',
-        DOCX: 'bg-blue-100 text-blue-600 border-blue-200',
-        DOC: 'bg-blue-100 text-blue-600 border-blue-200',
-        XLSX: 'bg-green-100 text-green-600 border-green-200',
-        XLS: 'bg-green-100 text-green-600 border-green-200',
-        PPTX: 'bg-orange-100 text-orange-600 border-orange-200',
+        PDF: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800',
+        DOCX: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        DOC: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        XLSX: 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
+        XLS: 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
+        PPTX: 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800',
     };
-    const extClass = EXT_COLOR[ext] || 'bg-zinc-100 text-zinc-600 border-zinc-200';
+    const extClass = EXT_COLOR[ext] || 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800';
 
     return (
-        <div className="flex items-center gap-3 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2.5">
+        <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2.5">
             <div className={`flex items-center justify-center w-9 h-9 rounded-lg border text-[10px] font-black shrink-0 ${extClass}`}>
                 {ext}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-zinc-700 truncate">{filename}</p>
-                {caption && <p className="text-[10px] text-zinc-400 truncate">{caption}</p>}
+                <p className="text-[11px] font-medium text-zinc-700 dark:text-zinc-200 truncate">{filename}</p>
+                {caption && <p className="text-[10px] text-zinc-400 dark:text-zinc-400 truncate">{caption}</p>}
             </div>
         </div>
     );
@@ -105,7 +105,7 @@ function AudioPlayer({ url }: { url: string }) {
     };
 
     return (
-        <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2.5 nodrag nowheel">
+        <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-800/50 rounded-xl px-3 py-2.5 nodrag nowheel">
             <audio
                 ref={audioRef}
                 src={url}
@@ -116,7 +116,7 @@ function AudioPlayer({ url }: { url: string }) {
             {/* Play/Pause */}
             <button
                 onClick={toggle}
-                className="w-8 h-8 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shrink-0 transition-colors"
+                className="w-8 h-8 rounded-full bg-rose-50 dark:bg-rose-900/300 hover:bg-rose-600 text-zinc-900 dark:text-white flex items-center justify-center shrink-0 transition-colors"
             >
                 {playing
                     ? <Pause className="w-3.5 h-3.5" />
@@ -126,7 +126,7 @@ function AudioPlayer({ url }: { url: string }) {
             <div className="flex-1 space-y-1">
                 <div className="h-1.5 bg-rose-200 rounded-full overflow-hidden">
                     <div
-                        className="h-full bg-rose-500 rounded-full transition-all"
+                        className="h-full bg-rose-50 dark:bg-rose-900/300 rounded-full transition-all"
                         style={{ width: `${progress}%` }}
                     />
                 </div>
@@ -178,14 +178,14 @@ export const SendMediaNodeV4 = memo(({ data, selected, type }: { data: Record<st
 
                     {/* Legenda (apenas para imagem e vídeo) */}
                     {caption && (type === 'send_image' || type === 'send_video') && (
-                        <p className="text-[11px] text-zinc-500 italic line-clamp-2 px-0.5">{caption}</p>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic line-clamp-2 px-0.5">{caption}</p>
                     )}
                 </div>
             ) : (
                 /* Estado vazio */
-                <div className="bg-zinc-50 rounded-xl border border-dashed border-zinc-200 px-3 py-4 flex flex-col items-center gap-1.5">
+                <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 px-3 py-4 flex flex-col items-center gap-1.5">
                     <cfg.icon className="w-6 h-6 text-zinc-300" />
-                    <span className="text-[10px] text-zinc-400 font-medium text-center">
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-400 font-medium text-center">
                         Nenhum arquivo.<br />
                         <span className="text-zinc-300">{cfg.ext}</span>
                     </span>

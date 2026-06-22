@@ -48,9 +48,9 @@ export async function transcribeAudioGemini(audioBuffer: Buffer, mimeType: strin
 
   try {
     // Tentar modelo estável 2.0 primeiro
-    return await generate('gemini-2.0-flash');
+    return await generate('gemini-2.5-flash');
   } catch (error: any) {
-    console.warn(`[Gemini Transcription] Falha com gemini-2.0-flash: ${error.message}. Tentando fallback...`);
+    console.warn(`[Gemini Transcription] Falha com gemini-2.5-flash: ${error.message}. Tentando fallback...`);
     try {
       // Fallback para modelo estável 1.5 (usando nome completo para evitar 404)
       return await generate('gemini-1.5-flash-latest');

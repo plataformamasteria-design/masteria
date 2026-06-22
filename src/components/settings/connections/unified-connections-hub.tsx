@@ -101,6 +101,8 @@ export function UnifiedConnectionsHub() {
             items.push({
                 id: conn.id,
                 name: conn.config_name,
+                profileName: conn.profileName || undefined,
+                profilePicUrl: conn.profilePicUrl || undefined,
                 platform: (conn.connectionType as UnifiedPlatform) || 'meta_api',
                 status,
                 identifier: conn.phone || conn.phoneNumber || conn.phoneNumberId,
@@ -121,9 +123,13 @@ export function UnifiedConnectionsHub() {
             else if (session.status === 'connecting') status = 'verifying';
             else status = 'error';
 
+            const dbRecord = officialConnections.find(c => c.id === session.id);
+
             items.push({
                 id: session.id,
                 name: session.name,
+                profileName: dbRecord?.profileName || undefined,
+                profilePicUrl: dbRecord?.profilePicUrl || undefined,
                 platform: 'evolution',
                 status,
                 identifier: session.phone,

@@ -27,13 +27,13 @@ function BotToggleNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[260px] overflow-visible group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-cyan-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-cyan-50 dark:bg-cyan-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
       <NodeHeader
         nodeId={id}
         icon={<Bot className="h-4 w-4 text-cyan-500" />}
         defaultLabel="Robô I.A"
         customLabel={customLabel}
-        colorClass="bg-cyan-500/10"
+        colorClass="bg-cyan-50 dark:bg-cyan-900/30"
         textColorClass="text-cyan-500"
         onExecute={() => (data as any)?.onExecute?.(id)}
         isExecuting={(data as any)?.isExecuting}
@@ -61,13 +61,13 @@ function BotToggleNodeComponent({ id, data }: NodeProps) {
           </Select>
         </div>
 
-        <div className={`flex items-center gap-2 p-2 rounded-lg text-xs ${isEnable ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"}`}>
+        <div className={`flex items-center gap-2 p-2 rounded-lg text-xs ${isEnable ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"}`}>
           <Bot className="h-3.5 w-3.5" />
           <span>{isEnable ? "O robô será ativado para este lead" : "O robô será desativado para este lead"}</span>
         </div>
 
         {/* Notify platform option */}
-        <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-500/10 px-2.5 py-2 border border-blue-500/20">
+        <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 px-2.5 py-2 border border-blue-500/20">
           <div>
             <p className="text-[11px] font-medium">Notificar plataforma</p>
             <p className="text-[9px] text-muted-foreground">Exibe ícone no chat indicando que o robô finalizou o atendimento</p>
@@ -93,7 +93,7 @@ function BotToggleNodeComponent({ id, data }: NodeProps) {
         onPin={() => (data as any)?.onPinOutput?.(id)}
         onUnpin={() => (data as any)?.onUnpinOutput?.(id)}
       />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-cyan-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-cyan-50 dark:bg-cyan-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

@@ -21,8 +21,8 @@ function DelayNodeComponent({ id, data }: NodeProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] min-w-[220px] overflow-visible transition-all hover:shadow-xl group">
-      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-purple-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
-      <NodeHeader nodeId={id} icon={<Clock className="h-4 w-4 text-purple-500" />} defaultLabel="Aguardar" customLabel={customLabel} colorClass="bg-purple-500/10" textColorClass="text-purple-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
+      <Handle type="target" position={Position.Top} className="!w-4 !h-4 !bg-purple-50 dark:bg-purple-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <NodeHeader nodeId={id} icon={<Clock className="h-4 w-4 text-purple-500" />} defaultLabel="Aguardar" customLabel={customLabel} colorClass="bg-purple-50 dark:bg-purple-900/30" textColorClass="text-purple-500" onExecute={() => (data as any)?.onExecute?.(id)} isExecuting={(data as any)?.isExecuting} onDuplicate={() => (data as any)?.onDuplicate?.(id)} onDelete={() => (data as any)?.onDelete?.(id)} onRename={(l) => (data as any)?.onRename?.(id, l)} />
       <div className="px-4 py-3 flex gap-2">
         <Input type="number" min="1" value={amount} onChange={(e) => { setAmount(e.target.value); update("amount", e.target.value); }} className="h-8 text-xs w-20 nodrag" />
         <Select value={unit} onValueChange={(v) => { setUnit(v); update("unit", v); }}>
@@ -36,7 +36,7 @@ function DelayNodeComponent({ id, data }: NodeProps) {
         </Select>
       </div>
       <NodeOutputPanel nodeId={id} nodeLabel={customLabel || "Aguardar"} output={(data as any)?.nodeOutput} error={(data as any)?.nodeError} isPinned={(data as any)?.isPinned || false} isExecuting={(data as any)?.isExecuting || false} onExecute={() => (data as any)?.onExecute?.(id)} onPin={() => (data as any)?.onPinOutput?.(id)} onUnpin={() => (data as any)?.onUnpinOutput?.(id)} />
-      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-purple-500 !border-[3px] !border-white dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
+      <Handle type="source" position={Position.Bottom} className="!w-4 !h-4 !bg-purple-50 dark:bg-purple-900/300 !border-[3px] !border-white dark:border-zinc-900 dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125 px] dark:!border-zinc-950 shadow-sm z-50 transition-transform hover:scale-125" />
     </div>
   );
 }

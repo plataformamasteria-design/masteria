@@ -12,7 +12,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 
 export const AiAgentNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
     const provider = data.provider || 'gemini';
-    const model = data.model || 'gemini-2.0-flash';
+    const model = data.model || 'gemini-2.5-flash';
     // Suporte a ambas as chaves: response_timeout_enabled (NodeConfigPanel) e timeout_enabled (legado)
     const hasTimeout = !!(data.response_timeout_enabled || data.timeout_enabled);
     const colTotal = hasTimeout ? 2 : 1;
@@ -102,13 +102,13 @@ export const AiAgentNodeV4 = memo(({ id, data, selected }: NodePropsV4) => {
                 {data.dialogue_mode && (
                     <div className="flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-[10px] text-green-600 font-semibold">Modo Diálogo Ativo</span>
+                        <span className="text-[10px] text-green-600 dark:text-green-400 font-semibold">Modo Diálogo Ativo</span>
                     </div>
                 )}
                 {hasTimeout && (
                     <div className="flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                        <span className="text-[10px] text-orange-600 font-semibold">
+                        <span className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">
                             Timeout: {data.response_timeout_minutes || data.timeout_amount || 5} min
                         </span>
                     </div>
