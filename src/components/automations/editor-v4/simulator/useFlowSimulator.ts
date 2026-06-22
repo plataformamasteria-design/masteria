@@ -1381,7 +1381,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                                     system_message: "Você é um avaliador rigoroso. Responda apenas com SIM ou NÃO.",
                                     prompt: evalPrompt,
                                     temperature: 0
-                                });
+                                }, { virtual_history: [] });
                                 
                                 if (evalRes && !evalRes.error && evalRes.response.toUpperCase().includes('SIM')) {
                                     hasObjective = true;
