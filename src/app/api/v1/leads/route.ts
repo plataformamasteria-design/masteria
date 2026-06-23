@@ -286,6 +286,7 @@ export async function POST(request: NextRequest) {
     const [newLead] = await db
       .insert(kanbanLeads)
       .values({
+        companyId,
         boardId,
         stageId,
         contactId,
