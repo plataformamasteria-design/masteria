@@ -39,6 +39,9 @@ export async function GET() {
 
     return NextResponse.json({ data: accounts, default_account: auth.accountId });
   } catch (e: any) {
+    if (e.message && e.message.includes("Meta não conectado")) {
+      return NextResponse.json({ error: e.message, data: [] }, { status: 400 });
+    }
     console.error("[api/meta/ad-accounts]", e);
     return NextResponse.json({ error: e.message || String(e), data: [] }, { status: 500 });
   }

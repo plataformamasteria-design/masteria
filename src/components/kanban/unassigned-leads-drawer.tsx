@@ -49,10 +49,11 @@ export function UnassignedLeadsDrawer({ funnels }: { funnels: KanbanFunnel[] }) 
     if (!selectedContact || !selectedFunnel || !selectedStage) return;
     setAssigning(true);
     try {
-      const res = await fetch(`/api/v1/kanbans/${selectedFunnel}/leads`, {
+      const res = await fetch(`/api/v1/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          boardId: selectedFunnel,
           contactId: selectedContact,
           stageId: selectedStage,
         }),

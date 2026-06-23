@@ -243,10 +243,13 @@ export async function GET(
     return NextResponse.json(reportData);
 
   } catch (error) {
-    console.error('[kanban-report]', error);
+    const msg = error instanceof Error ? error.message : 'Erro interno.';
+    if (msg !== 'Funil não encontrado.') {
+      console.error('[kanban-report]', error);
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erro interno.' },
-      { status: 500 },
+      { error: msg },
+      { status: msg === 'Funil não encontrado.' ? 404 : 500 },
     );
   }
 }

@@ -14,6 +14,7 @@ const nextConfig = {
     'fluent-ffmpeg',
     '@ffmpeg-installer/ffmpeg',
     'sharp',
+    'pdf-parse',
     // Queue & Redis
     'bullmq',
     'ioredis',
@@ -79,6 +80,7 @@ const nextConfig = {
           'ioredis': 'commonjs ioredis',
           'postgres': 'commonjs postgres',
           'sharp': 'commonjs sharp',
+          'pdf-parse': 'commonjs pdf-parse',
           'twilio': 'commonjs twilio',
           '@opentelemetry/api': 'commonjs @opentelemetry/api',
           '@opentelemetry/auto': 'commonjs @opentelemetry/auto',

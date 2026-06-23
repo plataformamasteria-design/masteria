@@ -275,7 +275,7 @@ async function fetchConversationsData(companyId: string, userId: string, limit: 
             FROM ${messages} 
             WHERE ${messages.conversationId} = ${conversations.id} 
             AND ${messages.companyId} = ${conversations.companyId}
-            AND (${userAccessConfig.allowedConnectionIds && userAccessConfig.allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(userAccessConfig.allowedConnectionIds)})` : sql`1=1`})
+            AND (${userAccessConfig.allowedConnectionIds && userAccessConfig.allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(userAccessConfig.allowedConnectionIds, sql`, `)})` : sql`1=1`})
             AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
             ORDER BY ${messages.sentAt} DESC 
             LIMIT 1

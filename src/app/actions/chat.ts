@@ -226,7 +226,7 @@ export async function fetchInitialConversations() {
                     FROM ${messages} 
                     WHERE ${messages.conversationId} = ${conversations.id} 
                     AND ${messages.companyId} = ${conversations.companyId}
-                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds)})` : sql`1=1`})
+                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds, sql`, `)})` : sql`1=1`})
                     AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
                     ORDER BY ${messages.sentAt} DESC 
                     LIMIT 1
@@ -236,7 +236,7 @@ export async function fetchInitialConversations() {
                     FROM ${messages} 
                     WHERE ${messages.conversationId} = ${conversations.id} 
                     AND ${messages.companyId} = ${conversations.companyId}
-                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds)})` : sql`1=1`})
+                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds, sql`, `)})` : sql`1=1`})
                     AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
                     ORDER BY ${messages.sentAt} DESC 
                     LIMIT 1
@@ -246,7 +246,7 @@ export async function fetchInitialConversations() {
                     FROM ${messages} 
                     WHERE ${messages.conversationId} = ${conversations.id} 
                     AND ${messages.companyId} = ${conversations.companyId}
-                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds)})` : sql`1=1`})
+                    AND (${allowedConnectionIds && allowedConnectionIds.length > 0 ? sql`${messages.connectionId} IN (${sql.join(allowedConnectionIds, sql`, `)})` : sql`1=1`})
                     AND (${messages.connectionId} = ${conversations.connectionId} OR ${conversations.connectionId} IS NULL)
                     ORDER BY ${messages.sentAt} DESC 
                     LIMIT 1
