@@ -19,7 +19,7 @@ interface GlobalCrypto {
 
 const globalCrypto = globalThis as unknown as GlobalCrypto;
 
-function initializeEncryptionKey(): Buffer {
+function getEncryptionKey(): Buffer {
   if (globalCrypto[CRYPTO_SINGLETON_KEY]) {
     return globalCrypto[CRYPTO_SINGLETON_KEY].key;
   }
@@ -47,12 +47,11 @@ function initializeEncryptionKey(): Buffer {
   return key;
 }
 
-const key = initializeEncryptionKey();
-
 export function encrypt(text: string): string {
   if (!text) {
     return text;
   }
+  const key = getEncryptionKey();
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
@@ -66,6 +65,7 @@ export function decrypt(encryptedHex: string): string {
     return encryptedHex;
   }
   try {
+    const key = getEncryptionKey();
     const encryptedBuffer = Buffer.from(encryptedHex, 'hex');
     const iv = encryptedBuffer.slice(0, IV_LENGTH);
     const authTag = encryptedBuffer.slice(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
