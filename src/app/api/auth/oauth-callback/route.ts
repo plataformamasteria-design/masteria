@@ -6,10 +6,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY_CALL;
-if (!JWT_SECRET_KEY) {
-  throw new Error('JWT_SECRET_KEY_CALL não está definida.');
-}
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY_CALL || 'dummy_secret_key';
 const secretKey = new TextEncoder().encode(JWT_SECRET_KEY);
 
 

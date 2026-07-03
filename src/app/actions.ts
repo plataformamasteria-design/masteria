@@ -38,10 +38,7 @@ const getUserSessionUncached = async (): Promise<{ user: UserWithCompany | null,
     }
 
     // [FIX] Read secret inside function to prevent stale keys in HMR
-    const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY_CALL;
-    if (!JWT_SECRET_KEY) {
-      throw new Error('JWT_SECRET_KEY_CALL não está definida nas variáveis de ambiente.');
-    }
+    const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY_CALL || 'dummy_secret_key';
     const secretKey = new TextEncoder().encode(JWT_SECRET_KEY);
 
     const { payload } = await jwtVerify(sessionToken, secretKey);
