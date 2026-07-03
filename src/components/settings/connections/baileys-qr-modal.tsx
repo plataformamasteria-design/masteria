@@ -27,7 +27,7 @@ export function BaileysQrModal({
       return;
     }
 
-    const eventSource = new EventSource(`/api/v1/whatsapp/sessions/${sessionId}/qr`);
+    const eventSource = new EventSource(`/api/v1/whatsapp/sessions/${sessionId}/qr`, { withCredentials: true });
 
     eventSource.onmessage = async (e) => {
       try {

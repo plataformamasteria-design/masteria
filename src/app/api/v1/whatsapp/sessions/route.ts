@@ -57,6 +57,8 @@ export async function GET() {
         runtimeStatus: s.runtimeStatus,
         hasAuth: s.hasAuth,
         phone: s.phone,
+        profileName: s.profileName,
+        profilePicUrl: s.profilePicUrl,
         lastConnected: s.lastConnected,
         isActive: s.isActive,
         createdAt: s.createdAt,

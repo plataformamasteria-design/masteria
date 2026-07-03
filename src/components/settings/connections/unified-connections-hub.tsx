@@ -128,8 +128,8 @@ export function UnifiedConnectionsHub() {
             items.push({
                 id: session.id,
                 name: session.name,
-                profileName: dbRecord?.profileName || undefined,
-                profilePicUrl: dbRecord?.profilePicUrl || undefined,
+                profileName: (session as any).profileName || dbRecord?.profileName || undefined,
+                profilePicUrl: (session as any).profilePicUrl || dbRecord?.profilePicUrl || undefined,
                 platform: 'evolution',
                 status,
                 identifier: session.phone,

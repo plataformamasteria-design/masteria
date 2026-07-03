@@ -35,7 +35,7 @@ export function QRCodeModal({ isOpen, onClose, sessionId, sessionName }: QRCodeM
     setErrorMsg(null);
     setQrCodeData(null);
 
-    const sse = new EventSource(`/api/v1/whatsapp/sessions/${sessionId}/qr`);
+    const sse = new EventSource(`/api/v1/whatsapp/sessions/${sessionId}/qr`, { withCredentials: true });
     eventSourceRef.current = sse;
 
     sse.onmessage = async (event) => {

@@ -21,7 +21,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrganizationsTableView } from './components/organizations-table-view';
 import { FinancialTab } from './components/financial-tab';
 import { CredentialsTab } from './components/credentials-tab';
-import { Wallet, KeyRound } from 'lucide-react';
+import { SmartFinancialSpreadsheetTab } from './components/smart-financial-spreadsheet-tab';
+import { SpreadsheetsTab } from './components/spreadsheets-tab';
+import { Wallet, KeyRound, Table2 } from 'lucide-react';
 
 export function OrganizationsClient({ initialData, currentCompanyId }: { initialData: MasterOrg[], currentCompanyId?: string }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -219,6 +221,10 @@ export function OrganizationsClient({ initialData, currentCompanyId }: { initial
                             <TabsTrigger value="credenciais" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/30 data-[state=active]:shadow-[0_0_15px_rgba(var(--primary),0.1),inset_0_0_10px_rgba(var(--primary),0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
                                 <KeyRound className="h-4 w-4" />
                                 Credenciais de I.A
+                            </TabsTrigger>
+                            <TabsTrigger value="planilhas" className="rounded-xl px-5 py-2 text-sm font-bold transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/30 data-[state=active]:shadow-[0_0_15px_rgba(var(--primary),0.1),inset_0_0_10px_rgba(var(--primary),0.1)] border border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
+                                <Table2 className="h-4 w-4" />
+                                Demandas & Planilhas
                             </TabsTrigger>
                         </TabsList>
                     </div>
@@ -432,6 +438,17 @@ export function OrganizationsClient({ initialData, currentCompanyId }: { initial
             </TabsContent>
             <TabsContent value="credenciais" className="mt-6">
                 <CredentialsTab />
+            </TabsContent>
+            <TabsContent value="planilhas" className="mt-6 flex-1 h-full min-h-0 overflow-hidden flex flex-col gap-8">
+                <div className="h-[60vh] border rounded-xl overflow-hidden shadow-sm">
+                    <SmartFinancialSpreadsheetTab />
+                </div>
+                <div className="flex-1 mt-4 border-t pt-8">
+                    <h3 className="text-xl font-bold mb-4 px-2">Planilhas Manuais (Legado / Customizadas)</h3>
+                    <div className="h-[60vh]">
+                        <SpreadsheetsTab />
+                    </div>
+                </div>
             </TabsContent>
         </Tabs>
             <OrganizationDetailsDrawer 

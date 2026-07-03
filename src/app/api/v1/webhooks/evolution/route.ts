@@ -8,6 +8,7 @@ import { canonicalizeBrazilPhone, getPhoneVariations } from '@/lib/utils';
 import { emitToCompany } from '@/lib/socket';
 import { uploadFileToS3 } from '@/lib/s3';
 import { evolutionApiService } from '@/services/evolution-api.service';
+import { SessionCache } from '@/lib/cache/session-cache';
 
 export async function POST(req: NextRequest) {
     try {
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest) {
                 await db.update(connections)
                     .set({ status: dbStatus })
                     .where(eq(connections.id, instanceName));
+
+                // Invalidar cache para refletir imediatamente na listagem
+                await SessionCache.invalidateOnChange(connection.companyId, instanceName).catch(() => {});
 
                 // Emitir WebSocket
                 try {

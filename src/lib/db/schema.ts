@@ -108,6 +108,7 @@ export const companies = pgTable('companies', {
   trialEndsAt: timestamp('trial_ends_at'),
   lifetime: boolean('lifetime').default(false).notNull(),
   isStarred: boolean('is_starred').default(false).notNull(),
+  active: boolean('active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   deletedAt: timestamp('deleted_at'),
@@ -134,6 +135,22 @@ export const systemSettings = pgTable('system_settings', {
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 });
 
+export type SuperadminBoardColumn = {
+  id: string;
+  title: string;
+  type: 'text' | 'number' | 'select' | 'date' | 'currency' | 'status';
+  options?: string[]; // for select/status
+};
+
+export const superadminBoards = pgTable('superadmin_boards', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  columns: jsonb('columns').$type<SuperadminBoardColumn[]>().default(sql`'[]'::jsonb`),
+  rows: jsonb('rows').$type<Record<string, any>[]>().default(sql`'[]'::jsonb`),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
 export const companyCredentials = pgTable('company_credentials', {
   companyId: text('company_id').primaryKey().notNull().references(() => companies.id, { onDelete: 'cascade' }),
   openaiApiKey: text('openai_api_key'),
@@ -154,6 +171,30 @@ export const companyFinancials = pgTable('company_financials', {
   totalPaid: decimal('total_paid', { precision: 10, scale: 2 }).default('0').notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
 });
+
+export const invoiceStatusEnum = pgEnum('invoice_status', ['PENDING', 'PAID', 'OVERDUE']);
+
+export const companyMonthlyInvoices = pgTable('company_monthly_invoices', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  monthYear: text('month_year').notNull(), // Format: YYYY-MM
+  monthlyFee: decimal('monthly_fee', { precision: 10, scale: 2 }).default('0').notNull(),
+  fixedCosts: decimal('fixed_costs', { precision: 10, scale: 2 }).default('0').notNull(),
+  variableCosts: decimal('variable_costs', { precision: 10, scale: 2 }).default('0').notNull(),
+  aiTokensUsed: integer('ai_tokens_used').default(0).notNull(),
+  totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).default('0').notNull(),
+  netProfit: decimal('net_profit', { precision: 10, scale: 2 }).default('0').notNull(),
+  paymentDueDate: date('payment_due_date').notNull(),
+  paidAt: timestamp('paid_at'),
+  status: invoiceStatusEnum('status').default('PENDING').notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull().$onUpdate(() => new Date()),
+}, (table) => ({
+  companyIdx: index('monthly_invoices_company_idx').on(table.companyId),
+  monthYearIdx: index('monthly_invoices_month_year_idx').on(table.monthYear),
+  uniqueCompanyMonth: unique('monthly_invoices_company_month_unique').on(table.companyId, table.monthYear),
+}));
 
 export const users = pgTable('users', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),

@@ -15,6 +15,8 @@ export interface SessionWithRuntime extends SessionData {
   runtimeStatus: 'connecting' | 'connected' | 'disconnected' | 'qr' | 'failed' | 'none';
   hasAuth: boolean;
   effectiveStatus: string;
+  profileName?: string;
+  profilePicUrl?: string;
 }
 
 export interface CreateSessionResult {
@@ -56,6 +58,8 @@ export class SessionService {
           let hasAuth = false;
           let effectiveStatus = s.status || 'disconnected';
           let phone = s.phone;
+          let profileName: string | undefined = undefined;
+          let profilePicUrl: string | undefined = undefined;
 
           const instanceData = allInstances.find((i: any) => i.name === s.id || i.instance?.instanceName === s.id);
 
@@ -84,6 +88,9 @@ export class SessionService {
             } else if (instanceData.owner) {
                 phone = instanceData.owner.split('@')[0];
             }
+
+            profileName = instanceData.profileName;
+            profilePicUrl = instanceData.profilePicUrl;
           } else {
              runtimeStatus = 'none';
              effectiveStatus = 'disconnected';
@@ -92,6 +99,8 @@ export class SessionService {
           return {
             ...s,
             phone,
+            profileName,
+            profilePicUrl,
             runtimeStatus: (runtimeStatus || 'none') as SessionWithRuntime['runtimeStatus'],
             hasAuth,
             effectiveStatus,
@@ -169,7 +178,7 @@ export class SessionService {
         await evolutionApiService.createInstance(newSession.id);
 
         // Configurar webhook
-        const appUrl = 'https://masteria-temporario.up.railway.app';
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://masteria.app';
         const webhookUrl = `${appUrl}/api/v1/webhooks/evolution`;
         await evolutionApiService.setWebhook(newSession.id, webhookUrl);
 
@@ -259,7 +268,7 @@ export class SessionService {
       await evolutionApiService.logoutInstance(sessionId);
 
       // Reconfigura o webhook e os eventos como padrão para garantir integridade
-      const appUrl = 'https://masteria-temporario.up.railway.app';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://masteria.app';
       const webhookUrl = `${appUrl}/api/v1/webhooks/evolution`;
       await evolutionApiService.setWebhook(sessionId, webhookUrl).catch(e => {
         console.warn('[SessionService] Could not reset webhook on reconnect:', e);

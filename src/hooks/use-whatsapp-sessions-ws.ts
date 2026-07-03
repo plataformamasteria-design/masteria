@@ -15,6 +15,8 @@ export interface BaileysSession {
   isActive: boolean;
   createdAt?: Date;
   hasAuth?: boolean;
+  profileName?: string;
+  profilePicUrl?: string;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
