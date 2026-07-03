@@ -7,10 +7,12 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import '@/lib/server-init';
 
 const DATABASE_URL = process.env.DATABASE_URL;
+
 if (!DATABASE_URL) {
-  // Lança um erro claro se a variável de ambiente não estiver definida em runtime.
-  throw new Error('DATABASE_URL is not set in environment variables. The application cannot connect to the database.');
+  console.warn('⚠️ [DB] DATABASE_URL is not set in environment variables. Using a dummy URL to allow Next.js build. The application will not be able to connect to the database.');
 }
+
+const safeDatabaseUrl = DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/postgres';
 
 // Configuração de connection pooling (Otimizado para Performance)
 const connectionConfig = {
@@ -28,10 +30,10 @@ declare global {
 let conn: ReturnType<typeof postgres>;
 
 if (process.env.NODE_ENV === 'production') {
-  conn = postgres(DATABASE_URL, connectionConfig);
+  conn = postgres(safeDatabaseUrl, connectionConfig);
 } else {
   if (!globalThis.conn) {
-    globalThis.conn = postgres(DATABASE_URL, connectionConfig);
+    globalThis.conn = postgres(safeDatabaseUrl, connectionConfig);
   }
   conn = globalThis.conn;
 }
