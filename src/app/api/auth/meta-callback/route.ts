@@ -5,6 +5,8 @@ import { encrypt } from '@/lib/crypto';
 import { eq, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get('code');
