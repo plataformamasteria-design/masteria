@@ -133,40 +133,11 @@ const heapLimitMB = (heapStats.heap_size_limit / 1024 / 1024).toFixed(2);
 console.log(`🧠 [Memory] Node.js Heap Limit: ${heapLimitMB} MB`);
 console.log(`💾 [Memory] NODE_OPTIONS: ${process.env.NODE_OPTIONS || 'NOT SET'}`);
 
-// Memory optimization: Enable garbage collection monitoring
+// Memory optimization: Disabled manual GC. Let V8 handle garbage collection natively without blocking the Event Loop.
 if (global.gc) {
-  console.log('🧹 Garbage collection exposed, enabling aggressive memory management');
-
-  // Force garbage collection every 30 seconds
-  setInterval(() => {
-    const beforeMem = process.memoryUsage();
-    global.gc();
-    const afterMem = process.memoryUsage();
-
-    const freed = {
-      heapUsed: ((beforeMem.heapUsed - afterMem.heapUsed) / 1024 / 1024).toFixed(2),
-      external: ((beforeMem.external - afterMem.external) / 1024 / 1024).toFixed(2),
-      total: ((beforeMem.rss - afterMem.rss) / 1024 / 1024).toFixed(2)
-    };
-
-    if (parseFloat(freed.heapUsed) > 0) {
-      console.log(`🧹 [GC] Freed ${freed.heapUsed}MB heap, ${freed.external}MB external, ${freed.total}MB total`);
-    }
-  }, 30000); // Every 30 seconds
-
-  // Force GC when memory usage is high (>60% of TOTAL limit) - ✅ MEMORY: Reduced from 80%
-  setInterval(() => {
-    const mem = process.memoryUsage();
-    const stats = v8.getHeapStatistics();
-    const heapPercentage = (mem.heapUsed / stats.heap_size_limit) * 100;
-
-    if (heapPercentage > 50) {
-      console.warn(`⚠️ [Memory] High heap usage: ${heapPercentage.toFixed(2)}% of limit, forcing GC`);
-      global.gc();
-    }
-  }, 20000); // Check every 20 seconds
+  console.log('🧹 Manual Garbage Collection is DISABLED to prevent event-loop blocking.');
 } else {
-  console.warn('⚠️ Garbage collection not exposed. Run with --expose-gc flag for better memory management');
+  console.warn('⚠️ Garbage collection not exposed.');
 }
 
 // Log memory usage every minute
