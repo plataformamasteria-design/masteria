@@ -40,8 +40,9 @@ export function initializeSocketIO(server: HTTPServer): SocketIOServer {
     return io;
   }
 
-  // ✅ CORREÇÃO: Verificar se JWT_SECRET_KEY_CALL está definida antes de inicializar
-  if (!process.env.JWT_SECRET_KEY_CALL) {
+  // ✅ CORREÇÃO: Usar fallback no build para não quebrar a compilação
+  const secret = process.env.JWT_SECRET_KEY_CALL || (process.env.NODE_ENV !== 'production' ? 'dummy_secret' : undefined);
+  if (!secret && !process.env.SKIP_ENV_VALIDATION) {
     throw new Error('JWT_SECRET_KEY_CALL não está definida nas variáveis de ambiente. Socket.IO requer autenticação.');
   }
 

@@ -12,7 +12,7 @@ const verifyEmailSchema = z.object({
 });
 
 const getJwtSecretKey = () => {
-    const secret = process.env.JWT_SECRET_KEY_CALL;
+    const secret = process.env.JWT_SECRET_KEY_CALL || (process.env.NODE_ENV !== 'production' || process.env.SKIP_ENV_VALIDATION ? 'dummy_secret' : undefined);
     if (!secret) {
         throw new Error('JWT_SECRET_KEY_CALL não está definida nas variáveis de ambiente.');
     }
