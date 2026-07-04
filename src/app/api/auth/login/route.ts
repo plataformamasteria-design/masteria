@@ -32,22 +32,40 @@ async function handler(request: NextRequest) {
 
         const { email, password } = parsed.data;
 
-        // 1. Encontrar o utilizador pelo e-mail
-        const [user] = await db
+                // 1. Encontrar o utilizador pelo e-mail e o alias de superadmin (mesmo email, senhas diferentes)
+        const { or } = await import('drizzle-orm');
+        const matchingUsers = await db
             .select()
             .from(users)
-            .where(eq(users.email, email.toLowerCase()))
-            .limit(1);
+            .where(
+                or(
+                    eq(users.email, email.toLowerCase()),
+                    eq(users.email, `superadmin:${email.toLowerCase()}`)
+                )
+            );
 
-        if (!user || !user.password) {
+        if (matchingUsers.length === 0) {
             return NextResponse.json({ error: 'Credenciais inválidas.' }, { status: 401 });
         }
         
-        // 2. Comparar a senha fornecida com o hash guardado
-        const isPasswordValid = await compare(password, user.password);
-        if (!isPasswordValid) {
+        let authenticatedUser = null;
+
+        // 2. Comparar a senha fornecida com o hash guardado de cada usuário encontrado
+        for (const u of matchingUsers) {
+            if (u.password) {
+                const isPasswordValid = await compare(password, u.password);
+                if (isPasswordValid) {
+                    authenticatedUser = u;
+                    break;
+                }
+            }
+        }
+
+        if (!authenticatedUser) {
             return NextResponse.json({ error: 'Credenciais inválidas.' }, { status: 401 });
         }
+        
+        const user = authenticatedUser;
 
         if (!user.emailVerified) {
           return NextResponse.json({ error: 'Confirmação de NÃO-ROBÔ! 🤖\nTe enviei um e-mail para confirmar que é você mesmo, e não uma IA ;D', user }, { status: 403 });
