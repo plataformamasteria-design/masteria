@@ -8,10 +8,12 @@ function getValidOpenAIModel(modelName: string | undefined): string {
     if (!modelName) return 'gpt-4o-mini';
     const lower = modelName.toLowerCase();
     
+    if (lower === 'chatgpt-4.1') return 'gpt-4o';
+    if (lower === 'chatgpt-4o-latest') return modelName;
+
     if (lower.startsWith('gpt-') || lower.startsWith('o1-') || lower.startsWith('o3-')) {
         return modelName;
     }
-    if (lower === 'chatgpt-4o-latest') return modelName;
 
     if (lower.includes('chatgpt-4')) return 'gpt-4-turbo';
     if (lower.includes('chatgpt-3')) return 'gpt-3.5-turbo';

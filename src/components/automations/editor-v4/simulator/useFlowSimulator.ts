@@ -1475,7 +1475,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                     const aiResult = await callAI(configWithLibrary);
                     removeMessage(aiTypingId);
 
-                    if (aiResult) {
+                    if (aiResult && !aiResult.error) {
                         setTokensUsed((prev) => prev + aiResult.tokens);
 
                         // Extract file tag — pass last user message for cross-validation of product choice
@@ -1510,7 +1510,9 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
                         addMessage({ type: "system", content: `📊 Tokens: ${aiResult.tokens}`, nodeId, nodeType });
                     } else {
+                        const errorMsg = aiResult?.error || 'O servidor não respondeu ou limite excedido.';
                         addMessage({ type: "bot", content: `[${nodeLabel} — Erro I.A]`, nodeId, nodeType });
+                        addMessage({ type: "system", content: `Detalhes: ${errorMsg}`, nodeId, nodeType });
                     }
 
                     // If timeout_enabled, wait for response with timer before routing
@@ -1561,7 +1563,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                 });
                 removeMessage(fuTypingId);
 
-                if (fuResult) {
+                if (fuResult && !fuResult.error) {
                     setTokensUsed((prev) => prev + fuResult.tokens);
 
                     // Parse AI parts using delimiter
@@ -1579,7 +1581,9 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
 
                     addMessage({ type: "system", content: `📊 Tokens: ${fuResult.tokens}`, nodeId, nodeType });
                 } else {
+                    const errorMsg = fuResult?.error || 'O servidor não respondeu ou limite excedido.';
                     addMessage({ type: "bot", content: `[${nodeLabel} — Erro I.A]`, nodeId, nodeType });
+                    addMessage({ type: "system", content: `Detalhes: ${errorMsg}`, nodeId, nodeType });
                 }
 
                 // NOW wait for the response to the follow-up
