@@ -5,9 +5,8 @@ import { Droppable } from '@hello-pangea/dnd';
 import { Badge } from '../ui/badge';
 import type { KanbanStage, KanbanCard as KanbanCardType } from '@/lib/types';
 import { KanbanCard } from './kanban-card';
-import { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
-import { ChevronDown } from 'lucide-react';
+import { useRef, useEffect, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 interface KanbanColumnProps {
   stage: KanbanStage;
@@ -25,26 +24,17 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDeleteLead, onUpdateCards, companyUsers = [], onOpenCard, onOpenMeetingTime, onOpenDelete, boardSettings }: KanbanColumnProps): JSX.Element {
-  const [limitCards, setLimitCards] = useState(false);
-  const [displayCount, setDisplayCount] = useState(8);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('masteriaPrefs');
-      if (saved) {
-        const prefs = JSON.parse(saved);
-        setLimitCards(prefs.limitKanbanCards === true);
-      }
-    } catch (e) {}
-  }, []);
-
+  const parentRef = useRef<HTMLDivElement>(null);
   const stageCards = cards.filter(card => card.stageId === stage.id);
   const totalValue = stageCards.reduce((sum, card) => sum + (Number(card.value) || 0), 0);
-  
-  const displayedCards = limitCards ? stageCards.slice(0, displayCount) : stageCards;
-  const hasMore = limitCards && displayCount < stageCards.length;
 
-  const handleLoadMore = () => setDisplayCount(prev => prev + 8);
+  // TanStack Virtualizer para renderizar apenas os cards visíveis
+  const rowVirtualizer = useVirtualizer({
+    count: stageCards.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: useCallback(() => 140, []), // Altura média do card
+    overscan: 5, // Renderiza 5 pra cima e 5 pra baixo para scroll fluido
+  });
   
   const getHeaderStyle = (type: string, idx: number) => {
     let glow = '';
@@ -93,51 +83,96 @@ export function KanbanColumn({ stage, stages, cards, index, onUpdateLead, onDele
         )}
       </div>
       
-      <Droppable droppableId={stage.id}>
+      <Droppable 
+        droppableId={stage.id} 
+        mode="virtual"
+        renderClone={(provided, snapshot, rubric) => {
+          const card = stageCards[rubric.source.index];
+          if (!card) return <div {...provided.draggableProps} {...provided.dragHandleProps} ref={provided.innerRef}>Error</div>;
+          
+          return (
+            <div
+              {...provided.draggableProps}
+              {...provided.dragHandleProps}
+              ref={provided.innerRef}
+              style={{ ...provided.draggableProps.style, margin: 0 }}
+            >
+              <KanbanCard 
+                card={card} 
+                index={rubric.source.index}
+                stages={stages}
+                onUpdate={onUpdateLead}
+                onDelete={onDeleteLead}
+                onUpdateCards={onUpdateCards}
+                companyUsers={companyUsers}
+                onOpenCard={onOpenCard}
+                onOpenMeetingTime={onOpenMeetingTime}
+                onOpenDelete={onOpenDelete}
+                boardSettings={boardSettings}
+              />
+            </div>
+          );
+        }}
+      >
         {(provided, snapshot) => (
           <div
-            ref={provided.innerRef}
+            ref={(el) => {
+              // Conecta o ref do TanStack com o ref do DND
+              parentRef.current = el;
+              provided.innerRef(el);
+            }}
             {...provided.droppableProps}
             className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar transition-all duration-300 ${
               snapshot.isDraggingOver ? 'bg-primary/5 ring-1 ring-primary/20 ring-inset' : ''
             }`}
           >
-            <div className="p-2 pb-12 space-y-2">
+            <div 
+              className="relative w-full"
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                minHeight: '100px' // Garante que a coluna não colapse quando vazia
+              }}
+            >
                 {stageCards.length === 0 && !snapshot.isDraggingOver && (
-                  <div className="flex items-center justify-center py-8 text-[11px] uppercase tracking-wider text-muted-foreground/40 font-medium">
+                  <div className="absolute inset-0 flex items-center justify-center text-[11px] uppercase tracking-wider text-muted-foreground/40 font-medium">
                     Sem leads
                   </div>
                 )}
-                {displayedCards.map((card, cardIndex) => (
-                  <KanbanCard 
-                    key={card.id} 
-                    card={card} 
-                    index={cardIndex}
-                    stages={stages}
-                    onUpdate={onUpdateLead}
-                    onDelete={onDeleteLead}
-                    onUpdateCards={onUpdateCards}
-                    companyUsers={companyUsers}
-                    onOpenCard={onOpenCard}
-                    onOpenMeetingTime={onOpenMeetingTime}
-                    onOpenDelete={onOpenDelete}
-                    boardSettings={boardSettings}
-                  />
-                ))}
-                {provided.placeholder}
-                {hasMore && !snapshot.isDraggingOver && (
-                  <div className="pt-2 pb-4 flex justify-center">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={handleLoadMore}
-                      className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full px-4 h-7"
+                
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const card = stageCards[virtualRow.index];
+                  return (
+                    <div
+                      key={card.id}
+                      data-index={virtualRow.index}
+                      ref={rowVirtualizer.measureElement}
+                      className="absolute top-0 left-0 w-full px-2"
+                      style={{
+                        transform: `translateY(${virtualRow.start}px)`,
+                        paddingBottom: '8px'
+                      }}
                     >
-                      <ChevronDown className="h-3 w-3 mr-1.5 opacity-70" />
-                      Mostrar mais ({stageCards.length - displayCount})
-                    </Button>
-                  </div>
-                )}
+                      <KanbanCard 
+                        card={card} 
+                        index={virtualRow.index}
+                        stages={stages}
+                        onUpdate={onUpdateLead}
+                        onDelete={onDeleteLead}
+                        onUpdateCards={onUpdateCards}
+                        companyUsers={companyUsers}
+                        onOpenCard={onOpenCard}
+                        onOpenMeetingTime={onOpenMeetingTime}
+                        onOpenDelete={onOpenDelete}
+                        boardSettings={boardSettings}
+                      />
+                    </div>
+                  );
+                })}
+                
+                {/* O placeholder do DND precisa estar fora do fluxo absoluto para empurrar o container se necessário */}
+                <div style={{ position: 'absolute', bottom: 0, width: '100%' }}>
+                  {provided.placeholder}
+                </div>
               </div>
           </div>
         )}

@@ -576,6 +576,18 @@ async function processIncomingMessage(
     const phone = sanitizePhone(contactData.wa_id);
     const messagePreview = getMessageContent(messageData).substring(0, 50);
 
+    // --- Sprint 1: Idempotência Crítica via Redis ---
+    // Barra mensagens duplicadas antes da abertura da transação
+    if (messageData?.id) {
+        const { redis } = await import('@/lib/redis');
+        const isSet = await redis.set(`webhook:meta:${messageData.id}`, '1', 'EX', 3600, 'NX');
+        if (!isSet) {
+            console.log(`[META-WEBHOOK] 🛑 Mensagem duplicada interceptada na borda pelo Redis: ${messageData.id}`);
+            return;
+        }
+    }
+    // ------------------------------------------------
+
     // Deduplication moved inside transaction to scope it by conversation
 
     const isEcho = sanitizePhone(messageData.from) === sanitizePhone(metadata.display_phone_number);

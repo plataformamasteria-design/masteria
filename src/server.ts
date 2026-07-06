@@ -138,6 +138,10 @@ server.listen(port, hostname, () => {
           const { initializeCopilotSchedulerWorker } = await import('./workers/copilot-scheduler.worker');
           await initializeCopilotSchedulerWorker();
           console.log('[Server] CopilotSchedulerWorker initialized');
+          
+          const { initializeWebhookWorker } = await import('./workers/webhook.worker');
+          await initializeWebhookWorker();
+          console.log('[Server] WebhookWorker initialized');
         } catch (e) {
           console.error('[Server] Failed to initialize workers:', e);
         }

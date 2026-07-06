@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SearchableSelector } from "./SearchableSelector";
 import { useOrganization } from "@/contexts/OrganizationContext";
+import { getCompanyUsers } from "@/app/actions/teams";
 
 interface TaskDialogProps {
   open: boolean;
@@ -88,10 +89,17 @@ export function TaskDialog({ open, onOpenChange, task, onTaskSaved }: TaskDialog
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/v1/users'); 
-      const json = await res.json();
-      if (json.data) setUsers(json.data);
-    } catch(e) {}
+      const data = await getCompanyUsers();
+      if (data) {
+        setUsers(data.map((u: any) => ({
+          id: u.id,
+          full_name: u.name,
+          email: u.email
+        })));
+      }
+    } catch(e) {
+      console.error("Failed to fetch users:", e);
+    }
   };
 
   const fetchLeads = async () => {

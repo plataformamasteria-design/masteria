@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { SearchableSelector } from "./SearchableSelector";
 import { useOrganization } from "@/contexts/OrganizationContext";
+import { getCompanyUsers } from "@/app/actions/teams";
 import { m as motion, AnimatePresence } from 'framer-motion';
 import { CalendarRange, Clock, Type, AlignLeft, MapPin, Video, MessageCircle, X, Check, Loader2 } from "lucide-react";
 
@@ -79,10 +80,17 @@ export function EventDialog({ open, onOpenChange, selectedDate, event, onEventSa
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/v1/users'); // Assuming this route exists
-      const json = await res.json();
-      if (json.data) setUsers(json.data);
-    } catch(e) {}
+      const data = await getCompanyUsers();
+      if (data) {
+        setUsers(data.map((u: any) => ({
+          id: u.id,
+          full_name: u.name,
+          email: u.email
+        })));
+      }
+    } catch(e) {
+      console.error("Failed to fetch users:", e);
+    }
   };
 
   const fetchLeads = async () => {

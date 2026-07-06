@@ -27,6 +27,7 @@ export function BaileysQrModal({
       return;
     }
 
+    let isConnected = false;
     const eventSource = new EventSource(`/api/v1/whatsapp/sessions/${sessionId}/qr`, { withCredentials: true });
 
     eventSource.onmessage = async (e) => {
@@ -45,6 +46,7 @@ export function BaileysQrModal({
         } else if (data.status) {
           setStatus(data.status);
           if (data.status === 'connected') {
+            isConnected = true;
             setTimeout(onClose, 2000); // Close after 2 seconds
           }
         } else if (data.error) {
@@ -57,7 +59,9 @@ export function BaileysQrModal({
 
     eventSource.onerror = () => {
       eventSource.close();
-      setError('Erro ao carregar o QR Code. Verifique se a sessão já está conectada ou se a API está online.');
+      if (!isConnected) {
+        setError('Erro ao carregar o QR Code. Verifique se a sessão já está conectada ou se a API está online.');
+      }
     };
 
     return () => {

@@ -5,6 +5,7 @@ import { eq, and, inArray, or, isNull, desc } from 'drizzle-orm';
 import { processIncomingMessageTrigger } from '@/lib/automation-engine';
 import { resumeFlowForContact } from '@/lib/flow-engine';
 import { canonicalizeBrazilPhone, getPhoneVariations } from '@/lib/utils';
+import { enqueueMessageTrigger } from '@/lib/queue/webhook-queue';
 import { emitToCompany } from '@/lib/socket';
 import { uploadFileToS3 } from '@/lib/s3';
 import { evolutionApiService } from '@/services/evolution-api.service';
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
                         timestamp: new Date().toISOString()
                     });
                 } catch(e) {
-                    console.error('[EVOLUTION-WEBHOOK] Erro ao emitir status de conexao', e);
+                    logger.error('[EVOLUTION-WEBHOOK] Erro ao emitir status de conexao', e);
                 }
             }
             return NextResponse.json({ success: true, event: eventType, state });
@@ -81,13 +82,26 @@ export async function POST(req: NextRequest) {
 
         const key = data?.key;
         if (!key || !key.remoteJid) {
-             console.error('[EVOLUTION-WEBHOOK] Missing key in message. Payload:', JSON.stringify(body).substring(0, 500));
+             logger.error('[EVOLUTION-WEBHOOK] Missing key in message. Payload:', JSON.stringify(body).substring(0, 500));
              return NextResponse.json({ error: 'Missing key in message' }, { status: 400 });
         }
 
         const remoteJid = key.remoteJid;
         const fromMe = key.fromMe || false;
         const messageId = key.id;
+        
+        // --- Sprint 1: Idempotência Crítica via Redis ---
+        // Previne que webhooks duplicados (race conditions) entrem no processamento
+        if (messageId) {
+            const { redis } = await import('@/lib/redis');
+            const isSet = await redis.set(`webhook:evo:${messageId}`, '1', 'EX', 3600, 'NX');
+            if (!isSet) {
+                logger.info(`[EVOLUTION-WEBHOOK] 🛑 Mensagem duplicada interceptada na borda pelo Redis: ${messageId}`);
+                return NextResponse.json({ success: true, ignored: true, reason: 'Idempotency hit' }, { status: 200 });
+            }
+        }
+        // ------------------------------------------------
+
         const pushName = data.pushName || 'Contato';
         
         const isGroup = remoteJid.endsWith('@g.us');
@@ -109,12 +123,12 @@ export async function POST(req: NextRequest) {
 
         // Ignorar eventos de background que não devem gerar bolha no chat
         if (messageObj.reactionMessage || messageObj.protocolMessage || messageObj.pollUpdateMessage) {
-            if (fromMe) console.log(`[EVOLUTION-WEBHOOK] Ignorando evento de background fromMe:`, Object.keys(messageObj));
+            if (fromMe) logger.info(`[EVOLUTION-WEBHOOK] Ignorando evento de background fromMe:`, Object.keys(messageObj));
             return NextResponse.json({ success: true, ignored: true, reason: 'Background event (reaction/protocol)' });
         }
 
         if (fromMe) {
-            console.log(`[EVOLUTION-WEBHOOK] Outbound (fromMe) message detected to ${phone}. Keys:`, Object.keys(messageObj));
+            logger.info(`[EVOLUTION-WEBHOOK] Outbound (fromMe) message detected to ${phone}. Keys:`, Object.keys(messageObj));
         }
 
         let content = '';
@@ -185,7 +199,7 @@ export async function POST(req: NextRequest) {
             messageType = 'TEXT';
         } else {
             content = 'Mensagem não suportada';
-            console.warn('[EVOLUTION-WEBHOOK] Mensagem não suportada. Chaves:', Object.keys(messageObj));
+            logger.warn('[EVOLUTION-WEBHOOK] Mensagem não suportada. Chaves:', Object.keys(messageObj));
         }
 
         // 1. Descobrir o Company ID e Connection a partir do instanceName
@@ -194,7 +208,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (!connection) {
-            console.error(`[EVOLUTION-WEBHOOK] Connection not found for instance: ${instanceName}`);
+            logger.error(`[EVOLUTION-WEBHOOK] Connection not found for instance: ${instanceName}`);
             return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
         }
 
@@ -224,7 +238,7 @@ export async function POST(req: NextRequest) {
                 try {
                     avatarUrl = await evolutionApiService.fetchProfilePictureUrl(instanceName, remoteJid);
                 } catch (e) {
-                    console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar para ${phone}`);
+                    logger.info(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar para ${phone}`);
                 }
 
                 let safePushName = pushName;
@@ -289,7 +303,7 @@ export async function POST(req: NextRequest) {
                             updatePayload.profileLastSyncedAt = new Date();
                         }
                     } catch (e) {
-                        console.log(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar pendente para ${phone}`);
+                        logger.info(`[EVOLUTION-WEBHOOK] Erro ao buscar avatar pendente para ${phone}`);
                     }
                 }
                 
@@ -375,7 +389,7 @@ export async function POST(req: NextRequest) {
 
             if (!newMsg) {
                 // If it conflicted, newMsg is undefined
-                console.log(`[EVOLUTION-WEBHOOK] Mensagem duplicada ignorada (providerMessageId: ${messageId})`);
+                logger.info(`[EVOLUTION-WEBHOOK] Mensagem duplicada ignorada (providerMessageId: ${messageId})`);
                 return {
                     ignored: true,
                     reason: 'Duplicate message id'
@@ -395,7 +409,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (txResult.ignored) {
-            console.log(`[EVOLUTION-WEBHOOK] 🛑 Mensagem ignorada (Motivo: ${txResult.reason})`);
+            logger.info(`[EVOLUTION-WEBHOOK] 🛑 Mensagem ignorada (Motivo: ${txResult.reason})`);
             return NextResponse.json({ success: true, message: txResult.reason }, { status: 200 });
         }
 
@@ -403,7 +417,7 @@ export async function POST(req: NextRequest) {
         if (isNewContact) {
             import('@/lib/contact-events').then(({ logContactEvent }) => {
                 logContactEvent(companyId, txResult.contactId, 'SYSTEM', 'Chegada na Plataforma (Novo Contato via WhatsApp)', { source: 'evolution_webhook' });
-            }).catch(err => console.warn('Failed to log contact creation', err));
+            }).catch(err => logger.warn('Failed to log contact creation', err));
         }
 
         const savedMessageId = txResult.messageId;
@@ -413,7 +427,7 @@ export async function POST(req: NextRequest) {
         // Background Media Upload
         if (mediaUploadInfo) {
             uploadMediaToS3Evo(mediaUploadInfo, companyId)
-                .catch(err => console.error(`[EVOLUTION-WEBHOOK] ❌ S3 media upload failed for msg ${mediaUploadInfo!.messageId}:`, err));
+                .catch(err => logger.error(`[EVOLUTION-WEBHOOK] ❌ S3 media upload failed for msg ${mediaUploadInfo!.messageId}:`, err));
         }
 
         // 5. Emitir eventos Realtime
@@ -433,34 +447,30 @@ export async function POST(req: NextRequest) {
             });
             emitToCompany(companyId, 'inbox:update', { timestamp: Date.now() });
         } catch (err) {
-            console.error('[EVOLUTION-WEBHOOK] Erro ao emitir eventos realtime:', err);
+            logger.error('[EVOLUTION-WEBHOOK] Erro ao emitir eventos realtime:', err);
         }
 
         // 6. Trigger da Automação de IA
         if (!fromMe) {
-            console.log(`[EVOLUTION-WEBHOOK] 🤖 Triggering automation for message ${savedMessageId}`);
+            logger.info(`[EVOLUTION-WEBHOOK] 🤖 Pushing automation trigger to Queue for message ${savedMessageId}`);
 
-            // ✅ P4 FIX: Removido resumeFlowForContact daqui — já é chamado dentro do processIncomingMessageTrigger
-            // Isso evita que o fluxo seja retomado duas vezes para o mesmo contato.
-            setTimeout(async () => {
+            if (txResult.aiActive === false) {
+                logger.info(`[EVOLUTION-WEBHOOK] 🛑 AI disabled for conversation ${conversationId}, skipping automation.`);
+            } else {
+                // Ao invés de executar inline com setTimeout (arriscado em Serverless/Vercel),
+                // enviamos para a fila do BullMQ que rodará em background com garantias de retry e idempotência.
                 try {
-                    if (txResult.aiActive === false) {
-                        console.log(`[EVOLUTION-WEBHOOK] 🛑 AI disabled for conversation ${conversationId}, skipping automation.`);
-                    } else {
-                        console.log(`[EVOLUTION-WEBHOOK] ⏳ Executing processIncomingMessageTrigger for ${savedMessageId}...`);
-                        await processIncomingMessageTrigger(conversationId, savedMessageId);
-                        console.log(`[EVOLUTION-WEBHOOK] ✅ processIncomingMessageTrigger finished.`);
-                    }
+                    await enqueueMessageTrigger(conversationId, savedMessageId);
                 } catch (err) {
-                    console.error('[EVOLUTION-WEBHOOK] Erro na execução da automação:', err);
+                    logger.error('[EVOLUTION-WEBHOOK] Erro ao enfileirar job:', err);
                 }
-            }, 500);
+            }
         }
 
         return NextResponse.json({ success: true, message: 'Processado com sucesso' }, { status: 200 });
 
     } catch (error) {
-        console.error('[EVOLUTION-WEBHOOK] Fatal error:', error);
+        logger.error('[EVOLUTION-WEBHOOK] Fatal error:', error);
         return NextResponse.json({ error: 'Erro interno no webhook' }, { status: 500 });
     }
 }
@@ -493,7 +503,7 @@ async function uploadMediaToS3Evo(info: any, companyId: string) {
                         base64String = result.base64;
                     }
                 } else {
-                    console.error(`[EVOLUTION-WEBHOOK] Failed to fetch base64: ${response.status} ${await response.text()}`);
+                    logger.error(`[EVOLUTION-WEBHOOK] Failed to fetch base64: ${response.status} ${await response.text()}`);
                 }
             }
         }
@@ -505,12 +515,12 @@ async function uploadMediaToS3Evo(info: any, companyId: string) {
             const mediaUrl = await uploadFileToS3(companyId, fileKey, buffer, info.mimeType);
             
             if (mediaUrl) {
-                console.log(`[EVOLUTION-WEBHOOK] Media uploaded to S3: ${mediaUrl}`);
+                logger.info(`[EVOLUTION-WEBHOOK] Media uploaded to S3: ${mediaUrl}`);
                 await db.update(messages).set({ mediaUrl }).where(eq(messages.id, info.messageId));
                 emitToCompany(companyId, 'chat:message-updated', { messageId: info.messageId, mediaUrl });
             }
         }
     } catch (err) {
-        console.error(`[EVOLUTION-WEBHOOK] Error in async media upload:`, err);
+        logger.error(`[EVOLUTION-WEBHOOK] Error in async media upload:`, err);
     }
 }
