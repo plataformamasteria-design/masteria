@@ -59,5 +59,5 @@ export const allNavItems: NavItem[] = [
     { href: '/marketing', label: 'Marketing', icon: Megaphone, roles: ['admin', 'superadmin'] },
     { href: '/automacoes', label: 'Automações', icon: GitBranch, roles: ['admin', 'superadmin'] },
     { href: '/conexoes', label: 'Conexões', icon: Plug, roles: ['admin', 'superadmin'] },
-    { href: '/admin/organizations', label: 'Organizações', icon: Building2, roles: ['superadmin'], requireEmail: 'superadmin@admin.com' },
+    { href: '/admin/organizations', label: 'Organizações', icon: Building2, roles: ['superadmin'] },
 ];
