@@ -34,11 +34,11 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
     });
     
     // ✅ Correctly fetch tags using the relation table
-    const contactTagsQuery = await db.select({ tagName: tags.name })
+    const contactTagsQuery = await db.select({ tagName: tags.name, tagId: tags.id })
         .from(contactsToTags)
         .innerJoin(tags, eq(contactsToTags.tagId, tags.id))
         .where(eq(contactsToTags.contactId, contactId));
-    const contactTags = contactTagsQuery.map(t => t.tagName);
+    const contactTagNames = contactTagsQuery.map(t => (t.tagName || '').toLowerCase()); const contactTagIds = contactTagsQuery.map(t => t.tagId);
 
     const conversationData = message?.conversationId ? await db.query.conversations.findFirst({
         where: eq(conversations.id, message.conversationId)
@@ -111,7 +111,7 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
                     }
                 }
                 else if (category === 'tag' && trigger.data.filter_tag) {
-                    if (!contactTags.includes(trigger.data.filter_tag)) {
+                    if (!contactTagNames.includes(String(trigger.data.filter_tag).toLowerCase()) && !contactTagIds.includes(String(trigger.data.filter_tag))) {
                         shouldTrigger = false;
                     }
                 }
