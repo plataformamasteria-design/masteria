@@ -138,7 +138,55 @@ export class ConditionNodeHandler implements NodeHandler {
             return { sourceHandle: 'fallback', message: 'Router: fallback' };
         }
 
-        // ---- Logic: Delay ----
+                // ---- Logic: Delay ----
+        case 'delay': {
+            const unit = step.data.unit || 'minutes';
+            
+            // Specific time mode: wait until HH:mm today (or tomorrow if past)
+            if (unit === 'specific_time') {
+                const targetTime = step.data.specific_time || '12:00'; // HH:mm
+                const [targetH, targetM] = targetTime.split(':').map(Number);
+                
+                // Pega a hora atual do Brasil de forma confiável
+                const now = new Date();
+                const brtFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/Sao_Paulo',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                });
+                
+                const parts = brtFormatter.formatToParts(now);
+                // Handle 24h format quirk where midnight can be '24' in some node versions
+                let brtH = Number(parts.find(p => p.type === 'hour')?.value || 0);
+                if (brtH === 24) brtH = 0;
+                const brtM = Number(parts.find(p => p.type === 'minute')?.value || 0);
+                const brtS = Number(parts.find(p => p.type === 'second')?.value || 0);
+                
+                const nowMsInDay = (brtH * 3600 + brtM * 60 + brtS) * 1000;
+                const targetMsInDay = (targetH * 3600 + targetM * 60) * 1000;
+                
+                let ms = targetMsInDay - nowMsInDay;
+                if (ms <= 0) {
+                    // Já passou do horário hoje, agenda para o mesmo horário de amanhã
+                    ms += 24 * 60 * 60 * 1000;
+                }
+                
+                return { action: 'delay', delayMs: ms, message: `Delay until ${targetTime} BRT (${Math.round(ms / 60000)} min)` };
+            }
+
+            const amount = parseInt(step.data.amount || '5');
+            const multipliers = {
+                seconds: 1000,
+                minutes: 60 * 1000,
+                hours: 60 * 60 * 1000,
+                days: 24 * 60 * 60 * 1000,
+            };
+            const ms = amount * (multipliers[unit] || 60000);
+            return { action: 'delay', delayMs: ms, message: `Delay: ${amount} ${unit} ` };
+        }
+
             default:
                 return { message: 'Unknown condition node type' };
         }

@@ -370,7 +370,7 @@ export async function evaluateMessageTriggers(companyId: string, contactId: stri
                 const category = trigger.data.message_category;
                 logger.debug(`[FLOW-ENGINE] Evaluating advanced filters for trigger category: ${category}`);
                 logger.debug(`[FLOW-ENGINE] Data state -> ConversationConnectionId: ${conversationData?.connectionId}, FilterConnection: ${trigger.data.filter_connection}`);
-                logger.debug(`[FLOW-ENGINE] Data state -> ContactTags: ${JSON.stringify(contactTags)}, FilterTag: ${trigger.data.filter_tag}`);
+                logger.debug(`[FLOW-ENGINE] Data state -> ContactTags: ${JSON.stringify(contactTagNames)}, FilterTag: ${trigger.data.filter_tag}`);
                 logger.debug(`[FLOW-ENGINE] Data state -> LeadBoardId: ${leadData?.boardId}, FilterFunnel: ${trigger.data.filter_funnel}, LeadStageId: ${leadData?.stageId}, FilterStage: ${trigger.data.filter_stage}`);
                 
                 if (category === 'connection' && trigger.data.filter_connection) {
@@ -1198,6 +1198,9 @@ interface NodeResult {
 async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: FlowStep[]): Promise<NodeResult> {
     logger.debug(`[FLOW-ENGINE] ⚙️ Executing node ${step.type} (${step.id})`);
 
+    // 🔥 Gravar estatística de visualização (Reached)
+    await incrementNodeReached(ctx.flowId, ctx.companyId, step.id);
+
     // --- Sprint 1: Fatiamento Arquitetural (Node Registry) ---
     const { NodeRegistry } = await import('@/services/flow-nodes/registry');
     const handler = NodeRegistry.getHandler(step.type);
@@ -1206,10 +1209,6 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
     }
     // ---------------------------------------------------------
 
-    
-    // 🔥 Gravar estatística de visualização (Reached)
-    await incrementNodeReached(ctx.flowId, ctx.companyId, step.id);
-    
     switch (step.type) {
         // ---- System ----
         // ---- System ----

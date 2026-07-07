@@ -16,6 +16,9 @@ export class NodeRegistry {
         this.handlers.set('assign_user', crmHandler);
         this.handlers.set('add_tag', crmHandler);
         this.handlers.set('remove_tag', crmHandler);
+        this.handlers.set('bot_toggle', crmHandler);
+        this.handlers.set('stop_bot', crmHandler);
+        this.handlers.set('loop_restart', crmHandler);
 
         // Register AI Nodes
         const aiHandler = new AINodeHandler();
@@ -32,6 +35,7 @@ export class NodeRegistry {
         this.handlers.set('logic', conditionHandler);
         this.handlers.set('filter', conditionHandler);
         this.handlers.set('router', conditionHandler);
+        this.handlers.set('delay', conditionHandler);
 
         // Register HTTP Node
         const httpHandler = new HttpNodeHandler();
