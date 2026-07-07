@@ -10,7 +10,7 @@ import { emitToCompany } from '@/lib/socket';
 import { uploadFileToS3 } from '@/lib/s3';
 import { evolutionApiService } from '@/services/evolution-api.service';
 import { SessionCache } from '@/lib/cache/session-cache';
-
+import { logger } from '@/lib/logger';
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();

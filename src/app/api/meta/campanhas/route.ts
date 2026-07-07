@@ -271,6 +271,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ data: campaigns, since, until });
   } catch (e: any) {
+    if (e.message && e.message.includes("Meta não conectado")) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
     console.error("[api/meta/campanhas]", e);
     return NextResponse.json({ error: e.message || String(e) }, { status: 500 });
   }
