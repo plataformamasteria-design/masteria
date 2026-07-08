@@ -32,6 +32,16 @@ export async function register() {
       } catch (error) {
         console.error('[Instrumentation] ❌ Failed to initialize CampaignTriggerWorker:', error);
       }
+
+      // Initialize Webhook Worker (requer Redis)
+      try {
+        const { initializeWebhookWorker } = await import('./src/workers/webhook.worker');
+        console.log('[Instrumentation] Initializing WebhookWorker...');
+        await initializeWebhookWorker();
+        console.log('[Instrumentation] ✅ WebhookWorker initialized');
+      } catch (error) {
+        console.error('[Instrumentation] ❌ Failed to initialize WebhookWorker:', error);
+      }
     } else {
       console.log('[Instrumentation] ⏭️ Skipping Redis-dependent workers (local dev without Redis)');
     }

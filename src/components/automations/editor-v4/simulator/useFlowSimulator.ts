@@ -853,7 +853,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
         }
     }, [addMessage, removeMessage, nodes]);
 
-    const callAI = useCallback(async (config: Record<string, unknown>): Promise<{ response: string; tokens: number; error?: string } | null> => {
+    const callAI = useCallback(async (config: Record<string, unknown>, options?: { virtual_history?: any[] }): Promise<{ response: string; tokens: number; error?: string } | null> => {
         try {
             console.log('[useFlowSimulator] callAI initiated with model:', config.model);
             const lead = selectedLeadRef.current;
@@ -869,7 +869,7 @@ export function useFlowSimulator({ nodes, edges, automationId, onClose, onHighli
                     ...config,
                     system_message: fullSystemMessage,
                 },
-                virtual_history: virtualHistoryRef.current,
+                virtual_history: options?.virtual_history !== undefined ? options.virtual_history : virtualHistoryRef.current,
             };
 
             const controller = new AbortController();
