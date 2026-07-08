@@ -2375,43 +2375,55 @@ async function executeNode(step: FlowStep, ctx: ExecutionContext, allSteps: Flow
  */
 export async function resumeFlowForContact(contactId: string, messageText: string, companyId: string): Promise<boolean> {
     try {
-        // 1. Look up the contact's phone so we can find paused executions
-        //    across duplicate contact records (same phone, different IDs)
-        const contact = await db.query.contacts.findFirst({
-            where: eq(contacts.id, contactId),
-        });
-
-        // Build list of all possible contactIds for this phone
-        const contactIds: string[] = [contactId];
-        if (contact?.phone) {
-            // Strip leading + and country code variations to find all contacts with same phone
-            const phoneDigits = contact.phone.replace(/\D/g, '');
-            const allContacts = await db
-                .select({ id: contacts.id })
-                .from(contacts)
-                .where(and(
-                    eq(contacts.companyId, companyId),
-                    sql`regexp_replace(${contacts.phone}, '\\D', '', 'g') LIKE '%' || ${phoneDigits.slice(-10)} || '%'`
-                ));
-            for (const c of allContacts) {
-                if (!contactIds.includes(c.id)) contactIds.push(c.id);
-            }
-        }
-
-        logger.debug(`[FLOW-ENGINE] 🔎 Searching paused executions for contactIds: [${contactIds.join(', ')}]`);
-
-        // 2. Find the LATEST paused execution across all contact IDs
-        const pausedExecution = await db.query.automationFlowExecutions.findFirst({
+        // 1. Otimização: Primeiro tenta encontrar execução pausada para o contactId exato (rápido)
+        let pausedExecution = await db.query.automationFlowExecutions.findFirst({
             where: and(
-                inArray(automationFlowExecutions.contactId, contactIds),
+                eq(automationFlowExecutions.contactId, contactId),
                 eq(automationFlowExecutions.companyId, companyId),
                 eq(automationFlowExecutions.status, 'paused')
             ),
             orderBy: desc(automationFlowExecutions.startedAt),
         });
 
+        let contactIds: string[] = [contactId];
+        let contactPhone = 'unknown';
+
+        // 2. Se não encontrar, tenta buscar por números de telefone iguais (lento)
         if (!pausedExecution) {
-            logger.debug(`[FLOW-ENGINE] No paused execution found for contact ${contactId} (phone: ${contact?.phone || 'unknown'})`);
+            const contact = await db.query.contacts.findFirst({
+                where: eq(contacts.id, contactId),
+            });
+            if (contact?.phone) {
+                contactPhone = contact.phone;
+                const phoneDigits = contact.phone.replace(/\D/g, '');
+                const allContacts = await db
+                    .select({ id: contacts.id })
+                    .from(contacts)
+                    .where(and(
+                        eq(contacts.companyId, companyId),
+                        sql`regexp_replace(${contacts.phone}, '\\D', '', 'g') LIKE '%' || ${phoneDigits.slice(-10)} || '%'`
+                    ));
+                for (const c of allContacts) {
+                    if (!contactIds.includes(c.id)) contactIds.push(c.id);
+                }
+            }
+
+            logger.debug(`[FLOW-ENGINE] 🔎 Searching paused executions for contactIds: [${contactIds.join(', ')}]`);
+
+            if (contactIds.length > 1) {
+                pausedExecution = await db.query.automationFlowExecutions.findFirst({
+                    where: and(
+                        inArray(automationFlowExecutions.contactId, contactIds),
+                        eq(automationFlowExecutions.companyId, companyId),
+                        eq(automationFlowExecutions.status, 'paused')
+                    ),
+                    orderBy: desc(automationFlowExecutions.startedAt),
+                });
+            }
+        }
+
+        if (!pausedExecution) {
+            logger.debug(`[FLOW-ENGINE] No paused execution found for contact ${contactId} (phone: ${contactPhone})`);
             return false;
         }
 

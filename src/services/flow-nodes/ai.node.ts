@@ -1321,7 +1321,7 @@ export class AINodeHandler implements NodeHandler {
 
             const instruction = step.data.instruction || 'Classifique a intenção do usuário.';
             const model = step.data.model || 'gpt-4o-mini';
-            const contextWindow = step.data.context_window || 1;
+            const contextWindow = step.data.context_window || 5;
 
             let chatHistoryText = '';
             
@@ -1347,7 +1347,12 @@ export class AINodeHandler implements NodeHandler {
             
             if (!chatHistoryText) {
                 const lastMessage = ctx.variables.last_response || ctx.variables.message_text || '';
-                chatHistoryText = `Cliente: ${lastMessage}`;
+                const lastAiMsg = ctx.variables.last_ai_response;
+                if (lastAiMsg) {
+                    chatHistoryText = `Atendente: ${lastAiMsg}\nCliente: ${lastMessage}`;
+                } else {
+                    chatHistoryText = `Cliente: ${lastMessage}`;
+                }
             }
 
             const classificationPrompt = `
