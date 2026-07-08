@@ -117,16 +117,25 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
     }
 
     // ✅ FIX: Universal Media Fetcher
-    // Download media if a URL is provided and buffer is absent.
-    // Solves Meta API 503 errors with private S3/Supabase buckets.
-    // We avoid fetching huge buffers for Evolution API unless it's audio (which needs conversion)
-    // OR if the file is stored in our own backend (localhost or api/storage), as external APIs might not reach it.
-    // FIX: Force fetching buffer for evolution to avoid URL download issues from S3/Supabase.
-    const needsBuffer = provider === 'apicloud' || provider === 'evolution' || mediaType === 'audio' || (mediaUrl && (mediaUrl.includes('localhost') || mediaUrl.includes('api/storage')));
+    // Only fetch buffer if we ABSOLUTELY need it. APICloud (Meta) requires buffer for uploads.
+    // Audio ALWAYS requires buffer for OGG conversion.
+    // Evolution API handles URLs natively, but we MUST ensure local URLs are rewritten to public URLs before sending.
+    const needsBuffer = provider === 'apicloud' || mediaType === 'audio';
+
+    if (mediaUrl) {
+        // ✅ CRITICAL FIX: Se o arquivo foi feito upload em localhost (ex: dev) mas agora roda em prod,
+        // MUST rewrite to public domain so Evolution API (or other external services) can download it.
+        if (mediaUrl.includes('localhost') || mediaUrl.includes('127.0.0.1')) {
+            const publicAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://masteria-temporario.up.railway.app';
+            if (publicAppUrl && !publicAppUrl.includes('localhost')) {
+                mediaUrl = mediaUrl.replace(/http:\/\/(localhost|127\.0\.0\.1):\d+/, publicAppUrl);
+            }
+        }
+    }
 
     if (mediaUrl && mediaUrl.startsWith('http') && !mediaBuffer && mediaType && needsBuffer) {
       try {
-          // ✅ FIX: Ler o arquivo diretamente do banco se for um arquivo de storage local, evitando falhas de HTTP no Railway
+          // Se precisar baixar, lemos do banco para evitar timeout de HTTP local
           if (mediaUrl.includes('api/storage/neon?key=')) {
               console.log(`[UNIFIED-SENDER] 📥 Lendo mídia diretamente do banco de dados: ${mediaUrl.substring(0, 80)}...`);
               const keyMatch = mediaUrl.split('key=')[1]?.split('&')[0];
@@ -145,15 +154,6 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
           }
 
           if (!mediaBuffer) {
-              if (mediaUrl.includes('localhost')) {
-                  if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
-                      mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_APP_URL);
-                  } else {
-                      const internalPort = process.env.PORT || 3000;
-                      mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, `http://127.0.0.1:${internalPort}`);
-                  }
-              }
-
               console.log(`[UNIFIED-SENDER] 📥 Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
               const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
               if (resp.ok) {
