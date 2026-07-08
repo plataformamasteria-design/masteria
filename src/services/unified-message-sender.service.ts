@@ -121,7 +121,8 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
     // Solves Meta API 503 errors with private S3/Supabase buckets.
     // We avoid fetching huge buffers for Evolution API unless it's audio (which needs conversion)
     // OR if the file is stored in our own backend (localhost or api/storage), as external APIs might not reach it.
-    const needsBuffer = provider === 'apicloud' || mediaType === 'audio' || (mediaUrl && (mediaUrl.includes('localhost') || mediaUrl.includes('api/storage')));
+    // FIX: Force fetching buffer for evolution to avoid URL download issues from S3/Supabase.
+    const needsBuffer = provider === 'apicloud' || provider === 'evolution' || mediaType === 'audio' || (mediaUrl && (mediaUrl.includes('localhost') || mediaUrl.includes('api/storage')));
 
     if (mediaUrl && mediaUrl.startsWith('http') && !mediaBuffer && mediaType && needsBuffer) {
       try {

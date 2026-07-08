@@ -631,7 +631,11 @@ export class AINodeHandler implements NodeHandler {
 
                             if (toolCall.function.name === 'send_media_file') {
                                 const fileName = toolArgs.fileName as string;
-                                const attachedFile = libraryFiles.find((f: any) => f.fileName === fileName);
+                                const attachedFile = libraryFiles.find((f: any) => 
+                                    f.fileName === fileName || 
+                                    (f.fileName && fileName && f.fileName.toLowerCase().trim() === fileName.toLowerCase().trim()) ||
+                                    (f.fileName && fileName && f.fileName.toLowerCase().includes(fileName.toLowerCase().trim()))
+                                );
                                 
                                 if (attachedFile) {
                                     try {
@@ -991,6 +995,7 @@ export class AINodeHandler implements NodeHandler {
                             message: finalMessage,
                             mediaUrl: attachedFile ? attachedFile.fileUrl : undefined,
                             mediaType: resolvedMediaType,
+                            mediaFileName: attachedFile ? attachedFile.fileName : undefined,
                         });
 
                         if (!sendResult.success) {
