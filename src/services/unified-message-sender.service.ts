@@ -1,7 +1,7 @@
 // Service module — importado por Server Actions. NÃO adicionar 'use server' aqui.
 
 import { db } from '@/lib/db';
-import { connections, messageTemplates } from '@/lib/db/schema';
+import { connections, messageTemplates, storageFiles } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { sendWhatsappTextMessage, sendWhatsappTemplateMessage, sendInstagramMessage, sendWhatsappMediaMessage, sendWhatsappInteractiveMessage } from '@/lib/facebookApiService';
 import { evolutionApiService } from '@/services/evolution-api.service';
@@ -126,25 +126,43 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
 
     if (mediaUrl && mediaUrl.startsWith('http') && !mediaBuffer && mediaType && needsBuffer) {
       try {
-          // ✅ FIX: Se o arquivo foi feito upload em localhost (ex: dev) mas agora roda em prod,
-          // o fetch interno deve apontar para o app real ou usar o domínio configurado.
-          if (mediaUrl.includes('localhost')) {
-              if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
-                  mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_APP_URL);
-              } else {
-                  const internalPort = process.env.PORT || 3000;
-                  mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, `http://127.0.0.1:${internalPort}`);
+          // ✅ FIX: Ler o arquivo diretamente do banco se for um arquivo de storage local, evitando falhas de HTTP no Railway
+          if (mediaUrl.includes('api/storage/neon?key=')) {
+              console.log(`[UNIFIED-SENDER] 📥 Lendo mídia diretamente do banco de dados: ${mediaUrl.substring(0, 80)}...`);
+              const keyMatch = mediaUrl.split('key=')[1]?.split('&')[0];
+              if (keyMatch) {
+                  const decodedKey = decodeURIComponent(keyMatch);
+                  const file = await db.query.storageFiles.findFirst({
+                      where: eq(storageFiles.key, decodedKey),
+                  });
+                  if (file && file.data) {
+                      mediaBuffer = Buffer.from(file.data);
+                      console.log(`[UNIFIED-SENDER] ✅ Buffer lido do banco (${mediaBuffer.length} bytes)`);
+                  } else {
+                      console.warn(`[UNIFIED-SENDER] ⚠️ Arquivo não encontrado no banco: ${decodedKey}`);
+                  }
               }
           }
 
-          console.log(`[UNIFIED-SENDER] 📥 Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
-          const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
-          if (resp.ok) {
-              const arrBuf = await resp.arrayBuffer();
-              mediaBuffer = Buffer.from(arrBuf);
-              console.log(`[UNIFIED-SENDER] ✅ Fetched media buffer (${mediaBuffer.length} bytes)`);
-          } else {
-              console.warn(`[UNIFIED-SENDER] ⚠️ Failed to fetch mediaUrl (${resp.status}). Will pass URL directly.`);
+          if (!mediaBuffer) {
+              if (mediaUrl.includes('localhost')) {
+                  if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+                      mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_APP_URL);
+                  } else {
+                      const internalPort = process.env.PORT || 3000;
+                      mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, `http://127.0.0.1:${internalPort}`);
+                  }
+              }
+
+              console.log(`[UNIFIED-SENDER] 📥 Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);
+              const resp = await fetch(mediaUrl, { signal: AbortSignal.timeout(20000) });
+              if (resp.ok) {
+                  const arrBuf = await resp.arrayBuffer();
+                  mediaBuffer = Buffer.from(arrBuf);
+                  console.log(`[UNIFIED-SENDER] ✅ Fetched media buffer (${mediaBuffer.length} bytes)`);
+              } else {
+                  console.warn(`[UNIFIED-SENDER] ⚠️ Failed to fetch mediaUrl (${resp.status}). Will pass URL directly.`);
+              }
           }
       } catch (fetchErr) {
           console.warn('[UNIFIED-SENDER] ⚠️ Could not fetch mediaUrl as buffer, passing URL directly:', fetchErr);
