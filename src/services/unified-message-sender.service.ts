@@ -128,8 +128,13 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
       try {
           // ✅ FIX: Se o arquivo foi feito upload em localhost (ex: dev) mas agora roda em prod,
           // o fetch interno deve apontar para o app real ou usar o domínio configurado.
-          if (mediaUrl.includes('localhost') && process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
-              mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_APP_URL);
+          if (mediaUrl.includes('localhost')) {
+              if (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')) {
+                  mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_APP_URL);
+              } else {
+                  const internalPort = process.env.PORT || 3000;
+                  mediaUrl = mediaUrl.replace(/http:\/\/localhost:\d+/, `http://127.0.0.1:${internalPort}`);
+              }
           }
 
           console.log(`[UNIFIED-SENDER] 📥 Fetching remote media as buffer: ${mediaUrl.substring(0, 80)}...`);

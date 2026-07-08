@@ -631,10 +631,13 @@ export class AINodeHandler implements NodeHandler {
 
                             if (toolCall.function.name === 'send_media_file') {
                                 const fileName = toolArgs.fileName as string;
+                                // Remove acentos para comparação
+                                const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+
                                 const attachedFile = libraryFiles.find((f: any) => 
                                     f.fileName === fileName || 
-                                    (f.fileName && fileName && f.fileName.toLowerCase().trim() === fileName.toLowerCase().trim()) ||
-                                    (f.fileName && fileName && f.fileName.toLowerCase().includes(fileName.toLowerCase().trim()))
+                                    normalize(f.fileName) === normalize(fileName) ||
+                                    normalize(f.fileName).includes(normalize(fileName))
                                 );
                                 
                                 if (attachedFile) {
