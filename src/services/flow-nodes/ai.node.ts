@@ -664,6 +664,7 @@ export class AINodeHandler implements NodeHandler {
                                         });
 
                                         if (!sendResult.success) {
+                                            ctx['_last_tool_error'] = sendResult.error || 'Erro desconhecido ao enviar mídia.';
                                             throw new Error(sendResult.error || 'Erro desconhecido ao enviar mídia.');
                                         }
 
@@ -702,6 +703,7 @@ export class AINodeHandler implements NodeHandler {
                                         toolResult = { success: true, message: `O arquivo ${fileName} foi enviado no WhatsApp do cliente com sucesso. Agora responda confirmando que enviou.` };
                                         logger.debug(`[FLOW-ENGINE] 📎 Media Tool: Sent ${fileName}`);
                                     } catch (err: any) {
+                                        ctx['_last_tool_error'] = err.message;
                                         toolResult = { success: false, message: `Falha ao enviar arquivo: ${err.message}` };
                                     }
                                 } else {

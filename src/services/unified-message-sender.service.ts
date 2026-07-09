@@ -66,8 +66,8 @@ export async function sendUnifiedMessage(options: UnifiedSendOptions): Promise<S
     } else if (normalized.includes('evolution') || normalized.includes('baileys')) {
       provider = 'evolution';
     } else {
-      console.error(`[UNIFIED-SENDER] ❌ Unknown provider: "${provider}" (raw: "${options.provider}")`);
-      return { success: false, error: `Provedor inválido: "${provider}"` };
+      console.warn(`[UNIFIED-SENDER] ⚠️ Unknown provider passed: "${provider}". Will attempt to auto-resolve from connection config.`);
+      // Não retornar erro aqui, o bloco abaixo (linha 111) vai corrigir o provedor com base no connectionType
     }
   }
 
