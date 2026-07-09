@@ -631,6 +631,7 @@ export class AINodeHandler implements NodeHandler {
 
                             if (toolCall.function.name === 'send_media_file') {
                                 const fileName = toolArgs.fileName as string;
+                                ctx['_last_tool_args'] = toolArgs;
                                 // Remove acentos para comparação
                                 const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
@@ -707,6 +708,7 @@ export class AINodeHandler implements NodeHandler {
                                         toolResult = { success: false, message: `Falha ao enviar arquivo: ${err.message}` };
                                     }
                                 } else {
+                                    ctx['_last_tool_error'] = `Arquivo não encontrado: ${fileName}`;
                                     toolResult = { success: false, message: `Arquivo não encontrado: ${fileName}.` };
                                 }
                             } else {
