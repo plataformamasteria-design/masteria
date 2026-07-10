@@ -645,6 +645,10 @@ export async function processIncomingMessageTrigger(
                 }
             } catch (err: any) {
                 await logAutomation('ERROR', `[Flow Builder] Erro na transcrição: ${err.message}`, logContextBase);
+                // ✅ FIX: Persistir falha no banco para não repetir o erro 400 da OpenAI num loop eterno
+                const errorTranscriptionText = '[Áudio sem fala detectada]';
+                await db.update(messages).set({ aiTranscription: errorTranscriptionText }).where(eq(messages.id, message.id));
+                (message as any).aiTranscription = errorTranscriptionText;
             }
         }
 
@@ -789,6 +793,11 @@ export async function processIncomingMessageTrigger(
                 }
             } else {
                 await logAutomation('INFO', 'Sem agente IA configurado para esta conversa.', logContextBase);
+                // ✅ FIX: Marcar a mensagem como processada para evitar retry infinito quando não há IA
+                await logAutomation('WARN', 'Mensagem marcada como processada (Sem IA) para evitar retry infinito', {
+                    ...logContextBase,
+                    details: { processedMessageId: messageId, aiFailure: true }
+                });
             }
         } else {
             await logAutomation('INFO', `IA não processada: aiActive = ${convoResult.aiActive}, hasRouting = ${hasRoutingConfigured}`, logContextBase);
