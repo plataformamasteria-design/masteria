@@ -150,20 +150,34 @@ export default function FunnelPage({ params }: { params: Promise<{ funnelId: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [funnelId, toast]);
 
-  // Carregar filtros salvos do localStorage
+  // Carregar filtros salvos do localStorage ou definir padrão
   useEffect(() => {
+    if (!funnel) return;
+    if (isFiltersLoaded) return;
+
     try {
       const saved = localStorage.getItem(`kanban_filters_${funnelId}`);
+      let parsed = {};
       if (saved) {
-        const parsed = JSON.parse(saved);
-        setFilters((prev) => ({ ...prev, ...parsed }));
+        parsed = JSON.parse(saved);
       }
+      
+      const newFilters = { ...DEFAULT_FILTERS, ...parsed };
+
+      // Regra específica: SEMPRE iniciar com o filtro "Follow UP 1" ativo para essa organização
+      // O usuário pode remover clicando no 'X', mas ao recarregar a página o filtro volta.
+      const followUpStage = funnel.stages?.find(s => s.title?.toLowerCase() === 'follow up 1');
+      if (followUpStage) {
+        newFilters.stages = [followUpStage.id];
+      }
+
+      setFilters(newFilters);
     } catch (e) {
       console.error("Erro ao ler filtros do localStorage", e);
     } finally {
       setIsFiltersLoaded(true);
     }
-  }, [funnelId]);
+  }, [funnel, funnelId, isFiltersLoaded]);
 
   const handleSaveFilters = () => {
     try {
