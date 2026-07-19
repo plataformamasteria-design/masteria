@@ -353,7 +353,16 @@ export default function TemplatesV2Page() {
     setSyncing(true);
     try {
       const response = await fetch('/api/v1/templates/sync', { method: 'POST' });
-      const data = await response.json();
+      
+      // Handle non-JSON responses from proxies (like "upstream error")
+      const contentType = response.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Erro no servidor HTTP ${response.status}: ${text.substring(0, 100)}`);
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Erro na sincronização');

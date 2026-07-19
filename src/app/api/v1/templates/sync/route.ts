@@ -26,7 +26,7 @@ type MetaTemplate = {
 };
 
 async function fetchTemplatesFromMeta(wabaId: string, accessToken: string): Promise<MetaTemplate[]> {
-  const url = `https://graph.facebook.com/v23.0/${wabaId}/message_templates?fields=name,status,language,category,components&limit=500`;
+  const url = `https://graph.facebook.com/v21.0/${wabaId}/message_templates?fields=name,status,language,category,components&limit=500`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
